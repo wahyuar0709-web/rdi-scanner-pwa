@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Scan QR – Kartu Stok RDI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;
+     height:100dvh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+.hd{background:#1a3a7a;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.hd-logo{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.hd-text h1{font-size:14px;font-weight:700;line-height:1.2}
+.hd-text p{font-size:11px;opacity:.7;margin-top:1px}
+
+.vp-wrap{flex:1;position:relative;background:#000;overflow:hidden}
+#cam{width:100%;height:100%;object-fit:cover;display:block}
+
+.frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.frame-box{width:64%;aspect-ratio:1;position:relative}
+.c{position:absolute;width:28px;height:28px;border-color:#fff;border-style:solid;border-width:0}
+.c.tl{top:0;left:0;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
+.c.tr{top:0;right:0;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0}
+.c.bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
+.c.br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
+.scanline{position:absolute;left:0;right:0;height:2px;
+          background:linear-gradient(90deg,transparent,#60a5fa,transparent);
+          animation:sl 2.2s ease-in-out infinite;top:5%}
+@keyframes sl{0%,100%{top:5%}50%{top:88%}}
+
+.found-overlay{position:absolute;inset:0;background:rgba(34,197,94,.2);
+               display:none;align-items:center;justify-content:center}
+.found-overlay.show{display:flex}
+.found-badge{background:#16a34a;color:#fff;padding:14px 24px;border-radius:10px;
+             font-size:15px;font-weight:700;text-align:center;max-width:85%;word-break:break-all}
+
+.guide{position:absolute;bottom:12px;left:0;right:0;text-align:center;
+       font-size:12px;color:rgba(255,255,255,.6);pointer-events:none}
+
+.ft{background:#0f172a;padding:14px 16px;display:flex;gap:10px;align-items:center;
+    border-top:1px solid #1e293b;flex-shrink:0}
+.status{flex:1;font-size:12px;color:#64748b;line-height:1.4}
+.status.ok{color:#4ade80;font-weight:600}
+.status.err{color:#f87171}
+.status.scanning{color:#60a5fa}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;
+     cursor:pointer;font-family:inherit;transition:opacity .1s}
+.btn:active{opacity:.75}
+.btn-close{background:#334155;color:#e2e8f0}
+.btn-torch{background:#1e3a5f;color:#93c5fd;min-width:44px}
+.btn-torch.on{background:#1d4ed8;color:#fff}
+
+.loader{position:absolute;inset:0;background:#0f172a;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:16px;z-index:10}
+.loader.hidden{display:none}
+.spin{width:40px;height:40px;border:3px solid #1e293b;border-top-color:#3b82f6;
+      border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader p{font-size:13px;color:#64748b}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" width="20" height="20">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <path d="M14 14h2v2h-2zm4 0h3v3h-3zm0 4v3h-3m3 0h-3"/>
+    </svg>
+  </div>
+  <div class="hd-text">
+    <h1>Scan QR Code</h1>
+    <p>PT Rayard Deli Indonesia – Kartu Stok</p>
+  </div>
+</div>
+
+<div class="vp-wrap">
+  <div class="loader" id="loader">
+    <div class="spin"></div>
+    <p id="loader-msg">Memulai kamera…</p>
+  </div>
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="cnv" style="display:none"></canvas>
+  <div class="frame">
+    <div class="frame-box">
+      <div class="c tl"></div><div class="c tr"></div>
+      <div class="c bl"></div><div class="c br"></div>
+      <div class="scanline"></div>
+    </div>
+  </div>
+  <div class="found-overlay" id="found-overlay">
+    <div class="found-badge" id="found-badge">✓ QR Ditemukan!</div>
+  </div>
+  <div class="guide">Arahkan kamera ke QR Code</div>
+</div>
+
+<div class="ft">
+  <div class="status scanning" id="status">Menginisialisasi kamera…</div>
+  <button class="btn btn-torch" id="btn-torch" style="display:none" onclick="toggleTorch()">🔦</button>
+  <button class="btn btn-close" onclick="closeScanner()">✕ Tutup</button>
+</div>
+
+<script>
+var stream=null, torchOn=false, scanning=true, scanTimer=null, detector=null;
+
+var cam=document.getElementById('cam');
+var cnv=document.getElementById('cnv');
+var ctx=cnv.getContext('2d');
+var loaderEl=document.getElementById('loader');
+var loaderMsg=document.getElementById('loader-msg');
+var statusEl=document.getElementById('status');
+var foundEl=document.getElementById('found-overlay');
+var foundBadge=document.getElementById('found-badge');
+var btnTorch=document.getElementById('btn-torch');
+
+// Ambil caller dari URL param
+var urlParams=new URLSearchParams(window.location.search);
+var caller=urlParams.get('caller')||'scanner';
+var parentOrigin=urlParams.get('origin')||'*';
+
+function sendResult(rawValue){
+  if(!scanning) return;
+  scanning=false;
+  clearInterval(scanTimer);
+
+  var id=String(rawValue||'').split('|')[0].trim().toUpperCase();
+  foundBadge.textContent='✓ '+id;
+  foundEl.classList.add('show');
+  setStatus('✅ Ditemukan: '+id,'ok');
+
+  // Kirim ke parent (opener atau parent frame)
+  var msg={type:'QR_RESULT',id:id,caller:caller};
+  if(window.opener){
+    window.opener.postMessage(msg,'*');
+  }
+  if(window.parent && window.parent!==window){
+    window.parent.postMessage(msg,'*');
+  }
+
+  setTimeout(function(){ stopCamera(); window.close(); },1200);
+}
+
+function closeScanner(){
+  stopCamera();
+  window.close();
+}
+
+function stopCamera(){
+  clearInterval(scanTimer);
+  if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; }
+}
+
+function setStatus(msg,cls){
+  statusEl.textContent=msg;
+  statusEl.className='status '+(cls||'');
+}
+
+function toggleTorch(){
+  if(!stream) return;
+  var track=stream.getVideoTracks()[0];
+  torchOn=!torchOn;
+  track.applyConstraints({advanced:[{torch:torchOn}]}).catch(function(){});
+  btnTorch.classList.toggle('on',torchOn);
+}
+
+function startNativeScan(){
+  setStatus('Scanning…','scanning');
+  loaderEl.classList.add('hidden');
+  scanTimer=setInterval(function(){
+    if(!scanning) return;
+    detector.detect(cam).then(function(barcodes){
+      if(barcodes.length>0) sendResult(barcodes[0].rawValue);
+    }).catch(function(){});
+  },200);
+}
+
+function startJsQrScan(){
+  setStatus('Scanning…','scanning');
+  loaderEl.classList.add('hidden');
+  scanTimer=setInterval(function(){
+    if(!scanning||cam.readyState<2) return;
+    cnv.width=cam.videoWidth; cnv.height=cam.videoHeight;
+    ctx.drawImage(cam,0,0,cnv.width,cnv.height);
+    var imageData=ctx.getImageData(0,0,cnv.width,cnv.height);
+    var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+    if(code) sendResult(code.data);
+  },250);
+}
+
+function loadJsQR(callback){
+  if(window.jsQR){callback();return;}
+  loaderMsg.textContent='Memuat library scanner…';
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+  s.onload=callback;
+  s.onerror=function(){
+    setStatus('Gagal memuat library. Cek koneksi.','err');
+    loaderMsg.textContent='Gagal memuat library.';
+  };
+  document.head.appendChild(s);
+}
+
+async function initCamera(){
+  setStatus('Membuka kamera…','scanning');
+  var constraints=[
+    {video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:720}}},
+    {video:{facingMode:'environment'}},
+    {video:true}
+  ];
+
+  for(var i=0;i<constraints.length;i++){
+    try{ stream=await navigator.mediaDevices.getUserMedia(constraints[i]); break; }
+    catch(err){
+      if(i===constraints.length-1){
+        loaderMsg.textContent='Kamera tidak dapat dibuka.';
+        setStatus('❌ '+(err.name==='NotAllowedError'
+          ?'Izin kamera ditolak. Buka Pengaturan browser → izinkan kamera.'
+          :'Kamera tidak tersedia: '+err.message),'err');
+        return;
+      }
+    }
+  }
+
+  cam.srcObject=stream; cam.play();
+
+  var track=stream.getVideoTracks()[0];
+  var caps=track.getCapabilities?track.getCapabilities():{};
+  if(caps.torch){ btnTorch.style.display=''; }
+
+  loaderEl.classList.add('hidden');
+
+  if('BarcodeDetector' in window){
+    try{
+      var formats=await BarcodeDetector.getSupportedFormats();
+      if(formats.includes('qr_code')){
+        detector=new BarcodeDetector({formats:['qr_code']});
+        startNativeScan(); return;
+      }
+    }catch(e){}
+  }
+  loadJsQR(startJsQrScan);
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    loaderMsg.textContent='Browser tidak mendukung kamera.';
+    setStatus('❌ Butuh HTTPS dan browser modern','err');
+    return;
+  }
+  initCamera();
+});
+
+window.addEventListener('beforeunload',stopCamera);
+</script>
+</body>
+</html>
