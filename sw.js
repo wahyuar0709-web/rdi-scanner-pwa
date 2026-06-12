@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v1';
+const CACHE = 'rdi-stok-v3';
 const ASSETS = [
   './',
   './index.html',
