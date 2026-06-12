@@ -1,12 +1,12 @@
 {
   "name": "Kartu Stok RDI",
   "short_name": "Kartu Stok",
-  "description": "Warehouse Management – PT Rayard Deli Indonesia",
+  "description": "Spare Part, Tools & Indirect Inventory – PT Rayard Deli Indonesia",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#1a3a7a",
+  "background_color": "#0e1623",
+  "theme_color": "#0e1623",
   "icons": [
     {
       "src": "icon-192.png",
