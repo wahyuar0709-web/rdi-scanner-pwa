@@ -7,14 +7,19 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Kartu Stok">
+<meta name="apple-mobile-web-app-title" content="Kartu Stok Pro">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>Kartu Stok v9.0 – PT Rayard Deli Indonesia</title>
+<title>Kartu Stok Pro v9.3 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
+  --font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;
   --bg:#0a1120;
   --bg2:#0f1a2e;
   --surface:#142032;
@@ -77,7 +82,7 @@
   --fs-40:40px;
 }
 
-body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:var(--fs-14);line-height:1.5}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:var(--fs-14);line-height:1.5}
 
 .topbar{background:linear-gradient(135deg,#003F88 0%,#1A56DB 100%);border-bottom:1px solid rgba(255,255,255,.08);color:var(--text);padding:0 16px;display:flex;align-items:center;height:56px;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.35)}
 .topbar-logo{width:34px;height:34px;background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.12));border-radius:var(--br-9);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(26,58,122,.5)}
@@ -152,7 +157,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .badge{display:inline-block;padding:2px 7px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
 .badge-bc{background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
 .badge-nonbc{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border)}
-.id-chip{font-family:'Courier New',monospace;font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.3px}
+.id-chip{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.3px}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
 .empty-state p{font-size:var(--fs-12)}
 
@@ -163,10 +168,10 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .scan-step{display:none}
 .scan-step.active{display:block}
 .id-input-wrap{display:flex;gap:8px}
-.id-input-wrap input{font-family:'Courier New',monospace;font-size:var(--fs-15);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber)}
+.id-input-wrap input{font-family:var(--font-mono);font-size:var(--fs-15);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber)}
 .item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
 .item-card-head{background:linear-gradient(135deg,var(--surface3),var(--surface2));border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:10px}
-.item-card-id{font-family:'Courier New',monospace;font-size:var(--fs-11);font-weight:900;letter-spacing:.6px;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-border);padding:3px 10px;border-radius:var(--br-20);flex-shrink:0}
+.item-card-id{font-family:var(--font-mono);font-size:var(--fs-11);font-weight:900;letter-spacing:.6px;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-border);padding:3px 10px;border-radius:var(--br-20);flex-shrink:0}
 .item-card-nama{font-size:var(--fs-14);font-weight:800;color:var(--text)}
 .item-card-spec{font-size:var(--fs-11);color:var(--text3);margin-top:2px}
 .item-card-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;min-width:0}
@@ -176,7 +181,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .saldo-box{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.04));border-top:1px solid rgba(34,197,94,.15);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
 .saldo-box::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--green),rgba(34,197,94,.4));border-radius:var(--br-4) 0 0 4px}
 .saldo-label{font-size:var(--fs-10);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
-.saldo-val{font-size:var(--fs-32);font-weight:900;letter-spacing:-1px;color:var(--green-text);font-family:'Courier New',monospace;text-shadow:0 0 20px rgba(74,222,128,.2)}
+.saldo-val{font-size:var(--fs-32);font-weight:900;letter-spacing:-1px;color:var(--green-text);font-family:var(--font-mono);text-shadow:0 0 20px rgba(74,222,128,.2)}
 .saldo-unit{font-size:var(--fs-12);color:var(--text3);margin-top:2px}
 .jenis-toggle{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border2);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;gap:1px;background:var(--border2)}
 .jenis-btn{padding:16px;text-align:center;cursor:pointer;font-size:var(--fs-14);font-weight:700;transition:all var(--transition);border:none;background:var(--surface2);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text3);min-height:58px;-webkit-tap-highlight-color:transparent;letter-spacing:.1px}
@@ -188,7 +193,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .qty-btn{width:54px;height:58px;border:none;background:var(--surface3);cursor:pointer;font-size:var(--fs-26);font-weight:300;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--transition);-webkit-tap-highlight-color:transparent}
 .qty-btn:hover{color:var(--amber);background:var(--amber-dim)}
 .qty-btn:active{background:var(--amber-dim);color:var(--amber);transform:scale(.92)}
-.qty-input{flex:1;border:none;border-left:1px solid var(--border2);border-right:1px solid var(--border2);text-align:center;font-size:var(--fs-28);font-weight:900;padding:0;height:58px;color:var(--text);background:var(--surface2);font-family:'Courier New',monospace;outline:none}
+.qty-input{flex:1;border:none;border-left:1px solid var(--border2);border-right:1px solid var(--border2);text-align:center;font-size:var(--fs-28);font-weight:900;padding:0;height:58px;color:var(--text);background:var(--surface2);font-family:var(--font-mono);outline:none}
 .result-card{border-radius:var(--rl);padding:24px;text-align:center;margin-bottom:14px;border:1px solid transparent}
 .result-card.ok{background:var(--green-dim);border-color:var(--green-border);box-shadow:var(--glow-green)}
 .result-card.err{background:var(--red-dim);border-color:var(--red-border)}
@@ -198,7 +203,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .result-icon svg{width:28px;height:28px}
 .result-title{font-size:var(--fs-16);font-weight:800;margin-bottom:4px;color:var(--text)}
 .result-sub{font-size:var(--fs-12);color:var(--text2)}
-.saldo-change{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0;font-size:var(--fs-18);font-weight:700;font-family:'Courier New',monospace}
+.saldo-change{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0;font-size:var(--fs-18);font-weight:700;font-family:var(--font-mono)}
 .saldo-before{color:var(--text3)}
 .saldo-after-masuk{color:var(--green-text)}
 .saldo-after-keluar{color:var(--red-text)}
@@ -207,7 +212,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .hist-step.active{display:block}
 .hist-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .hist-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:center}
-.hist-stat-val{font-size:var(--fs-22);font-weight:800;line-height:1;font-family:'Courier New',monospace}
+.hist-stat-val{font-size:var(--fs-22);font-weight:800;line-height:1;font-family:var(--font-mono)}
 .hist-stat-lbl{font-size:var(--fs-10);color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .hist-stat-val.green{color:var(--green-text)}
 .hist-stat-val.red{color:var(--red-text)}
@@ -220,7 +225,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .hist-table tr:hover td{background:var(--glass)}
 .badge-masuk{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border);padding:2px 8px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px}
 .badge-keluar{background:var(--red-dim);color:var(--red-text);border:1px solid var(--red-border);padding:2px 8px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px}
-.hist-saldo{font-family:'Courier New',monospace;font-size:var(--fs-11);color:var(--amber);font-weight:700}
+.hist-saldo{font-family:var(--font-mono);font-size:var(--fs-11);color:var(--amber);font-weight:700}
 .hist-ket{color:var(--text3);font-size:var(--fs-11);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ══ HISTORY: GROUPED BY DAY ══ */
@@ -263,19 +268,19 @@ tr:hover td{background:var(--glass);color:var(--text)}
 /* kolom jam */
 .hdr-time{
   font-size:var(--fs-11);color:var(--text3);white-space:nowrap;
-  font-family:'Courier New',monospace;
+  font-family:var(--font-mono);
   flex-shrink:0;width:38px;padding-top:2px;
 }
 /* kolom info: kode + nama + spec */
 .hdr-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.hdr-kode{font-family:'Courier New',monospace;font-size:var(--fs-10);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-kode{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-nama{font-size:var(--fs-12);font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-spec{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-ket-note{font-size:var(--fs-10);color:var(--text3);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* kolom kanan: badge qty + saldo */
 .hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
 .hdr-qty{font-size:var(--fs-13);font-weight:700;white-space:nowrap;text-align:right}
-.hdr-saldo{font-size:var(--fs-10);font-family:'Courier New',monospace;color:var(--amber);white-space:nowrap;text-align:right}
+.hdr-saldo{font-size:var(--fs-10);font-family:var(--font-mono);color:var(--amber);white-space:nowrap;text-align:right}
 /* legacy — masih dipakai renderHistDay (per item) */
 .hdr-ket{font-size:var(--fs-12);color:var(--text2);min-width:0;line-height:1.5;word-break:break-word}
 .hdr-admin{font-size:var(--fs-10);color:var(--text3)}
@@ -287,7 +292,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
   display:flex;align-items:center;justify-content:space-between;
   font-size:var(--fs-11);color:var(--text3);
 }
-.hist-day-summary-net{font-weight:700;font-family:'Courier New',monospace}
+.hist-day-summary-net{font-weight:700;font-family:var(--font-mono)}
 
 /* ══ HISTORY: FILTER BAR + PAGINATION ══ */
 .hist-filter-bar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
@@ -312,35 +317,37 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .item-detail-sheet.show{transform:translateY(0)}
 .item-detail-handle{width:36px;height:4px;background:var(--border3);border-radius:var(--br-2);margin:10px auto 0;flex-shrink:0}
 /* header strip warna */
-.item-detail-hero{padding:16px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden}
+.item-detail-hero{padding:12px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden;padding-left:18px}
 .item-detail-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
 .item-detail-hero.bc::before{background:linear-gradient(180deg,var(--blue),#1d4ed8)}
 .item-detail-hero.non-bc::before{background:linear-gradient(180deg,var(--amber),#d97706)}
-.item-detail-hero-top{display:flex;align-items:flex-start;gap:10px;padding-left:8px}
-.item-detail-id{font-family:'Courier New',monospace;font-size:var(--fs-11);font-weight:900;color:var(--amber);background:var(--amber-dim);padding:3px 9px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0}
-.item-detail-nama{font-size:var(--fs-16);font-weight:800;color:var(--text);line-height:1.3;flex:1}
-.item-detail-spec{font-size:var(--fs-12);color:var(--text3);margin-top:3px;padding-left:8px}
+.item-detail-id{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:900;color:var(--amber);background:var(--amber-dim);padding:2px 8px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.4px}
+.item-detail-nama{font-size:var(--fs-15);font-weight:800;color:var(--text);line-height:1.25;margin-top:5px}
+.item-detail-spec{font-size:var(--fs-12);color:var(--text2);margin-top:4px;line-height:1.3;font-weight:500;background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-6);padding:4px 9px;display:inline-block}
 /* stok besar di hero */
-.item-detail-stok-hero{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)}
-.item-detail-stok-big{font-size:var(--fs-40);font-weight:900;font-family:'Courier New',monospace;line-height:1;color:var(--text)}
+.item-detail-stok-hero{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)}
+.item-detail-stok-big{font-size:28px;font-weight:900;font-family:var(--font-mono);line-height:1;color:var(--text)}
 .item-detail-stok-big.alert{color:var(--red-text)}
-.item-detail-stok-meta{display:flex;flex-direction:column;gap:2px}
-.item-detail-stok-unit{font-size:var(--fs-12);color:var(--text3)}
-.item-detail-stok-badge{font-size:var(--fs-10);font-weight:700;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:2px 6px;align-self:flex-start}
+.item-detail-stok-meta{display:flex;flex-direction:column;gap:3px}
+.item-detail-stok-unit{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.item-detail-stok-badge{font-size:9px;font-weight:700;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:1px 6px;align-self:flex-start}
 /* grid info */
-.item-detail-body{padding:14px 18px;overflow-y:auto;flex:1}
-.item-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.item-detail-field{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
-.item-detail-field-lbl{font-size:var(--fs-9);color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.item-detail-field-val{font-size:var(--fs-13);font-weight:700;color:var(--text)}
-.item-detail-field-val.mono{font-family:'Courier New',monospace;color:var(--amber)}
+.item-detail-body{padding:10px 16px;overflow-y:auto;flex:1}
+.item-detail-section-lbl{font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.item-detail-body .item-detail-section-lbl:not(:first-child){margin-top:10px}
+.item-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.item-detail-field{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 9px}
+.item-detail-field.full{grid-column:1/-1}
+.item-detail-field-lbl{font-size:8.5px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.item-detail-field-val{font-size:12px;font-weight:700;color:var(--text)}
+.item-detail-field-val.mono{font-family:var(--font-mono);color:var(--amber)}
 /* min stok row */
-.item-detail-min-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:14px}
-.item-detail-min-lbl{font-size:var(--fs-11);color:var(--text3);font-weight:600;flex:1}
-.item-detail-min-input{width:80px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:var(--fs-14);text-align:center;background:var(--bg2);color:var(--text);font-family:'Courier New',monospace;font-weight:700}
+.item-detail-min-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:7px 12px}
+.item-detail-min-lbl{font-size:11px;color:var(--text2);font-weight:600;flex:1}
+.item-detail-min-input{width:70px;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;text-align:center;background:var(--bg2);color:var(--text);font-family:var(--font-mono);font-weight:700}
 /* action buttons */
-.item-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
-.item-detail-footer{padding:12px 18px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0}
+.item-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.item-detail-footer{padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
 .modal-overlay.show{display:flex;animation:overlayIn .22s ease forwards}
@@ -430,7 +437,7 @@ body.light .sort-chip.active{background:linear-gradient(135deg,#2563EB,#1D4ED8);
 .cetak-item-info{flex:1;min-width:0}
 .cetak-item-nama{font-size:var(--fs-13);font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cetak-item-sub{font-size:var(--fs-11);color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cetak-item-stok{font-family:'Courier New',monospace;font-size:var(--fs-15);font-weight:900;color:var(--text);text-align:right;flex-shrink:0}
+.cetak-item-stok{font-family:var(--font-mono);font-size:var(--fs-15);font-weight:900;color:var(--text);text-align:right;flex-shrink:0}
 
 /* ══ LIGHT THEME ══ */
 body.light{
@@ -514,7 +521,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .dash-card.red::after{background:radial-gradient(circle at right,var(--red),transparent)}
 .dash-card.navy::before{background:linear-gradient(180deg,var(--amber),transparent)}
 .dash-card.navy::after{background:radial-gradient(circle at right,var(--amber),transparent)}
-.dash-card-val{font-size:var(--fs-32);font-weight:900;line-height:1;margin-bottom:6px;font-family:'Courier New',monospace;letter-spacing:-1px}
+.dash-card-val{font-size:var(--fs-32);font-weight:900;line-height:1;margin-bottom:6px;font-family:var(--font-mono);letter-spacing:-1px}
 .dash-card-lbl{font-size:var(--fs-10);color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px}
 .dash-card-sub{font-size:var(--fs-10);color:var(--text3);margin-top:3px}
 .dash-card.blue .dash-card-val{color:var(--blue-text)}
@@ -692,7 +699,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .sheet-user{font-size:var(--fs-11);color:var(--text3)}
 
 /* ══ ITEM CARD v2 (redesign) ══ */
-.item-list-cards{display:none;flex-direction:column;gap:8px}
+.item-list-cards{display:none;flex-direction:column;gap:5px}
 .item-list-card{
   background:var(--surface);
   border:1px solid var(--border);
@@ -719,16 +726,16 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .ilc-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px}
 .ilc-head-left{flex:1;min-width:0}
 .ilc-nama{font-size:var(--fs-13);font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ilc-spec{font-size:var(--fs-11);color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ilc-spec{font-size:var(--fs-12);color:var(--text2);margin-top:3px;line-height:1.35;font-weight:500}
 .ilc-stok-box{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:4px}
-.ilc-stok-num{font-size:var(--fs-22);font-weight:900;font-family:'Courier New',monospace;color:var(--text);line-height:1}
+.ilc-stok-num{font-size:var(--fs-22);font-weight:900;font-family:var(--font-mono);color:var(--text);line-height:1}
 .ilc-stok-num.alert{color:var(--red-text)}
 .ilc-stok-unit{font-size:var(--fs-9);color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;text-align:right}
 .ilc-stok-low{font-size:var(--fs-9);font-weight:700;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:1px 4px;margin-top:3px;white-space:nowrap}
 
 /* baris 2: ID chip */
 .ilc-id-row{margin-bottom:8px}
-.ilc-id{display:inline-flex;align-items:center;gap:4px;font-family:'Courier New',monospace;font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border)}
+.ilc-id{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border)}
 
 /* baris 3: info chips (RAK + Vendor + Kategori) */
 .ilc-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
@@ -747,7 +754,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .rak-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
 .rak-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;transition:.15s}
 .rak-card:hover{border-color:var(--amber);transform:translateY(-1px)}
-.rak-card-name{font-family:'Courier New',monospace;font-weight:800;font-size:var(--fs-15);color:var(--text)}
+.rak-card-name{font-family:var(--font-mono);font-weight:800;font-size:var(--fs-15);color:var(--text)}
 .rak-card-count{font-size:var(--fs-11);color:var(--text3);margin-top:4px}
 .rak-card-low{display:inline-block;margin-left:4px;color:var(--red-text);font-weight:700}
 
@@ -809,7 +816,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 }
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover,.ac-item.ac-active{background:var(--amber-dim)}
-.ac-item-id{font-family:'Courier New',monospace;font-size:var(--fs-10);font-weight:700;color:var(--amber)}
+.ac-item-id{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber)}
 .ac-item-nama{font-size:var(--fs-13);font-weight:600;color:var(--text)}
 .ac-item-sub{font-size:var(--fs-10);color:var(--text3)}
 .ac-empty{padding:14px;font-size:var(--fs-12);color:var(--text3);text-align:center}
@@ -832,23 +839,23 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .btn-scan-toggle{display:flex;align-items:center;gap:8px;justify-content:center}
 
 /* ══ ITEM CARD v3 — compact + efficient ══ */
-.ilc2{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:border-color .12s,box-shadow .1s;margin-bottom:6px;-webkit-tap-highlight-color:transparent}
+.ilc2{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--br-6);overflow:hidden;cursor:pointer;transition:border-color .12s;-webkit-tap-highlight-color:transparent}
 .ilc2:active{transform:scale(.99)}
-.ilc2:hover{border-color:var(--amber-border);box-shadow:0 2px 10px rgba(245,166,35,.1)}
-.ilc2-strip{width:4px;flex-shrink:0;background:var(--border3)}
+.ilc2-strip{width:3px;flex-shrink:0;background:var(--border3)}
 .ilc2-strip.bc{background:linear-gradient(180deg,var(--blue),#1d4ed8)}
 .ilc2-strip.non-bc{background:linear-gradient(180deg,var(--amber),#d97706)}
-.ilc2-main{flex:1;padding:7px 10px 7px 10px;min-width:0}
-.ilc2-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
-.ilc2-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
-.ilc2-id{font-family:'Courier New',monospace;font-size:var(--fs-10);font-weight:900;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap}
+.ilc2-main{flex:1;padding:6px 9px;min-width:0;display:flex;align-items:center;gap:8px}
+.ilc2-info{flex:1;min-width:0}
+.ilc2-top{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+.ilc2-left{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
+.ilc2-id{font-family:var(--font-mono);font-size:9px;font-weight:800;color:var(--amber);background:var(--amber-dim);padding:1px 5px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0}
 .ilc2-id.noid{color:#92400e;background:#fef3c7;border-color:#f59e0b}
-.ilc2-rak{font-size:var(--fs-10);color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:2px 6px;border-radius:var(--br-4);white-space:nowrap}
-.ilc2-stok{font-size:var(--fs-22);font-weight:900;font-family:'Courier New',monospace;line-height:1;text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end}
-.ilc2-unit{font-size:var(--fs-9);color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:inherit;font-weight:700;margin-top:1px}
-.ilc2-low{font-size:var(--fs-9);font-weight:800;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:1px 5px;margin-top:2px;letter-spacing:.3px}
-.ilc2-nama{font-size:var(--fs-13);font-weight:700;color:var(--text);line-height:1.25;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ilc2-spec{font-size:var(--fs-11);color:var(--text3);margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ilc2-rak{font-size:9px;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:1px 5px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
+.ilc2-stok{font-size:16px;font-weight:900;font-family:var(--font-mono);line-height:1;text-align:right;flex-shrink:0;display:flex;align-items:baseline;gap:3px}
+.ilc2-unit{font-size:8.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-family:inherit;font-weight:700}
+.ilc2-low{font-size:8px;font-weight:800;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:0 4px;letter-spacing:.2px;margin-left:3px}
+.ilc2-nama{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ilc2-spec{font-size:10.5px;color:var(--text2);line-height:1.25;font-weight:500}
 .ilc2-footer{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding-top:5px;border-top:1px solid var(--border);overflow:hidden}
 .ilc2-meta{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;max-width:130px}
 .ilc2-cat{font-size:var(--fs-10);font-weight:700;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1px 6px;white-space:nowrap;flex-shrink:0}
@@ -884,6 +891,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 .u-mla{margin-left:auto}
 .u-flexfill{flex:1;margin-left:10px}
 </style>
+
 </head>
 <body>
 
@@ -973,6 +981,10 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         <span>Ganti Operator</span>
       </button>
+      <button class="more-menu-btn" onclick="exportExcel();closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export CSV</span>
+      </button>
     </div>
   </div>
   <div class="sheet-footer">
@@ -986,43 +998,58 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 <!-- ═══════════════════════════════════════════ -->
 <div class="page-section active" id="section-master">
 <div class="container">
+
+  <!-- ── HEADER PANEL ── -->
   <div class="panel">
-    <div class="panel-head">
-      <div>
-        <h2>Master Item</h2>
-        <p>Data otomatis tersinkron dari Google Sheets</p>
+    <div class="panel-head" style="flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#1a3a7a,#2e5fc7);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size:14px">Kartu Stok Pro · Master Item</h2>
+          <p>Sinkron otomatis dari Google Sheets · <span id="last-load" style="font-size:10px;color:var(--amber)">—</span></p>
+        </div>
       </div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <span id="last-load" style="font-size:11px;color:var(--text3);align-self:center"></span>
-        <button class="btn btn-primary btn-sm" id="btn-load" onclick="loadData()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-          Refresh
-        </button>
-      </div>
+      <button class="btn btn-primary btn-sm" id="btn-load" onclick="loadData()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Refresh
+      </button>
     </div>
-    <div class="panel-body">
-      <div id="warn-noid" class="sbar s-warn show" style="margin-top:0;margin-bottom:12px;display:none">
+
+    <!-- ── SEARCH & FILTER ZONE ── -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+      <!-- Baris 1: Search input full width -->
+      <div id="warn-noid" class="sbar s-warn" style="margin-top:0;margin-bottom:10px;display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Ada item tanpa ID. Jalankan <strong>migrateAddID()</strong> di GAS.
       </div>
-      <div class="toolbar">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="search-input" id="search-box" placeholder="Cari nama, ID, RAK… (typo OK)" oninput="filterTable()">
-        </div>
-        <div id="search-hint" class="sbar" style="display:none;margin-top:6px;width:100%"></div>
-        <div class="cat-filter" id="cat-filter-bar" style="margin-top:8px"></div>
-        <div class="sort-bar" id="inv-sort-bar" style="margin-top:6px;display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch">
+
+      <div class="search-wrap" style="width:100%;margin-bottom:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="search-box" style="width:100%;border-radius:10px;padding:12px 14px 12px 42px;font-size:14px" placeholder="🔍  Cari nama, ID, RAK, vendor, kategori… (typo OK)" oninput="filterTable()">
+      </div>
+
+      <!-- Search hint (inline, bukan floating) -->
+      <div id="search-hint" class="sbar" style="display:none;margin-bottom:8px"></div>
+
+      <!-- Baris 2: Filter kategori -->
+      <div class="cat-filter" id="cat-filter-bar" style="margin-bottom:8px"></div>
+
+      <!-- Baris 3: Sort chips + export -->
+      <div style="display:flex;align-items:center;gap:0;flex-wrap:nowrap">
+        <div style="display:flex;gap:5px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch">
           <span class="sort-chip" onclick="setSortField('nama')" data-field="nama" id="sc-nama">Nama</span>
           <span class="sort-chip" onclick="setSortField('qty')" data-field="qty" id="sc-qty">Stok</span>
           <span class="sort-chip" onclick="setSortField('rak')" data-field="rak" id="sc-rak">Rak</span>
           <span class="sort-chip" onclick="setSortField('kategori')" data-field="kategori" id="sc-kat">Kategori</span>
           <span class="sort-chip active" onclick="setSortField('_idx')" data-field="_idx" id="sc-idx">Terbaru ↓</span>
         </div>
-        <div class="toolbar-actions-row" style="display:none">
-          <div class="toolbar-right" id="sel-count" style="display:none">0 item dipilih</div>
-        </div>
       </div>
+    </div>
+
+    <!-- ── TABEL (desktop) & CARDS (mobile) ── -->
+    <div class="panel-body" style="padding:12px 14px">
       <div class="table-wrap">
         <table>
           <thead>
@@ -1047,11 +1074,12 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
           </tbody>
         </table>
       </div>
-      <!-- Mobile card list (muncul hanya di HP, gantikan tabel) -->
+      <!-- Mobile card list -->
       <div class="item-list-cards" id="card-list-body"></div>
       <div id="sbar-load" class="sbar" style="margin-top:12px"></div>
     </div>
   </div>
+
 </div>
 </div>
 
@@ -1666,10 +1694,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 <div class="item-detail-sheet" id="item-detail-sheet">
   <div class="item-detail-handle"></div>
   <div class="item-detail-hero" id="item-detail-hero">
-    <div class="item-detail-hero-top">
-      <div class="item-detail-id" id="idd-id">—</div>
-      <div class="item-detail-nama" id="idd-nama">—</div>
-    </div>
+    <div class="item-detail-id" id="idd-id">—</div>
+    <div class="item-detail-nama" id="idd-nama">—</div>
     <div class="item-detail-spec" id="idd-spec"></div>
     <div class="item-detail-stok-hero">
       <div class="item-detail-stok-big" id="idd-stok">0</div>
@@ -1680,38 +1706,37 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
   </div>
   <div class="item-detail-body">
+    <div class="item-detail-section-lbl">Informasi Item</div>
     <div class="item-detail-grid">
       <div class="item-detail-field">
-        <div class="item-detail-field-lbl">Rak / Lokasi</div>
+        <div class="item-detail-field-lbl">📦 Rak / Lokasi</div>
         <div class="item-detail-field-val" id="idd-rak">—</div>
       </div>
       <div class="item-detail-field">
-        <div class="item-detail-field-lbl">Kategori</div>
+        <div class="item-detail-field-lbl">🏷 Kategori</div>
         <div class="item-detail-field-val" id="idd-kategori">—</div>
       </div>
       <div class="item-detail-field">
-        <div class="item-detail-field-lbl">Vendor</div>
+        <div class="item-detail-field-lbl">🏭 Vendor</div>
         <div class="item-detail-field-val" id="idd-vendor">—</div>
       </div>
       <div class="item-detail-field">
-        <div class="item-detail-field-lbl">User / Dept</div>
+        <div class="item-detail-field-lbl">👤 User / Dept</div>
         <div class="item-detail-field-val" id="idd-user">—</div>
       </div>
-      <div class="item-detail-field">
-        <div class="item-detail-field-lbl">BC / Non BC</div>
+      <div class="item-detail-field full">
+        <div class="item-detail-field-lbl">📋 Status BC</div>
         <div class="item-detail-field-val" id="idd-bc">—</div>
       </div>
-      <div class="item-detail-field">
-        <div class="item-detail-field-lbl">ID Item</div>
-        <div class="item-detail-field-val mono" id="idd-id2">—</div>
-      </div>
     </div>
-    <!-- Min stok -->
+
+    <div class="item-detail-section-lbl">Pengaturan Stok</div>
     <div class="item-detail-min-row">
       <div class="item-detail-min-lbl">⚠ Batas Min Stok</div>
       <input type="number" class="item-detail-min-input" id="idd-min-input" min="0" value="0" onchange="saveMinStockFromDetail()">
     </div>
-    <!-- Aksi -->
+  </div>
+  <div class="item-detail-footer">
     <div class="item-detail-actions">
       <button class="btn btn-primary btn-lg" onclick="goTransaksiFromDetail()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 3 21 7 17 11"/><path d="M3 17v-6a4 4 0 014-4h14"/></svg>
@@ -1787,8 +1812,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v9.0';
-var APP_BUILD_DATE = '2026-06-25';
+var APP_VERSION = 'v9.3.1';
+var APP_BUILD_DATE = '2026-06-30';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || '';
 
 // ══════════════════════════════════════════════════════
@@ -2044,7 +2069,7 @@ function loadData(){
       allRows=result.rows.map(function(r,i){ r._idx=i; return r; });
       filteredRows=allRows.slice(); selectedIds=new Set();
       renderTable(filteredRows); updateCount(); renderCatFilter();
-      document.getElementById('last-load').textContent='Dimuat: '+new Date().toLocaleTimeString('id-ID');
+      document.getElementById('last-load').textContent='Dimuat '+new Date().toLocaleTimeString('id-ID')+' · '+allRows.length+' item';
       var noId=allRows.filter(function(r){ return !r.id||r.id.trim()===''; });
       document.getElementById('warn-noid').style.display=(noId.length>0||!result.hasIDCol)?'flex':'none';
       showStatus('sbar-load','s-ok',IC.ok+' Berhasil memuat <strong>'+allRows.length+' item</strong>');
@@ -2204,16 +2229,17 @@ function fuzzyMatch(r, q){
     {v: r.nama||'',    w: 3},
     {v: r.spec||'',    w: 2},
     {v: r.rak||'',     w: 2},
-    {v: r.vendor||'',  w: 1},
+    {v: r.vendor||'',  w: 1.5},
     {v: r.po||'',      w: 1},
-    {v: r.kategori||'',w: 1}
+    {v: r.kategori||'',w: 1.5},
+    {v: r.user||'',    w: 1}
   ];
   var best = 0;
   fields.forEach(function(f){
     var s = fuzzyScore(f.v, q) * f.w;
     if(s > best) best = s;
   });
-  return {match: best > 0, score: best};
+  return {match: best >= 18, score: best};
 }
 
 function renderCatFilter(){
@@ -2355,7 +2381,7 @@ function _applySort(){
   });
 }
 function _doFilter(){
-  var q = (document.getElementById('search-box').value||'').trim();
+  var q = (document.getElementById('search-box').value||'').trim().toLowerCase();
   var catFilter = _activeCat || '';
 
   if(!q && !catFilter){
@@ -2366,18 +2392,14 @@ function _doFilter(){
     return;
   }
 
-  var scored = [];
-  allRows.forEach(function(r){
-    // filter kategori tetap exact
-    if(catFilter && (r.kategori||'').trim() !== catFilter) return;
-    if(!q){ scored.push({r:r, score:0}); return; }
-    var res = fuzzyMatch(r, q);
-    if(res.match) scored.push({r:r, score:res.score});
+  filteredRows = allRows.filter(function(r){
+    if(catFilter && (r.kategori||'').trim() !== catFilter) return false;
+    if(!q) return true;
+    var hay = [r.id,r.nama,r.spec,r.rak,r.vendor,r.kategori,r.bc,r.user]
+      .map(function(v){ return (v||'').toString().toLowerCase(); })
+      .join(' | ');
+    return hay.indexOf(q) !== -1;
   });
-
-  // Sort by score desc
-  scored.sort(function(a,b){ return b.score - a.score; });
-  filteredRows = scored.map(function(x){ return x.r; });
   _applySort();
   renderTable(filteredRows); updateCheckAll();
   _updateSearchHint(q, filteredRows.length, allRows.length);
@@ -2386,19 +2408,19 @@ function _doFilter(){
 function _updateSearchHint(q, found, total){
   var el = document.getElementById('search-hint');
   if(!el) return;
-  if(!q){ el.style.display='none'; return; }
+  if(!q){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display = 'flex';
   if(found === 0){
     el.className = 'sbar show s-warn';
-    el.innerHTML = '⚠ Tidak ditemukan untuk "<b>'+xe(q)+'</b>" — coba kata lain';
+    el.innerHTML = '⚠ Tidak ditemukan untuk "<b>'+xe(q)+'</b>" — coba kata lain atau periksa ejaan';
   } else {
     el.className = 'sbar show s-info';
-    el.innerHTML = '🔍 Ditemukan <b>'+found+'</b> dari '+total+' item untuk "<b>'+xe(q)+'</b>"';
+    el.innerHTML = '🔍 <b>'+found+'</b> dari '+total+' item untuk "<b>'+xe(q)+'</b>"';
   }
 }
 function _clearSearchHint(){
   var el = document.getElementById('search-hint');
-  if(el) el.style.display='none';
+  if(el){ el.style.display='none'; el.innerHTML=''; }
 }
 
 // ══════════════════════════════════════════════════════
@@ -3541,21 +3563,20 @@ function renderCardList(rows){
     return '<div class="ilc2" onclick="openItemDetail('+r._idx+')">'
       +'<div class="ilc2-strip '+stripCls+'"></div>'
       +'<div class="ilc2-main">'
-        +'<div class="ilc2-top">'
-          +'<div class="ilc2-left">'
+        +'<div class="ilc2-info">'
+          +'<div class="ilc2-top">'
             +(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
-            +(r.rak?'<span class="ilc2-rak">📦 '+xe(r.rak)+'</span>':'')
+            +(r.rak?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'')
           +'</div>'
-          +'<div class="ilc2-stok" style="'+stokColor+'">'
-            +xe(r.qty||0)
-            +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
-            +(isAlert?'<div class="ilc2-low">LOW</div>':'')
-            +(isZero?'<div class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</div>':'')
-          +'</div>'
+          +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
+          +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
         +'</div>'
-        +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
-        +(r.spec||r.vendor?'<div class="ilc2-spec">'+(r.spec?xe(r.spec):'')+(r.spec&&r.vendor?' · ':'')+(r.vendor?xe(r.vendor):'')+'</div>':'')
-
+        +'<div class="ilc2-stok" style="'+stokColor+'">'
+          +xe(r.qty||0)
+          +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
+          +(isAlert?'<span class="ilc2-low">LOW</span>':'')
+          +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
+        +'</div>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -3577,7 +3598,6 @@ function openItemDetail(idx){
   var heroCls = isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';
 
   document.getElementById('idd-id').textContent = r.id||'—';
-  document.getElementById('idd-id2').textContent = r.id||'—';
   document.getElementById('idd-nama').textContent = r.nama||'—';
   document.getElementById('idd-spec').textContent = r.spec||'';
   document.getElementById('idd-stok').textContent = saldo;
