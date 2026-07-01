@@ -7,13 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Kartu Stok Pro">
+<meta name="apple-mobile-web-app-title" content="Kartu Stok Pro X">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>Kartu Stok Pro v9.3 – PT Rayard Deli Indonesia</title>
+<title>Kartu Stok Pro X v10.0 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -420,13 +420,34 @@ tr:hover td{background:var(--glass);color:var(--text)}
   .hist-table{min-width:380px;font-size:var(--fs-11)}
   .hist-table th,.hist-table td{padding:7px 7px}
 }
-/* ══ SORT BAR ══ */
-.sort-bar{padding-bottom:2px}
-.sort-chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:var(--br-999);font-size:var(--fs-11);font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);white-space:nowrap;user-select:none;transition:all var(--transition);-webkit-tap-highlight-color:transparent;letter-spacing:.2px}
-.sort-chip:hover{border-color:var(--blue-border);color:var(--blue-text)}
-.sort-chip.active{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border-color:transparent;box-shadow:0 2px 6px rgba(37,99,235,.35)}
-body.light .sort-chip{background:#F0F4FA;border-color:rgba(0,0,0,.12)}
-body.light .sort-chip.active{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border-color:transparent}
+/* ══ FILTER & SORT TOOLBAR (professional) ══ */
+.ftoolbar{display:flex;gap:8px}
+.ftbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;font-size:var(--fs-12);font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);white-space:nowrap;user-select:none;transition:all var(--transition);-webkit-tap-highlight-color:transparent;flex:1;justify-content:center}
+.ftbtn svg{width:15px;height:15px;flex:none}
+.ftbtn:hover{border-color:var(--blue-border);color:var(--blue-text)}
+.ftbtn.has-active{border-color:var(--blue-border);color:var(--blue-text);background:var(--blue-dim)}
+.ftbadge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#2563EB;color:#fff;font-size:10px;font-weight:800;line-height:1}
+.active-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.active-chips .ac-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:var(--fs-11);font-weight:600;background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
+.active-chips .ac-tag b{cursor:pointer;opacity:.75;font-weight:800}
+.active-chips .ac-tag b:hover{opacity:1}
+
+/* Quick date-range chips (di dalam sheet Filter) */
+.quick-range{display:flex;gap:6px;flex-wrap:wrap}
+.qr-chip{padding:6px 13px;border-radius:999px;font-size:var(--fs-11);font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);user-select:none;transition:all var(--transition);-webkit-tap-highlight-color:transparent}
+.qr-chip:hover{border-color:var(--blue-border);color:var(--blue-text)}
+.qr-chip.active{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border-color:transparent;box-shadow:0 2px 6px rgba(37,99,235,.35)}
+body.light .qr-chip{background:#F0F4FA;border-color:rgba(0,0,0,.12)}
+
+/* Sort sheet: list radio-style */
+.sort-list{display:flex;flex-direction:column;gap:2px}
+.sort-row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-radius:8px;cursor:pointer;font-size:var(--fs-13);font-weight:600;color:var(--text2);user-select:none;-webkit-tap-highlight-color:transparent}
+.sort-row:hover{background:var(--surface2)}
+.sort-row.active{color:var(--blue-text);font-weight:800}
+.sort-row .sr-check{width:18px;height:18px;flex:none;opacity:0;color:#2563EB}
+.sort-row.active .sr-check{opacity:1}
+.sort-group-label{font-size:var(--fs-10);font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin:12px 4px 4px;opacity:.7}
+.sort-group-label:first-child{margin-top:0}
 
 /* ══ CETAK ITEM LIST ══ */
 .cetak-item-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
@@ -909,7 +930,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v8.7</span>
+  <span class="topbar-ver" id="topbar-version-label">v10.0.0</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1007,7 +1028,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </div>
         <div>
-          <h2 style="font-size:14px">Kartu Stok Pro · Master Item</h2>
+          <h2 style="font-size:14px">Kartu Stok Pro X · Master Item</h2>
           <p>Sinkron otomatis dari Google Sheets · <span id="last-load" style="font-size:10px;color:var(--amber)">—</span></p>
         </div>
       </div>
@@ -1033,30 +1054,99 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       <!-- Search hint (inline, bukan floating) -->
       <div id="search-hint" class="sbar" style="display:none;margin-bottom:8px"></div>
 
-      <!-- Baris 2: Filter kategori -->
-      <div class="cat-filter" id="cat-filter-bar" style="margin-bottom:8px"></div>
-
-      <!-- Baris 2b: Filter tanggal kedatangan -->
-      <div class="hist-filter-bar" style="margin-bottom:8px">
-        <div class="hist-filter-field">
-          <label class="field-label">Kedatangan dari</label>
-          <input type="date" class="sel" id="flt-tgl-dari" onchange="filterTable()">
-        </div>
-        <div class="hist-filter-field">
-          <label class="field-label">Kedatangan s/d</label>
-          <input type="date" class="sel" id="flt-tgl-sampai" onchange="filterTable()">
-        </div>
-      </div>
-      <div class="hist-filter-actions" style="margin-bottom:8px">
-        <button class="btn btn-sm" onclick="resetTglFilter()">✕ Reset Filter Tanggal</button>
+      <!-- Baris 2: Toolbar Filter + Sort -->
+      <div class="ftoolbar">
+        <button type="button" class="ftbtn" id="btn-open-filter" onclick="openFilterSheet()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filter
+          <span class="ftbadge" id="filter-badge" style="display:none">0</span>
+        </button>
+        <button type="button" class="ftbtn" id="btn-open-sort" onclick="openSortSheet()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="14" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/><polyline points="17 8 20 5 20 19"/></svg>
+          <span id="sort-btn-label">Terbaru</span>
+        </button>
       </div>
 
-      <!-- Baris 3: Sort chips + export -->
-      <div style="display:flex;align-items:center;gap:0;flex-wrap:nowrap">
-        <div style="display:flex;gap:5px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch">
-          <span class="sort-chip" onclick="setSortField('rak')" data-field="rak" id="sc-rak">Rak</span>
-          <span class="sort-chip" onclick="setSortField('kategori')" data-field="kategori" id="sc-kat">Kategori</span>
-          <span class="sort-chip active" onclick="setSortField('_idx')" data-field="_idx" id="sc-idx">Terbaru ↓</span>
+      <!-- Ringkasan filter aktif -->
+      <div class="active-chips" id="active-filter-chips" style="display:none"></div>
+    </div>
+
+    <!-- SHEET: FILTER -->
+    <div class="modal-overlay" id="modal-filter">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>🔎 Filter Item</h3>
+          <button class="btn btn-sm" onclick="closeFilterSheet()" aria-label="Tutup filter">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field-group">
+            <label class="field-label">Kategori</label>
+            <div class="cat-filter" id="cat-filter-bar"></div>
+          </div>
+          <div class="field-group" style="margin-top:16px">
+            <label class="field-label">Tanggal Kedatangan (Received Date)</label>
+            <div class="quick-range" id="quick-range-bar">
+              <span class="qr-chip" data-range="0" onclick="setQuickRange(0)">Hari Ini</span>
+              <span class="qr-chip" data-range="7" onclick="setQuickRange(7)">7 Hari</span>
+              <span class="qr-chip" data-range="30" onclick="setQuickRange(30)">30 Hari</span>
+              <span class="qr-chip active" data-range="all" onclick="setQuickRange('all')">Semua</span>
+            </div>
+            <div class="hist-filter-bar" style="margin-top:10px">
+              <div class="hist-filter-field">
+                <label class="field-label">Dari</label>
+                <input type="date" class="sel" id="flt-tgl-dari" onchange="onCustomDateChange()">
+              </div>
+              <div class="hist-filter-field">
+                <label class="field-label">Sampai</label>
+                <input type="date" class="sel" id="flt-tgl-sampai" onchange="onCustomDateChange()">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" onclick="resetAllFilters()">Reset</button>
+          <button class="btn btn-primary" id="btn-apply-filter" onclick="closeFilterSheet()">Tampilkan Item</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEET: SORT -->
+    <div class="modal-overlay" id="modal-sort">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>↕ Urutkan</h3>
+          <button class="btn btn-sm" onclick="closeSortSheet()" aria-label="Tutup urutkan">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="sort-list" id="sort-list">
+            <div class="sort-group-label">Kedatangan</div>
+            <div class="sort-row" data-field="_idx" data-dir="-1" onclick="applySortOption('_idx',-1,'Terbaru')">
+              <span>Terbaru dulu</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sort-row" data-field="_idx" data-dir="1" onclick="applySortOption('_idx',1,'Terlama')">
+              <span>Terlama dulu</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sort-group-label">Rak</div>
+            <div class="sort-row" data-field="rak" data-dir="1" onclick="applySortOption('rak',1,'Rak A-Z')">
+              <span>Rak (A → Z)</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sort-row" data-field="rak" data-dir="-1" onclick="applySortOption('rak',-1,'Rak Z-A')">
+              <span>Rak (Z → A)</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sort-group-label">Kategori</div>
+            <div class="sort-row" data-field="kategori" data-dir="1" onclick="applySortOption('kategori',1,'Kategori A-Z')">
+              <span>Kategori (A → Z)</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sort-row" data-field="kategori" data-dir="-1" onclick="applySortOption('kategori',-1,'Kategori Z-A')">
+              <span>Kategori (Z → A)</span>
+              <svg class="sr-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1825,8 +1915,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v9.3.4';
-var APP_BUILD_DATE = '2026-06-30';
+var APP_VERSION = 'v10.0.0';
+var APP_BUILD_DATE = '2026-07-01';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -1854,26 +1944,89 @@ var filteredRows = [];       // hasil filter/search
 var selectedIds = new Set(); // idx row yang dipilih untuk cetak
 
 var _activeCat = '';
-var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (berdasarkan tglMasuk/kedatangan)
-function setSortField(f){
-  if(_sortField===f){ _sortDir*=-1; } else { _sortField=f; _sortDir=1; }
-  document.querySelectorAll('.sort-chip').forEach(function(el){
-    var isActive=el.dataset.field===_sortField;
-    el.classList.toggle('active',isActive);
-    if(isActive){
-      var arrow=_sortDir===1?' ↑':' ↓';
-      el.textContent=el.dataset.field.charAt(0).toUpperCase()+el.dataset.field.slice(1)+arrow;
-      if(f==='rak') el.textContent='Rak'+arrow;
-      if(f==='kategori') el.textContent='Kategori'+arrow;
-      if(f==='_idx') el.textContent=(_sortDir===-1?'Terbaru ↓':'Terlama ↑');
-    } else {
-      var labels={rak:'Rak',kategori:'Kategori','_idx':'Terbaru'};
-      el.textContent=labels[el.dataset.field]||el.dataset.field;
-    }
+var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (berdasarkan Received Date)
+
+// ══════════════════════════════════════════════════════
+// SHEET: SORT
+// ══════════════════════════════════════════════════════
+function openSortSheet(){
+  document.querySelectorAll('#sort-list .sort-row').forEach(function(el){
+    var active = el.dataset.field===_sortField && +el.dataset.dir===_sortDir;
+    el.classList.toggle('active', active);
+  });
+  document.getElementById('modal-sort').classList.add('show');
+}
+function closeSortSheet(){ document.getElementById('modal-sort').classList.remove('show'); }
+function applySortOption(field, dir, label){
+  _sortField = field; _sortDir = dir;
+  document.getElementById('sort-btn-label').textContent = label;
+  filterTable();
+  closeSortSheet();
+}
+
+// ══════════════════════════════════════════════════════
+// SHEET: FILTER (kategori + tanggal kedatangan/Received Date)
+// ══════════════════════════════════════════════════════
+function openFilterSheet(){
+  renderCatFilter();
+  document.getElementById('modal-filter').classList.add('show');
+}
+function closeFilterSheet(){ document.getElementById('modal-filter').classList.remove('show'); }
+
+function setQuickRange(days){
+  var dariEl=document.getElementById('flt-tgl-dari'), sampaiEl=document.getElementById('flt-tgl-sampai');
+  if(days==='all'){
+    dariEl.value=''; sampaiEl.value='';
+  } else {
+    var today=new Date(); var to=new Date(today);
+    var from=new Date(today); from.setDate(from.getDate()-(days-1<0?0:days-1));
+    sampaiEl.value=_toDateInputVal(to);
+    dariEl.value=_toDateInputVal(from);
+  }
+  document.querySelectorAll('.qr-chip').forEach(function(el){
+    el.classList.toggle('active', el.dataset.range==String(days));
   });
   filterTable();
 }
-// Parse tanggal kedatangan (field 'date' dari GAS = kolom Received Date, format dd/MM/yyyy).
+function onCustomDateChange(){
+  document.querySelectorAll('.qr-chip').forEach(function(el){ el.classList.remove('active'); });
+  filterTable();
+}
+function _toDateInputVal(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function resetAllFilters(){
+  _activeCat='';
+  document.getElementById('flt-tgl-dari').value='';
+  document.getElementById('flt-tgl-sampai').value='';
+  document.querySelectorAll('.qr-chip').forEach(function(el){ el.classList.toggle('active', el.dataset.range==='all'); });
+  renderCatFilter();
+  filterTable();
+}
+// Update badge jumlah filter aktif + ringkasan chip + label tombol "Tampilkan Item"
+function _updateFilterUI(){
+  var tglDari=document.getElementById('flt-tgl-dari').value;
+  var tglSampai=document.getElementById('flt-tgl-sampai').value;
+  var activeCount=(_activeCat?1:0)+((tglDari||tglSampai)?1:0);
+
+  var badge=document.getElementById('filter-badge');
+  var ftBtn=document.getElementById('btn-open-filter');
+  if(activeCount>0){ badge.textContent=activeCount; badge.style.display='inline-flex'; ftBtn.classList.add('has-active'); }
+  else { badge.style.display='none'; ftBtn.classList.remove('has-active'); }
+
+  var chipsWrap=document.getElementById('active-filter-chips');
+  var chips=[];
+  if(_activeCat) chips.push('<span class="ac-tag">'+xe(_activeCat)+' <b onclick="setCatFilter(\'\')">✕</b></span>');
+  if(tglDari||tglSampai) chips.push('<span class="ac-tag">📅 '+(tglDari?_ddmmyyyy(tglDari):'…')+' – '+(tglSampai?_ddmmyyyy(tglSampai):'…')+' <b onclick="resetAllFilters()">✕</b></span>');
+  chipsWrap.innerHTML=chips.join('');
+  chipsWrap.style.display=chips.length?'flex':'none';
+
+  var applyBtn=document.getElementById('btn-apply-filter');
+  if(applyBtn) applyBtn.textContent='Tampilkan '+filteredRows.length+' Item';
+}
+function _ddmmyyyy(iso){ var p=iso.split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):iso; }
+
+// Parse tanggal kedatangan (field 'date' dari GAS = kolom Master_Item "Received Date", format dd/MM/yyyy).
 // Fallback ke nama field lain siapa tahu backend berubah, lalu fallback ke 0 (dianggap paling lama).
 function _tglMasukTs(r){
   var raw = r.date || r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
@@ -1888,11 +2041,6 @@ function _tglMasukTs(r){
   var t = Date.parse(raw);
   if(!isNaN(t)) return t;
   return 0;
-}
-function resetTglFilter(){
-  document.getElementById('flt-tgl-dari').value='';
-  document.getElementById('flt-tgl-sampai').value='';
-  filterTable();
 }
 var currentItem=null, currentJenis='MASUK';
 var scanMode='transaksi'; // 'transaksi' atau 'cekstok'
@@ -2432,6 +2580,7 @@ function _doFilter(){
     _applySort();
     renderTable(filteredRows); updateCheckAll();
     _clearSearchHint();
+    _updateFilterUI();
     return;
   }
 
@@ -2452,6 +2601,7 @@ function _doFilter(){
   _applySort();
   renderTable(filteredRows); updateCheckAll();
   _updateSearchHint(q, filteredRows.length, allRows.length);
+  _updateFilterUI();
 }
 
 function _updateSearchHint(q, found, total){
