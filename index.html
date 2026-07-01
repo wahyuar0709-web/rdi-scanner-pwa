@@ -1036,11 +1036,24 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       <!-- Baris 2: Filter kategori -->
       <div class="cat-filter" id="cat-filter-bar" style="margin-bottom:8px"></div>
 
+      <!-- Baris 2b: Filter tanggal kedatangan -->
+      <div class="hist-filter-bar" style="margin-bottom:8px">
+        <div class="hist-filter-field">
+          <label class="field-label">Kedatangan dari</label>
+          <input type="date" class="sel" id="flt-tgl-dari" onchange="filterTable()">
+        </div>
+        <div class="hist-filter-field">
+          <label class="field-label">Kedatangan s/d</label>
+          <input type="date" class="sel" id="flt-tgl-sampai" onchange="filterTable()">
+        </div>
+      </div>
+      <div class="hist-filter-actions" style="margin-bottom:8px">
+        <button class="btn btn-sm" onclick="resetTglFilter()">✕ Reset Filter Tanggal</button>
+      </div>
+
       <!-- Baris 3: Sort chips + export -->
       <div style="display:flex;align-items:center;gap:0;flex-wrap:nowrap">
         <div style="display:flex;gap:5px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch">
-          <span class="sort-chip" onclick="setSortField('nama')" data-field="nama" id="sc-nama">Nama</span>
-          <span class="sort-chip" onclick="setSortField('qty')" data-field="qty" id="sc-qty">Stok</span>
           <span class="sort-chip" onclick="setSortField('rak')" data-field="rak" id="sc-rak">Rak</span>
           <span class="sort-chip" onclick="setSortField('kategori')" data-field="kategori" id="sc-kat">Kategori</span>
           <span class="sort-chip active" onclick="setSortField('_idx')" data-field="_idx" id="sc-idx">Terbaru ↓</span>
@@ -1815,7 +1828,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 var APP_VERSION = 'v9.3.4';
 var APP_BUILD_DATE = '2026-06-30';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
-var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwA29kWpAUCPy9tGrtL_Nsr1lVef6JRCIkyvZ_i5LBcSdmIXu5t_zW1jKSyLcsiJNEWZQ/exec';
+var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
 
 // ══════════════════════════════════════════════════════
@@ -1841,7 +1854,7 @@ var filteredRows = [];       // hasil filter/search
 var selectedIds = new Set(); // idx row yang dipilih untuk cetak
 
 var _activeCat = '';
-var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (idx desc)
+var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (berdasarkan tglMasuk/kedatangan)
 function setSortField(f){
   if(_sortField===f){ _sortDir*=-1; } else { _sortField=f; _sortDir=1; }
   document.querySelectorAll('.sort-chip').forEach(function(el){
@@ -1850,16 +1863,31 @@ function setSortField(f){
     if(isActive){
       var arrow=_sortDir===1?' ↑':' ↓';
       el.textContent=el.dataset.field.charAt(0).toUpperCase()+el.dataset.field.slice(1)+arrow;
-      if(f==='nama') el.textContent='Nama'+arrow;
-      if(f==='qty') el.textContent='Stok'+arrow;
       if(f==='rak') el.textContent='Rak'+arrow;
       if(f==='kategori') el.textContent='Kategori'+arrow;
       if(f==='_idx') el.textContent=(_sortDir===-1?'Terbaru ↓':'Terlama ↑');
     } else {
-      var labels={nama:'Nama',qty:'Stok',rak:'Rak',kategori:'Kategori','_idx':'Terbaru'};
+      var labels={rak:'Rak',kategori:'Kategori','_idx':'Terbaru'};
       el.textContent=labels[el.dataset.field]||el.dataset.field;
     }
   });
+  filterTable();
+}
+// Parse tanggal kedatangan dari berbagai kemungkinan format field/format string,
+// fallback ke 0 (dianggap paling lama) kalau tidak ada/tidak valid.
+function _tglMasukTs(r){
+  var raw = r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
+  if(!raw) return 0;
+  var t = Date.parse(raw);
+  if(!isNaN(t)) return t;
+  // fallback format DD/MM/YYYY
+  var m = String(raw).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){ var d=new Date(+m[3], +m[2]-1, +m[1]); if(!isNaN(d.getTime())) return d.getTime(); }
+  return 0;
+}
+function resetTglFilter(){
+  document.getElementById('flt-tgl-dari').value='';
+  document.getElementById('flt-tgl-sampai').value='';
   filterTable();
 }
 var currentItem=null, currentJenis='MASUK';
@@ -2376,17 +2404,26 @@ function acKey(e, ctx){
 
 function _applySort(){
   filteredRows.sort(function(a,b){
+    if(_sortField==='_idx'){
+      // Terbaru = berdasarkan tanggal kedatangan asli, bukan urutan baris sheet
+      var ats=_tglMasukTs(a), bts=_tglMasukTs(b);
+      if(ats!==bts) return _sortDir*(ats-bts);
+      return _sortDir*((a._idx||0)-(b._idx||0)); // fallback kalau tanggal sama/kosong
+    }
     var av=a[_sortField]||'';
     var bv=b[_sortField]||'';
-    if(_sortField==='qty'||_sortField==='_idx'){ return (_sortDir)*(parseInt(av||0)-parseInt(bv||0)); }
     return _sortDir*String(av).localeCompare(String(bv),'id');
   });
 }
 function _doFilter(){
   var q = (document.getElementById('search-box').value||'').trim().toLowerCase();
   var catFilter = _activeCat || '';
+  var tglDariEl = document.getElementById('flt-tgl-dari');
+  var tglSampaiEl = document.getElementById('flt-tgl-sampai');
+  var tglDari = tglDariEl && tglDariEl.value ? new Date(tglDariEl.value+'T00:00:00').getTime() : null;
+  var tglSampai = tglSampaiEl && tglSampaiEl.value ? new Date(tglSampaiEl.value+'T23:59:59').getTime() : null;
 
-  if(!q && !catFilter){
+  if(!q && !catFilter && tglDari===null && tglSampai===null){
     filteredRows = allRows.slice();
     _applySort();
     renderTable(filteredRows); updateCheckAll();
@@ -2396,6 +2433,12 @@ function _doFilter(){
 
   filteredRows = allRows.filter(function(r){
     if(catFilter && (r.kategori||'').trim() !== catFilter) return false;
+    if(tglDari!==null || tglSampai!==null){
+      var ts=_tglMasukTs(r);
+      if(!ts) return false;
+      if(tglDari!==null && ts<tglDari) return false;
+      if(tglSampai!==null && ts>tglSampai) return false;
+    }
     if(!q) return true;
     var hay = [r.id,r.nama,r.spec,r.rak,r.vendor,r.kategori,r.bc,r.user]
       .map(function(v){ return (v||'').toString().toLowerCase(); })
