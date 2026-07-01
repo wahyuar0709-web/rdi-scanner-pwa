@@ -1873,16 +1873,20 @@ function setSortField(f){
   });
   filterTable();
 }
-// Parse tanggal kedatangan dari berbagai kemungkinan format field/format string,
-// fallback ke 0 (dianggap paling lama) kalau tidak ada/tidak valid.
+// Parse tanggal kedatangan (field 'date' dari GAS = kolom Received Date, format dd/MM/yyyy).
+// Fallback ke nama field lain siapa tahu backend berubah, lalu fallback ke 0 (dianggap paling lama).
 function _tglMasukTs(r){
-  var raw = r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
+  var raw = r.date || r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
   if(!raw) return 0;
+  // format utama dari GAS: dd/MM/yyyy — cek ini duluan supaya tidak salah tafsir jadi MM/DD/YYYY
+  var m = String(raw).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    var d = new Date(+m[3], +m[2]-1, +m[1]);
+    if(!isNaN(d.getTime())) return d.getTime();
+  }
+  // fallback: format ISO / lainnya yang bisa dibaca Date.parse
   var t = Date.parse(raw);
   if(!isNaN(t)) return t;
-  // fallback format DD/MM/YYYY
-  var m = String(raw).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if(m){ var d=new Date(+m[3], +m[2]-1, +m[1]); if(!isNaN(d.getTime())) return d.getTime(); }
   return 0;
 }
 function resetTglFilter(){
