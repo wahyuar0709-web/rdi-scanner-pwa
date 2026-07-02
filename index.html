@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Kartu Stok v11.1 – PT Rayard Deli Indonesia</title>
+<title>RDI Kartu Stok v11.2 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -941,7 +941,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v11.1</span>
+  <span class="topbar-ver" id="topbar-version-label">v11.2</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1019,7 +1019,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v11.1</span>
+    <span class="sheet-version" id="sheet-version-label">v11.2</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1781,6 +1781,10 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="cetak-search" placeholder="Cari nama, ID, RAK…" style="width:100%" oninput="renderCetakList()">
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="ftbtn" id="btn-open-filter-cetak" onclick="openFilterSheet()" style="flex:1">🔎 Filter<span class="ftbadge" id="filter-badge-cetak" style="display:none">0</span></button>
+        <button class="ftbtn" onclick="openSortSheet()" style="flex:1">↕ Sort</button>
+      </div>
       <div id="cetak-item-list" style="max-height:calc(100vh - 320px);overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
         <div class="empty-state"><p>Load data Master Item terlebih dahulu</p></div>
       </div>
@@ -1939,8 +1943,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v11.1';
-var APP_BUILD_DATE = '2026-07-03';
+var APP_VERSION = 'v11.2';
+var APP_BUILD_DATE = '2026-07-04';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -1969,6 +1973,12 @@ var filteredRows = [];       // hasil filter/search
 var _activeCat = '';
 var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (berdasarkan Received Date)
 
+// Filter/Sort dipakai bareng oleh Inventory & Cetak — render ulang list yang sedang aktif
+function refreshActiveList(){
+  if(document.getElementById('section-cetak').classList.contains('active')) renderCetakList();
+  else filterTable();
+}
+
 // ══════════════════════════════════════════════════════
 // SHEET: SORT
 // ══════════════════════════════════════════════════════
@@ -1983,7 +1993,7 @@ function closeSortSheet(){ document.getElementById('modal-sort').classList.remov
 function applySortOption(field, dir, label){
   _sortField = field; _sortDir = dir;
   document.getElementById('sort-btn-label').textContent = label;
-  filterTable();
+  refreshActiveList();
   closeSortSheet();
 }
 
@@ -2009,11 +2019,11 @@ function setQuickRange(days){
   document.querySelectorAll('.qr-chip').forEach(function(el){
     el.classList.toggle('active', el.dataset.range==String(days));
   });
-  filterTable();
+  refreshActiveList();
 }
 function onCustomDateChange(){
   document.querySelectorAll('.qr-chip').forEach(function(el){ el.classList.remove('active'); });
-  filterTable();
+  refreshActiveList();
 }
 function _toDateInputVal(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -2024,7 +2034,7 @@ function resetAllFilters(){
   document.getElementById('flt-tgl-sampai').value='';
   document.querySelectorAll('.qr-chip').forEach(function(el){ el.classList.toggle('active', el.dataset.range==='all'); });
   renderCatFilter();
-  filterTable();
+  refreshActiveList();
 }
 // Update badge jumlah filter aktif + ringkasan chip + label tombol "Tampilkan Item"
 function _updateFilterUI(){
@@ -2034,8 +2044,14 @@ function _updateFilterUI(){
 
   var badge=document.getElementById('filter-badge');
   var ftBtn=document.getElementById('btn-open-filter');
-  if(activeCount>0){ badge.textContent=activeCount; badge.style.display='inline-flex'; ftBtn.classList.add('has-active'); }
-  else { badge.style.display='none'; ftBtn.classList.remove('has-active'); }
+  var badgeC=document.getElementById('filter-badge-cetak');
+  if(activeCount>0){
+    badge.textContent=activeCount; badge.style.display='inline-flex'; ftBtn.classList.add('has-active');
+    if(badgeC){ badgeC.textContent=activeCount; badgeC.style.display='inline-flex'; }
+  } else {
+    badge.style.display='none'; ftBtn.classList.remove('has-active');
+    if(badgeC) badgeC.style.display='none';
+  }
 
   var chipsWrap=document.getElementById('active-filter-chips');
   var chips=[];
@@ -2045,7 +2061,7 @@ function _updateFilterUI(){
   chipsWrap.style.display=chips.length?'flex':'none';
 
   var applyBtn=document.getElementById('btn-apply-filter');
-  if(applyBtn) applyBtn.textContent='Tampilkan '+filteredRows.length+' Item';
+  if(applyBtn && !document.getElementById('section-cetak').classList.contains('active')) applyBtn.textContent='Tampilkan '+filteredRows.length+' Item';
 }
 function _ddmmyyyy(iso){ var p=iso.split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):iso; }
 
@@ -2236,6 +2252,7 @@ function switchTab(name, skipAutoScan){
   if(name==='history') loadAllHistory();
   if(name==='scanner' && !skipAutoScan) autoOpenScanner();
   if(name==='rak') loadRakList();
+  if(name==='cetak') renderCetakList();
 }
 
 function closeMoreDrawer(){
@@ -2429,7 +2446,7 @@ function renderCatFilter(){
 function setCatFilter(el){
   _activeCat = el.dataset ? el.dataset.cat : el;
   renderCatFilter();
-  filterTable();
+  refreshActiveList();
 }
 
 var _filterTimer = null;
@@ -3890,6 +3907,7 @@ function editFromDetail(){
 // ══════════════════════════════════════════════════════
 // Set seleksi item untuk cetak
 var cetakSelectedIds = new Set();
+var _cetakFilteredCount = 0;
 
 function renderCetakList(){
   var cl = document.getElementById('cetak-item-list');
@@ -3899,10 +3917,32 @@ function renderCetakList(){
     return;
   }
   var q = (document.getElementById('cetak-search').value||'').toLowerCase().trim();
-  var rows = q ? allRows.filter(function(r){
+  var tglDariEl=document.getElementById('flt-tgl-dari'), tglSampaiEl=document.getElementById('flt-tgl-sampai');
+  var tglDari = tglDariEl && tglDariEl.value ? new Date(tglDariEl.value+'T00:00:00').getTime() : null;
+  var tglSampai = tglSampaiEl && tglSampaiEl.value ? new Date(tglSampaiEl.value+'T23:59:59').getTime() : null;
+  var rows = allRows.filter(function(r){
+    if(_activeCat && (r.kategori||'').trim()!==_activeCat) return false;
+    if(tglDari!==null || tglSampai!==null){
+      var ts=_tglMasukTs(r);
+      if(!ts) return false;
+      if(tglDari!==null && ts<tglDari) return false;
+      if(tglSampai!==null && ts>tglSampai) return false;
+    }
+    if(!q) return true;
     return (r.id||'').toLowerCase().includes(q)||(r.nama||'').toLowerCase().includes(q)
       ||(r.spec||'').toLowerCase().includes(q)||(r.rak||'').toLowerCase().includes(q);
-  }) : allRows;
+  });
+  rows.sort(function(a,b){
+    if(_sortField==='_idx'){
+      var ats=_tglMasukTs(a), bts=_tglMasukTs(b);
+      if(ats!==bts) return _sortDir*(ats-bts);
+      return _sortDir*((a._idx||0)-(b._idx||0));
+    }
+    return _sortDir*String(a[_sortField]||'').localeCompare(String(b[_sortField]||''),'id');
+  });
+  _cetakFilteredCount = rows.length;
+  var applyBtn=document.getElementById('btn-apply-filter');
+  if(applyBtn && document.getElementById('section-cetak').classList.contains('active')) applyBtn.textContent='Tampilkan '+rows.length+' Item';
 
   if(!rows.length){
     cl.innerHTML = '<div class="empty-state"><p>Tidak ada item yang cocok</p></div>';
