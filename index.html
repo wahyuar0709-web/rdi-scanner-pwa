@@ -7,13 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Kartu Stok Pro X">
+<meta name="apple-mobile-web-app-title" content="RDI Kartu Stok">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>Kartu Stok Pro X v10.0 – PT Rayard Deli Indonesia</title>
+<title>RDI Kartu Stok v11.1 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -398,6 +398,13 @@ tr:hover td{background:var(--glass);color:var(--text)}
   /* Touch-friendly input height */
   input[type=text],input[type=number],select.sel{padding:12px 13px;font-size:var(--fs-14);min-height:44px}
 
+  /* v10.1: Header panel Inventory (Master) — stack jadi 2 baris agar proporsional di layar sempit */
+  #master-panel-head{flex-direction:column;align-items:stretch}
+  #master-panel-head-title{width:100%;flex:1 1 100%}
+  #master-panel-head-title h2{font-size:13px;white-space:normal;line-height:1.3}
+  #master-panel-head-title p{font-size:10px;white-space:normal}
+  #master-panel-head-actions{width:100%;justify-content:flex-end}
+
   /* Cat filter chips — easier to tap */
   .cat-chip{padding:8px 14px;font-size:var(--fs-12);min-height:36px;display:inline-flex;align-items:center}
 
@@ -615,6 +622,8 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   border:2px solid var(--bg2);
 }
 .tab-badge.show{display:flex}
+.hamburger-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:var(--br-999);display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--bg2)}
+.hamburger-badge.show{display:flex}
 .tab-fab{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:4px;cursor:pointer;position:relative;padding:4px 4px 10px;
@@ -869,18 +878,20 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .ilc2-info{flex:1;min-width:0}
 .ilc2-top{display:flex;align-items:center;gap:5px;margin-bottom:1px}
 .ilc2-left{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
-.ilc2-id{font-family:var(--font-mono);font-size:9px;font-weight:800;color:var(--amber);background:var(--amber-dim);padding:1px 5px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0}
+.ilc2-id{font-family:var(--font-mono);font-size:10.5px;font-weight:800;color:var(--amber);background:var(--amber-dim);padding:2px 6px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0}
 .ilc2-id.noid{color:#92400e;background:#fef3c7;border-color:#f59e0b}
-.ilc2-rak{font-size:9px;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:1px 5px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
+.ilc2-rak{font-size:10.5px;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:2px 6px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
 .ilc2-stok{font-size:16px;font-weight:900;font-family:var(--font-mono);line-height:1;text-align:right;flex-shrink:0;display:flex;align-items:baseline;gap:3px}
 .ilc2-unit{font-size:8.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-family:inherit;font-weight:700}
 .ilc2-low{font-size:8px;font-weight:800;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:0 4px;letter-spacing:.2px;margin-left:3px}
 .ilc2-nama{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ilc2-spec{font-size:10.5px;color:var(--text2);line-height:1.25;font-weight:500}
-.ilc2-footer{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding-top:5px;border-top:1px solid var(--border);overflow:hidden}
-.ilc2-meta{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;max-width:130px}
+.ilc2-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:5px;border-top:1px solid var(--border)}
+.ilc2-footer-info{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
+.ilc2-meta{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ilc2-cat{font-size:var(--fs-10);font-weight:700;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1px 6px;white-space:nowrap;flex-shrink:0}
-.ilc2-btn-trx{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-10);font-weight:700;padding:4px 9px;border-radius:var(--br-4);border:1px solid var(--green-border);background:var(--green-dim);color:var(--green-text);cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .1s}
+.ilc2-tgl{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;flex-shrink:0;padding-left:5px;border-left:1px solid var(--border)}
+.ilc2-btn-trx{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:8px 12px;min-height:34px;border-radius:var(--br-4);border:1px solid var(--green-border);background:var(--green-dim);color:var(--green-text);cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .1s;margin:-4px -4px -4px 0}
 .ilc2-btn-trx:active{background:rgba(34,197,94,.2);transform:scale(.95)}
 
 /* ══ v8.7 UI UPGRADE: AKSESIBILITAS — focus-visible utk navigasi keyboard/voice ══ */
@@ -930,7 +941,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v10.0.0</span>
+  <span class="topbar-ver" id="topbar-version-label">v11.1</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -941,22 +952,21 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   </span>
 </div>
 
-<!-- Bottom Navigation Bar (3 tab: Inventory / Transaksi / Lainnya) -->
+<!-- Bottom Navigation Bar (3 tab: Inventory / Transaksi(scan) / History) — Menu Lainnya lengkap diakses via tombol ☰ di header Inventory -->
 <nav class="tabnav" id="main-tabnav">
   <div class="tab active" onclick="switchTab('master')" id="tab-master">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     <span>Inventory</span>
   </div>
-  <div class="tab-fab" onclick="switchTab('scanner')" id="tab-scanner">
+  <div class="tab-fab" onclick="openScanTransaksi()" id="tab-scanner">
     <div class="tab-fab-inner">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="22" height="22"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
     </div>
     <span>Transaksi</span>
   </div>
-  <div class="tab" onclick="switchTab('more')" id="tab-more">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-    <div class="tab-badge" id="badge-alert">0</div>
-    <span>Lainnya</span>
+  <div class="tab" onclick="switchTab('history')" id="tab-history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>History</span>
   </div>
 </nav>
 
@@ -1009,7 +1019,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v8.6 PWA</span>
+    <span class="sheet-version" id="sheet-version-label">v11.1</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1022,20 +1032,27 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 
   <!-- ── HEADER PANEL ── -->
   <div class="panel">
-    <div class="panel-head" style="flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-        <div style="width:38px;height:38px;background:linear-gradient(135deg,#1a3a7a,#2e5fc7);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <div class="panel-head" id="master-panel-head" style="flex-wrap:wrap;gap:8px">
+      <div id="master-panel-head-title" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <button type="button" id="btn-open-more" onclick="switchTab('more')" title="Menu Lainnya" aria-label="Buka menu lainnya" style="position:relative;width:38px;height:38px;background:linear-gradient(135deg,#1a3a7a,#2e5fc7);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </div>
-        <div>
-          <h2 style="font-size:14px">Kartu Stok Pro X · Master Item</h2>
+          <div class="hamburger-badge" id="badge-alert">0</div>
+        </button>
+        <div style="min-width:0">
+          <h2 style="font-size:14px">RDI Kartu Stok · Master Item</h2>
           <p>Sinkron otomatis dari Google Sheets · <span id="last-load" style="font-size:10px;color:var(--amber)">—</span></p>
         </div>
       </div>
-      <button class="btn btn-primary btn-sm" id="btn-load" onclick="loadData()">
+      <div id="master-panel-head-actions" style="display:flex;gap:6px">
+      <button class="btn btn-primary btn-sm" id="btn-add-item" onclick="openAddSheet()" title="Tambah Item Baru">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Tambah
+      </button>
+      <button class="btn btn-sm" id="btn-load" onclick="loadData()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
         Refresh
       </button>
+      </div>
     </div>
 
     <!-- ── SEARCH & FILTER ZONE ── -->
@@ -1157,23 +1174,22 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <table>
           <thead>
             <tr>
-              <th class="c" style="width:36px"><input type="checkbox" id="check-all" onchange="toggleAll(this)" aria-label="Pilih semua item"></th>
-              <th style="width:120px">ID Item</th>
               <th style="width:32px">No</th>
+              <th style="width:120px">ID Item</th>
               <th>Nama Material</th>
               <th style="width:90px">Kategori</th>
               <th style="width:120px">Spesifikasi</th>
               <th style="width:70px">BC</th>
               <th style="width:100px">Vendor</th>
               <th style="width:60px">RAK</th>
-              <th style="width:50px" class="c">Qty</th>
+              <th style="width:50px" class="c" title="Stok saat ini (live)">Stok</th>
               <th style="width:50px">Unit</th>
               <th style="width:65px" class="c" title="Stok Minimum">Min ⚠</th>
               <th style="width:42px" class="c"></th>
             </tr>
           </thead>
           <tbody id="table-body">
-            <tr><td colspan="12"><div class="empty-state"><p>⏳ Memuat data...</p></div></td></tr>
+            <tr><td colspan="11"><div class="empty-state"><p>⏳ Memuat data...</p></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1820,6 +1836,14 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <div class="item-detail-field-val" id="idd-kategori">—</div>
       </div>
       <div class="item-detail-field">
+        <div class="item-detail-field-lbl">📅 Tgl Kedatangan</div>
+        <div class="item-detail-field-val" id="idd-tgl">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">🧾 No PO</div>
+        <div class="item-detail-field-val" id="idd-po">—</div>
+      </div>
+      <div class="item-detail-field">
         <div class="item-detail-field-lbl">🏭 Vendor</div>
         <div class="item-detail-field-val" id="idd-vendor">—</div>
       </div>
@@ -1827,7 +1851,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <div class="item-detail-field-lbl">👤 User / Dept</div>
         <div class="item-detail-field-val" id="idd-user">—</div>
       </div>
-      <div class="item-detail-field full">
+      <div class="item-detail-field">
         <div class="item-detail-field-lbl">📋 Status BC</div>
         <div class="item-detail-field-val" id="idd-bc">—</div>
       </div>
@@ -1915,8 +1939,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v10.0.0';
-var APP_BUILD_DATE = '2026-07-01';
+var APP_VERSION = 'v11.1';
+var APP_BUILD_DATE = '2026-07-03';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -1941,7 +1965,6 @@ function toggleTheme(){
 // ══════════════════════════════════════════════════════
 var allRows = [];            // semua data master item dari GAS
 var filteredRows = [];       // hasil filter/search
-var selectedIds = new Set(); // idx row yang dipilih untuk cetak
 
 var _activeCat = '';
 var _sortField = '_idx', _sortDir = -1; // default: terbaru dulu (berdasarkan Received Date)
@@ -2046,7 +2069,13 @@ var currentItem=null, currentJenis='MASUK';
 var scanMode='transaksi'; // 'transaksi' atau 'cekstok'
 var histCurrentItem=null, histAllRows=[];
 var currentUser = JSON.parse(localStorage.getItem('rdi_user')||'{"name":"Admin Warehouse","dept":"Gudang"}');
-var minStockMap = JSON.parse(localStorage.getItem('rdi_minstock')||'{}');
+// minStockMap sekarang disinkron dari server (kolom MinStock di Master_Item), bukan localStorage,
+// supaya konsisten antar-user/device. Diisi ulang tiap kali allRows dimuat via syncMinStockMap().
+var minStockMap = {};
+function syncMinStockMap(){
+  minStockMap = {};
+  allRows.forEach(function(r){ if(r.id) minStockMap[r.id] = parseInt(r.minStock||0)||0; });
+}
 
 // ══════════════════════════════════════════════════════
 // USER / OPERATOR MANAGEMENT
@@ -2168,7 +2197,7 @@ var IC={
   info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
 };
 
-function switchTab(name){
+function switchTab(name, skipAutoScan){
   // Tutup more drawer jika buka
   if(name !== 'more') closeMoreDrawer();
 
@@ -2187,31 +2216,25 @@ function switchTab(name){
       overlay.classList.add('show');
       document.getElementById('drawer-username').textContent = currentUser ? currentUser.name : '';
       document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');});
-      document.getElementById('tab-more').classList.add('active');
     }
     return;
   }
 
+  var wasScanner = document.getElementById('section-scanner').classList.contains('active');
   document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');});
   document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');});
+  if(wasScanner && name!=='scanner') stopInlineScanner();
   var section = document.getElementById('section-'+name);
   var tabEl = document.getElementById('tab-'+name);
   if(section) section.classList.add('active');
   // Show cetak sticky bar hanya saat tab cetak
   var cetakBar = document.getElementById('cetak-action-bar');
   if(cetakBar) cetakBar.style.display = (name==='cetak') ? 'block' : 'none';
-  if(tabEl){
-    tabEl.classList.add('active');
-  } else {
-    // Halaman ini diakses lewat menu "Lainnya" (history, dashboard, alert, rak, cetak)
-    // Tetap tandai tab "Lainnya" sebagai aktif supaya nav tidak kosong
-    var moreTab = document.getElementById('tab-more');
-    if(moreTab) moreTab.classList.add('active');
-  }
+  if(tabEl) tabEl.classList.add('active');
   if(name==='dashboard') loadDashboard();
   if(name==='alert') loadAlert();
   if(name==='history') loadAllHistory();
-  if(name==='scanner') autoOpenScanner();
+  if(name==='scanner' && !skipAutoScan) autoOpenScanner();
   if(name==='rak') loadRakList();
 }
 
@@ -2230,9 +2253,6 @@ function closeMoreDrawer(){
     drawer.classList.remove('show','closing');
     overlay.classList.remove('show','closing');
     overlay.style.display='none';
-    var anySection = document.querySelector('.page-section.active');
-    if(!anySection)
-      document.getElementById('tab-more').classList.remove('active');
   }, 220);
 }
 
@@ -2249,8 +2269,9 @@ function loadData(){
       btn.disabled=false; btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Refresh';
       if(result.status==='error'){ showStatus('sbar-load','s-err',IC.err+' '+xe(result.message)); return; }
       allRows=result.rows.map(function(r,i){ r._idx=i; return r; });
-      filteredRows=allRows.slice(); selectedIds=new Set();
-      renderTable(filteredRows); updateCount(); renderCatFilter();
+      syncMinStockMap();
+      filteredRows=allRows.slice();
+      renderTable(filteredRows); renderCatFilter();
       document.getElementById('last-load').textContent='Dimuat '+new Date().toLocaleTimeString('id-ID')+' · '+allRows.length+' item';
       var noId=allRows.filter(function(r){ return !r.id||r.id.trim()===''; });
       document.getElementById('warn-noid').style.display=(noId.length>0||!result.hasIDCol)?'flex':'none';
@@ -2265,12 +2286,11 @@ function loadData(){
 function renderTable(rows){
   var tb=document.getElementById('table-body');
   if(!rows.length){
-    tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><p>Tidak ada data</p></div></td></tr>';
+    tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><p>Tidak ada data</p></div></td></tr>';
     renderCardList([]);
     return;
   }
   tb.innerHTML=rows.map(function(r){
-    var sel=selectedIds.has(r._idx);
     var bcCls=(r.bc||'').toUpperCase().includes('NON')?'badge-nonbc':'badge-bc';
     var idHtml=r.id&&r.id.trim()!==''
       ?'<span class="id-chip">'+xe(r.id)+'</span>'
@@ -2280,10 +2300,9 @@ function renderTable(rows){
     var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';
     var minCell=r.id?'<input class="min-stock-input" type="number" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)" title="Set min stok">':'—';
     var catLabel=xe(r.kategori||'—');
-    return '<tr class="'+(sel?'tr-selected':'')+'">'
-      +'<td class="c"><input type="checkbox" onchange="toggleRow('+r._idx+')" '+(sel?'checked':'')+'></td>'
-      +'<td>'+idHtml+'</td>'
+    return '<tr>'
       +'<td class="c" style="color:var(--text3);font-size:11px">'+xe(r.no)+'</td>'
+      +'<td>'+idHtml+'</td>'
       +'<td><strong style="font-size:13px">'+xe(r.nama)+'</strong></td>'
       +'<td><span class="badge badge-bc" style="font-size:11px;padding:2px 7px">'+catLabel+'</span></td>'
       +'<td style="color:var(--text2);font-size:12px">'+xe(r.spec)+'</td>'
@@ -2293,44 +2312,13 @@ function renderTable(rows){
       +'<td class="c" '+alertCls+'>'+xe(r.qty)+'</td>'
       +'<td style="color:var(--text2)">'+xe(r.unit)+'</td>'
       +'<td class="c">'+minCell+'</td>'
-      +'<td class="c"><button class="btn btn-sm" style="padding:3px 8px;font-size:10px" onclick="openEditSheet('+r._idx+')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>'
+      +'<td class="c"><button class="btn btn-sm" style="padding:3px 8px;font-size:10px" onclick="openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>'
       +'</tr>';
   }).join('');
   renderCardList(rows);
 }
 
-function toggleRow(idx){
-  if(selectedIds.has(idx)) selectedIds.delete(idx); else selectedIds.add(idx);
-  updateCount(); updateCheckAll();
-  document.getElementById('table-body').querySelectorAll('tr').forEach(function(tr){
-    var cb=tr.querySelector('input[type=checkbox]');
-    if(!cb) return;
-    var m=cb.getAttribute('onchange').match(/\d+/);
-    if(m&&parseInt(m[0])===idx){ if(selectedIds.has(idx)) tr.classList.add('tr-selected'); else tr.classList.remove('tr-selected'); }
-  });
-}
-function toggleAll(cb){ if(cb.checked) filteredRows.forEach(function(r){selectedIds.add(r._idx);}); else filteredRows.forEach(function(r){selectedIds.delete(r._idx);}); renderTable(filteredRows); updateCount(); }
-function selectAll(){ filteredRows.forEach(function(r){selectedIds.add(r._idx);}); renderTable(filteredRows); updateCount(); updateCheckAll(); }
-function clearAll(){ selectedIds=new Set(); renderTable(filteredRows); updateCount(); updateCheckAll(); }
-function updateCheckAll(){
-  var ca=document.getElementById('check-all');
-  if(!filteredRows.length){ca.checked=false;ca.indeterminate=false;return;}
-  var allS=filteredRows.every(function(r){return selectedIds.has(r._idx);});
-  var anyS=filteredRows.some(function(r){return selectedIds.has(r._idx);});
-  ca.checked=allS; ca.indeterminate=!allS&&anyS;
-}
-function updateCount(){
-  var n=selectedIds.size;
-  var pSizeEl=document.getElementById('paper-size');
-  var pSize=pSizeEl?pSizeEl.value:'A4';
-  var div=pSize==='A5'?2:4;
-  var sc=document.getElementById('sel-count');
-  if(sc) sc.textContent=n+' item dipilih';
-  var ph=document.getElementById('print-hint');
-  if(ph) ph.innerHTML=n>0
-    ?'<strong>'+n+' kartu</strong> siap cetak ('+Math.ceil(n/div)+' halaman '+pSize+')'
-    :'Pilih item di tab Inventory terlebih dahulu';
-}
+
 
 // ══════════════════════════════════════════════════════
 // FUZZY SEARCH ENGINE
@@ -2578,7 +2566,7 @@ function _doFilter(){
   if(!q && !catFilter && tglDari===null && tglSampai===null){
     filteredRows = allRows.slice();
     _applySort();
-    renderTable(filteredRows); updateCheckAll();
+    renderTable(filteredRows);
     _clearSearchHint();
     _updateFilterUI();
     return;
@@ -2599,7 +2587,7 @@ function _doFilter(){
     return hay.indexOf(q) !== -1;
   });
   _applySort();
-  renderTable(filteredRows); updateCheckAll();
+  renderTable(filteredRows);
   _updateSearchHint(q, filteredRows.length, allRows.length);
   _updateFilterUI();
 }
@@ -2628,11 +2616,27 @@ function _clearSearchHint(){
 function saveMinStock(id, val){
   val=parseInt(val)||0;
   if(val<0) val=0;
-  minStockMap[id]=val;
-  localStorage.setItem('rdi_minstock', JSON.stringify(minStockMap));
-  // Re-render untuk update warna stok
+  var prev = minStockMap[id]||0;
+  minStockMap[id]=val; // optimistic update lokal
+  var r = allRows.find(function(row){ return row.id===id; });
+  if(r) r.minStock = val;
   renderTable(filteredRows);
   updateAlertBadge();
+
+  gasPost({action:'updateItem', id:id, minStock:val}).then(function(res){
+    if(res.status!=='ok'){
+      // rollback jika gagal simpan ke server
+      minStockMap[id]=prev;
+      if(r) r.minStock = prev;
+      renderTable(filteredRows); updateAlertBadge();
+      showStatus('sbar-load','s-err',IC.err+' Gagal simpan min stok: '+xe(res.message||''));
+    }
+  }).catch(function(err){
+    minStockMap[id]=prev;
+    if(r) r.minStock = prev;
+    renderTable(filteredRows); updateAlertBadge();
+    showStatus('sbar-load','s-err',IC.err+' Gagal simpan min stok: '+xe(err.message));
+  });
 }
 
 function updateAlertBadge(){
@@ -2669,6 +2673,7 @@ function loadDashboard(){
     gasGet({action:'getData'}).then(function(r){
       if(r.status==='ok'){
         allRows=r.rows.map(function(row,i){row._idx=i;return row;});
+        syncMinStockMap();
         filteredRows=allRows.slice();
       }
       gasGet({action:'getDashboard'}).then(renderDashboard).catch(function(){renderDashboardLocal();});
@@ -2796,9 +2801,21 @@ function loadAlert(){
   }).filter(Boolean).join('');
 }
 
-function goToTransaksi(id){
-  document.getElementById('scan-id-input').value=id;
+function openScanTransaksi(){
+  // Nav tengah: selalu mulai dari step scan kamera (bukan sisa form transaksi sebelumnya)
+  currentItem=null;
+  document.getElementById('scan-id-input').value='';
+  hideStatus('sbar-lookup');
+  showScanStep('input');
+  setScanMode('transaksi');
   switchTab('scanner');
+}
+
+function goToTransaksi(id){
+  // Direct ke transaksi manual (bukan lewat scan kamera)
+  switchTab('scanner', true);
+  setScanMode('transaksi');
+  document.getElementById('scan-id-input').value=id;
   lookupItem();
 }
 
@@ -3603,8 +3620,7 @@ function doCetak(){ generateOutput('print'); }
 function doDownload(){ generateOutput('download'); }
 function generateOutput(mode){
   var pSize=document.getElementById('paper-size').value;
-  // Gunakan cetakSelectedIds (dari menu cetak) atau selectedIds (dari tabel inventory jika ada)
-  var items=allRows.filter(function(r){return cetakSelectedIds.has(r._idx)||selectedIds.has(r._idx);});
+  var items=allRows.filter(function(r){return cetakSelectedIds.has(r._idx);});
   if(!items.length){ alert('Pilih minimal 1 item yang ingin dicetak!'); return; }
   var w=window.open('','_blank');
   if(!w){ alert('Popup diblokir browser.\nIzinkan popup untuk domain ini lalu coba lagi.'); return; }
@@ -3762,23 +3778,37 @@ function renderCardList(rows){
     var isBC=(r.bc||'').toUpperCase();
     var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';
     var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--red-text)':'color:var(--green-text)';
+    var tglMasuk=r.date||r.tglMasuk||r.tanggal||r.tgl||r.tglDatang||r.tanggalMasuk||'';
 
     return '<div class="ilc2" onclick="openItemDetail('+r._idx+')">'
       +'<div class="ilc2-strip '+stripCls+'"></div>'
-      +'<div class="ilc2-main">'
-        +'<div class="ilc2-info">'
-          +'<div class="ilc2-top">'
-            +(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
-            +(r.rak?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'')
+      +'<div class="ilc2-main" style="flex-direction:column;align-items:stretch">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<div class="ilc2-info">'
+            +'<div class="ilc2-top">'
+              +(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
+              +(r.rak?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'')
+            +'</div>'
+            +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
+            +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
           +'</div>'
-          +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
-          +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
+          +'<div class="ilc2-stok" style="'+stokColor+'">'
+            +xe(r.qty||0)
+            +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
+            +(isAlert?'<span class="ilc2-low">LOW</span>':'')
+            +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
+          +'</div>'
         +'</div>'
-        +'<div class="ilc2-stok" style="'+stokColor+'">'
-          +xe(r.qty||0)
-          +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
-          +(isAlert?'<span class="ilc2-low">LOW</span>':'')
-          +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
+        +'<div class="ilc2-footer">'
+          +'<div class="ilc2-footer-info">'
+            +(r.kategori?'<span class="ilc2-cat">'+xe(r.kategori)+'</span>':'')
+            +'<span class="ilc2-meta">'+xe(r.vendor||'—')+'</span>'
+            +(tglMasuk?'<span class="ilc2-tgl">'+xe(tglMasuk)+'</span>':'')
+          +'</div>'
+          +'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();goToTransaksi(\''+xe(r.id)+'\')" title="Transaksi item ini">'
+            +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>'
+            +'Trx'
+          +'</button>'
         +'</div>'
       +'</div>'
     +'</div>';
@@ -3808,6 +3838,8 @@ function openItemDetail(idx){
   document.getElementById('idd-unit').textContent = r.unit||'pcs';
   document.getElementById('idd-low').style.display = isAlert?'block':'none';
   document.getElementById('idd-rak').textContent = r.rak||'—';
+  document.getElementById('idd-tgl').textContent = r.date||r.tglMasuk||r.tanggal||r.tgl||r.tglDatang||r.tanggalMasuk||'—';
+  document.getElementById('idd-po').textContent = r.po||'—';
   document.getElementById('idd-kategori').textContent = r.kategori||'—';
   document.getElementById('idd-vendor').textContent = r.vendor||'—';
   document.getElementById('idd-user').textContent = r.user||'—';
@@ -3841,7 +3873,7 @@ function goTransaksiFromDetail(){
   var r = allRows.find(function(row){ return row._idx === _detailIdx; });
   if(!r) return;
   closeItemDetail();
-  switchTab('scanner');
+  switchTab('scanner', true);
   document.getElementById('scan-id-input').value = r.id||'';
   setTimeout(lookupItem, 200);
 }
@@ -3856,7 +3888,7 @@ function editFromDetail(){
 // ══════════════════════════════════════════════════════
 // CETAK: RENDER ITEM LIST DI MENU CETAK
 // ══════════════════════════════════════════════════════
-// Set khusus untuk cetak (terpisah dari selectedIds inventory)
+// Set seleksi item untuk cetak
 var cetakSelectedIds = new Set();
 
 function renderCetakList(){
@@ -4120,7 +4152,7 @@ window.addEventListener('DOMContentLoaded',function(){
     loadData();
   } else {
     showStatus('sbar-load','s-warn',IC.info+' GAS URL belum diset. Buka menu <strong>Lainnya → Pengaturan</strong> untuk mengatur koneksi.');
-    document.getElementById('table-body').innerHTML='<tr><td colspan="12"><div class="empty-state"><p>GAS URL belum diset. Buka menu <strong>Lainnya → Pengaturan</strong>.</p></div></td></tr>';
+    document.getElementById('table-body').innerHTML='<tr><td colspan="11"><div class="empty-state"><p>GAS URL belum diset. Buka menu <strong>Lainnya → Pengaturan</strong>.</p></div></td></tr>';
   }
 });
 </script>
@@ -4173,6 +4205,10 @@ window.addEventListener('DOMContentLoaded',function(){
       <label>Kategori</label>
       <input type="text" id="edit-kategori" placeholder="Kategori item...">
     </div>
+    <div class="edit-field">
+      <label>Min Stok (alert)</label>
+      <input type="number" id="edit-minstock" min="0" placeholder="0">
+    </div>
     <div id="sbar-edit"></div>
   </div>
   <div class="edit-sheet-footer">
@@ -4184,7 +4220,137 @@ window.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════ -->
+<!-- BOTTOM SHEET: TAMBAH ITEM BARU -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="edit-overlay" id="add-overlay" onclick="closeAddSheet()"></div>
+<div class="edit-sheet" id="add-sheet">
+  <div class="edit-sheet-handle"></div>
+  <div class="edit-sheet-head">
+    <h3>Tambah Item Baru</h3>
+    <p id="add-sheet-sub">ID akan dibuat otomatis (RDI-YYYY-XXX)</p>
+  </div>
+  <div class="edit-sheet-body">
+    <div class="edit-field">
+      <label>Nama Material *</label>
+      <input type="text" id="add-nama" placeholder="Nama material...">
+    </div>
+    <div class="edit-field">
+      <label>Spesifikasi</label>
+      <input type="text" id="add-spec" placeholder="Spesifikasi / tipe...">
+    </div>
+    <div class="edit-field">
+      <label>Qty Awal *</label>
+      <input type="number" id="add-qty" min="0" placeholder="0">
+    </div>
+    <div class="edit-field">
+      <label>Satuan</label>
+      <input type="text" id="add-unit" placeholder="Pcs, Kg, Liter, Set...">
+    </div>
+    <div class="edit-field">
+      <label>Rak / Lokasi</label>
+      <input type="text" id="add-rak" placeholder="Contoh: A-01, B-03...">
+    </div>
+    <div class="edit-field">
+      <label>Vendor / Supplier</label>
+      <input type="text" id="add-vendor" placeholder="Nama vendor...">
+    </div>
+    <div class="edit-field">
+      <label>No PO / Packing List</label>
+      <input type="text" id="add-po" placeholder="PO-2026-001">
+    </div>
+    <div class="edit-field">
+      <label>User / Dept</label>
+      <input type="text" id="add-user" placeholder="Dept / user pemilik...">
+    </div>
+    <div class="edit-field">
+      <label>BC / Non BC</label>
+      <select id="add-bc">
+        <option value="">— Pilih —</option>
+        <option value="BC">BC</option>
+        <option value="Non BC">Non BC</option>
+      </select>
+    </div>
+    <div class="edit-field">
+      <label>Kategori</label>
+      <input type="text" id="add-kategori" placeholder="Kategori item...">
+    </div>
+    <div class="edit-field">
+      <label>Min Stok (alert)</label>
+      <input type="number" id="add-minstock" min="0" placeholder="0">
+    </div>
+    <div id="sbar-add"></div>
+  </div>
+  <div class="edit-sheet-footer">
+    <button class="btn btn-block" style="flex:0 0 auto;width:80px" onclick="closeAddSheet()">Batal</button>
+    <button class="btn btn-primary btn-block" id="btn-save-add" onclick="saveAddItem()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Simpan Item Baru
+    </button>
+  </div>
+</div>
+
 <script>
+// ═══════════════════════════════════════════
+// TAMBAH ITEM: bottom sheet
+// ═══════════════════════════════════════════
+function openAddSheet(){
+  ['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock']
+    .forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('add-bc').value='';
+  hideStatus('sbar-add');
+  document.getElementById('add-overlay').classList.add('show');
+  document.getElementById('add-sheet').classList.add('show');
+  document.getElementById('add-nama').focus();
+}
+function closeAddSheet(){
+  document.getElementById('add-overlay').classList.remove('show');
+  document.getElementById('add-sheet').classList.remove('show');
+}
+function saveAddItem(){
+  var nama = document.getElementById('add-nama').value.trim();
+  var qty  = document.getElementById('add-qty').value;
+  if(!nama){ showStatus('sbar-add','s-warn',IC.info+' Nama material wajib diisi'); return; }
+  if(qty===''||isNaN(qty)||parseFloat(qty)<0){ showStatus('sbar-add','s-warn',IC.info+' Qty awal wajib diisi (angka ≥ 0)'); return; }
+
+  var payload = {
+    action   : 'addItem',
+    nama     : nama,
+    spec     : document.getElementById('add-spec').value.trim(),
+    qty      : qty,
+    unit     : document.getElementById('add-unit').value.trim(),
+    rak      : document.getElementById('add-rak').value.trim(),
+    vendor   : document.getElementById('add-vendor').value.trim(),
+    po       : document.getElementById('add-po').value.trim(),
+    user     : document.getElementById('add-user').value.trim(),
+    bc       : document.getElementById('add-bc').value,
+    kategori : document.getElementById('add-kategori').value.trim(),
+    minStock : document.getElementById('add-minstock').value || 0
+  };
+
+  var btn = document.getElementById('btn-save-add');
+  btn.disabled = true; btn.innerHTML = IC.load+' Menyimpan...';
+  showStatus('sbar-add','s-info',IC.load+' Menambahkan item baru...');
+
+  gasPost(payload)
+    .then(function(res){
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan Item Baru';
+      if(res.status !== 'ok'){
+        showStatus('sbar-add','s-err',IC.err+' '+(res.message||'Gagal menambahkan item'));
+        return;
+      }
+      closeAddSheet();
+      showStatus('sbar-load','s-ok',IC.ok+' Item baru <strong>'+xe(res.id)+'</strong> berhasil ditambahkan');
+      loadData(); // refresh supaya item baru + saldo langsung tampil
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan Item Baru';
+      showStatus('sbar-add','s-err',IC.err+' '+xe(err.message));
+    });
+}
+
 // ═══════════════════════════════════════════
 // EDIT ITEM: bottom sheet
 // ═══════════════════════════════════════════
@@ -4201,6 +4367,7 @@ function openEditSheet(idx){
   document.getElementById('edit-unit').value     = r.unit||'';
   document.getElementById('edit-bc').value       = r.bc||'';
   document.getElementById('edit-kategori').value = r.kategori||'';
+  document.getElementById('edit-minstock').value = r.minStock||0;
   hideStatus('sbar-edit');
   document.getElementById('edit-overlay').classList.add('show');
   document.getElementById('edit-sheet').classList.add('show');
@@ -4226,7 +4393,8 @@ function saveEditItem(){
     user     : document.getElementById('edit-user').value.trim(),
     unit     : document.getElementById('edit-unit').value.trim(),
     bc       : document.getElementById('edit-bc').value,
-    kategori : document.getElementById('edit-kategori').value.trim()
+    kategori : document.getElementById('edit-kategori').value.trim(),
+    minStock : document.getElementById('edit-minstock').value || 0
   };
 
   var btn = document.getElementById('btn-save-edit');
@@ -4252,8 +4420,11 @@ function saveEditItem(){
         r.unit     = payload.unit;
         r.bc       = payload.bc;
         r.kategori = payload.kategori;
+        r.minStock = payload.minStock;
+        minStockMap[r.id] = parseInt(payload.minStock)||0;
       }
       renderTable(filteredRows);
+      updateAlertBadge();
       closeEditSheet();
       showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');
     })
