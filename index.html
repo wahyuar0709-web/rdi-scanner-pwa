@@ -161,7 +161,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .badge{display:inline-block;padding:2px 7px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
 .badge-bc{background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
 .badge-nonbc{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border)}
-.id-chip{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.3px}
+.id-chip{font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.3px}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
 .empty-state p{font-size:var(--fs-12)}
 
@@ -277,17 +277,17 @@ tr:hover td{background:var(--glass);color:var(--text)}
 }
 /* kolom info: kode + nama + spec */
 .hdr-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.hdr-kode{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-kode{font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-nama{font-size:var(--fs-12);font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-spec{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-ket-note{font-size:var(--fs-10);color:var(--text3);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-spec{font-size:var(--fs-12);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-ket-note{font-size:var(--fs-12);color:var(--text2);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* kolom kanan: badge qty + saldo */
 .hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
 .hdr-qty{font-size:var(--fs-13);font-weight:700;white-space:nowrap;text-align:right}
-.hdr-saldo{font-size:var(--fs-10);font-family:var(--font-mono);color:var(--amber);white-space:nowrap;text-align:right}
+.hdr-saldo{font-size:var(--fs-12);font-family:var(--font-mono);color:var(--amber);white-space:nowrap;text-align:right;font-weight:700}
 /* legacy — masih dipakai renderHistDay (per item) */
 .hdr-ket{font-size:var(--fs-12);color:var(--text2);min-width:0;line-height:1.5;word-break:break-word}
-.hdr-admin{font-size:var(--fs-10);color:var(--text3)}
+.hdr-admin{font-size:var(--fs-12);color:var(--text2)}
 
 .hist-day-summary{
   background:var(--surface);
@@ -337,13 +337,16 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .item-detail-stok-badge{font-size:9px;font-weight:700;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:1px 6px;align-self:flex-start}
 /* grid info */
 .item-detail-body{padding:10px 16px;overflow-y:auto;flex:1}
-.item-detail-section-lbl{font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.item-detail-section-lbl{font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin:14px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.item-detail-section-lbl:first-child{margin-top:0}
 .item-detail-body .item-detail-section-lbl:not(:first-child){margin-top:10px}
-.item-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
-.item-detail-field{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 9px}
-.item-detail-field.full{grid-column:1/-1}
-.item-detail-field-lbl{font-size:8.5px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
-.item-detail-field-val{font-size:12px;font-weight:700;color:var(--text)}
+.item-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:4px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface2)}
+.item-detail-field{padding:8px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.item-detail-field:nth-child(2n){border-right:none}
+.item-detail-field.full{grid-column:1/-1;border-right:none}
+.item-detail-field:last-child{border-bottom:none}
+.item-detail-field-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.item-detail-field-val{font-size:13px;font-weight:700;color:var(--text);margin-top:1px}
 .item-detail-field-val.mono{font-family:var(--font-mono);color:var(--amber)}
 /* min stok row */
 .item-detail-min-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:7px 12px}
@@ -769,11 +772,11 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 
 /* baris 2: ID chip */
 .ilc-id-row{margin-bottom:8px}
-.ilc-id{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border)}
+.ilc-id{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border)}
 
 /* baris 3: info chips (RAK + Vendor + Kategori) */
 .ilc-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
-.ilc-chip{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-10);border-radius:var(--br-4);padding:3px 7px;white-space:nowrap;font-weight:600}
+.ilc-chip{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-11);border-radius:var(--br-4);padding:3px 7px;white-space:nowrap;font-weight:600}
 .ilc-chip-rak{background:rgba(26,58,122,.3);color:#93c5fd;border:1px solid rgba(59,130,246,.3)}
 .ilc-chip-vendor{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 .ilc-chip-cat{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
@@ -844,16 +847,16 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 }
 .ac-dropdown.show{display:block}
 .ac-item{
-  padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);
-  display:flex;flex-direction:column;gap:2px;
+  padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
   -webkit-tap-highlight-color:transparent;
 }
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover,.ac-item.ac-active{background:var(--amber-dim)}
-.ac-item-id{font-family:var(--font-mono);font-size:var(--fs-10);font-weight:700;color:var(--amber)}
-.ac-item-nama{font-size:var(--fs-13);font-weight:600;color:var(--text)}
-.ac-item-sub{font-size:var(--fs-10);color:var(--text3)}
-.ac-empty{padding:14px;font-size:var(--fs-12);color:var(--text3);text-align:center}
+.ac-item-id{font-family:var(--font-mono);font-size:var(--fs-13);font-weight:700;color:var(--amber)}
+.ac-item-nama{font-size:var(--fs-15,15px);font-weight:600;color:var(--text);line-height:1.35}
+.ac-item-sub{font-size:var(--fs-12);color:var(--text2)}
+.ac-empty{padding:16px;font-size:var(--fs-13);color:var(--text3);text-align:center}
 mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br-2);font-weight:700}
 
 .qr-scanner-wrap{position:relative;width:100%;max-width:340px;margin:0 auto 14px;border-radius:var(--rl);overflow:hidden;background:#000;border:2px solid var(--border2);box-shadow:var(--shadow-lg)}
@@ -892,9 +895,9 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .ilc2-spec{font-size:10.5px;color:var(--text2);line-height:1.25;font-weight:500}
 .ilc2-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:5px;border-top:1px solid var(--border)}
 .ilc2-footer-info{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
-.ilc2-meta{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ilc2-meta{font-size:var(--fs-12);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ilc2-cat{font-size:var(--fs-10);font-weight:700;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1px 6px;white-space:nowrap;flex-shrink:0}
-.ilc2-tgl{font-size:var(--fs-10);color:var(--text3);white-space:nowrap;flex-shrink:0;padding-left:5px;border-left:1px solid var(--border)}
+.ilc2-tgl{font-size:var(--fs-11);color:var(--text2);white-space:nowrap;flex-shrink:0;padding-left:5px;border-left:1px solid var(--border)}
 .ilc2-btn-trx{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:8px 12px;min-height:34px;border-radius:var(--br-4);border:1px solid var(--green-border);background:var(--green-dim);color:var(--green-text);cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .1s;margin:-4px -4px -4px 0}
 .ilc2-btn-trx:active{background:rgba(34,197,94,.2);transform:scale(.95)}
 
@@ -1868,7 +1871,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <div class="item-detail-field-lbl">👤 User / Dept</div>
         <div class="item-detail-field-val" id="idd-user">—</div>
       </div>
-      <div class="item-detail-field">
+      <div class="item-detail-field full">
         <div class="item-detail-field-lbl">📋 Status BC</div>
         <div class="item-detail-field-val" id="idd-bc">—</div>
       </div>
@@ -1964,7 +1967,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v11.7';
+var APP_VERSION = 'v11.10';
 var APP_BUILD_DATE = '2026-07-15';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
