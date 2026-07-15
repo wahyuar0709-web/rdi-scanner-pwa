@@ -141,6 +141,10 @@ select.sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .toolbar-right{margin-left:auto;font-size:var(--fs-11);color:var(--text3);white-space:nowrap}
 .search-wrap{position:relative}
+#master-search-zone.shrink{padding-top:6px;padding-bottom:6px}
+#master-search-zone.shrink .search-input{padding-top:8px!important;padding-bottom:8px!important}
+#master-search-zone.shrink #quick-access-row,
+#master-search-zone.shrink #active-filter-chips{display:none!important}
 .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);pointer-events:none}
 .search-input{padding:10px 13px 10px 40px;border:1.5px solid var(--border2);border-radius:var(--br-999);background:var(--surface2);color:var(--text);font-size:var(--fs-13);width:240px;font-family:inherit;transition:border-color var(--transition),box-shadow var(--transition),background var(--transition)}
 .search-input::placeholder{color:var(--text3)}
@@ -981,40 +985,42 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   <div class="sheet-menu">
     <div class="sheet-group-label">Sering Dipakai</div>
     <div class="sheet-grid">
-      <button class="more-menu-btn" onclick="switchTab('history');closeMoreDrawer()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span>History</span>
-      </button>
       <button class="more-menu-btn" onclick="switchTab('alert');closeMoreDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
         <span id="more-alert-label">Alert Stok</span>
       </button>
     </div>
-    <div class="sheet-group-label">Lainnya</div>
+    <div class="sheet-group-label">Laporan</div>
     <div class="sheet-grid">
       <button class="more-menu-btn" onclick="switchTab('dashboard');closeMoreDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         <span>Dashboard</span>
       </button>
-      <button class="more-menu-btn" onclick="switchTab('rak');closeMoreDrawer()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
-        <span>Cek Per Rak</span>
-      </button>
       <button class="more-menu-btn" onclick="switchTab('cetak');closeMoreDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span>Cetak Kartu</span>
       </button>
-      <button class="more-menu-btn" onclick="showConfig();closeMoreDrawer()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        <span>Pengaturan</span>
+      <button class="more-menu-btn" onclick="exportExcel();closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export CSV</span>
       </button>
+    </div>
+    <div class="sheet-group-label">Operasional</div>
+    <div class="sheet-grid">
+      <button class="more-menu-btn" onclick="switchTab('rak');closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
+        <span>Cek Per Rak</span>
+      </button>
+    </div>
+    <div class="sheet-group-label">Akun & Pengaturan</div>
+    <div class="sheet-grid">
       <button class="more-menu-btn" onclick="showUserModal();closeMoreDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         <span>Ganti Operator</span>
       </button>
-      <button class="more-menu-btn" onclick="exportExcel();closeMoreDrawer()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>Export CSV</span>
+      <button class="more-menu-btn" onclick="showConfig();closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Pengaturan</span>
       </button>
     </div>
   </div>
@@ -1056,7 +1062,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
 
     <!-- ── SEARCH & FILTER ZONE ── -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+    <div id="master-search-zone" style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:56px;z-index:60;transition:padding .2s ease">
       <!-- Baris 1: Search input full width -->
       <div id="warn-noid" class="sbar s-warn" style="margin-top:0;margin-bottom:10px;display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1086,6 +1092,14 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 
       <!-- Ringkasan filter aktif -->
       <div class="active-chips" id="active-filter-chips" style="display:none"></div>
+
+      <!-- Quick-access chip row: akses cepat ke subpage sering dipakai tanpa buka menu ☰ -->
+      <div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px" id="quick-access-row">
+        <button class="ftbtn" style="flex-shrink:0" onclick="switchTab('dashboard')">📊 Dashboard</button>
+        <button class="ftbtn" style="flex-shrink:0;position:relative" onclick="switchTab('alert')">⚠ Alert Stok<span id="qa-alert-badge" style="display:none;background:var(--red,#e74c3c);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></button>
+        <button class="ftbtn" style="flex-shrink:0" onclick="switchTab('rak')">📍 Cek Rak</button>
+        <button class="ftbtn" style="flex-shrink:0" onclick="switchTab('cetak')">🖨 Cetak</button>
+      </div>
     </div>
 
     <!-- SHEET: FILTER -->
@@ -1404,8 +1418,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 <!-- TAB: HISTORY -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="page-section" id="section-history">
-<div class="subpage-bar"><button class="subpage-back" onclick="switchTab('master')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Kembali</button><span class="subpage-title">History Transaksi</span></div>
-<div class="container-sm">
+<div class="container">
 
   <div class="hist-step active" id="hstep-input">
     <div class="panel">
@@ -1866,6 +1879,14 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       <div class="item-detail-min-lbl">⚠ Batas Min Stok</div>
       <input type="number" class="item-detail-min-input" id="idd-min-input" min="0" value="0" onchange="saveMinStockFromDetail()">
     </div>
+    <div class="item-detail-section-lbl">Rekonsiliasi Saldo</div>
+    <div id="idd-ledger-status" style="padding:4px 10px;border-radius:var(--r);font-size:11px;color:var(--text3)">Memeriksa...</div>
+
+    <div class="item-detail-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Riwayat Transaksi</span>
+      <span id="idd-hist-count" style="font-size:11px;color:var(--text3);font-weight:400"></span>
+    </div>
+    <div id="idd-hist-list"><div class="empty-state u-py24" style="padding:20px 0"><p>Memuat riwayat...</p></div></div>
   </div>
   <div class="item-detail-footer">
     <div class="item-detail-actions">
@@ -1943,8 +1964,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v11.2';
-var APP_BUILD_DATE = '2026-07-04';
+var APP_VERSION = 'v11.7';
+var APP_BUILD_DATE = '2026-07-15';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -2091,6 +2112,28 @@ var minStockMap = {};
 function syncMinStockMap(){
   minStockMap = {};
   allRows.forEach(function(r){ if(r.id) minStockMap[r.id] = parseInt(r.minStock||0)||0; });
+}
+
+// Sesi 3: isi datalist Vendor/Rak/Unit/Kategori dari Master_Kategori/UOM/Vendor/Rak (bukan teks bebas lagi)
+function loadMasterLists(){
+  gasGet({action:'getMasterLists'}).then(function(res){
+    if(res.status!=='ok') return;
+    fillDatalist('dl-uom', res.uom);
+    fillDatalist('dl-rak', res.rak);
+    fillDatalist('dl-vendor', res.vendor);
+    fillDatalist('dl-kategori', res.kategori);
+  }).catch(function(){ /* offline: datalist kosong, input tetap bisa teks bebas */ });
+}
+function fillDatalist(id, values){
+  var dl = document.getElementById(id);
+  if(!dl || !values) return;
+  dl.innerHTML = values.map(function(v){ return '<option value="'+xe(v)+'">'; }).join('');
+}
+// Nilai baru yang diketik user (tidak ada di datalist) otomatis didaftarkan ke master list, idempotent di backend
+function registerMasterValueIfNew(type, value){
+  value = String(value||'').trim();
+  if(!value) return;
+  gasPost({action:'addMasterValue', type:type, value:value}).catch(function(){});
 }
 
 // ══════════════════════════════════════════════════════
@@ -2303,7 +2346,10 @@ function loadData(){
 function renderTable(rows){
   var tb=document.getElementById('table-body');
   if(!rows.length){
-    tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><p>Tidak ada data</p></div></td></tr>';
+    var emptyMsg = (typeof allRows!=='undefined' && allRows.length===0)
+      ? '<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>'
+      : '<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm" style="margin-top:12px" onclick="resetAllFilters()">Reset Filter</button></div>';
+    tb.innerHTML='<tr><td colspan="11">'+emptyMsg+'</td></tr>';
     renderCardList([]);
     return;
   }
@@ -2671,6 +2717,13 @@ function updateAlertBadge(){
     } else {
       badge.classList.remove('show');
     }
+  }
+
+  // Badge di quick-access chip (upgrade #3)
+  var qaBadge = document.getElementById('qa-alert-badge');
+  if(qaBadge){
+    if(count > 0){ qaBadge.textContent = count > 9 ? '9+' : count; qaBadge.style.display='inline'; }
+    else { qaBadge.style.display='none'; }
   }
 
   // Label di more drawer
@@ -3494,7 +3547,9 @@ function renderHistFeed(){
   countLabel.textContent = histFeedFiltered.length + ' transaksi ditemukan';
 
   if(!histFeedFiltered.length){
-    container.innerHTML = '<div class="empty-state u-py24"><p>'+(histFeedRows.length?'Tidak ada transaksi yang cocok dengan filter':'Belum ada transaksi')+'</p></div>';
+    container.innerHTML = histFeedRows.length
+      ? '<div class="empty-state u-py24"><p>Tidak ada transaksi yang cocok dengan filter</p></div>'
+      : '<div class="empty-state u-py24"><p>Belum ada transaksi</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="switchTab(\'scanner\')">📦 Scan Transaksi Pertama</button></div>';
     pagination.style.display='none';
     return;
   }
@@ -3634,6 +3689,14 @@ function goScanFromHistory(){ if(!histCurrentItem)return; switchTab('scanner'); 
 // CETAK KARTU STOK
 // ══════════════════════════════════════════════════════
 function doCetak(){ generateOutput('print'); }
+// Upgrade #4: cetak langsung 1 item dari card Master, tanpa pindah ke tab Cetak lalu cari lagi
+function printSingleItem(idx){
+  cetakSelectedIds.clear();
+  cetakSelectedIds.add(idx);
+  switchTab('cetak');
+  renderCetakList();
+  doCetak();
+}
 function doDownload(){ generateOutput('download'); }
 function generateOutput(mode){
   var pSize=document.getElementById('paper-size').value;
@@ -3784,7 +3847,9 @@ function renderCardList(rows){
   var cl=document.getElementById('card-list-body');
   if(!cl) return;
   if(!rows.length){
-    cl.innerHTML='<div class="empty-state"><p>Tidak ada data</p></div>';
+    cl.innerHTML = (typeof allRows!=='undefined' && allRows.length===0)
+      ? '<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>'
+      : '<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm" style="margin-top:12px" onclick="resetAllFilters()">Reset Filter</button></div>';
     return;
   }
   cl.innerHTML=rows.map(function(r){
@@ -3825,6 +3890,10 @@ function renderCardList(rows){
           +'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();goToTransaksi(\''+xe(r.id)+'\')" title="Transaksi item ini">'
             +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>'
             +'Trx'
+          +'</button>'
+          +'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();printSingleItem('+r._idx+')" title="Cetak kartu item ini">'
+            +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+            +'Cetak'
           +'</button>'
         +'</div>'
       +'</div>'
@@ -3868,6 +3937,69 @@ function openItemDetail(idx){
 
   document.getElementById('item-detail-overlay').classList.add('show');
   document.getElementById('item-detail-sheet').classList.add('show');
+  checkLedgerReconciliation(r.id);
+  loadItemHistoryInDetail(r.id);
+}
+
+// Upgrade: riwayat transaksi item langsung di halaman detail (scroll ke bawah)
+function loadItemHistoryInDetail(itemId){
+  var box = document.getElementById('idd-hist-list');
+  var countLbl = document.getElementById('idd-hist-count');
+  if(!box) return;
+  box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Memuat riwayat...</p></div>';
+  if(countLbl) countLbl.textContent = '';
+
+  gasGet({action:'getHistory', id:itemId}).then(function(res){
+    if(_detailIdx===null) return; // sheet sudah ditutup sebelum respons datang
+    if(res.status!=='ok'){
+      box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Gagal memuat riwayat</p></div>';
+      return;
+    }
+    if(countLbl) countLbl.textContent = res.total + ' transaksi';
+    if(!res.rows.length){
+      box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Belum ada transaksi untuk item ini</p></div>';
+      return;
+    }
+    box.innerHTML = res.rows.map(function(r){
+      var isMasuk = (r.jenis||'').toUpperCase()==='MASUK';
+      var qtyColor = isMasuk ? 'color:var(--green-text)' : 'color:var(--red-text)';
+      var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'" style="font-size:10px;padding:1px 5px">'+(isMasuk?'↑':'↓')+'</span>';
+      return '<div class="hist-day-row">'
+        +'<span class="hdr-time" style="width:auto;min-width:110px">'+xe(r.timestamp||'')+'</span>'
+        +'<div class="hdr-info">'
+          +badge
+          +'<span class="hdr-qty" style="'+qtyColor+'">'+(isMasuk?'+':'-')+xe(r.qty)+'</span>'
+          +'<span class="hdr-saldo" style="color:var(--text3);font-size:11px">→ '+xe(r.saldoSesudah)+'</span>'
+          +(r.keterangan?'<span class="hdr-ket-note">📝 '+xe(r.keterangan)+'</span>':'')
+          +(r.admin?'<span class="hdr-spec" style="font-size:10px;color:var(--text3)">'+xe(r.admin)+'</span>':'')
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }).catch(function(){
+    if(_detailIdx===null) return;
+    box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Tidak bisa memuat riwayat (offline?)</p></div>';
+  });
+}
+
+// Sesi 4: cek rekonsiliasi ledger (replay Transaksi_Log vs cache Stok_Saldo) tiap buka detail item
+function checkLedgerReconciliation(itemId){
+  var box = document.getElementById('idd-ledger-status');
+  if(!box) return;
+  box.style.cssText = 'padding:6px 10px;border-radius:var(--r);font-size:11px;background:transparent;color:var(--text3)';
+  box.textContent = 'Memeriksa...';
+  gasGet({action:'getLedger', id:itemId}).then(function(res){
+    if(_detailIdx===null) return; // detail sudah ditutup sebelum respons datang
+    if(res.status!=='ok'){ box.textContent='Tidak bisa memeriksa (offline?)'; return; }
+    if(res.reconciled){
+      // Ringkas & tidak mencolok — kasus normal, jangan buang ruang layar
+      box.style.cssText = 'padding:4px 10px;border-radius:var(--r);font-size:11px;background:transparent;color:var(--text3)';
+      box.textContent = '✓ Saldo konsisten';
+    } else {
+      // Menonjol hanya kalau memang ada masalah nyata
+      box.style.cssText = 'padding:10px 14px;border-radius:var(--r);font-size:var(--fs-13);background:var(--red-dim,#3a1a1a);color:var(--red-text,#ff6b6b);border:1px solid var(--red-border,#e74c3c)';
+      box.textContent = '⚠ Selisih terdeteksi: sistem catat ' + res.cachedClosing + ', seharusnya ' + res.computedClosing + ' (diff ' + res.diff + '). Coba jalankan recalculateAllSaldo().';
+    }
+  }).catch(function(){ box.textContent='Tidak bisa memeriksa (offline?)'; });
 }
 
 function closeItemDetail(){
@@ -4183,6 +4315,15 @@ if('serviceWorker' in navigator){
 
 // Auto-load data master saat app dibuka (jika GAS URL sudah diset)
 // Modal Pengaturan GAS URL TIDAK auto-muncul lagi — hanya diakses manual lewat menu Lainnya → Pengaturan
+// Upgrade #7: sticky-shrink search zone Master saat discroll (hemat ruang layar HP)
+window.addEventListener('scroll', function(){
+  var zone = document.getElementById('master-search-zone');
+  var masterSection = document.getElementById('section-master');
+  if(!zone || !masterSection || !masterSection.classList.contains('active')) return;
+  if(window.scrollY > 80) zone.classList.add('shrink');
+  else zone.classList.remove('shrink');
+}, { passive:true });
+
 window.addEventListener('DOMContentLoaded',function(){
   applyTheme();
   initUser();
@@ -4190,6 +4331,7 @@ window.addEventListener('DOMContentLoaded',function(){
   updateAlertBadge();
   if(GAS_URL){
     loadData();
+    loadMasterLists();
   } else {
     showStatus('sbar-load','s-warn',IC.info+' GAS URL belum diset. Buka menu <strong>Lainnya → Pengaturan</strong> untuk mengatur koneksi.');
     document.getElementById('table-body').innerHTML='<tr><td colspan="11"><div class="empty-state"><p>GAS URL belum diset. Buka menu <strong>Lainnya → Pengaturan</strong>.</p></div></td></tr>';
@@ -4219,11 +4361,11 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Rak / Lokasi</label>
-      <input type="text" id="edit-rak" placeholder="Contoh: A-01, B-03...">
+      <input type="text" id="edit-rak" list="dl-rak" placeholder="Contoh: A-01, B-03...">
     </div>
     <div class="edit-field">
       <label>Vendor / Supplier</label>
-      <input type="text" id="edit-vendor" placeholder="Nama vendor...">
+      <input type="text" id="edit-vendor" list="dl-vendor" placeholder="Nama vendor...">
     </div>
     <div class="edit-field">
       <label>User / Dept</label>
@@ -4231,7 +4373,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Satuan</label>
-      <input type="text" id="edit-unit" placeholder="Pcs, Kg, Liter, Set...">
+      <input type="text" id="edit-unit" list="dl-uom" placeholder="Pcs, Kg, Liter, Set...">
     </div>
     <div class="edit-field">
       <label>BC / Non BC</label>
@@ -4243,7 +4385,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Kategori</label>
-      <input type="text" id="edit-kategori" placeholder="Kategori item...">
+      <input type="text" id="edit-kategori" list="dl-kategori" placeholder="Kategori item...">
     </div>
     <div class="edit-field">
       <label>Min Stok (alert)</label>
@@ -4285,15 +4427,15 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Satuan</label>
-      <input type="text" id="add-unit" placeholder="Pcs, Kg, Liter, Set...">
+      <input type="text" id="add-unit" list="dl-uom" placeholder="Pcs, Kg, Liter, Set...">
     </div>
     <div class="edit-field">
       <label>Rak / Lokasi</label>
-      <input type="text" id="add-rak" placeholder="Contoh: A-01, B-03...">
+      <input type="text" id="add-rak" list="dl-rak" placeholder="Contoh: A-01, B-03...">
     </div>
     <div class="edit-field">
       <label>Vendor / Supplier</label>
-      <input type="text" id="add-vendor" placeholder="Nama vendor...">
+      <input type="text" id="add-vendor" list="dl-vendor" placeholder="Nama vendor...">
     </div>
     <div class="edit-field">
       <label>No PO / Packing List</label>
@@ -4313,7 +4455,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Kategori</label>
-      <input type="text" id="add-kategori" placeholder="Kategori item...">
+      <input type="text" id="add-kategori" list="dl-kategori" placeholder="Kategori item...">
     </div>
     <div class="edit-field">
       <label>Min Stok (alert)</label>
@@ -4382,6 +4524,10 @@ function saveAddItem(){
       }
       closeAddSheet();
       showStatus('sbar-load','s-ok',IC.ok+' Item baru <strong>'+xe(res.id)+'</strong> berhasil ditambahkan');
+      registerMasterValueIfNew('vendor', payload.vendor);
+      registerMasterValueIfNew('rak', payload.rak);
+      registerMasterValueIfNew('uom', payload.unit);
+      registerMasterValueIfNew('kategori', payload.kategori);
       loadData(); // refresh supaya item baru + saldo langsung tampil
     })
     .catch(function(err){
@@ -4467,6 +4613,10 @@ function saveEditItem(){
       updateAlertBadge();
       closeEditSheet();
       showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');
+      registerMasterValueIfNew('vendor', payload.vendor);
+      registerMasterValueIfNew('rak', payload.rak);
+      registerMasterValueIfNew('uom', payload.unit);
+      registerMasterValueIfNew('kategori', payload.kategori);
     })
     .catch(function(err){
       btn.disabled = false;
@@ -4474,6 +4624,9 @@ function saveEditItem(){
       showStatus('sbar-edit','s-err',IC.err+' '+xe(err.message));
     });
 }
-</script>
+</script><datalist id="dl-uom"></datalist>
+<datalist id="dl-rak"></datalist>
+<datalist id="dl-vendor"></datalist>
+<datalist id="dl-kategori"></datalist>
 </body>
 </html>
