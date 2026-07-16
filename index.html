@@ -843,8 +843,13 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   position:absolute;left:0;right:0;top:calc(100% + 4px);
   background:var(--surface);border:1px solid var(--amber-border);
   border-radius:var(--r);box-shadow:var(--shadow-lg);
-  z-index:500;max-height:280px;overflow-y:auto;display:none;
+  z-index:500;max-height:min(360px,45vh);overflow-y:auto;display:none;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;scrollbar-color:var(--amber) transparent;
 }
+.ac-dropdown::-webkit-scrollbar{width:6px}
+.ac-dropdown::-webkit-scrollbar-thumb{background:var(--amber-border);border-radius:3px}
+.ac-dropdown::-webkit-scrollbar-track{background:transparent}
 .ac-dropdown.show{display:block}
 .ac-item{
   padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);
@@ -1326,7 +1331,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <label class="field-label">Jumlah (Qty)</label>
         <div class="qty-wrap">
           <button class="qty-btn" onclick="adjustQty(-1)" aria-label="Kurangi jumlah">−</button>
-          <input type="number" class="qty-input" id="qty-input" value="1" min="1">
+          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1">
           <button class="qty-btn" onclick="adjustQty(1)" aria-label="Tambah jumlah">+</button>
         </div>
 
@@ -1880,7 +1885,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="item-detail-section-lbl">Pengaturan Stok</div>
     <div class="item-detail-min-row">
       <div class="item-detail-min-lbl">⚠ Batas Min Stok</div>
-      <input type="number" class="item-detail-min-input" id="idd-min-input" min="0" value="0" onchange="saveMinStockFromDetail()">
+      <input type="number" inputmode="numeric" class="item-detail-min-input" id="idd-min-input" min="0" value="0" onchange="saveMinStockFromDetail()">
     </div>
     <div class="item-detail-section-lbl">Rekonsiliasi Saldo</div>
     <div id="idd-ledger-status" style="padding:4px 10px;border-radius:var(--r);font-size:11px;color:var(--text3)">Memeriksa...</div>
@@ -1967,7 +1972,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v11.10';
+var APP_VERSION = 'v11.13';
 var APP_BUILD_DATE = '2026-07-15';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
@@ -2364,7 +2369,7 @@ function renderTable(rows){
     var saldo=parseInt(r.qty)||0;
     var minS=parseInt(minStockMap[r.id]||0);
     var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';
-    var minCell=r.id?'<input class="min-stock-input" type="number" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)" title="Set min stok">':'—';
+    var minCell=r.id?'<input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)" title="Set min stok">':'—';
     var catLabel=xe(r.kategori||'—');
     return '<tr>'
       +'<td class="c" style="color:var(--text3);font-size:11px">'+xe(r.no)+'</td>'
@@ -2544,7 +2549,7 @@ function acShow(ctx){
     return xe(txt);
   }
 
-  drop.innerHTML = top.map(function(item, i){
+  var listHtml = top.map(function(item, i){
     var r = item.r;
     var sub = [r.spec, r.rak ? 'Rak '+r.rak : '', r.vendor].filter(Boolean).join(' · ');
     return '<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xe(r.id||r.nama)+'\')" '
@@ -2554,6 +2559,10 @@ function acShow(ctx){
       +(sub?'<span class="ac-item-sub">'+xe(sub)+'</span>':'')
     +'</div>';
   }).join('');
+  var hintHtml = top.length>3
+    ? '<div style="padding:6px 14px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)">'+top.length+' hasil · geser ke bawah untuk lihat semua ↓</div>'
+    : '';
+  drop.innerHTML = hintHtml + listHtml;
 
   drop.classList.add('show');
   _acIdx[ctx] = -1;
@@ -2868,7 +2877,7 @@ function loadAlert(){
       +'<td><span class="id-chip" style="font-size:11px">'+xe(r.id)+'</span></td>'
       +'<td style="font-size:12px">'+xe(r.nama)+'</td>'
       +'<td style="text-align:center;font-weight:700">'+xe(r.qty||0)+'</td>'
-      +'<td class="u-tc"><input class="min-stock-input" type="number" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)"></td>'
+      +'<td class="u-tc"><input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)"></td>'
       +'<td class="u-tc"><span style="font-size:11px;color:var(--green)">✓ Auto</span></td>'
       +'</tr>';
   }).filter(Boolean).join('');
@@ -2995,6 +3004,11 @@ function lookupItem(){
       document.getElementById('rak-input').value='';
       hideStatus('sbar-submit');
       showScanStep('transaksi');
+      // Fokus langsung ke qty supaya operator bisa langsung ketik/pakai +- tanpa tap ekstra
+      setTimeout(function(){
+        var qtyEl = document.getElementById('qty-input');
+        if(qtyEl){ qtyEl.focus(); qtyEl.select(); }
+      }, 50);
     })
     .catch(function(err){
       btn.disabled=false; btn.innerHTML='Cari';
@@ -3028,7 +3042,7 @@ function adjustQty(delta){
 function submitTransaksi(){
   if(!currentItem){ showStatus('sbar-submit','s-err',IC.err+' Tidak ada item'); return; }
   var qty=parseInt(document.getElementById('qty-input').value)||0;
-  if(qty<=0){ showStatus('sbar-submit','s-warn',IC.info+' Qty harus lebih dari 0'); return; }
+  if(qty<=0){ showStatus('sbar-submit','s-warn',IC.info+' Qty harus lebih dari 0'); flagFieldError('qty-input'); return; }
   var ket=document.getElementById('ket-input').value.trim();
   var rakBaru=document.getElementById('rak-input').value.trim().toUpperCase();
   var btn=document.getElementById('btn-submit');
@@ -3041,7 +3055,7 @@ function submitTransaksi(){
   gasPost(payload)
     .then(function(result){
       btn.disabled=false; btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan Transaksi';
-      if(result.status==='error'){ showStatus('sbar-submit','s-err',IC.err+' '+xe(result.message)); return; }
+      if(result.status==='error'){ showStatus('sbar-submit','s-err',IC.err+' '+xe(result.message)); flagFieldError('qty-input'); return; }
       // Update preview RAK jika diubah
       if(rakBaru){ document.getElementById('preview-rak').textContent=rakBaru; currentItem.rak=rakBaru; }
       showResult(result, currentJenis, qty);
@@ -4392,7 +4406,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Min Stok (alert)</label>
-      <input type="number" id="edit-minstock" min="0" placeholder="0">
+      <input type="number" inputmode="numeric" id="edit-minstock" min="0" placeholder="0">
     </div>
     <div id="sbar-edit"></div>
   </div>
@@ -4426,7 +4440,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Qty Awal *</label>
-      <input type="number" id="add-qty" min="0" placeholder="0">
+      <input type="number" inputmode="decimal" id="add-qty" min="0" placeholder="0">
     </div>
     <div class="edit-field">
       <label>Satuan</label>
@@ -4462,7 +4476,7 @@ window.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="edit-field">
       <label>Min Stok (alert)</label>
-      <input type="number" id="add-minstock" min="0" placeholder="0">
+      <input type="number" inputmode="numeric" id="add-minstock" min="0" placeholder="0">
     </div>
     <div id="sbar-add"></div>
   </div>
@@ -4492,11 +4506,21 @@ function closeAddSheet(){
   document.getElementById('add-overlay').classList.remove('show');
   document.getElementById('add-sheet').classList.remove('show');
 }
+// Kemudahan input: highlight merah + scroll otomatis ke field yg gagal validasi (operator tidak perlu cari manual)
+function flagFieldError(fieldId){
+  var el = document.getElementById(fieldId);
+  if(!el) return;
+  el.style.borderColor = 'var(--red-border,#e74c3c)';
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(function(){ el.focus(); }, 300);
+  el.addEventListener('input', function clearErr(){ el.style.borderColor=''; el.removeEventListener('input', clearErr); }, {once:true});
+}
+
 function saveAddItem(){
   var nama = document.getElementById('add-nama').value.trim();
   var qty  = document.getElementById('add-qty').value;
-  if(!nama){ showStatus('sbar-add','s-warn',IC.info+' Nama material wajib diisi'); return; }
-  if(qty===''||isNaN(qty)||parseFloat(qty)<0){ showStatus('sbar-add','s-warn',IC.info+' Qty awal wajib diisi (angka ≥ 0)'); return; }
+  if(!nama){ showStatus('sbar-add','s-warn',IC.info+' Nama material wajib diisi'); flagFieldError('add-nama'); return; }
+  if(qty===''||isNaN(qty)||parseFloat(qty)<0){ showStatus('sbar-add','s-warn',IC.info+' Qty awal wajib diisi (angka ≥ 0)'); flagFieldError('add-qty'); return; }
 
   var payload = {
     action   : 'addItem',
@@ -4571,11 +4595,13 @@ function closeEditSheet(){
 function saveEditItem(){
   var id = document.getElementById('edit-item-id').value.trim();
   if(!id){ showStatus('sbar-edit','s-warn',IC.info+' ID tidak ditemukan'); return; }
+  var namaEdit = document.getElementById('edit-nama').value.trim();
+  if(!namaEdit){ showStatus('sbar-edit','s-warn',IC.info+' Nama material wajib diisi'); flagFieldError('edit-nama'); return; }
 
   var payload = {
     action   : 'updateItem',
     id       : id,
-    nama     : document.getElementById('edit-nama').value.trim(),
+    nama     : namaEdit,
     spec     : document.getElementById('edit-spec').value.trim(),
     rak      : document.getElementById('edit-rak').value.trim(),
     vendor   : document.getElementById('edit-vendor').value.trim(),
