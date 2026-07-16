@@ -1972,7 +1972,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v11.13';
+var APP_VERSION = 'v11.14';
 var APP_BUILD_DATE = '2026-07-15';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
@@ -2514,6 +2514,15 @@ function filterTable(){
 // ══════════════════════════════════════════════════════
 var _acIdx = {scan:-1, hist:-1};
 
+// Hitung sisa ruang layar yg BENAR-BENAR terlihat (bukan vh statis) — visualViewport sadar keyboard on-screen,
+// beda dgn 100vh yg di banyak Android browser tetap dihitung dari tinggi layar penuh walau keyboard nutup separuh
+function fitAcDropdown(drop){
+  var rect = drop.getBoundingClientRect();
+  var viewportBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var available = viewportBottom - rect.top - 12; // 12px margin bawah
+  drop.style.maxHeight = Math.max(120, Math.min(360, available)) + 'px';
+}
+
 function acShow(ctx){
   if(!allRows.length) return;
   var inputId = ctx==='scan' ? 'scan-id-input' : 'hist-id-input';
@@ -2536,6 +2545,7 @@ function acShow(ctx){
   if(!top.length){
     drop.innerHTML = '<div class="ac-empty">Tidak ditemukan — coba kata lain</div>';
     drop.classList.add('show');
+    fitAcDropdown(drop);
     _acIdx[ctx] = -1;
     return;
   }
@@ -2565,6 +2575,7 @@ function acShow(ctx){
   drop.innerHTML = hintHtml + listHtml;
 
   drop.classList.add('show');
+  fitAcDropdown(drop);
   _acIdx[ctx] = -1;
 }
 
@@ -4333,6 +4344,15 @@ if('serviceWorker' in navigator){
 // Auto-load data master saat app dibuka (jika GAS URL sudah diset)
 // Modal Pengaturan GAS URL TIDAK auto-muncul lagi — hanya diakses manual lewat menu Lainnya → Pengaturan
 // Upgrade #7: sticky-shrink search zone Master saat discroll (hemat ruang layar HP)
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', function(){
+    ['ac-scan','ac-hist'].forEach(function(id){
+      var d = document.getElementById(id);
+      if(d && d.classList.contains('show')) fitAcDropdown(d);
+    });
+  });
+}
+
 window.addEventListener('scroll', function(){
   var zone = document.getElementById('master-search-zone');
   var masterSection = document.getElementById('section-master');
