@@ -13,11 +13,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Kartu Stok v11.2 – PT Rayard Deli Indonesia</title>
+<title>RDI Kartu Stok v11.5 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{-webkit-overflow-scrolling:touch}
+html{scroll-behavior:smooth;overscroll-behavior-y:contain}
+/* Matikan gestur "tarik ke bawah = refresh" bawaan browser/PWA. Operator sering tanpa sengaja
+   memicu ini saat scroll ke atas daftar item, lalu seluruh app reload & kehilangan state (filter,
+   draft transaksi, dsb). Refresh tetap tersedia lewat tombol ↻ yang sudah ada di tiap tab. */
+body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:hidden}
 
 :root{
   --font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
@@ -160,6 +163,13 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-hei
 .field-group{margin-bottom:14px}
 .field-label{font-size:var(--fs-11);font-weight:700;color:var(--text3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .field-hint{font-size:var(--fs-11);color:var(--text3);margin-top:4px}
+/* Label section generik dipakai di form panjang (mis. Input Transaksi) supaya field wajib vs
+   opsional/referensi kebaca terpisah, bukan satu list flat yang bobotnya sama semua */
+.form-section-lbl{font-size:10px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin:2px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.form-section-lbl:not(:first-child){margin-top:20px}
+/* Kotak "referensi tambahan" (opsional) -- dikasih background beda & border, biar keliatan
+   ini bukan field wajib inti transaksi, cuma info pendukung (vendor/PO/catatan) */
+.field-subcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 12px 2px;margin-bottom:14px}
 input[type=text],input[type=number],input[type=date]{width:100%;padding:11px 14px;border:1.5px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text);font-size:var(--fs-13);font-family:inherit;transition:border-color var(--transition),box-shadow var(--transition),background var(--transition)}
 input[type=text]::placeholder,input[type=number]::placeholder{color:var(--text3)}
 input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.15),0 1px 4px rgba(0,0,0,.1);background:var(--surface3)}
@@ -212,8 +222,8 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
 .item-card-head{background:linear-gradient(135deg,var(--surface3),var(--surface2));border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:10px}
 .item-card-id{font-family:var(--font-mono);font-size:var(--fs-11);font-weight:900;letter-spacing:.6px;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-border);padding:3px 10px;border-radius:var(--br-20);flex-shrink:0}
-.item-card-nama{font-size:var(--fs-14);font-weight:800;color:var(--text)}
-.item-card-spec{font-size:var(--fs-11);color:var(--text3);margin-top:2px}
+.item-card-nama{font-size:var(--fs-14);font-weight:800;color:var(--text);overflow-wrap:break-word;word-break:break-word}
+.item-card-spec{font-size:var(--fs-11);color:var(--text3);margin-top:2px;overflow-wrap:break-word;word-break:break-word}
 .item-card-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;min-width:0}
 .item-field-val{font-size:var(--fs-13);font-weight:600;color:var(--text);word-break:break-word}
 .item-field{display:flex;flex-direction:column;gap:3px}
@@ -299,10 +309,14 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .hist-day-row{
   display:flex;
   gap:10px;
-  padding:10px 14px;
+  padding:10px 14px 10px 12px;
   border-bottom:1px solid var(--border);
   align-items:flex-start;
+  position:relative;
 }
+.hist-day-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.hist-day-row.in::before{background:var(--green)}
+.hist-day-row.out::before{background:var(--red,#e74c3c)}
 .hist-day-row:last-child{border-bottom:none}
 .hist-day-row:hover{background:var(--glass)}
 /* kolom jam */
@@ -313,13 +327,16 @@ tr:hover td{background:var(--glass);color:var(--text)}
 }
 /* kolom info: kode + nama + spec */
 .hdr-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.hdr-kode{font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-nama{font-size:var(--fs-12);font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-spec{font-size:var(--fs-12);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-ket-note{font-size:var(--fs-12);color:var(--text2);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-info-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hdr-kode{font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.hdr-rak-badge{font-size:9.5px;font-weight:700;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);border-radius:var(--br-3);padding:1px 6px;white-space:nowrap;flex-shrink:0}
+.hdr-nama{font-size:var(--fs-12);font-weight:600;color:var(--text);line-height:1.3;overflow-wrap:break-word;word-break:break-word}
+.hdr-spec{font-size:var(--fs-12);color:var(--text2);overflow-wrap:break-word;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hdr-ket-note{font-size:var(--fs-12);color:var(--text2);font-style:italic;overflow-wrap:break-word;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 /* kolom kanan: badge qty + saldo */
-.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
 .hdr-qty{font-size:var(--fs-13);font-weight:700;white-space:nowrap;text-align:right}
+.hdr-saldo-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;text-align:right}
 .hdr-saldo{font-size:var(--fs-12);font-family:var(--font-mono);color:var(--amber);white-space:nowrap;text-align:right;font-weight:700}
 /* legacy — masih dipakai renderHistDay (per item) */
 .hdr-ket{font-size:var(--fs-12);color:var(--text2);min-width:0;line-height:1.5;word-break:break-word}
@@ -340,6 +357,48 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .hist-filter-field .field-label{margin-bottom:4px}
 .hist-filter-actions{display:flex;align-items:center;gap:8px}
 
+/* ══ HISTORY: SEARCH BAR ══ */
+.hist-search-wrap{position:relative;margin-bottom:10px}
+.hist-search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.hist-search-input{width:100%;height:44px;padding:0 36px 0 36px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:var(--fs-13);font-family:inherit}
+.hist-search-input:focus{outline:none;border-color:var(--amber)}
+.hist-search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);font-size:16px;padding:6px 8px;cursor:pointer;display:none}
+.hist-search-clear.show{display:block}
+
+/* ══ HISTORY: FILTER CHIPS ══ */
+.hist-chip-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hist-chip-row::-webkit-scrollbar{display:none}
+.hist-chip{flex-shrink:0;padding:7px 14px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:var(--fs-12);font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:all .12s}
+.hist-chip.active{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border)}
+.hist-chip:active{transform:scale(.96)}
+
+.hist-adv-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 2px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hist-adv-toggle span{font-size:var(--fs-11);color:var(--text3);font-weight:600}
+.hist-adv-toggle .chev{font-size:var(--fs-11);color:var(--text3);transition:transform .2s}
+.hist-adv-toggle .chev.open{transform:rotate(180deg)}
+.hist-adv-body{display:none}
+.hist-adv-body.open{display:block}
+
+/* ══ HISTORY: CARD ROW (redesain) ══ */
+.hist-card-row{
+  display:flex;flex-direction:column;gap:6px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.hist-card-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.hist-card-row.in::before{background:var(--green)}
+.hist-card-row.out::before{background:var(--red,#e74c3c)}
+.hist-card-row:last-child{border-bottom:none}
+.hist-card-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.hist-card-jenis{display:flex;align-items:center;gap:6px}
+.hist-card-nama{font-size:var(--fs-13);font-weight:700;color:var(--text);line-height:1.3}
+.hist-card-kode{font-family:var(--font-mono);font-size:var(--fs-11);color:var(--text3)}
+.hist-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hist-card-qty{font-size:var(--fs-14);font-weight:700;white-space:nowrap}
+.hist-card-meta{display:flex;align-items:center;gap:8px;font-size:var(--fs-11);color:var(--text3);white-space:nowrap}
+.hist-card-detail-btn{font-size:var(--fs-11);font-weight:600;color:var(--amber);background:none;border:none;padding:4px 0;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+
 /* ══ HISTORY PAGINATION FIX ══ */
 .hist-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 2px 4px;flex-wrap:wrap}
 .hist-pagination-label{font-size:var(--fs-11);color:var(--text3);font-weight:600;text-align:center;flex:1;min-width:0}
@@ -353,11 +412,25 @@ tr:hover td{background:var(--glass);color:var(--text)}
 /* ══ ITEM DETAIL MODAL (bottom sheet style) ══ */
 .item-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s}
 .item-detail-overlay.show{opacity:1;pointer-events:all}
-.item-detail-sheet{position:fixed;bottom:0;left:0;right:0;top:0;background:var(--surface);border-radius:0;border-top:none;z-index:401;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:100dvh;display:flex;flex-direction:column}
+/* Bottom sheet SEJATI: berhenti di ~10% dari atas layar (bukan top:0 penuh), supaya (a) ada
+   backdrop yang kelihatan & bisa di-tap utk nutup, (b) kerasa seperti "kartu yang ditarik naik"
+   bukan halaman penuh yang mentok atas. Bisa ditarik ke bawah utk nutup lewat handle/hero (lihat JS). */
+.item-detail-sheet{position:fixed;bottom:0;left:0;right:0;top:10dvh;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);box-shadow:0 -8px 40px rgba(0,0,0,.5);z-index:401;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:90dvh;display:flex;flex-direction:column}
 .item-detail-sheet.show{transform:translateY(0)}
-.item-detail-handle{width:36px;height:4px;background:var(--border3);border-radius:var(--br-2);margin:10px auto 0;flex-shrink:0}
+.item-detail-sheet.dragging{transition:none}
+.item-detail-handle-zone{flex-shrink:0;padding-top:2px;cursor:grab;touch-action:none}
+.item-detail-handle-zone:active{cursor:grabbing}
+.item-detail-handle{width:36px;height:4px;background:var(--border3);border-radius:var(--br-2);margin:10px auto 0}
+.item-detail-close{
+  position:absolute;top:10px;right:12px;width:28px;height:28px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text3);
+  display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;
+}
+.item-detail-close:active{background:var(--surface3);color:var(--text);transform:scale(.93)}
 /* header strip warna */
-.item-detail-hero{padding:12px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden;padding-left:18px}
+.item-detail-hero{padding:12px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden;padding-left:18px;padding-right:44px;touch-action:none;cursor:grab}
+.item-detail-hero:active{cursor:grabbing}
 .item-detail-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
 .item-detail-hero.bc::before{background:linear-gradient(180deg,var(--blue),#1d4ed8)}
 .item-detail-hero.non-bc::before{background:linear-gradient(180deg,var(--amber),#d97706)}
@@ -366,6 +439,7 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .item-detail-spec{font-size:var(--fs-12);color:var(--text2);margin-top:4px;line-height:1.3;font-weight:500;background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-6);padding:4px 9px;display:inline-block;max-width:100%;overflow-wrap:break-word;word-break:break-word;box-sizing:border-box}
 /* stok besar di hero */
 .item-detail-stok-hero{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)}
+.item-detail-rak-hero{font-size:11.5px;font-weight:700;color:var(--blue-text);margin-top:6px}
 .item-detail-stok-big{font-size:28px;font-weight:900;font-family:var(--font-mono);line-height:1;color:var(--text)}
 .item-detail-stok-big.alert{color:var(--red-text)}
 .item-detail-stok-meta{display:flex;flex-direction:column;gap:3px}
@@ -485,10 +559,25 @@ tr:hover td{background:var(--glass);color:var(--text)}
 }
 /* ══ FILTER & SORT TOOLBAR (professional) ══ */
 .ftoolbar{display:flex;gap:8px}
-.ftbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;font-size:var(--fs-12);font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);white-space:nowrap;user-select:none;transition:all var(--transition);-webkit-tap-highlight-color:transparent;flex:1;justify-content:center}
+.ftbtn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;min-height:44px;border-radius:10px;font-size:var(--fs-12);font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);white-space:nowrap;user-select:none;transition:all var(--transition);-webkit-tap-highlight-color:transparent;flex:1;justify-content:center}
 .ftbtn svg{width:15px;height:15px;flex:none}
 .ftbtn:hover{border-color:var(--blue-border);color:var(--blue-text)}
 .ftbtn.has-active{border-color:var(--blue-border);color:var(--blue-text);background:var(--blue-dim)}
+
+/* Audit UX Inventory — Quick Action bar (paling atas, level 1): 4 aksi utama operator.
+   Touch target 52px sesuai rekomendasi audit (Audit 8: 48–56px). */
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.qa-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:52px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all var(--transition);font-family:inherit}
+.qa-btn svg{width:19px;height:19px;flex:none}
+.qa-btn span{font-size:var(--fs-9);font-weight:700;text-transform:uppercase;letter-spacing:.3px;text-align:center;line-height:1.15}
+.qa-btn:active{transform:scale(.96)}
+.qa-btn.qa-primary{border-color:var(--blue-border);background:var(--blue-dim);color:var(--blue-text)}
+.qa-btn.qa-warn{border-color:var(--amber-border);background:var(--amber-dim);color:var(--amber)}
+@media (max-width:380px){.qa-btn span{font-size:8px}}
+/* Audit 8: tombol scan di dalam search box dibatasi tinggi input (~44px), jadi ukuran visual
+   tetap ringkas tapi area tap sesungguhnya diperluas invisible ke ~50px agar tetap nyaman ditekan. */
+.search-scan-btn{position:relative}
+.search-scan-btn::before{content:'';position:absolute;inset:-8px}
 .ftbadge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#2563EB;color:#fff;font-size:10px;font-weight:800;line-height:1}
 .active-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .active-chips .ac-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:var(--fs-11);font-weight:600;background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
@@ -904,7 +993,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   position:absolute;left:0;right:0;top:calc(100% + 4px);
   background:var(--surface);border:1px solid var(--amber-border);
   border-radius:var(--r);box-shadow:var(--shadow-lg);
-  z-index:500;max-height:min(360px,45vh);overflow-y:auto;display:none;
+  z-index:500;max-height:min(520px,68vh);overflow-y:auto;display:none;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:thin;scrollbar-color:var(--amber) transparent;
 }
@@ -913,15 +1002,17 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .ac-dropdown::-webkit-scrollbar-track{background:transparent}
 .ac-dropdown.show{display:block}
 .ac-item{
-  padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);
-  display:flex;align-items:baseline;gap:8px;min-width:0;
+  padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:3px;min-width:0;
   -webkit-tap-highlight-color:transparent;
 }
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover,.ac-item.ac-active{background:var(--amber-dim)}
+.ac-item-top{display:flex;align-items:baseline;gap:8px;min-width:0}
 .ac-item-id{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--amber);flex-shrink:0}
-.ac-item-nama{font-size:13.5px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-item-sub{font-size:10.5px;color:var(--text3);flex-shrink:0;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-item-nama{font-size:13.5px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;line-height:1.35}
+.ac-item-badges{display:flex;flex-wrap:wrap;gap:5px}
+.ac-item-badge{font-size:10px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1.5px 6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ac-empty{padding:16px;font-size:var(--fs-13);color:var(--text3);text-align:center}
 mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br-2);font-weight:700}
 
@@ -951,10 +1042,11 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .ilc2-info{flex:1;min-width:0}
 .ilc2-top{display:flex;align-items:center;gap:5px;margin-bottom:1px}
 .ilc2-left{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
-.ilc2-id{font-family:var(--font-mono);font-size:10.5px;font-weight:800;color:var(--amber);background:var(--amber-dim);padding:2px 6px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0}
+.ilc2-id{font-family:var(--font-mono);font-size:13px;font-weight:900;color:var(--amber);background:var(--amber-dim);padding:3px 7px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
 .ilc2-id.noid{color:#92400e;background:#fef3c7;border-color:#f59e0b}
 .ilc2-rak{font-size:10.5px;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:2px 6px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
 .ilc2-stok{font-size:16px;font-weight:900;font-family:var(--font-mono);line-height:1;text-align:right;flex-shrink:0;display:flex;align-items:baseline;gap:3px}
+.ilc2-status-dot{font-size:11px;line-height:1;margin-right:1px}
 .ilc2-unit{font-size:8.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-family:inherit;font-weight:700}
 .ilc2-low{font-size:8px;font-weight:800;color:var(--red-text);background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--br-3);padding:0 4px;letter-spacing:.2px;margin-left:3px}
 .ilc2-nama{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -964,7 +1056,7 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .ilc2-meta{font-size:var(--fs-12);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ilc2-cat{font-size:var(--fs-10);font-weight:700;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1px 6px;white-space:nowrap;flex-shrink:0}
 .ilc2-tgl{font-size:var(--fs-11);color:var(--text2);white-space:nowrap;flex-shrink:0;padding-left:5px;border-left:1px solid var(--border)}
-.ilc2-btn-trx{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:8px 12px;min-height:34px;border-radius:var(--br-4);border:1px solid var(--green-border);background:var(--green-dim);color:var(--green-text);cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .1s;margin:-4px -4px -4px 0}
+.ilc2-btn-trx{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:8px 12px;min-height:44px;border-radius:var(--br-4);border:1px solid var(--green-border);background:var(--green-dim);color:var(--green-text);cursor:pointer;font-family:inherit;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .1s;margin:-2px -2px -2px 0}
 .ilc2-btn-trx:active{background:rgba(34,197,94,.2);transform:scale(.95)}
 
 /* ══ v8.7 UI UPGRADE: AKSESIBILITAS — focus-visible utk navigasi keyboard/voice ══ */
@@ -994,7 +1086,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 .u-py24{padding:24px 0}
 .u-tc{text-align:center}
 .u-mla{margin-left:auto}
-.u-flexfill{flex:1;margin-left:10px}
+.u-flexfill{flex:1;margin-left:10px;min-width:0}
 </style>
 
 </head>
@@ -1094,7 +1186,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v11.2</span>
+    <span class="sheet-version" id="sheet-version-label">v11.5</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1130,6 +1222,44 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       </div>
     </div>
 
+    <!-- ── QUICK ACTION BAR (Audit 1): 4 aksi utama, tampil paling atas agar operator langsung tahu
+         apa yang bisa dilakukan dalam 3 detik pertama, sebelum melihat data apa pun. ── -->
+    <div class="qa-grid" role="group" aria-label="Aksi cepat Inventory">
+      <button type="button" class="qa-btn qa-primary" onclick="document.getElementById('search-box').focus();document.getElementById('search-box').scrollIntoView({behavior:'smooth',block:'center'})" aria-label="Cari Barang">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Cari</span>
+      </button>
+      <button type="button" class="qa-btn qa-primary" id="qa-btn-scan" onclick="toggleInlineScannerMaster()" aria-label="Scan Barang">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+        <span>Scan</span>
+      </button>
+      <button type="button" class="qa-btn qa-warn" onclick="switchTab('alert')" aria-label="Stok Minimum">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span>Stok Min</span>
+      </button>
+      <button type="button" class="qa-btn" onclick="openAddSheet()" aria-label="Tambah Barang">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Tambah</span>
+      </button>
+    </div>
+
+    <!-- Inline QR Scanner khusus Quick Action (Audit 3: scan langsung dari zona search, tanpa pindah tab) -->
+    <div id="qr-scanner-master-container" style="display:none;padding:10px 16px 0;background:var(--bg2)">
+      <div class="qr-scanner-wrap" id="qr-wrap-master">
+        <video id="qr-video-master" autoplay playsinline muted></video>
+        <canvas id="qr-canvas-master"></canvas>
+        <div class="qr-overlay">
+          <div class="qr-frame">
+            <div class="qr-corner-tr"></div>
+            <div class="qr-corner-bl"></div>
+            <div class="qr-scan-line"></div>
+          </div>
+        </div>
+        <div class="qr-scanner-label" id="qr-label-master">Arahkan kamera ke QR Code</div>
+      </div>
+      <button class="btn btn-sm btn-block" onclick="toggleInlineScannerMaster()" style="margin:8px 0 2px">Tutup Kamera</button>
+    </div>
+
     <!-- ── SEARCH & FILTER ZONE ── -->
     <div id="master-search-zone" style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:56px;z-index:60;transition:padding .2s ease">
       <!-- Baris 1: Search input full width -->
@@ -1138,9 +1268,12 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         Ada item tanpa ID. Jalankan <strong>migrateAddID()</strong> di GAS.
       </div>
 
-      <div class="search-wrap" style="width:100%;margin-bottom:8px">
+      <div class="search-wrap" style="width:100%;margin-bottom:8px;position:relative">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="search-box" style="width:100%;border-radius:10px;padding:12px 14px 12px 42px;font-size:14px" placeholder="🔍  Cari nama, ID, RAK, vendor, kategori… (typo OK)" oninput="filterTableDebounced()">
+        <input type="text" class="search-input" id="search-box" style="width:100%;border-radius:10px;padding:12px 46px 12px 42px;font-size:14px" placeholder="Scan atau ketik Kode / Nama Barang…" oninput="filterTableDebounced()">
+        <button type="button" class="search-scan-btn" onclick="toggleInlineScannerMaster()" title="Scan QR dengan kamera" aria-label="Scan QR" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:9px;border:none;background:var(--blue-dim);color:var(--blue-text);display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+        </button>
       </div>
 
       <!-- Search hint (inline, bukan floating) -->
@@ -1162,8 +1295,10 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       <!-- Ringkasan filter aktif -->
       <div class="active-chips" id="active-filter-chips" style="display:none"></div>
 
-      <!-- Quick-access chip row: akses cepat ke subpage sering dipakai tanpa buka menu ☰ -->
-      <div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px" id="quick-access-row">
+      <!-- Quick-access chip row: akses cepat ke subpage sering dipakai tanpa buka menu ☰
+           (Audit 2: level tertiary — sengaja dibuat lebih kecil/redup dari Quick Action Bar di atas) -->
+      <div style="font-size:var(--fs-9);color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:10px;margin-bottom:6px">Lainnya</div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;opacity:.85" id="quick-access-row">
         <button class="ftbtn" style="flex-shrink:0" onclick="switchTab('dashboard')">📊 Dashboard</button>
         <button class="ftbtn" style="flex-shrink:0;position:relative" onclick="switchTab('alert')">⚠ Alert Stok<span id="qa-alert-badge" style="display:none;background:var(--red,#e74c3c);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px"></span></button>
         <button class="ftbtn" style="flex-shrink:0" onclick="switchTab('rak')">📍 Cek Rak</button>
@@ -1335,7 +1470,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
                 inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off"
                 oninput="this.value=this.value.toUpperCase();acShowDebounced('scan');collapseCameraOnType()"
                 onkeydown="acKey(event,'scan')"
-                onfocus="acShow('scan')"
+                onfocus="acFocusAndShow('scan')"
                 onblur="setTimeout(function(){acHide('scan')},180)">
               <button class="btn btn-navy btn-scan-toggle" id="btn-open-scan" onclick="toggleInlineScanner('scanner')"
                 title="Scan QR dengan kamera" style="flex-shrink:0;height:44px;padding:0 14px">
@@ -1356,11 +1491,11 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   <!-- Step 2: Form Transaksi -->
   <div class="scan-step" id="step-transaksi">
     <div class="item-card" id="item-preview">
-      <div class="item-card-head">
-        <div class="item-card-id" id="preview-id">—</div>
-        <div class="u-flexfill">
+      <div class="item-card-head" style="align-items:flex-start">
+        <div class="u-flexfill" style="margin-left:0">
           <div class="item-card-nama" id="preview-nama">—</div>
           <div class="item-card-spec" id="preview-spec">—</div>
+          <div class="item-card-id" id="preview-id" style="margin-top:6px;display:inline-block">—</div>
         </div>
         <button class="btn btn-sm btn-on-head" onclick="resetScanner()" style="flex-shrink:0" aria-label="Ganti item yang dipindai">
           ✕ Ganti
@@ -1381,6 +1516,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="panel">
       <div class="panel-head"><div><h2>Input Transaksi</h2></div></div>
       <div class="panel-body">
+        <div class="form-section-lbl">① Jenis &amp; Jumlah</div>
         <label class="field-label">Jenis Transaksi</label>
         <div class="jenis-toggle">
           <button class="jenis-btn active-masuk" id="btn-masuk" onclick="setJenis('MASUK')">
@@ -1400,24 +1536,28 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
           <button class="qty-btn" onclick="adjustQty(1)" aria-label="Tambah jumlah">+</button>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">Lokasi RAK <span style="font-weight:400;color:var(--red-text,#e74c3c)">*wajib</span></label>
+        <div class="form-section-lbl">② Lokasi Rak <span style="color:var(--red-text,#e74c3c);font-weight:800">*wajib</span></div>
+        <div class="field-group" style="margin-bottom:0">
           <input type="text" id="rak-input" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" style="text-transform:uppercase"
             oninput="this.value=this.value.toUpperCase();saveTransaksiDraft()">
           <div class="field-hint" id="rak-input-hint">Rak tujuan (MASUK) atau rak asal (KELUAR) untuk transaksi ini</div>
         </div>
 
-        <div class="field-group" id="vendor-ref-group">
-          <label class="field-label">Vendor & No SJ/PO <span style="font-weight:400;color:var(--text3)">(opsional, biasanya diisi saat MASUK)</span></label>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="vendor-input" list="dl-vendor" placeholder="Nama vendor" style="flex:1" oninput="saveTransaksiDraft()">
-            <input type="text" id="noref-input" placeholder="No SJ/PO" style="flex:1" oninput="saveTransaksiDraft()">
+        <div class="form-section-lbl">③ Referensi Tambahan <span style="color:var(--text3);font-weight:600;text-transform:none;letter-spacing:0">(opsional)</span></div>
+        <div class="field-subcard">
+          <div class="field-group" id="vendor-ref-group">
+            <label class="field-label">Vendor &amp; No SJ/PO</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="vendor-input" list="dl-vendor" placeholder="Nama vendor" style="flex:1" oninput="saveTransaksiDraft()">
+              <input type="text" id="noref-input" placeholder="No SJ/PO" style="flex:1" oninput="saveTransaksiDraft()">
+            </div>
+            <div class="field-hint">Biasanya diisi saat transaksi MASUK</div>
           </div>
-        </div>
 
-        <div class="field-group">
-          <label class="field-label">Keterangan (opsional)</label>
-          <input type="text" id="ket-input" placeholder="Misal: retur / adjustment / dll" oninput="saveTransaksiDraft()">
+          <div class="field-group">
+            <label class="field-label">Keterangan</label>
+            <input type="text" id="ket-input" placeholder="Misal: retur / adjustment / dll" oninput="saveTransaksiDraft()">
+          </div>
         </div>
 
         <button class="btn btn-primary btn-lg btn-block" id="btn-submit" onclick="submitTransaksi()">
@@ -1432,11 +1572,11 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   <!-- Step 2b: Hasil Cek Stok (read-only) -->
   <div class="scan-step" id="step-cekstok">
     <div class="item-card" id="cekstok-preview">
-      <div class="item-card-head">
-        <div class="item-card-id" id="cek-id">—</div>
-        <div class="u-flexfill">
+      <div class="item-card-head" style="align-items:flex-start">
+        <div class="u-flexfill" style="margin-left:0">
           <div class="item-card-nama" id="cek-nama">—</div>
           <div class="item-card-spec" id="cek-spec">—</div>
+          <div class="item-card-id" id="cek-id" style="margin-top:6px;display:inline-block">—</div>
         </div>
         <button class="btn btn-sm btn-on-head" onclick="resetScanner()" style="flex-shrink:0" aria-label="Ganti item yang dipindai">
           ✕ Ganti
@@ -1538,7 +1678,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
                 inputmode="text" autocapitalize="characters" autocomplete="off" autocorrect="off"
                 oninput="this.value=this.value.toUpperCase();acShowDebounced('hist');collapseCameraOnType('hist')"
                 onkeydown="acKey(event,'hist')"
-                onfocus="acShow('hist')"
+                onfocus="acFocusAndShow('hist')"
                 onblur="setTimeout(function(){acHide('hist')},180)">
               <button class="btn btn-navy btn-scan-toggle" onclick="toggleInlineScanner('history')"
                 style="flex-shrink:0;height:44px;padding:0 14px">
@@ -1558,41 +1698,58 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   <!-- Feed Riwayat Transaksi (semua item, auto-load, filter + pagination) -->
   <div class="panel" id="panel-hist-feed" style="margin-top:14px">
     <div class="panel-head" style="justify-content:space-between">
-      <div><h2>Riwayat Transaksi</h2><p id="hist-feed-label">Semua item</p></div>
+      <div><h2>Riwayat Transaksi</h2><p id="hist-feed-label">Hari Ini : 0 Transaksi</p></div>
       <button class="btn btn-sm" onclick="loadAllHistory(true)" id="btn-hist-feed-refresh">↻</button>
     </div>
     <div class="panel-body" style="padding:12px 14px">
-      <!-- Tab: Gabungan / Masuk / Keluar -->
-      <div class="hist-view-toggle" style="margin-bottom:10px">
-        <button class="hist-view-btn active" id="hfeed-tab-all" onclick="setHistFeedJenis('ALL')">⇅ Semua</button>
-        <button class="hist-view-btn" id="hfeed-tab-masuk" onclick="setHistFeedJenis('MASUK')">↑ Masuk</button>
-        <button class="hist-view-btn" id="hfeed-tab-keluar" onclick="setHistFeedJenis('KELUAR')">↓ Keluar</button>
+      <!-- Search selalu di atas -->
+      <div class="hist-search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="hist-search-input" id="hfeed-search" placeholder="Cari Nama Barang / Kode Barang"
+          oninput="onHistFeedSearchInput()">
+        <button class="hist-search-clear" id="hfeed-search-clear" onclick="clearHistFeedSearch()">✕</button>
       </div>
-      <div class="hist-filter-bar">
-        <div class="hist-filter-field">
-          <label class="field-label">Dari Tanggal</label>
-          <input type="date" id="hfeed-date-from" onchange="applyHistFeedFilter()">
+      <!-- Filter chip: sekali tap langsung aktif -->
+      <div class="hist-chip-row" id="hfeed-chip-row">
+        <button class="hist-chip active" data-chip="ALL" onclick="setHistFeedChip('ALL')">Semua</button>
+        <button class="hist-chip" data-chip="MASUK" onclick="setHistFeedChip('MASUK')">Masuk</button>
+        <button class="hist-chip" data-chip="KELUAR" onclick="setHistFeedChip('KELUAR')">Keluar</button>
+        <button class="hist-chip" data-chip="TODAY" onclick="setHistFeedChip('TODAY')">Hari Ini</button>
+      </div>
+      <!-- Filter lanjutan (rak, user, rentang tanggal manual) -->
+      <div class="hist-adv-toggle" onclick="toggleHistAdvFilter()">
+        <span>Filter Lanjutan (Rak, Operator, Rentang Tanggal)</span>
+        <span class="chev" id="hfeed-adv-chev">▾</span>
+      </div>
+      <div class="hist-adv-body" id="hfeed-adv-body">
+        <div class="hist-filter-bar">
+          <div class="hist-filter-field">
+            <label class="field-label">Dari Tanggal</label>
+            <input type="date" id="hfeed-date-from" onchange="applyHistFeedFilter()">
+          </div>
+          <div class="hist-filter-field">
+            <label class="field-label">Sampai Tanggal</label>
+            <input type="date" id="hfeed-date-to" onchange="applyHistFeedFilter()">
+          </div>
+          <div class="hist-filter-field">
+            <label class="field-label">Rak</label>
+            <select class="sel" id="hfeed-rak" onchange="applyHistFeedFilter()">
+              <option value="">Semua Rak</option>
+            </select>
+          </div>
+          <div class="hist-filter-field">
+            <label class="field-label">User / Admin</label>
+            <select class="sel" id="hfeed-user" onchange="applyHistFeedFilter()">
+              <option value="">Semua User</option>
+            </select>
+          </div>
         </div>
-        <div class="hist-filter-field">
-          <label class="field-label">Sampai Tanggal</label>
-          <input type="date" id="hfeed-date-to" onchange="applyHistFeedFilter()">
-        </div>
-        <div class="hist-filter-field">
-          <label class="field-label">Rak</label>
-          <select class="sel" id="hfeed-rak" onchange="applyHistFeedFilter()">
-            <option value="">Semua Rak</option>
-          </select>
-        </div>
-        <div class="hist-filter-field">
-          <label class="field-label">User / Admin</label>
-          <select class="sel" id="hfeed-user" onchange="applyHistFeedFilter()">
-            <option value="">Semua User</option>
-          </select>
+        <div class="hist-filter-actions">
+          <button class="btn btn-sm" onclick="resetHistFeedFilter()">✕ Reset Filter</button>
         </div>
       </div>
-      <div class="hist-filter-actions">
-        <button class="btn btn-sm" onclick="resetHistFeedFilter()">✕ Reset Filter</button>
-        <span id="hfeed-result-count" style="font-size:11px;color:var(--text3);margin-left:auto;align-self:center"></span>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <span id="hfeed-result-count" style="font-size:11px;color:var(--text3)"></span>
       </div>
     </div>
     <div class="panel-body" style="padding:0 12px 12px">
@@ -1611,11 +1768,11 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 
   <div class="hist-step" id="hstep-result">
     <div class="item-card" id="hist-item-preview">
-      <div class="item-card-head">
-        <div class="item-card-id" id="hist-preview-id">—</div>
-        <div class="u-flexfill">
+      <div class="item-card-head" style="align-items:flex-start">
+        <div class="u-flexfill" style="margin-left:0">
           <div class="item-card-nama" id="hist-preview-nama">—</div>
           <div class="item-card-spec" id="hist-preview-spec">—</div>
+          <div class="item-card-id" id="hist-preview-id" style="margin-top:6px;display:inline-block">—</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button class="btn btn-sm btn-on-head" onclick="refreshHistory()" id="btn-hist-refresh">↻ Refresh</button>
@@ -1687,6 +1844,20 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   </div>
 
 </div>
+</div>
+
+<!-- Modal: Detail satu baris transaksi riwayat -->
+<div class="modal-overlay" id="modal-hist-card-detail" role="dialog" aria-modal="true" aria-label="Detail Riwayat Transaksi">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Detail Riwayat Transaksi</h3>
+      <button class="btn btn-sm" onclick="closeHistCardDetail()" aria-label="Tutup detail">✕</button>
+    </div>
+    <div class="modal-body" id="hist-card-detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-block" onclick="closeHistCardDetail()">Tutup</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
@@ -1936,11 +2107,18 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 <!-- ═══════════════════════════════════════════ -->
 <div class="item-detail-overlay" id="item-detail-overlay" onclick="closeItemDetail()"></div>
 <div class="item-detail-sheet" id="item-detail-sheet" role="dialog" aria-modal="true" aria-label="Detail item">
-  <div class="item-detail-handle"></div>
+  <div class="item-detail-handle-zone" id="item-detail-drag-handle">
+    <div class="item-detail-handle"></div>
+  </div>
+  <button type="button" class="item-detail-close" onclick="closeItemDetail()" aria-label="Tutup detail item">✕</button>
   <div class="item-detail-hero" id="item-detail-hero">
-    <div class="item-detail-id" id="idd-id">—</div>
-    <div class="item-detail-nama" id="idd-nama">—</div>
+    <div class="item-detail-nama" id="idd-nama" style="margin-top:0">—</div>
     <div class="item-detail-spec" id="idd-spec"></div>
+    <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Kode Barang</span>
+      <div class="item-detail-id" id="idd-id" style="margin-top:0">—</div>
+    </div>
+    <div class="item-detail-rak-hero">📦 <span id="idd-rak-hero">—</span></div>
     <div class="item-detail-stok-hero">
       <div class="item-detail-stok-big" id="idd-stok">0</div>
       <div class="item-detail-stok-meta">
@@ -1950,7 +2128,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     </div>
   </div>
   <div class="item-detail-body">
-    <div class="item-detail-section-lbl">Informasi Item</div>
+    <div class="item-detail-section-lbl">Informasi Tambahan</div>
     <div class="item-detail-grid">
       <div class="item-detail-field">
         <div class="item-detail-field-lbl">📦 Rak / Lokasi</div>
@@ -1970,7 +2148,6 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
       </div>
     </div>
     <div class="item-detail-hint" style="font-size:10px;color:var(--text3);margin:-2px 0 4px">Vendor & No SJ/PO kini dicatat per transaksi — lihat di Riwayat Transaksi di bawah.</div>
-    </div>
 
     <div class="item-detail-section-lbl">Pengaturan Stok</div>
     <div class="item-detail-min-row">
@@ -1980,11 +2157,14 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <div class="item-detail-section-lbl">Rekonsiliasi Saldo</div>
     <div id="idd-ledger-status" style="padding:4px 10px;border-radius:var(--r);font-size:11px;color:var(--text3)">Memeriksa...</div>
 
-    <div class="item-detail-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Riwayat Transaksi</span>
+    <!-- Audit 9: Riwayat dibuat collapsible (default tertutup) — bagian terberat/terpanjang,
+         diringkas jadi 1 baris dulu supaya body tidak terasa penuh sekaligus. Ringkasan &
+         tombol Aksi tetap selalu terlihat (hero di atas, footer sticky di bawah). -->
+    <button type="button" class="item-detail-section-lbl item-detail-section-toggle" id="idd-hist-toggle" onclick="toggleDetailHist()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;padding-bottom:4px">
+      <span>▸ Riwayat Transaksi</span>
       <span id="idd-hist-count" style="font-size:11px;color:var(--text3);font-weight:400"></span>
-    </div>
-    <div id="idd-hist-list"><div class="empty-state u-py24" style="padding:20px 0"><p>Memuat riwayat...</p></div></div>
+    </button>
+    <div id="idd-hist-list" style="display:none"><div class="empty-state u-py24" style="padding:20px 0"><p>Memuat riwayat...</p></div></div>
   </div>
   <div class="item-detail-footer">
     <div class="item-detail-actions">
@@ -2062,8 +2242,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v12.11';
-var APP_BUILD_DATE = '2026-07-15';
+var APP_VERSION = 'v12.24';
+var APP_BUILD_DATE = '2026-07-19';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -2184,10 +2364,12 @@ function _updateFilterUI(){
 }
 function _ddmmyyyy(iso){ var p=iso.split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):iso; }
 
-// Parse tanggal kedatangan (field 'date' dari GAS = kolom Master_Item "Received Date", format dd/MM/yyyy).
-// Fallback ke nama field lain siapa tahu backend berubah, lalu fallback ke 0 (dianggap paling lama).
+// Parse tanggal kedatangan TERAKHIR (field 'tglMasukTerakhir' dari GAS v5.1+, diambil dari transaksi
+// MASUK paling baru di Transaksi_Log -- sejak skema v5.0, Master_Item TIDAK PUNYA kolom tanggal statis
+// lagi, jadi field lama 'date' selalu kosong. Fallback nama lain dijaga utk kompatibilitas versi backend lama,
+// lalu fallback ke 0 (item belum pernah ada transaksi MASUK -> dianggap tidak match filter tanggal).
 function _tglMasukTs(r){
-  var raw = r.date || r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
+  var raw = r.tglMasukTerakhir || r.date || r.tglMasuk || r.tanggal || r.tgl || r.tglDatang || r.tanggalMasuk || '';
   if(!raw) return 0;
   // format utama dari GAS: dd/MM/yyyy — cek ini duluan supaya tidak salah tafsir jadi MM/DD/YYYY
   var m = String(raw).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -2461,6 +2643,7 @@ function renderTable(rows){
     var saldo=parseInt(r.qty)||0;
     var minS=parseInt(minStockMap[r.id]||0);
     var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';
+    var statusDot=saldo===0?'🔴':(minS>0&&saldo<=minS)?'🟡':'🟢';
     var minCell=r.id?'<input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)" title="Set min stok">':'—';
     var catLabel=xe(r.kategori||'—');
     return '<tr>'
@@ -2471,7 +2654,7 @@ function renderTable(rows){
       +'<td style="color:var(--text2);font-size:12px">'+xe(r.spec)+'</td>'
       +'<td><span class="badge '+bcCls+'">'+xe(r.bc||'—')+'</span></td>'
       +'<td><strong style="font-size:11px">'+xe(r.rak||'—')+'</strong></td>'
-      +'<td class="c" '+alertCls+'>'+xe(r.qty)+'</td>'
+      +'<td class="c" '+alertCls+' title="Status stok">'+statusDot+' '+xe(r.qty)+'</td>'
       +'<td style="color:var(--text2)">'+xe(r.unit)+'</td>'
       +'<td class="c">'+minCell+'</td>'
       +'<td class="c"><button class="btn btn-sm" style="padding:3px 8px;font-size:10px" onclick="openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>'
@@ -2555,6 +2738,7 @@ function fuzzyScore(haystack, needle){
 }
 
 function fuzzyMatch(r, q){
+  q = String(q||'').replace(/\s+/g,' ').trim(); // rapikan spasi ganda/tidak sengaja dari keyboard mobile
   if(!q) return {match:true, score:0};
   var fields = [
     {v: r.id||'',      w: 4},
@@ -2638,7 +2822,7 @@ function fitAcDropdown(drop){
   var rect = drop.getBoundingClientRect();
   var viewportBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   var available = viewportBottom - rect.top - 12; // 12px margin bawah
-  drop.style.maxHeight = Math.max(120, Math.min(360, available)) + 'px';
+  drop.style.maxHeight = Math.max(120, Math.min(520, available)) + 'px';
   // Hitung ulang sekali lagi setelah jeda singkat, jaga-jaga animasi keyboard belum kelar
   // saat perhitungan pertama (mencegah salah ukur seperti kasus sebelumnya)
   setTimeout(function(){
@@ -2646,7 +2830,7 @@ function fitAcDropdown(drop){
     var r2 = drop.getBoundingClientRect();
     var vb2 = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     var av2 = vb2 - r2.top - 12;
-    drop.style.maxHeight = Math.max(120, Math.min(360, av2)) + 'px';
+    drop.style.maxHeight = Math.max(120, Math.min(520, av2)) + 'px';
   }, 250);
 }
 
@@ -2654,6 +2838,29 @@ var _acDebounceTimer = {};
 function acShowDebounced(ctx){
   clearTimeout(_acDebounceTimer[ctx]);
   _acDebounceTimer[ctx] = setTimeout(function(){ acShow(ctx); }, 150); // 150ms: cukup responsif tapi tidak scan tiap huruf
+}
+
+// Begitu input di-fokus (keyboard bakal muncul), geser layar supaya input berada
+// dekat bagian ATAS area yang masih kelihatan -- ini memaksimalkan sisa ruang di
+// BAWAH input utk dropdown hasil, karena keyboard bakal makan ruang bawah layar.
+// Tanpa ini, kalau input posisinya di tengah layar, dropdown kepepet jadi sempit
+// walau max-height CSS-nya sudah besar (sisa ruang fisik di layar-lah yg membatasi).
+function acFocusAndShow(ctx){
+  var inputId = ctx==='scan' ? 'scan-id-input' : 'hist-id-input';
+  var dropId  = ctx==='scan' ? 'ac-scan' : 'ac-hist';
+  var el = document.getElementById(inputId);
+  if(el){
+    setTimeout(function(){
+      el.scrollIntoView({block:'start', behavior:'smooth'});
+      // Scroll halus butuh sedikit waktu utk selesai -- ukur ulang tinggi dropdown
+      // setelah itu, supaya benar-benar memanfaatkan ruang baru yg lebih lega.
+      setTimeout(function(){
+        var drop = document.getElementById(dropId);
+        if(drop && drop.classList.contains('show')) fitAcDropdown(drop);
+      }, 350);
+    }, 300); // beri waktu animasi keyboard muncul dulu sebelum ukur ulang posisi
+  }
+  acShow(ctx);
 }
 
 function acShow(ctx){
@@ -2694,12 +2901,18 @@ function acShow(ctx){
 
   var listHtml = top.map(function(item, i){
     var r = item.r;
-    var sub = [r.spec, r.rak ? 'Rak '+r.rak : '', r.vendor].filter(Boolean).join(' · ');
+    var badges = [
+      r.spec ? xe(r.spec) : '',
+      r.rak ? '📦 '+xe(r.rak) : '',
+      r.vendor ? xe(r.vendor) : ''
+    ].filter(Boolean).map(function(b){ return '<span class="ac-item-badge">'+b+'</span>'; }).join('');
     return '<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xe(r.id||r.nama)+'\')" '
       +'data-ac-i="'+i+'">'
-      +'<span class="ac-item-id">'+hl(r.id||'—', q)+'</span>'
-      +'<span class="ac-item-nama">'+hl(r.nama||'', q)+'</span>'
-      +(sub?'<span class="ac-item-sub">'+xe(sub)+'</span>':'')
+      +'<div class="ac-item-top">'
+        +'<span class="ac-item-id">'+hl(r.id||'—', q)+'</span>'
+        +'<span class="ac-item-nama">'+hl(r.nama||'', q)+'</span>'
+      +'</div>'
+      +(badges?'<div class="ac-item-badges">'+badges+'</div>':'')
     +'</div>';
   }).join('');
   var hintHtml = top.length>3
@@ -3556,18 +3769,23 @@ function renderHistDay(rows){
       var nama = histCurrentItem ? histCurrentItem.nama : '';
       var qtyColor = isMasuk ? 'color:var(--green-text)' : 'color:var(--red-text)';
       var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'" style="font-size:10px;padding:1px 5px">'+(isMasuk?'↑':'↓')+'</span>';
-      return '<div class="hist-day-row">'
-        +'<span class="hdr-time">'+xe(time)+'</span>'
+      var rakBadge = r.rak ? '<span class="hdr-rak-badge">📦 '+xe(r.rak)+'</span>' : '';
+      return '<div class="hist-day-row '+(isMasuk?'in':'out')+'">'
+        +'<div class="hdr-time">'+xe(time)+'</div>'
         +'<div class="hdr-info">'
-          +(kode?'<span class="hdr-kode">'+xe(kode)+'</span>':'')
+          +'<div class="hdr-info-top">'
+            +(kode?'<span class="hdr-kode">'+xe(kode)+'</span>':'')
+            +rakBadge
+          +'</div>'
           +(nama?'<span class="hdr-nama">'+xe(nama)+'</span>':'')
           +(spec?'<span class="hdr-spec">'+xe(spec)+'</span>':'')
           +(r.keterangan?'<span class="hdr-ket-note">📝 '+xe(r.keterangan)+'</span>':'')
         +'</div>'
         +'<div class="hdr-right">'
           +'<span class="hdr-qty" style="'+qtyColor+'">'+badge+' '+xe(r.qty)+'</span>'
+          +'<span class="hdr-saldo-lbl">Saldo</span>'
           +'<span class="hdr-saldo">'+xe(r.saldoSesudah||'—')+'</span>'
-          +(r.admin?'<span class="hdr-admin">'+xe(r.admin)+'</span>':'')
+          +(r.admin?'<span class="hdr-admin">👤 '+xe(r.admin)+'</span>':'')
         +'</div>'
       +'</div>';
     }).join('');
@@ -3712,19 +3930,15 @@ function showRakDetail(rak){
       return '<div class="item-list-card">'
         +'<div class="ilc-strip '+stripCls+'"></div>'
         +'<div class="ilc-body">'
-          +'<div class="ilc-header">'
-            +'<div class="ilc-head-left">'
-              +'<div class="ilc-nama">'+xe(r.nama)+'</div>'
-              +(r.spec?'<div class="ilc-spec">'+xe(r.spec)+'</div>':'')
-            +'</div>'
-            +'<div class="ilc-stok-box">'
-              +'<div class="ilc-stok-num'+(isAlert?' alert':'')+'">'+xe(r.qty||0)+'</div>'
-              +'<div class="ilc-stok-unit">'+xe(r.unit||'pcs')+'</div>'
-              +(isAlert?'<div class="ilc-stok-low">⚠ Low</div>':'')
-            +'</div>'
+          +'<div class="ilc-nama">'+xe(r.nama)+'</div>'
+          +(r.spec?'<div class="ilc-spec">'+xe(r.spec)+'</div>':'')
+          +'<div class="ilc-id-row" style="margin-top:6px">'+idHtml+'</div>'
+          +'<div class="ilc-stok-box" style="flex-direction:row;align-items:baseline;gap:6px;margin-top:8px">'
+            +'<div class="ilc-stok-num'+(isAlert?' alert':'')+'">'+xe(r.qty||0)+'</div>'
+            +'<div class="ilc-stok-unit">'+xe(r.unit||'pcs')+'</div>'
+            +(isAlert?'<div class="ilc-stok-low">⚠ Low</div>':'')
           +'</div>'
-          +'<div class="ilc-id-row">'+idHtml+'</div>'
-          +'<div class="ilc-chips">'+vendorPill+catPill+bcPill+'</div>'
+          +'<div class="ilc-chips" style="margin-top:8px">'+vendorPill+catPill+bcPill+'</div>'
         +'</div>'
       +'</div>';
     }).join('');
@@ -3740,14 +3954,58 @@ var histFeedLoaded = false;
 var histFeedPage = 1;
 var HIST_PAGE_SIZE = 50;
 var histFeedJenis = 'ALL'; // 'ALL' | 'MASUK' | 'KELUAR'
+var histFeedChip = 'ALL';  // 'ALL' | 'MASUK' | 'KELUAR' | 'TODAY' — chip yang lagi aktif (single-select)
+var histFeedSearch = '';   // teks pencarian nama/kode barang
+var histFeedSearchTimer = null;
+var histCardRenderMap = {}; // key -> row, untuk lookup saat "Lihat Detail" ditekan
 
-function setHistFeedJenis(v){
-  histFeedJenis = v;
-  document.getElementById('hfeed-tab-all').classList.toggle('active', v==='ALL');
-  document.getElementById('hfeed-tab-masuk').classList.toggle('active', v==='MASUK');
-  document.getElementById('hfeed-tab-keluar').classList.toggle('active', v==='KELUAR');
+// Chip filter: Semua / Masuk / Keluar / Hari Ini (satu aktif dalam satu waktu)
+function setHistFeedChip(v){
+  histFeedChip = v;
+  histFeedJenis = (v==='MASUK'||v==='KELUAR') ? v : 'ALL';
+  document.querySelectorAll('#hfeed-chip-row .hist-chip').forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-chip')===v);
+  });
   histFeedPage = 1;
   applyHistFeedFilter();
+}
+
+function toggleHistAdvFilter(){
+  var body = document.getElementById('hfeed-adv-body');
+  var chev = document.getElementById('hfeed-adv-chev');
+  var open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+function onHistFeedSearchInput(){
+  var val = document.getElementById('hfeed-search').value;
+  document.getElementById('hfeed-search-clear').classList.toggle('show', !!val);
+  clearTimeout(histFeedSearchTimer);
+  histFeedSearchTimer = setTimeout(function(){
+    histFeedSearch = val.trim().toUpperCase();
+    histFeedPage = 1;
+    applyHistFeedFilter();
+  }, 220);
+}
+
+function clearHistFeedSearch(){
+  document.getElementById('hfeed-search').value = '';
+  document.getElementById('hfeed-search-clear').classList.remove('show');
+  histFeedSearch = '';
+  histFeedPage = 1;
+  applyHistFeedFilter();
+}
+
+function todayKeyStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+
+// Update ringkasan "Hari Ini : N Transaksi" di header panel — dihitung dari SELURUH data (bukan hasil filter)
+function updateHistFeedHeader(){
+  var tKey = todayKeyStr();
+  var count = histFeedRows.filter(function(r){ return parseDateKey(String(r.timestamp||''))===tKey; }).length;
+  document.getElementById('hist-feed-label').textContent = 'Hari Ini : ' + count + ' Transaksi';
 }
 
 function loadAllHistory(force){
@@ -3765,6 +4023,7 @@ function loadAllHistory(force){
       histFeedLoaded = true;
       try{
         populateHistFeedFilterOptions();
+        updateHistFeedHeader();
         applyHistFeedFilter();
       }catch(e){
         container.innerHTML = '<div class="empty-state u-py24"><p>Gagal menampilkan riwayat: '+xe(e.message)+'</p></div>';
@@ -3804,9 +4063,12 @@ function applyHistFeedFilter(){
   var dateTo = document.getElementById('hfeed-date-to').value.trim();
   var rak = document.getElementById('hfeed-rak').value;
   var user = document.getElementById('hfeed-user').value;
+  var tKey = todayKeyStr();
+  var q = histFeedSearch;
 
   histFeedFiltered = histFeedRows.filter(function(r){
     var dateKey = parseDateKey(String(r.timestamp||''));
+    if(histFeedChip==='TODAY' && dateKey !== tKey) return false;
     if(dateFrom && dateKey < dateFrom) return false;
     if(dateTo && dateKey > dateTo) return false;
     if(rak){
@@ -3815,6 +4077,11 @@ function applyHistFeedFilter(){
     }
     if(user && r.admin !== user) return false;
     if(histFeedJenis !== 'ALL' && (r.jenis||'').toUpperCase() !== histFeedJenis) return false;
+    if(q){
+      var meta = getItemMeta(r.itemId);
+      var hay = ((r.itemId||'')+' '+(r.nama||meta.nama||'')).toUpperCase();
+      if(hay.indexOf(q)===-1) return false;
+    }
     return true;
   });
 
@@ -3827,7 +4094,8 @@ function resetHistFeedFilter(){
   document.getElementById('hfeed-date-to').value='';
   document.getElementById('hfeed-rak').value='';
   document.getElementById('hfeed-user').value='';
-  applyHistFeedFilter();
+  clearHistFeedSearch();
+  setHistFeedChip('ALL');
 }
 
 function histFeedTotalPages(){
@@ -3885,27 +4153,26 @@ function renderHistFeed(){
     var netColor = net>0?'color:var(--green-text)':net<0?'color:var(--red-text)':'color:var(--text3)';
     var isOpen = g.isToday || ki===0;
 
-    var rowsHtml = g.rows.map(function(r){
+    var rowsHtml = g.rows.map(function(r, ri){
       var isMasuk = (r.jenis||'').toUpperCase()==='MASUK';
       var time = parseTimeOnly(String(r.timestamp||''));
       var meta = getItemMeta(r.itemId);
       var nama = r.nama || meta.nama || '—';
-      var spec = r.spec || meta.spec || '';
       var qtyColor = isMasuk ? 'color:var(--green-text)' : 'color:var(--red-text)';
-      var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'" style="font-size:10px;padding:1px 5px">'+(isMasuk?'↑':'↓')+'</span>';
-      return '<div class="hist-day-row">'
-        +'<span class="hdr-time">'+xe(time)+'</span>'
-        +'<div class="hdr-info">'
-          +'<span class="hdr-kode">'+xe(r.itemId||'—')+'</span>'
-          +'<span class="hdr-nama">'+xe(nama)+'</span>'
-          +(spec?'<span class="hdr-spec">'+xe(spec)+'</span>':'')
-          +(r.keterangan?'<span class="hdr-ket-note">📝 '+xe(r.keterangan)+'</span>':'')
+      var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'">'+(isMasuk?'↑ Barang Masuk':'↓ Barang Keluar')+'</span>';
+      var cardKey = 'hc-'+ki+'-'+ri;
+      histCardRenderMap[cardKey] = r;
+      return '<div class="hist-card-row '+(isMasuk?'in':'out')+'">'
+        +'<div class="hist-card-top">'
+          +'<div class="hist-card-jenis">'+badge+'</div>'
         +'</div>'
-        +'<div class="hdr-right">'
-          +'<span class="hdr-qty" style="'+qtyColor+'">'+badge+' '+xe(r.qty)+'</span>'
-          +'<span class="hdr-saldo">'+xe(r.saldoSesudah||'—')+'</span>'
-          +(r.admin?'<span class="hdr-admin">'+xe(r.admin)+'</span>':'')
+        +'<div class="hist-card-nama">'+xe(nama)+'</div>'
+        +'<div class="hist-card-kode">Kode : '+xe(r.itemId||'—')+'</div>'
+        +'<div class="hist-card-bottom">'
+          +'<span class="hist-card-qty" style="'+qtyColor+'">'+xe(r.qty)+' '+xe(r.unit||'')+'</span>'
+          +'<span class="hist-card-meta">🕒 '+xe(time)+(r.admin?' &nbsp;·&nbsp; 👤 '+xe(r.admin):'')+'</span>'
         +'</div>'
+        +'<button class="hist-card-detail-btn" onclick="showHistCardDetail(\''+cardKey+'\')">Lihat Detail ›</button>'
       +'</div>';
     }).join('');
 
@@ -3939,6 +4206,39 @@ function renderHistFeed(){
   document.getElementById('hfeed-next').disabled = histFeedPage>=totalPages;
 }
 
+
+// Modal "Lihat Detail" — tampilkan info lengkap satu transaksi (spec, rak, keterangan, saldo, dsb)
+function showHistCardDetail(cardKey){
+  var r = histCardRenderMap[cardKey];
+  if(!r) return;
+  var isMasuk = (r.jenis||'').toUpperCase()==='MASUK';
+  var meta = getItemMeta(r.itemId);
+  var nama = r.nama || meta.nama || '—';
+  var spec = r.spec || meta.spec || '';
+  var rak = r.rak || getRakForItemId(r.itemId) || '—';
+  var rows = [
+    ['Jenis Transaksi', (isMasuk?'↑ Barang Masuk':'↓ Barang Keluar')],
+    ['Nama Barang', nama],
+    ['Kode Barang', r.itemId||'—'],
+    ['Spesifikasi', spec||'—'],
+    ['Qty', (r.qty!=null?r.qty:'—')+' '+(r.unit||'')],
+    ['Saldo Sesudah', r.saldoSesudah||'—'],
+    ['Rak', rak],
+    ['Waktu', r.timestamp||'—'],
+    ['Operator', r.admin||'—'],
+    ['Keterangan', r.keterangan||'—']
+  ];
+  document.getElementById('hist-card-detail-body').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:12px">' +
+    rows.map(function(f){
+      return '<div class="item-field"><div class="item-field-lbl">'+xe(f[0])+'</div><div class="item-field-val">'+xe(String(f[1]))+'</div></div>';
+    }).join('') +
+    '</div>';
+  document.getElementById('modal-hist-card-detail').classList.add('show');
+}
+function closeHistCardDetail(){
+  document.getElementById('modal-hist-card-detail').classList.remove('show');
+}
 
 function pad2(n){ return n<10?'0'+n:String(n); }
 
@@ -4046,11 +4346,11 @@ function buildPrintHTML(items,mode,pSize){
         +'<div class="qa"><div class="qb"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous"></div>'
         +'<div class="qk">'+ex(qrID)+'</div><div class="ql">Scan untuk Transaksi</div></div>'
       +'</div>'
-      +'<div class="ss"><div class="sc masuk"><span class="sl">Stok Masuk</span><span class="sv">'+ex(item.qty)+'</span></div>'
-      +'<div class="sc keluar"><span class="sl">Stok Keluar</span><span class="sv">0</span></div>'
+      +'<div class="ss"><div class="sc masuk"><span class="sl">Total Masuk</span><span class="sv">'+ex(item.totalMasuk||0)+'</span></div>'
+      +'<div class="sc keluar"><span class="sl">Total Keluar</span><span class="sv">'+ex(item.totalKeluar||0)+'</span></div>'
       +'<div class="sc saldo"><span class="sl">Stok Saldo</span><span class="sv">'+ex(item.qty)+'</span></div></div>'
       +'<div class="tt"><div class="thr"><div class="th">No.</div><div class="th">Tanggal</div><div class="th">Masuk</div><div class="th">Keluar</div><div class="th">Saldo</div><div class="th last">Keterangan</div></div>'
-      +'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(tgl)+'</div><div class="td grn">'+ex(item.qty)+'</div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">Saldo awal cetak</div></div>'+rows+'</div></div>'
+      +'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(tgl)+'</div><div class="td"></div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">Saldo saat cetak</div></div>'+rows+'</div></div>'
       +'<div class="kf"><div class="kfl">Cetak: '+tgl+' | Form: WH-KS-001</div><div class="kfr">Vendor Terakhir: '+ex(item.vendor||'—')+'</div><div class="kfv">v5.0</div></div>'
     +'</div>';
   }
@@ -4174,23 +4474,28 @@ function buildCardHtml(rows){
     var isZero=saldo===0;
     var isBC=(r.bc||'').toUpperCase();
     var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';
-    var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--red-text)':'color:var(--green-text)';
+    // Audit 7: status stok = informasi paling penting, harus dikenali tanpa baca angka.
+    // 3 level: 🔴 Habis (saldo 0) → 🟡 Minimum (≤ batas min) → 🟢 Aman (sisanya)
+    var statusDot = isZero?'🔴':isAlert?'🟡':'🟢';
+    var statusLabel = isZero?'Habis':isAlert?'Minimum':'Aman';
+    var stokColor = isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';
     return '<div class="ilc2" onclick="openItemDetail('+r._idx+')">'
       +'<div class="ilc2-strip '+stripCls+'"></div>'
       +'<div class="ilc2-main" style="flex-direction:column;align-items:stretch">'
         +'<div style="display:flex;align-items:center;gap:8px">'
           +'<div class="ilc2-info">'
-            +'<div class="ilc2-top">'
+            +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
+            +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
+            +'<div class="ilc2-top" style="margin-top:3px">'
               +(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
               +(r.rak&&r.rak!=='—'?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'')
             +'</div>'
-            +'<div class="ilc2-nama">'+xe(r.nama)+'</div>'
-            +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
           +'</div>'
-          +'<div class="ilc2-stok" style="'+stokColor+'">'
+          +'<div class="ilc2-stok" style="'+stokColor+'" title="Status stok: '+statusLabel+'">'
+            +'<span class="ilc2-status-dot" aria-hidden="true">'+statusDot+'</span>'
             +xe(r.qty||0)
             +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
-            +(isAlert?'<span class="ilc2-low">LOW</span>':'')
+            +(isAlert&&!isZero?'<span class="ilc2-low">MINIMUM</span>':'')
             +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
           +'</div>'
         +'</div>'
@@ -4264,6 +4569,7 @@ function openItemDetail(idx){
   document.getElementById('idd-unit').textContent = r.unit||'pcs';
   document.getElementById('idd-low').style.display = isAlert?'block':'none';
   document.getElementById('idd-rak').textContent = r.rak||'—';
+  document.getElementById('idd-rak-hero').textContent = r.rak||'—';
   document.getElementById('idd-kategori').textContent = r.kategori||'—';
   document.getElementById('idd-user').textContent = r.user||'—';
   document.getElementById('idd-bc').textContent = r.bc||'—';
@@ -4274,11 +4580,27 @@ function openItemDetail(idx){
 
   document.getElementById('item-detail-overlay').classList.add('show');
   document.getElementById('item-detail-sheet').classList.add('show');
+  var histList=document.getElementById('idd-hist-list'), histToggle=document.getElementById('idd-hist-toggle');
+  if(histList) histList.style.display='none';
+  if(histToggle){ var lbl=histToggle.querySelector('span'); if(lbl) lbl.textContent='▸ Riwayat Transaksi'; }
   checkLedgerReconciliation(r.id);
   loadItemHistoryInDetail(r.id, r.unit);
 }
 
 // Upgrade: riwayat transaksi item langsung di halaman detail (scroll ke bawah)
+// Audit 9: Riwayat Transaksi collapsible — default tertutup supaya body detail tidak
+// terasa penuh sekaligus saat pertama dibuka. Data tetap di-fetch di background (lihat
+// loadItemHistoryInDetail) sehingga begitu dibuka, isinya sudah siap tanpa delay.
+function toggleDetailHist(){
+  var list = document.getElementById('idd-hist-list');
+  var toggle = document.getElementById('idd-hist-toggle');
+  if(!list||!toggle) return;
+  var isOpen = list.style.display!=='none';
+  list.style.display = isOpen?'none':'block';
+  var lbl = toggle.querySelector('span');
+  if(lbl) lbl.textContent = (isOpen?'▸':'▾')+' Riwayat Transaksi';
+}
+
 function loadItemHistoryInDetail(itemId, unit){
   unit = unit || '';
   var box = document.getElementById('idd-hist-list');
@@ -4298,30 +4620,34 @@ function loadItemHistoryInDetail(itemId, unit){
       box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Belum ada transaksi untuk item ini</p></div>';
       return;
     }
-    box.innerHTML = res.rows.map(function(r){
+    var bodyRows = res.rows.map(function(r){
       var isMasuk = (r.jenis||'').toUpperCase()==='MASUK';
       var qtyColor = isMasuk ? 'color:var(--green-text,#2ecc71)' : 'color:var(--red-text,#e74c3c)';
-      var arrow = isMasuk ? '↑' : '↓';
-      // Pisahkan tanggal & jam jadi 2 baris pendek biar muat di kolom sempit
+      var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'">'+(isMasuk?'↑ Masuk':'↓ Keluar')+'</span>';
       var parts = String(r.timestamp||'').split(' ');
       var tglPart = parts[0]||''; var jamPart = parts[1]||'';
 
-      var metaBits = [];
-      if(r.rak) metaBits.push('📦 '+r.rak);
-      if(r.admin) metaBits.push('👤 '+r.admin);
-
-      return '<div class="idd-hist-row">'
-        +'<div class="idd-hist-time">'+xe(tglPart)+'<br>'+xe(jamPart)+'</div>'
-        +'<div class="idd-hist-main">'
-          +'<div class="idd-hist-top">'
-            +'<span class="idd-hist-qty" style="'+qtyColor+'">'+arrow+' '+(isMasuk?'+':'-')+xe(r.qty)+'</span>'
-          +'</div>'
-          +(r.keterangan?'<div class="idd-hist-note">📝 '+xe(r.keterangan)+'</div>':'')
-          +(metaBits.length?'<div class="idd-hist-meta">'+xe(metaBits.join(' · '))+'</div>':'')
-        +'</div>'
-        +'<div class="idd-hist-right"><span class="idd-hist-saldo-lbl">Saldo</span><span class="idd-hist-saldo-val">'+xe(r.saldoSesudah)+' '+xe(unit)+'</span></div>'
-      +'</div>';
+      return '<tr>'
+        +'<td style="white-space:nowrap">'+xe(tglPart)+'<br><span style="color:var(--text3);font-size:10px">'+xe(jamPart)+'</span></td>'
+        +'<td>'+badge+'</td>'
+        +'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(r.qty)+'</td>'
+        +'<td style="text-align:right;font-family:var(--font-mono);color:var(--amber);font-weight:700">'+xe(r.saldoSesudah)+' '+xe(unit)+'</td>'
+        +'<td>'+xe(r.admin||'—')+'</td>'
+        +'<td><span class="hist-ket" title="'+xe(r.keterangan||'')+'">'+xe(r.keterangan||'—')+'</span></td>'
+      +'</tr>';
     }).join('');
+
+    box.innerHTML = '<div class="hist-table-wrap"><table class="hist-table">'
+      +'<thead><tr>'
+        +'<th style="width:64px">Tanggal</th>'
+        +'<th style="width:70px">Jenis</th>'
+        +'<th style="width:55px;text-align:right">Qty</th>'
+        +'<th style="width:70px;text-align:right">Saldo</th>'
+        +'<th style="width:65px">Operator</th>'
+        +'<th>Keterangan</th>'
+      +'</tr></thead>'
+      +'<tbody>'+bodyRows+'</tbody>'
+      +'</table></div>';
   }).catch(function(){
     if(_detailIdx===null) return;
     box.innerHTML = '<div class="empty-state u-py24" style="padding:20px 0"><p>Tidak bisa memuat riwayat (offline?)</p></div>';
@@ -4344,7 +4670,13 @@ function checkLedgerReconciliation(itemId){
     } else {
       // Menonjol hanya kalau memang ada masalah nyata
       box.style.cssText = 'padding:10px 14px;border-radius:var(--r);font-size:var(--fs-13);background:var(--red-dim,#3a1a1a);color:var(--red-text,#ff6b6b);border:1px solid var(--red-border,#e74c3c)';
-      box.textContent = '⚠ Selisih terdeteksi: sistem catat ' + res.cachedClosing + ', seharusnya ' + res.computedClosing + ' (diff ' + res.diff + '). Coba jalankan recalculateAllSaldo().';
+      // Jaga-jaga field respons backend tidak lengkap (mis. Apps Script Web App belum di-deploy ulang
+      // ke versi Code.gs terbaru) -- daripada nampilin literal "undefined", kasih pesan yang jelas.
+      if (typeof res.computedClosing !== 'number' || typeof res.cachedClosing !== 'number') {
+        box.textContent = '⚠ Data rekonsiliasi tidak lengkap dari server. Pastikan Apps Script sudah di-deploy ulang ke versi Code.gs terbaru (Deploy → Manage deployments → Edit → New version).';
+      } else {
+        box.textContent = '⚠ Selisih terdeteksi: sistem catat ' + res.cachedClosing + ', seharusnya ' + res.computedClosing + ' (diff ' + res.diff + '). Coba jalankan recalculateAllSaldo().';
+      }
     }
   }).catch(function(){ box.textContent='Tidak bisa memeriksa (offline?)'; });
 }
@@ -4354,6 +4686,54 @@ function closeItemDetail(){
   document.getElementById('item-detail-sheet').classList.remove('show');
   _detailIdx = null;
 }
+
+// ── Tarik ke bawah utk nutup (drag-to-dismiss) ──────────────────────────
+// Dipasang HANYA di handle & hero (bukan di seluruh sheet), supaya scroll normal
+// di isi detail (riwayat transaksi, dll) tidak ikut ke-intercept jadi gestur nutup.
+(function setupItemDetailDragToClose(){
+  var sheet = document.getElementById('item-detail-sheet');
+  if(!sheet) return;
+  var dragHandle = document.getElementById('item-detail-drag-handle');
+  var hero = document.getElementById('item-detail-hero');
+  var startY = 0, currentY = 0, dragging = false, sheetH = 0;
+
+  function onStart(e){
+    dragging = true;
+    startY = (e.touches?e.touches[0].clientY:e.clientY);
+    currentY = startY;
+    sheetH = sheet.offsetHeight || 500;
+    sheet.classList.add('dragging');
+  }
+  function onMove(e){
+    if(!dragging) return;
+    currentY = (e.touches?e.touches[0].clientY:e.clientY);
+    var delta = currentY - startY;
+    if(delta < 0) delta = 0; // cuma boleh ditarik ke bawah, bukan ke atas
+    sheet.style.transform = 'translateY(' + delta + 'px)';
+    if(e.cancelable) e.preventDefault();
+  }
+  function onEnd(){
+    if(!dragging) return;
+    dragging = false;
+    sheet.classList.remove('dragging');
+    var delta = Math.max(0, currentY - startY);
+    sheet.style.transform = '';
+    // Ditarik lebih dari ~22% tinggi sheet (atau minimal 110px) -> anggap niat nutup
+    if(delta > Math.max(110, sheetH*0.22)) closeItemDetail();
+  }
+
+  [dragHandle, hero].forEach(function(el){
+    if(!el) return;
+    el.addEventListener('touchstart', onStart, {passive:true});
+    el.addEventListener('touchmove', onMove, {passive:false});
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    // Mouse juga didukung (testing di desktop browser)
+    el.addEventListener('mousedown', onStart);
+  });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+})();
 
 function saveMinStockFromDetail(){
   if(_detailIdx===null) return;
@@ -4515,6 +4895,7 @@ function toggleInlineScanner(caller){
     if(c.style.display==='none'||!c.style.display){
       c.style.display='block';
       startInlineScanner(caller);
+      refitAcDropdownIfOpen('scan');
     } else {
       stopInlineScanner();
     }
@@ -4523,6 +4904,7 @@ function toggleInlineScanner(caller){
     if(c2.style.display==='none'||!c2.style.display){
       c2.style.display='block';
       startInlineScanner(caller);
+      refitAcDropdownIfOpen('hist');
     } else {
       stopInlineScannerHist();
     }
@@ -4606,6 +4988,7 @@ function stopInlineScanner(){
   if(_scanStream){ _scanStream.getTracks().forEach(function(t){t.stop();}); _scanStream=null; }
   var c=document.getElementById('qr-scanner-container');
   if(c) c.style.display='none';
+  refitAcDropdownIfOpen('scan');
 }
 
 function stopInlineScannerHist(){
@@ -4613,6 +4996,93 @@ function stopInlineScannerHist(){
   if(_scanStreamHist){ _scanStreamHist.getTracks().forEach(function(t){t.stop();}); _scanStreamHist=null; }
   var c=document.getElementById('qr-scanner-hist-container');
   if(c) c.style.display='none';
+  refitAcDropdownIfOpen('hist');
+}
+
+// ── Scanner khusus Inventory Quick Action / search (Audit 1 & 3) ──
+// Sengaja terpisah dari toggleInlineScanner/startInlineScanner/scanFrame di atas
+// (yang khusus 'scanner' vs 'history') supaya tidak menyentuh alur Transaksi & History yang sudah jalan.
+var _scanStreamMaster=null, _scanRafMaster=null;
+function toggleInlineScannerMaster(){
+  var c=document.getElementById('qr-scanner-master-container');
+  if(!c) return;
+  if(c.style.display==='none'||!c.style.display){
+    c.style.display='block';
+    startInlineScannerMaster();
+  } else {
+    stopInlineScannerMaster();
+  }
+}
+function startInlineScannerMaster(){
+  var video=document.getElementById('qr-video-master');
+  var label=document.getElementById('qr-label-master');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    label.textContent='Kamera tidak didukung browser ini';
+    label.classList.add('detected');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}})
+    .then(function(stream){
+      _scanStreamMaster=stream;
+      video.srcObject=stream;
+      video.play();
+      label.textContent='Arahkan kamera ke QR Code';
+      label.classList.remove('detected');
+      scanFrameMaster();
+    })
+    .catch(function(err){
+      label.textContent='Izin kamera ditolak: '+err.message;
+      label.classList.add('detected');
+    });
+}
+function scanFrameMaster(){
+  var video=document.getElementById('qr-video-master');
+  var canvas=document.getElementById('qr-canvas-master');
+  var label=document.getElementById('qr-label-master');
+  if(!video||video.readyState<2){
+    _scanRafMaster=requestAnimationFrame(scanFrameMaster);
+    return;
+  }
+  var ctx=canvas.getContext('2d');
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+  var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+  if(code){
+    var raw=code.data.trim();
+    var id=raw.split('|')[0].trim().toUpperCase();
+    label.textContent='✓ QR terdeteksi: '+id;
+    label.classList.add('detected');
+    stopInlineScannerMaster();
+    var box=document.getElementById('search-box');
+    if(box){ box.value=id; filterTableDebounced(); }
+    return;
+  }
+  _scanRafMaster=requestAnimationFrame(scanFrameMaster);
+}
+function stopInlineScannerMaster(){
+  if(_scanRafMaster){ cancelAnimationFrame(_scanRafMaster); _scanRafMaster=null; }
+  if(_scanStreamMaster){ _scanStreamMaster.getTracks().forEach(function(t){t.stop();}); _scanStreamMaster=null; }
+  var c=document.getElementById('qr-scanner-master-container');
+  if(c) c.style.display='none';
+}
+
+// Buka/tutup kamera mengubah tinggi konten DI ATAS input ID Item secara drastis
+// (preview kamera setinggi ratusan px muncul/hilang), jadi posisi input ikut geser.
+// Kalau dropdown hasil pencarian lagi kebuka pas ini terjadi, tinggi yg kehitung
+// sebelumnya jadi basi (nempel ke posisi lama) -- makanya perlu diukur ulang di
+// SETIAP momen layout berubah begini, bukan cuma pas fokus/ketik.
+function refitAcDropdownIfOpen(ctx){
+  var dropId = ctx==='scan' ? 'ac-scan' : 'ac-hist';
+  // requestAnimationFrame: tunggu browser selesai reflow dulu (container kamera baru
+  // saja disembunyikan/dimunculkan) sebelum ukur posisi, biar angkanya akurat.
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      var drop = document.getElementById(dropId);
+      if(drop && drop.classList.contains('show')) fitAcDropdown(drop);
+    });
+  });
 }
 
 // (switchTab override sudah digabung di atas bersama cetak)
