@@ -163,6 +163,12 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-hei
 .field-group{margin-bottom:14px}
 .field-label{font-size:var(--fs-11);font-weight:700;color:var(--text3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .field-hint{font-size:var(--fs-11);color:var(--text3);margin-top:4px}
+
+/* ══ ADMIN DATABASE (modal maintenance) ══ */
+.admin-tool-card{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border2);border-radius:var(--r);margin-bottom:10px;background:var(--surface2)}
+.admin-tool-info{flex:1;min-width:0}
+.admin-tool-title{font-size:var(--fs-13);font-weight:700;color:var(--text);margin-bottom:3px}
+.admin-tool-desc{font-size:var(--fs-11);color:var(--text3);line-height:1.4}
 /* Label section generik dipakai di form panjang (mis. Input Transaksi) supaya field wajib vs
    opsional/referensi kebaca terpisah, bukan satu list flat yang bobotnya sama semua */
 .form-section-lbl{font-size:10px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin:2px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
@@ -1183,6 +1189,10 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         <span>Pengaturan</span>
       </button>
+      <button class="more-menu-btn" onclick="showAdminTools();closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span>Admin Database</span>
+      </button>
     </div>
   </div>
   <div class="sheet-footer">
@@ -1263,11 +1273,6 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
     <!-- ── SEARCH & FILTER ZONE ── -->
     <div id="master-search-zone" style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:56px;z-index:60;transition:padding .2s ease">
       <!-- Baris 1: Search input full width -->
-      <div id="warn-noid" class="sbar s-warn" style="margin-top:0;margin-bottom:10px;display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Ada item tanpa ID. Jalankan <strong>migrateAddID()</strong> di GAS.
-      </div>
-
       <div class="search-wrap" style="width:100%;margin-bottom:8px;position:relative">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="search-box" style="width:100%;border-radius:10px;padding:12px 46px 12px 42px;font-size:14px" placeholder="Scan atau ketik Kode / Nama Barang…" oninput="filterTableDebounced()">
@@ -2204,6 +2209,40 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   </div>
 </div>
 
+<!-- MODAL: ADMIN DATABASE (fungsi maintenance -- dulu harus dijalankan manual dari Apps Script) -->
+<div class="modal-overlay" id="modal-admin-tools" role="dialog" aria-modal="true" aria-label="Admin Database">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🛠 Admin Database</h3>
+      <button class="btn btn-sm" onclick="hideAdminTools()" aria-label="Tutup admin database">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Fungsi maintenance database. Sebelumnya harus dijalankan manual dari Apps Script — sekarang bisa langsung dari sini.</p>
+
+      <div class="admin-tool-card">
+        <div class="admin-tool-info">
+          <div class="admin-tool-title">Isi ID Kosong</div>
+          <div class="admin-tool-desc">Kasih ID baru (RDI-YYYY-XXX) ke semua item di Master_Item yang ID_Item-nya masih kosong. Item yang sudah punya ID tidak disentuh.</div>
+        </div>
+        <button class="btn btn-sm" id="btn-admin-migrateid" onclick="runAdminTool('migrateAddID', this)">Jalankan</button>
+      </div>
+
+      <div class="admin-tool-card">
+        <div class="admin-tool-info">
+          <div class="admin-tool-title">Kalkulasi Ulang Stok</div>
+          <div class="admin-tool-desc">Hitung ulang Stok_Saldo & Stok_Per_Rak dari nol berdasarkan seluruh Transaksi_Log. Pakai ini kalau saldo terasa tidak sesuai atau habis edit manual di Sheet.</div>
+        </div>
+        <button class="btn btn-sm" id="btn-admin-recalc" onclick="runAdminTool('recalculateAllSaldo', this)">Jalankan</button>
+      </div>
+
+      <div id="sbar-admin" class="sbar" style="margin-top:12px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-block" onclick="hideAdminTools()">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: GANTI OPERATOR -->
 <div class="modal-overlay" id="modal-user" role="dialog" aria-modal="true" aria-label="Ganti operator">
   <div class="modal">
@@ -2242,8 +2281,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v12.24';
-var APP_BUILD_DATE = '2026-07-19';
+var APP_VERSION = 'v12.28';
+var APP_BUILD_DATE = '2026-07-20';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -2492,6 +2531,45 @@ function saveConfig(){
 }
 
 // ══════════════════════════════════════════════════════
+// ADMIN DATABASE — fungsi maintenance yg dulu harus dijalankan
+// manual dari Apps Script (migrateAddID, recalculateAllSaldo, dll),
+// sekarang bisa dipicu langsung dari app lewat action='adminTool'.
+// ══════════════════════════════════════════════════════
+var ADMIN_TOOL_LABELS = {
+  migrateAddID: 'Isi ID Kosong',
+  recalculateAllSaldo: 'Kalkulasi Ulang Stok'
+};
+function showAdminTools(){
+  hideStatus('sbar-admin');
+  document.getElementById('modal-admin-tools').classList.add('show');
+}
+function hideAdminTools(){
+  document.getElementById('modal-admin-tools').classList.remove('show');
+}
+function runAdminTool(fn, btnEl){
+  var label = ADMIN_TOOL_LABELS[fn] || fn;
+  if(!confirm(label+' akan mengubah data langsung di spreadsheet. Lanjutkan?')) return;
+
+  var originalText = btnEl.textContent;
+  btnEl.disabled = true; btnEl.textContent = 'Memproses…';
+  showStatus('sbar-admin','s-info',IC.load+' Menjalankan '+xe(label)+'…');
+
+  gasPost({action:'adminTool', fn:fn}).then(function(res){
+    btnEl.disabled = false; btnEl.textContent = originalText;
+    if(res.status==='ok'){
+      showStatus('sbar-admin','s-ok',IC.ok+' '+xe(res.message||label+' selesai.'));
+      // Data master/saldo mungkin berubah -> refresh cache lokal biar konsisten
+      if(typeof loadData==='function') loadData();
+    } else {
+      showStatus('sbar-admin','s-err',IC.err+' '+xe(res.message||'Gagal menjalankan '+label));
+    }
+  }).catch(function(err){
+    btnEl.disabled = false; btnEl.textContent = originalText;
+    showStatus('sbar-admin','s-err',IC.err+' Network error: '+xe(err.message));
+  });
+}
+
+// ══════════════════════════════════════════════════════
 // GAS API CALLS (fetch-based, bukan google.script.run)
 // ══════════════════════════════════════════════════════
 function checkUrl(){
@@ -2615,8 +2693,6 @@ function loadData(){
       filteredRows=allRows.slice();
       renderTable(filteredRows); renderCatFilter();
       document.getElementById('last-load').textContent='Dimuat '+new Date().toLocaleTimeString('id-ID')+' · '+allRows.length+' item';
-      var noId=allRows.filter(function(r){ return !r.id||r.id.trim()===''; });
-      document.getElementById('warn-noid').style.display=(noId.length>0||!result.hasIDCol)?'flex':'none';
       showStatus('sbar-load','s-ok',IC.ok+' Berhasil memuat <strong>'+allRows.length+' item</strong>');
     })
     .catch(function(err){
@@ -2635,6 +2711,23 @@ function renderTable(rows){
     renderCardList([]);
     return;
   }
+  // PERF: tabel (.table-wrap) disembunyikan total lewat CSS di layar HP (<=640px) --
+  // hanya card list yg kelihatan di mobile. Bangun ratusan/ribuan <tr> yg tidak pernah
+  // ditampilkan itu buang-buang kerja & bikin app lemot begitu item banyak (mis. abis migrasi).
+  // Jadi di viewport mobile, skip build tabel sepenuhnya; baru dibangun kalau layar melebar
+  // ke ukuran desktop (ditangani lewat resize listener + _tableStale flag di bawah).
+  var isMobileView = window.matchMedia('(max-width:640px)').matches;
+  if(isMobileView){
+    _tableStaleRows = rows; // simpan, bangun nanti kalau layar melebar
+  } else {
+    _buildTableHtml(rows);
+  }
+  renderCardList(rows);
+}
+
+var _tableStaleRows = null;
+function _buildTableHtml(rows){
+  var tb=document.getElementById('table-body');
   tb.innerHTML=rows.map(function(r){
     var bcCls=(r.bc||'').toUpperCase().includes('NON')?'badge-nonbc':'badge-bc';
     var idHtml=r.id&&r.id.trim()!==''
@@ -2660,8 +2753,15 @@ function renderTable(rows){
       +'<td class="c"><button class="btn btn-sm" style="padding:3px 8px;font-size:10px" onclick="openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>'
       +'</tr>';
   }).join('');
-  renderCardList(rows);
+  _tableStaleRows = null;
 }
+// Kalau layar di-resize (mis. HP diputar ke landscape lebar, atau dibuka di tablet/desktop)
+// dan ternyata tabel jadi kelihatan tapi belum pernah dibangun -- bangun sekarang.
+window.addEventListener('resize', function(){
+  if(_tableStaleRows && !window.matchMedia('(max-width:640px)').matches){
+    _buildTableHtml(_tableStaleRows);
+  }
+});
 
 
 
@@ -2669,7 +2769,7 @@ function renderTable(rows){
 // FUZZY SEARCH ENGINE
 // Strategi berlapis: exact substring → token prefix → trigram → typo tolerance
 // ══════════════════════════════════════════════════════
-function fuzzyScore(haystack, needle){
+function fuzzyScore(haystack, needle, cheapOnly){
   if(!haystack||!needle) return 0;
   var h = haystack.toLowerCase().replace(/[^a-z0-9\s]/g,'');
   var n = needle.toLowerCase().replace(/[^a-z0-9\s]/g,'');
@@ -2685,6 +2785,12 @@ function fuzzyScore(haystack, needle){
     return words.some(function(w){ return w.startsWith(t); });
   });
   if(allPrefix) return 80;
+
+  // PERF: kalau dipanggil dari fast-pass (cheapOnly), STOP di sini -- jangan
+  // lanjut ke bigram/trigram/Levenshtein yg berat. Dipakai supaya ketikan normal
+  // (tanpa typo) di autocomplete Scan/Transaksi tetap instan walau item ribuan;
+  // tahap berat baru dipanggil belakangan HANYA kalau tahap murah blm cukup hasil.
+  if(cheapOnly) return 0;
 
   // 3. Bigram similarity (lebih sensitif dari trigram untuk kata pendek)
   function ngrams(s, n){
@@ -2737,7 +2843,7 @@ function fuzzyScore(haystack, needle){
   return 0;
 }
 
-function fuzzyMatch(r, q){
+function fuzzyMatch(r, q, cheapOnly){
   q = String(q||'').replace(/\s+/g,' ').trim(); // rapikan spasi ganda/tidak sengaja dari keyboard mobile
   if(!q) return {match:true, score:0};
   var fields = [
@@ -2752,7 +2858,7 @@ function fuzzyMatch(r, q){
   ];
   var best = 0;
   fields.forEach(function(f){
-    var s = fuzzyScore(f.v, q) * f.w;
+    var s = fuzzyScore(f.v, q, cheapOnly) * f.w;
     if(s > best) best = s;
   });
   return {match: best >= 18, score: best};
@@ -2872,13 +2978,25 @@ function acShow(ctx){
 
   if(!q){ acHide(ctx); return; }
 
-  // Fuzzy score semua rows, ambil top 8
+  // PERF: Tahap 1 (murah) dulu ke SEMUA item -- exact substring & prefix saja.
+  // Tahap 2 (bigram/trigram/Levenshtein, berat) HANYA dijalankan ke item yg belum
+  // ketemu di tahap 1, dan HANYA kalau hasil tahap 1 masih kurang dari 8.
+  // Jadi ketikan normal (tanpa typo) langsung instan walau item ribuan --
+  // toleransi typo tetap ada, cuma dipakai kalau memang perlu.
   var scored = [];
+  var needFuzzy = [];
   allRows.forEach(function(r){
     if(!r.id && !r.nama) return;
-    var res = fuzzyMatch(r, q);
-    if(res.match) scored.push({r:r, score:res.score});
+    var cheap = fuzzyMatch(r, q, true);
+    if(cheap.match) scored.push({r:r, score:cheap.score});
+    else needFuzzy.push(r);
   });
+  if(scored.length < 8){
+    needFuzzy.forEach(function(r){
+      var res = fuzzyMatch(r, q, false);
+      if(res.match) scored.push({r:r, score:res.score});
+    });
+  }
   scored.sort(function(a,b){ return b.score-a.score; });
   var top = scored.slice(0,8);
 
@@ -4953,9 +5071,28 @@ function scanFrame(caller){
     return;
   }
 
+  // PERF: decode QR tiap animation frame (~60x/detik) di resolusi kamera penuh
+  // (1280x720) itu berat banget di HP -- padahal utk baca QR gak perlu secepat
+  // itu. Dibatasi ~12x/detik + canvas decode diperkecil (maks 480px sisi
+  // terpanjang). Video yg ditampilkan ke operator TETAP full resolusi (cuma
+  // canvas kerja internal utk decode yg dikecilkan), jadi kualitas gambar yg
+  // dilihat tidak berubah, cuma proses baca QR-nya jauh lebih ringan.
+  var now = performance.now();
+  var lastKey = caller==='scanner' ? '_lastScanAt' : '_lastScanAtHist';
+  if(!window[lastKey]) window[lastKey]=0;
+  if(now - window[lastKey] < 80){
+    var rafIdSkip=requestAnimationFrame(function(){scanFrame(caller);});
+    if(caller==='scanner') _scanRaf=rafIdSkip; else _scanRafHist=rafIdSkip;
+    return;
+  }
+  window[lastKey]=now;
+
   var ctx=canvas.getContext('2d');
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
+  var vw=video.videoWidth, vh=video.videoHeight;
+  var maxDim=480;
+  var scale=Math.min(1, maxDim/Math.max(vw,vh));
+  canvas.width=Math.round(vw*scale);
+  canvas.height=Math.round(vh*scale);
   ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
   var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
