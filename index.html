@@ -250,6 +250,49 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .qty-btn:hover{color:var(--amber);background:var(--amber-dim)}
 .qty-btn:active{background:var(--amber-dim);color:var(--amber);transform:scale(.92)}
 .qty-input{flex:1;border:none;border-left:1px solid var(--border2);border-right:1px solid var(--border2);text-align:center;font-size:var(--fs-28);font-weight:900;padding:0;height:58px;color:var(--text);background:var(--surface2);font-family:var(--font-mono);outline:none}
+
+/* ── Redesain Input Transaksi (v13.0) — progress step, aksen warna jenis,
+   preview saldo real-time, shortcut qty & rak, sticky submit bar ── */
+.trx-progress{display:flex;align-items:center;margin:0 0 16px;padding:0 2px}
+.trx-progress-step{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;width:64px}
+.trx-progress-dot{width:26px;height:26px;border-radius:50%;background:var(--surface3);border:1.5px solid var(--border2);color:var(--text3);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--transition)}
+.trx-progress-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.trx-progress-line{flex:1;height:2px;background:var(--border2);margin:0 -4px 15px;border-radius:2px;transition:background var(--transition)}
+.trx-progress-step.done .trx-progress-dot{background:var(--green);border-color:var(--green);color:#fff}
+.trx-progress-step.done .trx-progress-dot::after{content:'✓'}
+.trx-progress-step.active .trx-progress-dot{background:var(--amber);border-color:var(--amber);color:#1a1200;box-shadow:0 0 0 4px var(--amber-dim)}
+.trx-progress-step.active .trx-progress-lbl{color:var(--amber)}
+.trx-progress-step.done .trx-progress-lbl{color:var(--green-text)}
+.trx-progress-line.done{background:var(--green)}
+
+.item-card.jenis-masuk{border-color:var(--green-border);box-shadow:var(--shadow),0 0 0 1px var(--green-border) inset}
+.item-card.jenis-masuk .item-card-head{background:linear-gradient(135deg,rgba(34,197,94,.16),var(--surface2))}
+.item-card.jenis-keluar{border-color:var(--red-border);box-shadow:var(--shadow),0 0 0 1px var(--red-border) inset}
+.item-card.jenis-keluar .item-card-head{background:linear-gradient(135deg,rgba(239,68,68,.16),var(--surface2))}
+
+.saldo-box{flex-wrap:wrap;row-gap:10px}
+.saldo-after-box{text-align:right;padding-left:14px;margin-left:auto;border-left:1px dashed var(--border2)}
+.saldo-after-lbl{font-size:var(--fs-9);color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.saldo-after-val{font-size:var(--fs-22);font-weight:900;font-family:var(--font-mono);letter-spacing:-.5px}
+.saldo-after-val.up{color:var(--green-text)}
+.saldo-after-val.down{color:var(--red-text)}
+.saldo-after-val.warn{color:var(--amber)}
+
+.qty-presets{display:flex;gap:6px;margin:-6px 0 14px}
+.qty-preset-btn{flex:1;padding:9px 4px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text2);font-size:var(--fs-12);font-weight:700;cursor:pointer;font-family:inherit;transition:all var(--transition);-webkit-tap-highlight-color:transparent;min-height:38px}
+.qty-preset-btn:hover{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border)}
+.qty-preset-btn:active{transform:scale(.94)}
+
+.rak-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rak-chips:empty{display:none}
+.rak-chip{padding:6px 12px;border-radius:var(--br-999);border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:var(--fs-11);font-weight:700;cursor:pointer;font-family:var(--font-mono);transition:all var(--transition);-webkit-tap-highlight-color:transparent}
+.rak-chip:hover{border-color:var(--amber-border);color:var(--amber)}
+.rak-chip.selected{background:var(--amber-dim);border-color:var(--amber-border);color:var(--amber)}
+
+.trx-submit-spacer{height:92px}
+.trx-submit-bar{position:fixed;left:0;right:0;bottom:66px;z-index:150;background:var(--bg2);border-top:1px solid var(--border);padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+.trx-submit-bar .sbar{margin-top:6px}
+body.light .trx-submit-bar{box-shadow:0 -6px 24px rgba(0,0,0,.1)}
 .result-card{border-radius:var(--rl);padding:24px;text-align:center;margin-bottom:14px;border:1px solid transparent}
 .result-card.ok{background:var(--green-dim);border-color:var(--green-border);box-shadow:var(--glow-green)}
 .result-card.err{background:var(--red-dim);border-color:var(--red-border)}
@@ -996,7 +1039,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 /* ══ AUTOCOMPLETE DROPDOWN ══ */
 .ac-wrap{position:relative}
 .ac-dropdown{
-  position:absolute;left:0;right:0;top:calc(100% + 4px);
+  position:fixed;
   background:var(--surface);border:1px solid var(--amber-border);
   border-radius:var(--r);box-shadow:var(--shadow-lg);
   z-index:500;max-height:min(520px,68vh);overflow-y:auto;display:none;
@@ -1430,6 +1473,24 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 <div class="page-section" id="section-scanner">
 <div class="container-sm">
 
+  <!-- Progress indicator: orientasi operator ada di tahap mana -->
+  <div class="trx-progress" id="trx-progress">
+    <div class="trx-progress-step active" id="trxprog-1" data-step="1">
+      <div class="trx-progress-dot">1</div>
+      <div class="trx-progress-lbl">Cari Item</div>
+    </div>
+    <div class="trx-progress-line" id="trxprog-line1"></div>
+    <div class="trx-progress-step" id="trxprog-2" data-step="2">
+      <div class="trx-progress-dot">2</div>
+      <div class="trx-progress-lbl">Input</div>
+    </div>
+    <div class="trx-progress-line" id="trxprog-line2"></div>
+    <div class="trx-progress-step" id="trxprog-3" data-step="3">
+      <div class="trx-progress-dot">3</div>
+      <div class="trx-progress-lbl">Selesai</div>
+    </div>
+  </div>
+
   <!-- Step 1: Input ID -->
   <div class="scan-step active" id="step-input">
     <div class="panel">
@@ -1495,7 +1556,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 
   <!-- Step 2: Form Transaksi -->
   <div class="scan-step" id="step-transaksi">
-    <div class="item-card" id="item-preview">
+    <div class="item-card jenis-keluar" id="item-preview">
       <div class="item-card-head" style="align-items:flex-start">
         <div class="u-flexfill" style="margin-left:0">
           <div class="item-card-nama" id="preview-nama">—</div>
@@ -1513,8 +1574,12 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <div class="item-field"><div class="item-field-lbl">Satuan</div><div class="item-field-val" id="preview-unit">—</div></div>
       </div>
       <div class="saldo-box">
-        <div><div class="saldo-label">Stok Saldo Saat Ini</div><div class="saldo-unit" id="preview-unit2">—</div></div>
+        <div><div class="saldo-label">Stok Saat Ini</div><div class="saldo-unit" id="preview-unit2">—</div></div>
         <div style="text-align:right"><div class="saldo-val" id="preview-saldo">—</div></div>
+        <div class="saldo-after-box">
+          <div class="saldo-after-lbl">Sesudah Transaksi</div>
+          <div class="saldo-after-val" id="preview-saldo-after">—</div>
+        </div>
       </div>
     </div>
 
@@ -1524,11 +1589,11 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <div class="form-section-lbl">① Jenis &amp; Jumlah</div>
         <label class="field-label">Jenis Transaksi</label>
         <div class="jenis-toggle">
-          <button class="jenis-btn active-masuk" id="btn-masuk" onclick="setJenis('MASUK')">
+          <button class="jenis-btn" id="btn-masuk" onclick="setJenis('MASUK')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
             MASUK
           </button>
-          <button class="jenis-btn" id="btn-keluar" onclick="setJenis('KELUAR')">
+          <button class="jenis-btn active-keluar" id="btn-keluar" onclick="setJenis('KELUAR')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
             KELUAR
           </button>
@@ -1537,15 +1602,22 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
         <label class="field-label">Jumlah (Qty)</label>
         <div class="qty-wrap">
           <button class="qty-btn" onclick="adjustQty(-1)" aria-label="Kurangi jumlah">−</button>
-          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1" oninput="saveTransaksiDraft()">
+          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1" oninput="saveTransaksiDraft();updateSaldoPreview()">
           <button class="qty-btn" onclick="adjustQty(1)" aria-label="Tambah jumlah">+</button>
+        </div>
+        <div class="qty-presets" id="qty-presets" role="group" aria-label="Tambah jumlah cepat">
+          <button type="button" class="qty-preset-btn" onclick="adjustQty(5)">+5</button>
+          <button type="button" class="qty-preset-btn" onclick="adjustQty(10)">+10</button>
+          <button type="button" class="qty-preset-btn" onclick="adjustQty(25)">+25</button>
+          <button type="button" class="qty-preset-btn" onclick="adjustQty(50)">+50</button>
         </div>
 
         <div class="form-section-lbl">② Lokasi Rak <span style="color:var(--red-text,#e74c3c);font-weight:800">*wajib</span></div>
         <div class="field-group" style="margin-bottom:0">
           <input type="text" id="rak-input" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" style="text-transform:uppercase"
-            oninput="this.value=this.value.toUpperCase();saveTransaksiDraft()">
-          <div class="field-hint" id="rak-input-hint">Rak tujuan (MASUK) atau rak asal (KELUAR) untuk transaksi ini</div>
+            oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection()">
+          <div class="rak-chips" id="rak-chips"></div>
+          <div class="field-hint" id="rak-input-hint">Rak tujuan (MASUK) atau rak asal (KELUAR) untuk transaksi ini. Tap chip di atas untuk isi cepat dari lokasi yang sudah ada stok.</div>
         </div>
 
         <div class="form-section-lbl">③ Referensi Tambahan <span style="color:var(--text3);font-weight:600;text-transform:none;letter-spacing:0">(opsional)</span></div>
@@ -1564,14 +1636,19 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
             <input type="text" id="ket-input" placeholder="Misal: retur / adjustment / dll" oninput="saveTransaksiDraft()">
           </div>
         </div>
-
-        <button class="btn btn-primary btn-lg btn-block" id="btn-submit" onclick="submitTransaksi()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          Simpan Transaksi
-        </button>
-        <div id="sbar-submit" class="sbar" role="status" aria-live="polite"></div>
       </div>
     </div>
+    <!-- Spacer supaya konten terakhir tidak ketutup sticky submit bar -->
+    <div class="trx-submit-spacer"></div>
+  </div>
+
+  <!-- Sticky submit bar: tombol Simpan selalu terjangkau tanpa scroll -->
+  <div class="trx-submit-bar" id="trx-submit-bar" style="display:none">
+    <button class="btn btn-primary btn-lg btn-block" id="btn-submit" onclick="submitTransaksi()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Simpan Transaksi
+    </button>
+    <div id="sbar-submit" class="sbar" role="status" aria-live="polite"></div>
   </div>
 
   <!-- Step 2b: Hasil Cek Stok (read-only) -->
@@ -2281,8 +2358,8 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v12.28';
-var APP_BUILD_DATE = '2026-07-20';
+var APP_VERSION = 'v13.3';
+var APP_BUILD_DATE = '2026-07-21';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
 var GAS_URL = localStorage.getItem('rdi_gas_url') || DEFAULT_GAS_URL || '';
@@ -2421,10 +2498,12 @@ function _tglMasukTs(r){
   if(!isNaN(t)) return t;
   return 0;
 }
-var currentItem=null, currentJenis='MASUK';
+var currentItem=null, currentJenis='KELUAR';
 var scanMode='transaksi'; // 'transaksi' atau 'cekstok'
 var histCurrentItem=null, histAllRows=[];
-var currentUser = JSON.parse(localStorage.getItem('rdi_user')||'{"name":"Admin Warehouse","dept":"Gudang"}');
+var currentUser;
+try{ currentUser = JSON.parse(localStorage.getItem('rdi_user')||'{"name":"Admin Warehouse","dept":"Gudang"}'); }
+catch(e){ currentUser = {name:'Admin Warehouse', dept:'Gudang'}; }
 // minStockMap sekarang disinkron dari server (kolom MinStock di Master_Item), bukan localStorage,
 // supaya konsisten antar-user/device. Diisi ulang tiap kali allRows dimuat via syncMinStockMap().
 var minStockMap = {};
@@ -2599,6 +2678,10 @@ function gasPost(body){
 // HELPERS
 // ══════════════════════════════════════════════════════
 function xe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// xeJs: xe() + escape kutip tunggal, WAJIB dipakai saat menyisipkan data ke argumen string JS
+// di dalam atribut inline seperti onclick="fn('...')" — kalau data mengandung ' (co: nama item
+// dgn apostrof), tanpa ini string JS-nya patah dan onclick gagal total / berpotensi injeksi.
+function xeJs(s){ return xe(s).replace(/'/g,"\\'"); }
 
 function showStatus(elId,type,html){
   var el=document.getElementById(elId);
@@ -2737,7 +2820,7 @@ function _buildTableHtml(rows){
     var minS=parseInt(minStockMap[r.id]||0);
     var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';
     var statusDot=saldo===0?'🔴':(minS>0&&saldo<=minS)?'🟡':'🟢';
-    var minCell=r.id?'<input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)" title="Set min stok">':'—';
+    var minCell=r.id?'<input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xeJs(r.id)+'\',this.value)" title="Set min stok">':'—';
     var catLabel=xe(r.kategori||'—');
     return '<tr>'
       +'<td class="c" style="color:var(--text3);font-size:11px">'+xe(r.no)+'</td>'
@@ -2925,17 +3008,28 @@ function reopenCameraFromCompact(ctx){
 }
 
 function fitAcDropdown(drop){
-  var rect = drop.getBoundingClientRect();
+  // Dropdown pakai position:fixed (bukan absolute) supaya TIDAK ke-clip oleh
+  // ancestor manapun yg overflow:hidden (mis. .panel) -- akar penyebab bug
+  // "hasil kepotong": dulu dropdown absolute di dalam .panel yg overflow:hidden,
+  // jadi item ke-2 dst kepotong walau max-height-nya cukup & bisa di-scroll.
+  var anchor = drop.parentElement; // .ac-wrap, lebar = lebar field
+  var rect = anchor.getBoundingClientRect();
+  drop.style.left = rect.left + 'px';
+  drop.style.width = rect.width + 'px';
+  drop.style.top = (rect.bottom + 4) + 'px';
   var viewportBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  var available = viewportBottom - rect.top - 12; // 12px margin bawah
+  var available = viewportBottom - rect.bottom - 16; // 16px margin bawah
   drop.style.maxHeight = Math.max(120, Math.min(520, available)) + 'px';
   // Hitung ulang sekali lagi setelah jeda singkat, jaga-jaga animasi keyboard belum kelar
   // saat perhitungan pertama (mencegah salah ukur seperti kasus sebelumnya)
   setTimeout(function(){
     if(!drop.classList.contains('show')) return;
-    var r2 = drop.getBoundingClientRect();
+    var r2 = anchor.getBoundingClientRect();
+    drop.style.left = r2.left + 'px';
+    drop.style.width = r2.width + 'px';
+    drop.style.top = (r2.bottom + 4) + 'px';
     var vb2 = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    var av2 = vb2 - r2.top - 12;
+    var av2 = vb2 - r2.bottom - 16;
     drop.style.maxHeight = Math.max(120, Math.min(520, av2)) + 'px';
   }, 250);
 }
@@ -3024,7 +3118,7 @@ function acShow(ctx){
       r.rak ? '📦 '+xe(r.rak) : '',
       r.vendor ? xe(r.vendor) : ''
     ].filter(Boolean).map(function(b){ return '<span class="ac-item-badge">'+b+'</span>'; }).join('');
-    return '<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xe(r.id||r.nama)+'\')" '
+    return '<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xeJs(r.id||r.nama)+'\')" '
       +'data-ac-i="'+i+'">'
       +'<div class="ac-item-top">'
         +'<span class="ac-item-id">'+hl(r.id||'—', q)+'</span>'
@@ -3049,6 +3143,30 @@ function acHide(ctx){
   if(drop){ drop.classList.remove('show'); }
   _acIdx[ctx] = -1;
 }
+
+// Dropdown ac-scan/ac-hist sekarang position:fixed (lihat catatan di fitAcDropdown) --
+// artinya dropdown TIDAK ikut scroll bareng halaman. Supaya tidak "ngambang" salah
+// posisi saat HALAMAN di-scroll, tutup dropdown begitu itu terjadi. Reposisi saat
+// resize (keyboard buka/tutup) sudah ditangani listener visualViewport yg sudah ada.
+//
+// PENTING: event 'scroll' tidak bubble, tapi listener capture:true di window tetap
+// kena semua scroll di bawahnya -- TERMASUK saat dropdown men-scroll dirinya sendiri
+// (geser lihat 8 hasil) atau touch-scroll kecil pas jari mendarat buat tap item.
+// Root cause bug "dropdown nutup pas diklik/discroll": listener ini dulu menutup
+// dropdown untuk SEMUA scroll tanpa pandang asalnya, jadi scroll di dalam daftar
+// hasil sendiri ikut ke-anggap "scroll halaman" dan menutup dropdown sebelum tap
+// sempat kena ac-item-nya. Fix: abaikan scroll yg asalnya dari dalam dropdown itu
+// sendiri (atau dari salah satu elemen di dalamnya) -- e.target saat capture di
+// window adalah elemen paling dalam yg benar-benar di-scroll.
+window.addEventListener('scroll', function(e){
+  var t = e.target;
+  ['ac-scan','ac-hist'].forEach(function(id){
+    var d = document.getElementById(id);
+    if(!d || !d.classList.contains('show')) return;
+    if(d===t || (d.contains && d.contains(t))) return; // scroll dari dalam dropdown -- biarkan
+    d.classList.remove('show');
+  });
+}, true);
 
 function acPick(ctx, id){
   var inputId = ctx==='scan' ? 'scan-id-input' : 'hist-id-input';
@@ -3395,7 +3513,7 @@ function loadAlert(){
       +'<td style="text-align:center;color:var(--red);font-weight:700">'+saldo+'</td>'
       +'<td style="text-align:center;color:var(--text2)">'+min+'</td>'
       +'<td class="u-tc">'+statusHtml+'</td>'
-      +'<td class="u-tc"><button class="btn btn-sm btn-primary" onclick="goToTransaksi(\''+xe(r.id)+'\')">+ Masuk</button></td>'
+      +'<td class="u-tc"><button class="btn btn-sm btn-primary" onclick="goToTransaksi(\''+xeJs(r.id)+'\')">+ Masuk</button></td>'
       +'</tr>';
   }).join('')
   :'<tr><td colspan="7"><div class="empty-state"><p style="color:var(--green)">✓ Semua stok di atas minimum</p></div></td></tr>';
@@ -3407,7 +3525,7 @@ function loadAlert(){
       +'<td><span class="id-chip" style="font-size:11px">'+xe(r.id)+'</span></td>'
       +'<td style="font-size:12px">'+xe(r.nama)+'</td>'
       +'<td style="text-align:center;font-weight:700">'+xe(r.qty||0)+'</td>'
-      +'<td class="u-tc"><input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xe(r.id)+'\',this.value)"></td>'
+      +'<td class="u-tc"><input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xeJs(r.id)+'\',this.value)"></td>'
       +'<td class="u-tc"><span style="font-size:11px;color:var(--green)">✓ Auto</span></td>'
       +'</tr>';
   }).filter(Boolean).join('');
@@ -3457,6 +3575,25 @@ function exportExcel(){
 function showScanStep(name){
   document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});
   document.getElementById('step-'+name).classList.add('active');
+  var subBar = document.getElementById('trx-submit-bar');
+  if(subBar) subBar.style.display = (name==='transaksi') ? 'block' : 'none';
+  updateTrxProgress(name);
+}
+
+// Progress indicator §1 Cari Item → §2 Input → §3 Selesai
+function updateTrxProgress(name){
+  var stepOf = {input:1, transaksi:2, cekstok:2, result:3};
+  var current = stepOf[name] || 1;
+  for(var i=1;i<=3;i++){
+    var el = document.getElementById('trxprog-'+i);
+    if(!el) continue;
+    el.classList.remove('active','done');
+    if(i<current) el.classList.add('done');
+    else if(i===current) el.classList.add('active');
+  }
+  var l1 = document.getElementById('trxprog-line1'), l2 = document.getElementById('trxprog-line2');
+  if(l1) l1.classList.toggle('done', current>1);
+  if(l2) l2.classList.toggle('done', current>2);
 }
 
 function setScanMode(mode){
@@ -3480,11 +3617,12 @@ function populateCekStok(item){
 function goTransaksiFromCekStok(){
   if(!currentItem) return;
   populatePreview(currentItem);
-  currentJenis='MASUK'; setJenis('MASUK');
+  currentJenis='KELUAR'; setJenis('KELUAR');
   document.getElementById('qty-input').value=1;
   document.getElementById('ket-input').value='';
   document.getElementById('vendor-input').value='';
   document.getElementById('noref-input').value='';
+  updateSaldoPreview();
   hideStatus('sbar-submit');
   showScanStep('transaksi');
 }
@@ -3533,6 +3671,8 @@ function checkTransaksiDraft(){
         document.getElementById('vendor-input').value = d.vendor;
         document.getElementById('noref-input').value = d.noref;
         document.getElementById('ket-input').value = d.ket;
+        updateSaldoPreview();
+        markRakChipSelection();
         showScanStep('transaksi');
       }
       box.remove();
@@ -3581,11 +3721,12 @@ function lookupItem(){
       }
 
       populatePreview(result.item);
-      currentJenis='MASUK'; setJenis('MASUK');
+      currentJenis='KELUAR'; setJenis('KELUAR');
       document.getElementById('qty-input').value=1;
       document.getElementById('ket-input').value='';
       document.getElementById('vendor-input').value='';
       document.getElementById('noref-input').value='';
+      updateSaldoPreview();
       hideStatus('sbar-submit');
       showScanStep('transaksi');
       // Fokus langsung ke qty supaya operator bisa langsung ketik/pakai +- tanpa tap ekstra
@@ -3618,6 +3759,43 @@ function populatePreview(item){
   } else if(rakInput){
     rakInput.value = '';
   }
+  renderRakChips(item.rakBreakdown);
+  updateSaldoPreview();
+}
+
+// Chip lokasi rak yang sudah ada stoknya — operator tinggal tap, tidak perlu ketik manual (kurangi typo lokasi)
+function renderRakChips(rakBreakdown){
+  var box = document.getElementById('rak-chips');
+  if(!box) return;
+  if(!rakBreakdown || !rakBreakdown.length){ box.innerHTML=''; return; }
+  var sorted = rakBreakdown.slice().sort(function(a,b){ return b.qty-a.qty; });
+  box.innerHTML = sorted.map(function(r){
+    return '<button type="button" class="rak-chip" onclick="selectRakChip(\''+xeJs(r.rak)+'\')">'+xe(r.rak)+' · '+xe(r.qty)+'</button>';
+  }).join('');
+  markRakChipSelection();
+}
+function selectRakChip(rak){
+  var rakInput = document.getElementById('rak-input');
+  if(rakInput){ rakInput.value = (rak||'').toUpperCase(); saveTransaksiDraft(); }
+  markRakChipSelection();
+}
+function markRakChipSelection(){
+  var val = (document.getElementById('rak-input')||{}).value || '';
+  document.querySelectorAll('#rak-chips .rak-chip').forEach(function(chip){
+    chip.classList.toggle('selected', chip.textContent.split(' · ')[0].toUpperCase()===val.toUpperCase());
+  });
+}
+
+// Preview saldo real-time: operator lihat hasil AKHIR sebelum tap Simpan, cegah salah input qty/jenis
+function updateSaldoPreview(){
+  var el = document.getElementById('preview-saldo-after');
+  if(!el || !currentItem) return;
+  var saldo = parseFloat(currentItem.saldo)||0;
+  var qty = parseFloat((document.getElementById('qty-input')||{}).value)||0;
+  var after = currentJenis==='KELUAR' ? (saldo-qty) : (saldo+qty);
+  var unit = currentItem.unit||'';
+  el.textContent = after+' '+unit;
+  el.className = 'saldo-after-val ' + (after<0 ? 'warn' : (currentJenis==='KELUAR' ? 'down' : 'up'));
 }
 
 // Tampilkan breakdown saldo per rak sebagai teks ringkas, mis. "A-01: 5, B-02: 3"
@@ -3630,11 +3808,16 @@ function setJenis(jenis){
   currentJenis=jenis;
   document.getElementById('btn-masuk').className='jenis-btn'+(jenis==='MASUK'?' active-masuk':'');
   document.getElementById('btn-keluar').className='jenis-btn'+(jenis==='KELUAR'?' active-keluar':'');
+  var card=document.getElementById('item-preview');
+  if(card) card.className='item-card '+(jenis==='KELUAR'?'jenis-keluar':'jenis-masuk');
+  updateSaldoPreview();
 }
 
 function adjustQty(delta){
   var inp=document.getElementById('qty-input');
   inp.value=Math.max(1,(parseInt(inp.value)||0)+delta);
+  saveTransaksiDraft();
+  updateSaldoPreview();
 }
 
 function submitTransaksi(){
@@ -3698,7 +3881,7 @@ function showQuickSearch(){
 }
 
 function scanNext(){ currentItem=null; document.getElementById('scan-id-input').value=''; hideStatus('sbar-lookup'); showScanStep('input'); setTimeout(function(){document.getElementById('scan-id-input').focus();},100); }
-function transaksiLagi(){ if(currentItem)populatePreview(currentItem); setJenis('MASUK'); document.getElementById('qty-input').value=1; document.getElementById('ket-input').value=''; document.getElementById('vendor-input').value=''; document.getElementById('noref-input').value=''; hideStatus('sbar-submit'); showScanStep('transaksi'); }
+function transaksiLagi(){ if(currentItem)populatePreview(currentItem); setJenis('KELUAR'); document.getElementById('qty-input').value=1; document.getElementById('ket-input').value=''; document.getElementById('vendor-input').value=''; document.getElementById('noref-input').value=''; updateSaldoPreview(); hideStatus('sbar-submit'); showScanStep('transaksi'); }
 function resetScanner(){ scanNext(); }
 
 // ══════════════════════════════════════════════════════
@@ -4010,7 +4193,7 @@ function renderRakList(){
       var minS=parseInt(minStockMap[r.id]||0);
       return minS>0 && saldo<=minS;
     }).length;
-    return '<div class="rak-card" onclick="showRakDetail(\''+xe(rak).replace(/'/g,"\\'")+'\')">'
+    return '<div class="rak-card" onclick="showRakDetail(\''+xeJs(rak)+'\')">'
       +'<div class="rak-card-name">'+xe(rak)+'</div>'
       +'<div class="rak-card-count">'+items.length+' item'+(lowCount>0?'<span class="rak-card-low">⚠ '+lowCount+'</span>':'')+'</div>'
     +'</div>';
@@ -4622,7 +4805,7 @@ function buildCardHtml(rows){
             +(r.kategori?'<span class="ilc2-cat">'+xe(r.kategori)+'</span>':'')
             +(r.user?'<span class="ilc2-meta">'+xe(r.user)+'</span>':'')
           +'</div>'
-          +'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();goToTransaksi(\''+xe(r.id)+'\')" title="Transaksi item ini">'
+          +'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();goToTransaksi(\''+xeJs(r.id)+'\')" title="Transaksi item ini">'
             +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>'
             +'Trx'
           +'</button>'
