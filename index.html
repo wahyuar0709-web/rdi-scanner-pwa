@@ -7,13 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Kartu Stok">
+<meta name="apple-mobile-web-app-title" content="RDI-WMS">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Kartu Stok v11.5 – PT Rayard Deli Indonesia</title>
+<title>RDI-WMS – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;overscroll-behavior-y:contain}
@@ -901,6 +901,13 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   padding-bottom:env(safe-area-inset-bottom,0px);
   display:none;
   transform:translateY(100%);
+  /* Root cause fix: dulu tidak ada max-height/overflow, jadi kalau menu makin
+     panjang (item baru ditambah) kontennya kepotong di atas layar tanpa bisa
+     discroll. Sekarang dibatasi tinggi & bisa discroll di dalam sheet-nya sendiri. */
+  max-height:calc(100vh - 62px - 24px);
+  max-height:calc(100dvh - 62px - 24px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 .bottom-sheet.show{display:block;animation:sheetUp .3s cubic-bezier(.32,.72,0,1) forwards}
 .bottom-sheet.closing{display:block;animation:sheetDown .22s cubic-bezier(.4,0,1,1) forwards}
@@ -912,6 +919,7 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .sheet-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:0 18px 12px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg2);z-index:1;
 }
 .sheet-title{font-size:var(--fs-13);font-weight:700;color:var(--text);letter-spacing:.1px}
 .sheet-close{
@@ -988,11 +996,13 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .ilc-min-lbl{font-size:var(--fs-9);color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-weight:700}
 .ilc-min-input-s{width:44px;font-size:var(--fs-11)}
 .rak-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
-.rak-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;transition:.15s}
+.rak-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;transition:.15s;position:relative}
 .rak-card:hover{border-color:var(--amber);transform:translateY(-1px)}
 .rak-card-name{font-family:var(--font-mono);font-weight:800;font-size:var(--fs-15);color:var(--text)}
 .rak-card-count{font-size:var(--fs-11);color:var(--text3);margin-top:4px}
 .rak-card-low{display:inline-block;margin-left:4px;color:var(--red-text);font-weight:700}
+.rak-card-print-btn{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .12s}
+.rak-card-print-btn:hover,.rak-card-print-btn:active{background:var(--amber-dim);border-color:var(--amber-border);transform:scale(.95)}
 
 /* ══ BOTTOM SHEET EDIT ITEM ══ */
 .edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:450;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -1057,11 +1067,6 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 }
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover,.ac-item.ac-active{background:var(--amber-dim)}
-.ac-item-top{display:flex;align-items:baseline;gap:8px;min-width:0}
-.ac-item-id{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--amber);flex-shrink:0}
-.ac-item-nama{font-size:13.5px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;line-height:1.35}
-.ac-item-badges{display:flex;flex-wrap:wrap;gap:5px}
-.ac-item-badge{font-size:10px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--br-3);padding:1.5px 6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ac-empty{padding:16px;font-size:var(--fs-13);color:var(--text3);text-align:center}
 mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br-2);font-weight:700}
 
@@ -1153,7 +1158,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   </div>
   <div>
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
-    <div class="topbar-sub">Spare Part · Tools · Indirect</div>
+    <div class="topbar-sub">RDI-WMS · Spare Part, Tools &amp; Indirect</div>
   </div>
   <span class="topbar-ver" id="topbar-version-label">v11.2</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
@@ -1259,7 +1264,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
           <div class="hamburger-badge" id="badge-alert">0</div>
         </button>
         <div style="min-width:0">
-          <h2 style="font-size:14px">RDI Kartu Stok · Master Item</h2>
+          <h2 style="font-size:14px">RDI-WMS · Master Item</h2>
           <p>Sinkron otomatis dari Google Sheets · <span id="last-load" style="font-size:10px;color:var(--amber)">—</span></p>
         </div>
       </div>
@@ -1614,10 +1619,36 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 
         <div class="form-section-lbl">② Lokasi Rak <span style="color:var(--red-text,#e74c3c);font-weight:800">*wajib</span></div>
         <div class="field-group" style="margin-bottom:0">
-          <input type="text" id="rak-input" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" style="text-transform:uppercase"
-            oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection()">
+          <!-- Inline QR Scanner (Rak) -->
+          <div id="qr-scanner-rak-container" style="display:none">
+            <div class="qr-scanner-wrap" id="qr-wrap-rak">
+              <video id="qr-video-rak" autoplay playsinline muted></video>
+              <canvas id="qr-canvas-rak"></canvas>
+              <div class="qr-overlay">
+                <div class="qr-frame">
+                  <div class="qr-corner-tr"></div>
+                  <div class="qr-corner-bl"></div>
+                  <div class="qr-scan-line"></div>
+                </div>
+              </div>
+              <div class="qr-scanner-label" id="qr-label-rak">Arahkan kamera ke label QR rak</div>
+            </div>
+            <button class="btn btn-sm btn-block" onclick="stopInlineScannerRak()" style="margin-bottom:10px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              Tutup Kamera
+            </button>
+          </div>
+          <div class="id-input-wrap">
+            <input type="text" id="rak-input" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" style="text-transform:uppercase"
+              oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection()">
+            <button class="btn btn-navy btn-scan-toggle" id="btn-scan-rak" onclick="toggleInlineScannerRak()"
+              title="Scan QR label rak" style="flex-shrink:0;height:44px;padding:0 14px" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+              Scan
+            </button>
+          </div>
           <div class="rak-chips" id="rak-chips"></div>
-          <div class="field-hint" id="rak-input-hint">Rak tujuan (MASUK) atau rak asal (KELUAR) untuk transaksi ini. Tap chip di atas untuk isi cepat dari lokasi yang sudah ada stok.</div>
+          <div class="field-hint" id="rak-input-hint">Rak tujuan (MASUK) atau rak asal (KELUAR) untuk transaksi ini. Tap chip di atas untuk isi cepat dari lokasi yang sudah ada stok, atau tap Scan kalau rak sudah punya label QR.</div>
         </div>
 
         <div class="form-section-lbl">③ Referensi Tambahan <span style="color:var(--text3);font-weight:600;text-transform:none;letter-spacing:0">(opsional)</span></div>
@@ -2097,7 +2128,11 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
   <!-- View: Daftar Rak -->
   <div id="rak-view-list">
     <div class="panel">
-      <div class="panel-head"><div><h2>Cek Per Rak</h2><p>Pilih lokasi rak untuk lihat item di dalamnya</p></div></div>
+      <div class="panel-head"><div><h2>Cek Per Rak</h2><p>Pilih lokasi rak untuk lihat item di dalamnya</p></div>
+        <button class="btn btn-sm btn-on-head" onclick="printAllRakLabels()" title="Cetak label QR semua rak yang tampil" style="flex-shrink:0">
+          🖨️ Cetak Semua Label
+        </button>
+      </div>
       <div class="panel-body">
         <div class="toolbar">
           <div class="search-wrap">
@@ -2358,7 +2393,7 @@ body.light #cetak-action-bar{border-top-color:var(--border)!important}
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v13.3';
+var APP_VERSION = 'v13.6';
 var APP_BUILD_DATE = '2026-07-21';
 // ISI URL di bawah ini dengan GAS Web App URL kamu (sekali isi, berlaku di semua origin: file:// maupun GitHub Pages)
 var DEFAULT_GAS_URL = '';
@@ -2546,6 +2581,7 @@ function initVersionLabels(){
   var verSheet = document.getElementById('sheet-version-label');
   if(verTopbar) verTopbar.textContent = APP_VERSION;
   if(verSheet) verSheet.textContent = APP_VERSION+' PWA · '+APP_BUILD_DATE;
+  document.title = 'RDI-WMS '+APP_VERSION+' – PT Rayard Deli Indonesia';
 }
 function showUserModal(){
   stopInlineScanner(); stopInlineScannerHist();
@@ -3113,18 +3149,39 @@ function acShow(ctx){
 
   var listHtml = top.map(function(item, i){
     var r = item.r;
-    var badges = [
-      r.spec ? xe(r.spec) : '',
-      r.rak ? '📦 '+xe(r.rak) : '',
-      r.vendor ? xe(r.vendor) : ''
-    ].filter(Boolean).map(function(b){ return '<span class="ac-item-badge">'+b+'</span>'; }).join('');
+    // Detail item di dropdown pencarian disamakan persis dgn kartu Inventory
+    // (pakai class ilc2-* yg sama) -- ID, rak, nama, spec, kategori, user,
+    // qty+unit+status stok (🔴/🟡/🟢) + badge MINIMUM/HABIS.
+    var saldo = parseInt(r.qty)||0;
+    var minS  = parseInt(minStockMap[r.id]||0);
+    var isAlert = minS>0 && saldo<=minS;
+    var isZero  = saldo===0;
+    var statusDot   = isZero?'🔴':isAlert?'🟡':'🟢';
+    var statusLabel = isZero?'Habis':isAlert?'Minimum':'Aman';
+    var stokColor   = isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';
+    var idHtml = r.id
+      ? '<span class="ilc2-id">'+xe(r.id)+'</span>'
+      : '<span class="ilc2-id noid">No ID</span>';
+    var rakHtml = (r.rak && r.rak!=='—') ? '<span class="ilc2-rak">'+xe(r.rak)+'</span>' : '';
+    var footerInfo = [
+      r.kategori ? '<span class="ilc2-cat">'+xe(r.kategori)+'</span>' : '',
+      r.user ? '<span class="ilc2-meta">'+xe(r.user)+'</span>' : ''
+    ].filter(Boolean).join('');
     return '<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xeJs(r.id||r.nama)+'\')" '
       +'data-ac-i="'+i+'">'
-      +'<div class="ac-item-top">'
-        +'<span class="ac-item-id">'+hl(r.id||'—', q)+'</span>'
-        +'<span class="ac-item-nama">'+hl(r.nama||'', q)+'</span>'
+      +'<div class="ilc2-top" style="margin-bottom:2px">'+idHtml+rakHtml+'</div>'
+      +'<div class="ilc2-nama" style="white-space:normal">'+hl(r.nama||'', q)+'</div>'
+      +(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
+      +'<div class="ilc2-footer" style="border-top:none;padding-top:4px">'
+        +'<div class="ilc2-footer-info">'+(footerInfo||'<span></span>')+'</div>'
+        +'<div class="ilc2-stok" style="'+stokColor+'" title="Status stok: '+statusLabel+'">'
+          +'<span class="ilc2-status-dot" aria-hidden="true">'+statusDot+'</span>'
+          +xe(r.qty||0)
+          +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
+          +(isAlert&&!isZero?'<span class="ilc2-low">MINIMUM</span>':'')
+          +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
+        +'</div>'
       +'</div>'
-      +(badges?'<div class="ac-item-badges">'+badges+'</div>':'')
     +'</div>';
   }).join('');
   var hintHtml = top.length>3
@@ -3577,6 +3634,7 @@ function showScanStep(name){
   document.getElementById('step-'+name).classList.add('active');
   var subBar = document.getElementById('trx-submit-bar');
   if(subBar) subBar.style.display = (name==='transaksi') ? 'block' : 'none';
+  if(name!=='transaksi') stopInlineScannerRak();
   updateTrxProgress(name);
 }
 
@@ -4194,6 +4252,7 @@ function renderRakList(){
       return minS>0 && saldo<=minS;
     }).length;
     return '<div class="rak-card" onclick="showRakDetail(\''+xeJs(rak)+'\')">'
+      +'<button type="button" class="rak-card-print-btn" onclick="event.stopPropagation();printRakLabel(\''+xeJs(rak)+'\')" title="Cetak label QR rak ini" aria-label="Cetak label QR rak ini">🖨️</button>'
       +'<div class="rak-card-name">'+xe(rak)+'</div>'
       +'<div class="rak-card-count">'+items.length+' item'+(lowCount>0?'<span class="rak-card-low">⚠ '+lowCount+'</span>':'')+'</div>'
     +'</div>';
@@ -4203,6 +4262,73 @@ function renderRakList(){
 function showRakList(){
   document.getElementById('rak-view-list').style.display='block';
   document.getElementById('rak-view-detail').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+// CETAK LABEL QR RAK — buat stiker lokasi rak yang ditempel di gudang,
+// nanti dibaca balik lewat fitur Scan Rak di form Input Transaksi.
+// Beda dari QR kartu item (format "ID|nama|rak"): QR label rak isinya
+// TEKS KODE RAK APA ADANYA, cocok dgn scanFrameRak() yg baca tanpa split.
+// ══════════════════════════════════════════════════════
+function printRakLabel(rak){
+  var qtyStr = prompt('Berapa lembar label untuk rak "'+rak+'"?\n(Cetak beberapa salinan kalau rak itu punya lebih dari 1 sisi/lokasi tempel)', '1');
+  if(qtyStr===null) return; // dibatalkan
+  var qty = Math.max(1, parseInt(qtyStr,10)||1);
+  var codes = [];
+  for(var i=0;i<qty;i++) codes.push(rak);
+  openRakLabelPrint(codes);
+}
+
+function printAllRakLabels(){
+  var q = (document.getElementById('rak-search-box').value||'').toLowerCase().trim();
+  var groups = getRakGroups();
+  var raks = Object.keys(groups)
+    .filter(function(k){ return k!=='(Tanpa Rak)' && (!q || k.toLowerCase().includes(q)); })
+    .sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); });
+  if(!raks.length){ alert('Tidak ada rak untuk dicetak (cek filter pencarian).'); return; }
+  if(!confirm('Cetak '+raks.length+' label rak (1 lembar per rak)?')) return;
+  openRakLabelPrint(raks);
+}
+
+function openRakLabelPrint(rakCodes){
+  var w=window.open('','_blank');
+  if(!w){ alert('Popup diblokir browser.\nIzinkan popup untuk domain ini lalu coba lagi.'); return; }
+  w.document.write(buildRakLabelPrintHTML(rakCodes));
+  w.document.close();
+}
+
+function buildRakLabelPrintHTML(rakCodes){
+  function ex(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var perPage = 24; // grid 4 x 6 per lembar A4
+  var pages = [];
+  for(var p=0;p<rakCodes.length;p+=perPage) pages.push(rakCodes.slice(p,p+perPage));
+
+  function label(rak){
+    var qrData = encodeURIComponent(rak); // teks kode rak apa adanya, TANPA format "ID|nama|rak"
+    return '<div class="lbl">'
+      +'<div class="lbl-qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous"></div>'
+      +'<div class="lbl-code">'+ex(rak)+'</div>'
+      +'<div class="lbl-co">RDI-WMS · Lokasi Rak</div>'
+    +'</div>';
+  }
+  var pagesHtml = pages.map(function(codes){
+    return '<div class="page">'+codes.map(label).join('')+'</div>';
+  }).join('');
+
+  return '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label Rak – RDI-WMS</title><style>'
+    +'@page{size:A4 portrait;margin:8mm}'
+    +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0}.page{page-break-after:always}.page:last-child{page-break-after:avoid}}'
+    +'*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{margin:0;background:#fff}'
+    +'.page{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:46mm;gap:2mm}'
+    +'.lbl{border:1px dashed #999;border-radius:2mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2mm;text-align:center}'
+    +'.lbl-qr{width:26mm;height:26mm}'
+    +'.lbl-code{font-weight:900;font-size:12pt;font-family:"Courier New",monospace;margin-top:1mm;letter-spacing:.5px;color:#111}'
+    +'.lbl-co{font-size:6pt;color:#777;margin-top:.5mm;text-transform:uppercase;letter-spacing:.3px}'
+    +'</style></head><body>'
+    +pagesHtml
+    +'<script>window.onload=function(){window.print();}<\/script>'
+    +'</body></html>';
 }
 
 function showRakDetail(rak){
@@ -5177,6 +5303,7 @@ switchTab=function(name){
 
 var _scanStream=null, _scanRaf=null, _scanCaller=null;
 var _scanStreamHist=null, _scanRafHist=null;
+var _scanStreamRak=null, _scanRafRak=null;
 
 function autoOpenScanner(){
   // Hanya auto-buka kamera jika di step input dan belum ada item ter-load
@@ -5317,6 +5444,96 @@ function stopInlineScannerHist(){
   var c=document.getElementById('qr-scanner-hist-container');
   if(c) c.style.display='none';
   refitAcDropdownIfOpen('hist');
+}
+
+// ── Scanner khusus Rak (isi lokasi rak saat Input Transaksi) ──
+// Sengaja terpisah dari scanner ID Item/History di atas, sama seperti pola
+// scanner Master -- supaya tidak menyentuh alur yang sudah jalan. Beda dari
+// scanner ID Item: QR label rak TIDAK di-split "|" (bukan format "ID|nama|rak"),
+// teks hasil scan dipakai APA ADANYA sebagai kode rak.
+function toggleInlineScannerRak(){
+  var c=document.getElementById('qr-scanner-rak-container');
+  if(c.style.display==='none'||!c.style.display){
+    c.style.display='block';
+    startInlineScannerRak();
+  } else {
+    stopInlineScannerRak();
+  }
+}
+
+function startInlineScannerRak(){
+  var video=document.getElementById('qr-video-rak');
+  var label=document.getElementById('qr-label-rak');
+
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    label.textContent='Kamera tidak didukung browser ini';
+    label.classList.add('detected');
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}})
+    .then(function(stream){
+      _scanStreamRak=stream;
+      video.srcObject=stream;
+      video.play();
+      label.textContent='Arahkan kamera ke label QR rak';
+      label.classList.remove('detected');
+      scanFrameRak();
+    })
+    .catch(function(err){
+      label.textContent='Izin kamera ditolak: '+err.message;
+      label.classList.add('detected');
+    });
+}
+
+function scanFrameRak(){
+  var video=document.getElementById('qr-video-rak');
+  var canvas=document.getElementById('qr-canvas-rak');
+  var label=document.getElementById('qr-label-rak');
+
+  if(!video||video.readyState<2){
+    _scanRafRak=requestAnimationFrame(scanFrameRak);
+    return;
+  }
+
+  var now = performance.now();
+  if(!window._lastScanAtRak) window._lastScanAtRak=0;
+  if(now - window._lastScanAtRak < 80){
+    _scanRafRak=requestAnimationFrame(scanFrameRak);
+    return;
+  }
+  window._lastScanAtRak=now;
+
+  var ctx=canvas.getContext('2d');
+  var vw=video.videoWidth, vh=video.videoHeight;
+  var maxDim=480;
+  var scale=Math.min(1, maxDim/Math.max(vw,vh));
+  canvas.width=Math.round(vw*scale);
+  canvas.height=Math.round(vh*scale);
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+  var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+
+  if(code){
+    var rak=code.data.trim().toUpperCase();
+    label.textContent='✓ Rak terdeteksi: '+rak;
+    label.classList.add('detected');
+    stopInlineScannerRak();
+    document.getElementById('rak-input').value=rak;
+    saveTransaksiDraft();
+    markRakChipSelection();
+    return;
+  }
+
+  _scanRafRak=requestAnimationFrame(scanFrameRak);
+}
+
+function stopInlineScannerRak(){
+  if(_scanRafRak){ cancelAnimationFrame(_scanRafRak); _scanRafRak=null; }
+  if(_scanStreamRak){ _scanStreamRak.getTracks().forEach(function(t){t.stop();}); _scanStreamRak=null; }
+  var c=document.getElementById('qr-scanner-rak-container');
+  if(c) c.style.display='none';
 }
 
 // ── Scanner khusus Inventory Quick Action / search (Audit 1 & 3) ──
