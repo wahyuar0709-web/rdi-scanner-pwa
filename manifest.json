@@ -1,6 +1,6 @@
 {
-  "name": "Kartu Stok RDI",
-  "short_name": "Kartu Stok",
+  "name": "RDI Inderect Scanner",
+  "short_name": "RDI Inderect Scanner",
   "description": "Spare Part, Tools & Indirect Inventory – PT Rayard Deli Indonesia",
   "start_url": "./index.html",
   "display": "standalone",
