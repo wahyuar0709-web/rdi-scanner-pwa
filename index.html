@@ -1234,6 +1234,9 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 .login-btn:active{transform:translateY(0)}
 .login-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
 .login-foot{margin-top:20px;font-size:12px;color:#5f6368}
+#login-logo-box{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:transform .18s ease,filter .18s ease}
+#login-logo-box.lg-holding{transform:scale(.88);filter:brightness(.8)}
+#modal-config.show{z-index:10500}
 </style>
 
 </head>
@@ -2551,6 +2554,32 @@ var EDITOR_KEY = localStorage.getItem('rdi_editor_key') || '';
 var VIEWER_TOKEN = localStorage.getItem('rdi_viewer_token') || '';
 var VIEWER_MODE = !EDITOR_KEY; // device tanpa Editor Key dianggap viewer, wajib login
 
+// Tekan-tahan logo di layar login (±700ms) -> buka modal Pengaturan
+// utk admin isi GAS URL + Editor Key pertama kali, tanpa perlu console browser.
+(function(){
+  var logo = document.getElementById('login-logo-box');
+  if(!logo) return;
+  var HOLD_MS = 700, holdTimer = null;
+  function startHold(ev){
+    if(ev.cancelable) ev.preventDefault();
+    logo.classList.add('lg-holding');
+    holdTimer = setTimeout(function(){
+      logo.classList.remove('lg-holding');
+      if(navigator.vibrate){ try{ navigator.vibrate(30); }catch(e){} }
+      showConfig(true);
+    }, HOLD_MS);
+  }
+  function cancelHold(){
+    clearTimeout(holdTimer);
+    logo.classList.remove('lg-holding');
+  }
+  logo.addEventListener('pointerdown', startHold);
+  logo.addEventListener('pointerup', cancelHold);
+  logo.addEventListener('pointerleave', cancelHold);
+  logo.addEventListener('pointercancel', cancelHold);
+  logo.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+})();
+
 function b64UrlDecode(str){
   str = String(str||'').replace(/-/g,'+').replace(/_/g,'/');
   while (str.length % 4) str += '=';
@@ -2835,11 +2864,13 @@ updateOnlineStatus();
 // ══════════════════════════════════════════════════════
 // CONFIG MODAL
 // ══════════════════════════════════════════════════════
-function showConfig(){
+var configAdminEntry = false;
+function showConfig(adminEntry){
+  configAdminEntry = !!adminEntry;
   stopInlineScanner(); stopInlineScannerHist();
   document.getElementById('gas-url-input').value = GAS_URL;
   var ekGroup = document.getElementById('editor-key-field-group');
-  if(VIEWER_MODE){
+  if(VIEWER_MODE && !configAdminEntry){
     ekGroup.style.display='none'; // viewer tidak pernah lihat/isi editor key
   } else {
     ekGroup.style.display='';
@@ -2850,6 +2881,7 @@ function showConfig(){
 }
 function hideConfig(){
   document.getElementById('modal-config').classList.remove('show');
+  configAdminEntry = false;
 }
 function saveConfig(){
   var url=document.getElementById('gas-url-input').value.trim();
@@ -2857,14 +2889,20 @@ function saveConfig(){
   if(!url.includes('script.google.com')){ showStatus('sbar-config','s-warn',IC.info+' URL terlihat tidak valid. Pastikan dari GAS.'); }
   GAS_URL=url;
   localStorage.setItem('rdi_gas_url', url);
-  if(!VIEWER_MODE){
+  var justBecameEditor = false;
+  if(!VIEWER_MODE || configAdminEntry){
     EDITOR_KEY = document.getElementById('editor-key-input').value.trim();
     localStorage.setItem('rdi_editor_key', EDITOR_KEY);
+    if(EDITOR_KEY && VIEWER_MODE) justBecameEditor = true;
   }
   showStatus('sbar-config','s-info',IC.load+' Mengecek koneksi ke GAS…');
   gasGet({action:'getData'}).then(function(r){
     if(r.status==='ok'){
       showStatus('sbar-config','s-ok',IC.ok+' Koneksi berhasil! '+r.total+' item ditemukan.');
+      if(justBecameEditor){
+        showStatus('sbar-config','s-ok',IC.ok+' Editor Key aktif. Memuat ulang halaman…');
+        setTimeout(function(){ location.reload(); }, 900);
+      }
     } else {
       showStatus('sbar-config','s-err',IC.err+' GAS error: '+(r.message||'unknown'));
     }
