@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Indirect Scanner v14.2 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.11 – PT Rayard Deli Indonesia</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;overscroll-behavior-y:contain}
@@ -893,17 +893,21 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   padding-bottom:env(safe-area-inset-bottom,0px);
   display:none;
   transform:translateY(100%);
+  max-height:calc(100vh - 140px);
+  flex-direction:column;
 }
-.bottom-sheet.show{display:block;animation:sheetUp .3s cubic-bezier(.32,.72,0,1) forwards}
-.bottom-sheet.closing{display:block;animation:sheetDown .22s cubic-bezier(.4,0,1,1) forwards}
+.bottom-sheet.show{display:flex;animation:sheetUp .3s cubic-bezier(.32,.72,0,1) forwards}
+.bottom-sheet.closing{display:flex;animation:sheetDown .22s cubic-bezier(.4,0,1,1) forwards}
 
 .sheet-handle{
   width:36px;height:4px;background:var(--border3);
   border-radius:var(--br-2);margin:10px auto 14px;
+  flex-shrink:0;
 }
 .sheet-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:0 18px 12px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
 .sheet-title{font-size:var(--fs-13);font-weight:700;color:var(--text);letter-spacing:.1px}
 .sheet-close{
@@ -915,13 +919,14 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
   flex-shrink:0;
 }
 .sheet-close:active{background:var(--surface3);color:var(--text);transform:scale(.93)}
-.sheet-menu{display:flex;flex-direction:column;gap:4px;padding:10px 16px 14px}
+.sheet-menu{display:flex;flex-direction:column;gap:4px;padding:10px 16px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 .sheet-group-label{font-size:var(--fs-10);font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:10px 2px 8px}
 .sheet-group-label:first-child{margin-top:2px}
 .sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sheet-footer{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 18px 6px;border-top:1px solid var(--border);
+  flex-shrink:0;
 }
 .sheet-version{font-size:var(--fs-10);color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
 .sheet-user{font-size:var(--fs-11);color:var(--text3)}
@@ -1278,7 +1283,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.2</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.11</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1291,19 +1296,27 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 
 <!-- Bottom Navigation Bar (3 tab: Inventory / Transaksi(scan) / History) — Menu Lainnya lengkap diakses via tombol ☰ di header Inventory -->
 <nav class="tabnav" id="main-tabnav" role="tablist" aria-label="Navigasi utama">
+  <div class="tab" onclick="switchTab('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('dashboard')}" id="tab-dashboard" role="tab" tabindex="0" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1.5"/><rect width="7" height="5" x="14" y="3" rx="1.5"/><rect width="7" height="9" x="14" y="12" rx="1.5"/><rect width="7" height="5" x="3" y="16" rx="1.5"/></svg>
+    <span>Dashboard</span>
+  </div>
   <div class="tab active" onclick="switchTab('master')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('master')}" id="tab-master" role="tab" tabindex="0" aria-selected="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>
     <span>Inventory</span>
   </div>
   <div class="tab-fab" onclick="openScanTransaksi()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openScanTransaksi()}" id="tab-scanner" role="tab" tabindex="0" aria-label="Buka Transaksi (scan barang)">
     <div class="tab-fab-inner">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="22" height="22" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
     </div>
     <span>Transaksi</span>
   </div>
   <div class="tab" onclick="switchTab('history')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('history')}" id="tab-history" role="tab" tabindex="0" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
     <span>History</span>
+  </div>
+  <div class="tab" onclick="switchTab('more')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('more')}" id="tab-more" role="tab" tabindex="0" aria-selected="false" aria-label="Menu lainnya">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>
+    <span>Lainnya</span>
   </div>
 </nav>
 
@@ -1366,7 +1379,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.2</span>
+    <span class="sheet-version" id="sheet-version-label">v14.11</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1383,7 +1396,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
       <div id="master-panel-head-title" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
         <button type="button" id="btn-open-more" onclick="switchTab('more')" title="Menu Lainnya" aria-label="Buka menu lainnya" style="position:relative;width:38px;height:38px;background:linear-gradient(135deg,#1a3a7a,#2e5fc7);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          <div class="hamburger-badge" id="badge-alert">0</div>
+          <div class="hamburger-badge" id="badge-alert" aria-live="polite" aria-atomic="true">0</div>
         </button>
         <div style="min-width:0">
           <h2 style="font-size:14px">RDI Indirect Scanner · Master Item</h2>
@@ -1435,7 +1448,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
       </div>
 
       <!-- Search hint (inline, bukan floating) -->
-      <div id="search-hint" class="sbar" style="display:none;margin-bottom:8px"></div>
+      <div id="search-hint" class="sbar" style="display:none;margin-bottom:8px" aria-live="polite"></div>
 
       <!-- Baris 2: Toolbar Filter + Sort -->
       <div class="ftoolbar">
@@ -1563,6 +1576,11 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
       </div>
       <!-- Mobile card list -->
       <div class="item-list-cards" id="card-list-body"></div>
+      <div class="hist-pagination" id="inv-pagination" style="display:none">
+        <button class="btn btn-sm" id="inv-prev" onclick="invPrevPage()">‹ Sebelumnya</button>
+        <span class="hist-pagination-label" id="inv-page-label" aria-live="polite">Halaman 1</span>
+        <button class="btn btn-sm" id="inv-next" onclick="invNextPage()">Berikutnya ›</button>
+      </div>
       <div id="sbar-load" class="sbar" style="margin-top:12px" role="status" aria-live="polite"></div>
     </div>
   </div>
@@ -1970,7 +1988,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
       <!-- Pagination -->
       <div class="hist-pagination" id="hfeed-pagination" style="display:none">
         <button class="btn btn-sm" id="hfeed-prev" onclick="histFeedPrevPage()">‹ Sebelumnya</button>
-        <span class="hist-pagination-label" id="hfeed-page-label">Halaman 1</span>
+        <span class="hist-pagination-label" id="hfeed-page-label" aria-live="polite">Halaman 1</span>
         <button class="btn btn-sm" id="hfeed-next" onclick="histFeedNextPage()">Selanjutnya ›</button>
       </div>
     </div>
@@ -2226,7 +2244,9 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
   <!-- View: Daftar Rak -->
   <div id="rak-view-list">
     <div class="panel">
-      <div class="panel-head"><div><h2>Cek Per Rak</h2><p>Pilih lokasi rak untuk lihat item di dalamnya</p></div></div>
+      <div class="panel-head"><div><h2>Cek Per Rak</h2><p>Pilih lokasi rak untuk lihat item di dalamnya</p></div>
+        <button class="btn btn-sm u-mla" onclick="openRakLabelSheet()" type="button">🖨 Cetak Barcode</button>
+      </div>
       <div class="panel-body">
         <div class="toolbar">
           <div class="search-wrap">
@@ -2492,7 +2512,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v14.2';
+var APP_VERSION = 'v14.11';
 var APP_BUILD_DATE = '2026-07-24';
 // Logo aplikasi (scanner + box), dipakai di topbar & layar login -- di-embed base64
 // biar file HTML ini tetap satu file utuh, tidak perlu file gambar terpisah.
@@ -2996,7 +3016,9 @@ function switchTab(name, skipAutoScan){
       drawer.classList.add('show');
       overlay.classList.add('show');
       document.getElementById('drawer-username').textContent = currentUser ? currentUser.name : '';
-      document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');});
+      document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active'); if(el.hasAttribute('aria-selected')) el.setAttribute('aria-selected','false');});
+      var moreTab = document.getElementById('tab-more');
+      if(moreTab){ moreTab.classList.add('active'); moreTab.setAttribute('aria-selected','true'); }
     }
     return;
   }
@@ -3004,7 +3026,11 @@ function switchTab(name, skipAutoScan){
   var wasScanner = document.getElementById('section-scanner').classList.contains('active');
   document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');});
   document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active'); if(el.hasAttribute('aria-selected')) el.setAttribute('aria-selected','false');});
+  // Safety-net (audit MEDIUM #5): tiap tab punya state kamera sendiri2 (_scanStream*),
+  // sebelumnya cuma scanner Transaksi yg pasti berhenti saat pindah tab. Jaga2 kalau ada
+  // jalur yg lupa stop kameranya sendiri, matikan SEMUA di titik pindah-tab manapun.
   if(wasScanner && name!=='scanner') stopInlineScanner();
+  stopInlineScannerHist(); stopInlineScannerRak(); stopInlineScannerMaster();
   var section = document.getElementById('section-'+name);
   var tabEl = document.getElementById('tab-'+name);
   if(section) section.classList.add('active');
@@ -3023,6 +3049,16 @@ function switchTab(name, skipAutoScan){
 function closeMoreDrawer(){
   var drawer = document.getElementById('more-drawer');
   var overlay = document.getElementById('more-overlay');
+  var moreTab = document.getElementById('tab-more');
+  if(moreTab){
+    moreTab.classList.remove('active');
+    moreTab.setAttribute('aria-selected','false');
+    var activeSection = document.querySelector('.page-section.active');
+    if(activeSection){
+      var matchTab = document.getElementById('tab-'+activeSection.id.replace('section-',''));
+      if(matchTab){ matchTab.classList.add('active'); if(matchTab.hasAttribute('aria-selected')) matchTab.setAttribute('aria-selected','true'); }
+    }
+  }
   // Selalu reset overlay agar tidak memblokir klik
   if(!drawer.classList.contains('show')){
     overlay.classList.remove('show','closing');
@@ -3063,16 +3099,49 @@ function loadData(){
     });
 }
 
+var INV_PAGE_SIZE = 50;
+var invPage = 1;
+var _invFilteredRows = [];
+
 function renderTable(rows){
-  var tb=document.getElementById('table-body');
+  // Entry point publik: dipanggil setiap kali hasil filter/search berubah -> selalu balik ke halaman 1
+  _invFilteredRows = rows;
+  invPage = 1;
+  _renderInventoryPage();
+}
+
+function invTotalPages(){
+  return Math.max(1, Math.ceil(_invFilteredRows.length / INV_PAGE_SIZE));
+}
+function invPrevPage(){
+  if(invPage>1){ invPage--; _renderInventoryPage(); _scrollInvToTop(); }
+}
+function invNextPage(){
+  if(invPage<invTotalPages()){ invPage++; _renderInventoryPage(); _scrollInvToTop(); }
+}
+function _scrollInvToTop(){
+  var sec = document.getElementById('section-master');
+  if(sec) sec.scrollTo({top:0, behavior:'smooth'});
+}
+
+function _renderInventoryPage(){
+  var rows = _invFilteredRows;
+  var pag = document.getElementById('inv-pagination');
   if(!rows.length){
     var emptyMsg = (typeof allRows!=='undefined' && allRows.length===0)
       ? '<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>'
       : '<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm" style="margin-top:12px" onclick="resetAllFilters()">Reset Filter</button></div>';
-    tb.innerHTML='<tr><td colspan="11">'+emptyMsg+'</td></tr>';
+    document.getElementById('table-body').innerHTML='<tr><td colspan="11">'+emptyMsg+'</td></tr>';
     renderCardList([]);
+    if(pag) pag.style.display='none';
     return;
   }
+
+  var totalPages = invTotalPages();
+  if(invPage>totalPages) invPage=totalPages;
+  var startIdx=(invPage-1)*INV_PAGE_SIZE;
+  var pageRows=rows.slice(startIdx, startIdx+INV_PAGE_SIZE);
+
   // PERF: tabel (.table-wrap) disembunyikan total lewat CSS di layar HP (<=640px) --
   // hanya card list yg kelihatan di mobile. Bangun ratusan/ribuan <tr> yg tidak pernah
   // ditampilkan itu buang-buang kerja & bikin app lemot begitu item banyak (mis. abis migrasi).
@@ -3080,11 +3149,22 @@ function renderTable(rows){
   // ke ukuran desktop (ditangani lewat resize listener + _tableStale flag di bawah).
   var isMobileView = window.matchMedia('(max-width:640px)').matches;
   if(isMobileView){
-    _tableStaleRows = rows; // simpan, bangun nanti kalau layar melebar
+    _tableStaleRows = pageRows; // simpan, bangun nanti kalau layar melebar
   } else {
-    _buildTableHtml(rows);
+    _buildTableHtml(pageRows);
   }
-  renderCardList(rows);
+  renderCardList(pageRows);
+
+  if(pag){
+    if(rows.length<=INV_PAGE_SIZE){
+      pag.style.display='none';
+    } else {
+      pag.style.display='flex';
+      document.getElementById('inv-page-label').textContent='Halaman '+invPage+' dari '+totalPages+' ('+(startIdx+1)+'–'+(startIdx+pageRows.length)+' dari '+rows.length+')';
+      document.getElementById('inv-prev').disabled = invPage<=1;
+      document.getElementById('inv-next').disabled = invPage>=totalPages;
+    }
+  }
 }
 
 var _tableStaleRows = null;
@@ -4065,11 +4145,15 @@ function populatePreview(item){
   document.getElementById('preview-saldo').textContent=item.saldo!=null?item.saldo:'—';
   // Bantu operator pilih rak yg benar: prefill rak-input dgn rak yg saldo-nya terbesar (kalau ada)
   var rakInput = document.getElementById('rak-input');
+  var rakDl = document.getElementById('dl-rak-item');
   if(rakInput && item.rakBreakdown && item.rakBreakdown.length){
     var sorted = item.rakBreakdown.slice().sort(function(a,b){ return b.qty-a.qty; });
     rakInput.value = sorted[0].rak;
+    if(rakDl) rakDl.innerHTML = sorted.map(function(r){ return '<option value="'+xe(r.rak)+'">'; }).join('');
+    rakInput.setAttribute('list','dl-rak-item'); // cuma tampilkan rak yg memang sudah ada stok item ini
   } else if(rakInput){
     rakInput.value = '';
+    rakInput.setAttribute('list','dl-rak'); // item baru/blm ada rak -> tetap bisa pilih dari semua rak gudang
   }
   renderRakChips(item.rakBreakdown);
   updateSaldoPreview();
@@ -4515,6 +4599,139 @@ function renderRakList(){
 function showRakList(){
   document.getElementById('rak-view-list').style.display='block';
   document.getElementById('rak-view-detail').style.display='none';
+}
+
+var rakLabelSelected = new Set();
+var manualRakLabels = new Set(); // kode rak yg diketik manual, belum tentu ada di data item
+
+function addManualRakLabel(){
+  var el=document.getElementById('rak-label-manual-input');
+  var v=(el.value||'').trim().toUpperCase();
+  if(!v){ return; }
+  manualRakLabels.add(v);
+  rakLabelSelected.add(v);
+  el.value='';
+  renderRakLabelList();
+}
+function removeManualRakLabel(rak){
+  manualRakLabels.delete(rak);
+  rakLabelSelected.delete(rak);
+  renderRakLabelList();
+}
+
+function openRakLabelSheet(){
+  document.getElementById('rak-label-search').value='';
+  renderRakLabelList();
+  document.getElementById('rak-label-overlay').classList.add('show');
+  document.getElementById('rak-label-sheet').classList.add('show');
+}
+function closeRakLabelSheet(){
+  var sheet=document.getElementById('rak-label-sheet');
+  var overlay=document.getElementById('rak-label-overlay');
+  sheet.classList.add('closing');
+  overlay.classList.add('closing');
+  setTimeout(function(){
+    sheet.classList.remove('show','closing');
+    overlay.classList.remove('show','closing');
+  }, 220);
+}
+
+function renderRakLabelList(){
+  var q=(document.getElementById('rak-label-search').value||'').toLowerCase().trim();
+  var groups=getRakGroups();
+  var dataRaks=Object.keys(groups).filter(function(k){ return k!=='(Tanpa Rak)'; });
+  // Gabung rak dari data + rak manual (custom, blm tentu ada di data), tanpa duplikat
+  var allRaks=Array.from(new Set(dataRaks.concat(Array.from(manualRakLabels))));
+  var raks=allRaks.filter(function(k){ return !q || k.toLowerCase().includes(q); })
+    .sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); });
+
+  var list=document.getElementById('rak-label-list');
+  if(!raks.length){
+    list.innerHTML='<div class="empty-state u-py24"><p>Rak tidak ditemukan</p></div>';
+  } else {
+    list.innerHTML=raks.map(function(rak){
+      var checked=rakLabelSelected.has(rak)?'checked':'';
+      var isManual=manualRakLabels.has(rak) && !groups[rak];
+      var tag=isManual
+        ? '<span style="font-size:10px;color:var(--amber);font-weight:700">🆕 Baru</span>'
+        : '<span style="font-size:11px;color:var(--text3)">'+groups[rak].length+' item</span>';
+      var delBtn=isManual ? '<span onclick="event.preventDefault();removeManualRakLabel(\''+rak.replace(/'/g,"\\'")+'\')" style="color:var(--red,#e74c3c);font-size:15px;padding:2px 4px" role="button" aria-label="Hapus">✕</span>' : '';
+      return '<label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);cursor:pointer">'
+        +'<input type="checkbox" data-rak="'+rak.replace(/"/g,'&quot;')+'" '+checked+' onchange="onRakLabelCheck(this)" style="width:18px;height:18px;flex-shrink:0">'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+rak+'</span>'
+        +tag+delBtn
+        +'</label>';
+    }).join('');
+  }
+  var allShown = raks.length>0 && raks.every(function(r){return rakLabelSelected.has(r);});
+  document.getElementById('rak-label-select-all').checked = allShown;
+  updateRakLabelCount();
+}
+function onRakLabelCheck(el){
+  var rak=el.getAttribute('data-rak');
+  if(el.checked) rakLabelSelected.add(rak); else rakLabelSelected.delete(rak);
+  updateRakLabelCount();
+  var allBox=document.getElementById('rak-label-select-all');
+  var boxes=document.querySelectorAll('#rak-label-list input[type=checkbox]');
+  allBox.checked = boxes.length>0 && Array.prototype.every.call(boxes,function(b){return b.checked;});
+}
+function toggleRakLabelAll(checked){
+  document.querySelectorAll('#rak-label-list input[type=checkbox]').forEach(function(b){
+    b.checked=checked;
+    var rak=b.getAttribute('data-rak');
+    if(checked) rakLabelSelected.add(rak); else rakLabelSelected.delete(rak);
+  });
+  updateRakLabelCount();
+}
+function updateRakLabelCount(){
+  document.getElementById('rak-label-count').textContent = rakLabelSelected.size+' rak dipilih';
+}
+
+function printRakLabels(){
+  if(!rakLabelSelected.size){ alert('Pilih minimal 1 rak yang ingin dicetak!'); return; }
+  var raks=Array.from(rakLabelSelected).sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); });
+  var w=window.open('','_blank');
+  if(!w){ alert('Popup diblokir browser.\nIzinkan popup untuk domain ini lalu coba lagi.'); return; }
+  w.document.write(buildRakLabelHTML(raks));
+  w.document.close();
+  closeRakLabelSheet();
+}
+
+function buildRakLabelHTML(raks){
+  function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var cols=3, perPage=cols*4; // label kecil, 3 kolom x 4 baris per halaman A4
+  var cards=raks.map(function(rak){
+    var qrData=encodeURIComponent(rak);
+    return '<div class="lbl">'
+      +'<div class="lbl-co">PT RAYARD DELI INDONESIA</div>'
+      +'<img class="lbl-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=3&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous">'
+      +'<div class="lbl-code">'+ex(rak)+'</div>'
+      +'</div>';
+  });
+  var pages=[];
+  for(var p=0;p<cards.length;p+=perPage){ pages.push(cards.slice(p,p+perPage)); }
+  var ph=pages.map(function(c,pi){
+    var isLast=(pi===pages.length-1);
+    return '<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';
+  }).join('');
+  return '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Barcode Rak</title><style>'
+    +'@page{size:A4 portrait;margin:8mm}'
+    +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0}.page{page-break-after:always}.page.last-page{page-break-after:avoid}}'
+    +'*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{margin:0;background:#f2f2f2}'
+    +'.page{width:194mm;min-height:281mm;margin:0 auto 8mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);gap:6mm;padding:6mm;align-content:start}'
+    +'.lbl{border:1.5px dashed #999;border-radius:3mm;padding:4mm;display:flex;flex-direction:column;align-items:center;text-align:center;break-inside:avoid}'
+    +'.lbl-co{font-size:7pt;font-weight:700;color:#555;letter-spacing:.3px;margin-bottom:2mm}'
+    +'.lbl-qr{width:36mm;height:36mm}'
+    +'.lbl-code{margin-top:2.5mm;font-size:13pt;font-weight:800;letter-spacing:.5px;color:#111;word-break:break-word}'
+    +'.toolbar{max-width:194mm;margin:0 auto 6mm;padding:8px 0;display:flex;gap:10px;justify-content:flex-end}'
+    +'.toolbar button{padding:10px 18px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:13px}'
+    +'.btn-print{background:#2563EB;color:#fff}'
+    +'@media print{.toolbar{display:none}}'
+    +'</style></head><body>'
+    +'<div class="toolbar"><button class="btn-print" onclick="window.print()">🖨 Cetak Sekarang</button></div>'
+    +ph
+    +'</body></html>';
 }
 
 function showRakDetail(rak){
@@ -5811,37 +6028,14 @@ function refitAcDropdownIfOpen(ctx){
 // (switchTab override sudah digabung di atas bersama cetak)
 
 // ══════════════════════════════════════════════════════
-// QR CAMERA — buka scanner.html di tab baru
+// [DIHAPUS v14.11] QR CAMERA via popup scanner.html + openCamera() + listener
+// 'message' -- audit arsitektur menemukan fungsi ini tidak dipanggil dari
+// elemen manapun (dead code). Scanner aktif yg dipakai app sekarang adalah
+// versi inline per-halaman (toggleInlineScannerMaster/Rak/Hist).
+// File scanner.html masih ada di repo tapi sudah tidak direferensikan sama
+// sekali dari index.html -- aman dihapus dari server kalau mau beres-beres.
 // ══════════════════════════════════════════════════════
-var qrCallerTab=null;
 
-function openCamera(callerTab){
-  qrCallerTab=callerTab;
-  // scanner.html berada di folder yang sama (GitHub Pages)
-  var scanUrl='scanner.html?caller='+callerTab;
-  var win=window.open(scanUrl,'_blank','width=420,height=700,resizable=yes');
-  if(!win){
-    alert('Popup diblokir.\nIzinkan popup untuk site ini lalu coba lagi.\n(Tap ikon address bar → Izinkan popup)');
-  }
-}
-
-// Terima hasil scan dari scanner.html
-window.addEventListener('message',function(e){
-  if(!e.data||e.data.type!=='QR_RESULT') return;
-  var id=String(e.data.id||'').trim().toUpperCase();
-  if(!id) return;
-  var caller=e.data.caller||qrCallerTab;
-  if(caller==='scanner'){
-    document.getElementById('scan-id-input').value=id;
-    switchTab('scanner');
-    lookupItem();
-  } else if(caller==='history'){
-    document.getElementById('hist-id-input').value=id;
-    switchTab('history');
-    loadHistory();
-  }
-  qrCallerTab=null;
-});
 
 // ══════════════════════════════════════════════════════
 // SERVICE WORKER REGISTER
@@ -5920,6 +6114,36 @@ window.addEventListener('DOMContentLoaded',function(){
   startAppAfterAuth();
 });
 </script>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- BOTTOM SHEET: CETAK BARCODE RAK -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="bottom-sheet-overlay" id="rak-label-overlay" onclick="closeRakLabelSheet()"></div>
+<div class="bottom-sheet" id="rak-label-sheet" role="dialog" aria-modal="true" aria-label="Cetak barcode rak">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div><h3 style="margin:0;font-size:15px">🖨 Cetak Barcode Rak</h3><p style="margin:2px 0 0;font-size:11.5px;color:var(--text3)">Pilih rak yang mau dicetak label QR-nya</p></div>
+    <div class="sheet-close" onclick="closeRakLabelSheet()" role="button" tabindex="0" aria-label="Tutup">✕</div>
+  </div>
+  <div style="padding:10px 16px 0;flex-shrink:0">
+    <div class="search-wrap" style="margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="search-input" id="rak-label-search" placeholder="Cari nomor / nama rak…" oninput="renderRakLabelList()">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);padding:4px 2px">
+      <input type="checkbox" id="rak-label-select-all" onchange="toggleRakLabelAll(this.checked)"> Pilih semua rak yang tampil
+    </label>
+    <div style="display:flex;gap:8px;margin:8px 0 4px">
+      <input type="text" id="rak-label-manual-input" placeholder="Kode rak baru (belum ada di data)…" style="flex:1;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();addManualRakLabel()}">
+      <button class="btn btn-sm btn-navy" type="button" onclick="addManualRakLabel()">+ Tambah</button>
+    </div>
+  </div>
+  <div class="sheet-menu" id="rak-label-list" style="gap:2px"></div>
+  <div class="sheet-footer">
+    <span id="rak-label-count" style="font-size:12px;color:var(--text3)">0 rak dipilih</span>
+    <button class="btn btn-primary btn-sm" onclick="printRakLabels()">Cetak</button>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- BOTTOM SHEET: EDIT ITEM -->
@@ -6211,6 +6435,7 @@ function saveEditItem(){
 }
 </script><datalist id="dl-uom"></datalist>
 <datalist id="dl-rak"></datalist>
+<datalist id="dl-rak-item"></datalist>
 <datalist id="dl-vendor"></datalist>
 <datalist id="dl-kategori"></datalist>
 </body>
