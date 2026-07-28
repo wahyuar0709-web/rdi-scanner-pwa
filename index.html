@@ -13,8 +13,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Indirect Scanner v14.17 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.23 – PT Rayard Deli Indonesia</title>
 <style>
+/* ═══ UI PHASE 2A — Responsive Breakpoint Reference (documentation only, tidak semua
+   zona punya CSS rule tersendiri -- lihat penjelasan per titik) ═══
+   ≤640px      MOBILE        -- baseline existing, TIDAK disentuh Phase 2A
+   641-1023px  TABLET        -- foundation baru, TIDAK butuh rule terpisah untuk .container
+                                 (base max-width 1100px sudah > lebar tablet manapun)
+   1024-1439px DESKTOP       -- .container melebar ke 1280px (lihat @media(min-width:1024px))
+   ≥1440px     LARGE DESKTOP -- .container melebar ke 1520px (lihat @media(min-width:1440px))
+   isMobileView (JS) TETAP di 640px -- breakpoint di atas murni CSS, tidak mengubah JS. */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;overscroll-behavior-y:contain}
 /* Matikan gestur "tarik ke bawah = refresh" bawaan browser/PWA. Operator sering tanpa sengaja
@@ -71,6 +79,23 @@ body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:h
   --glow-amber:0 0 0 1px var(--amber-border),0 4px 20px rgba(245,166,35,.18);
   --glow-green:0 0 0 1px var(--green-border),0 4px 20px rgba(34,197,94,.14);
   --transition:.13s cubic-bezier(.4,0,.2,1);
+
+  /* ═══ UI PHASE 2A — Canonical Z-Index Tokens (foundation) ═══
+     Nilai dipilih berdasarkan hierarchy z-index EXISTING yang sudah dipakai di file ini
+     (topbar=100, modal-overlay/toolbar=200, item-detail/edit-overlay=400-401,
+     edit-sheet=450-451, draft-recovery-box=600, modal-config critical=10500) --
+     BUKAN angka baru yang diciptakan sembarangan. Token ini BELUM diterapkan ke
+     deklarasi z-index manapun yang sudah ada (itu pekerjaan migrasi bertahap fase
+     berikutnya) -- murni foundation untuk komponen BARU/yang disentuh nanti.
+     Camera-scanner overlay (20000) dan spinner (9999) sengaja TIDAK dipetakan dulu
+     karena stacking context-nya belum diaudit dalam-dalam -- jangan disentuh tanpa analisis. */
+  --z-base:1;
+  --z-sticky:100;
+  --z-dropdown:200;
+  --z-modal:400;
+  --z-modal-nested:450;
+  --z-toast:600;
+  --z-critical:10500;
   /* radius scale (auto-derived, v8.7) */
   --br-2:2px;
   --br-3:3px;
@@ -136,6 +161,22 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-hei
 
 .container{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
 .container-sm{max-width:540px;margin:0 auto;padding:20px 16px 80px}
+
+/* ═══ UI PHASE 2A — Responsive Container Foundation ═══
+   4 zona: ≤640 mobile (TIDAK disentuh, base rule di atas sudah > lebar viewport
+   mobile manapun jadi otomatis full-width-minus-padding), 641-1023 tablet (TIDAK
+   perlu aturan terpisah -- base 1100px sudah > lebar viewport tablet manapun,
+   jadi tablet SUDAH otomatis dapat lebar penuh tanpa perubahan apa pun -- ini
+   hasil observasi kode, bukan asumsi), 1024-1439 desktop & ≥1440 large-desktop
+   (base 1100px di sini LEBIH SEMPIT dari viewport, jadi baru di titik ini
+   whitespace kosong benar-benar terjadi -- lihat UI Phase 1 audit bagian G).
+   Angka 1280/1520 dipilih agar tetap dalam batas readable width, BUKAN full-width. */
+@media(min-width:1024px){
+  .container{max-width:1280px}
+}
+@media(min-width:1440px){
+  .container{max-width:1520px}
+}
 
 .panel{background:var(--surface);border:1px solid rgba(255,255,255,.13);border-radius:var(--rl);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
 .panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--surface2),var(--surface))}
@@ -296,6 +337,8 @@ body.light .trx-submit-bar{box-shadow:0 -6px 24px rgba(0,0,0,.1)}
 .result-card{border-radius:var(--rl);padding:24px;text-align:center;margin-bottom:14px;border:1px solid transparent}
 .result-card.ok{background:var(--green-dim);border-color:var(--green-border);box-shadow:var(--glow-green)}
 .result-card.err{background:var(--red-dim);border-color:var(--red-border)}
+.result-card.partial{background:var(--amber-dim);border-color:var(--amber-border)}
+.result-icon.partial{background:var(--amber-dim);border-color:var(--amber-border)}
 .result-icon{width:54px;height:54px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center}
 .result-icon.ok{background:rgba(34,197,94,.2);color:var(--green-text)}
 .result-icon.err{background:rgba(239,68,68,.15);color:var(--red-text)}
@@ -320,6 +363,21 @@ body.light .trx-submit-bar{box-shadow:0 -6px 24px rgba(0,0,0,.1)}
 .hist-table thead tr{background:var(--surface2)}
 .hist-table th{padding:8px 10px;text-align:left;font-weight:700;color:var(--text3);font-size:var(--fs-10);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
 .hist-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
+
+/* ═══ UI PHASE 2B — Desktop table readability ═══
+   Struktur/kolom/JS rendering TIDAK berubah -- hanya padding sel, memanfaatkan
+   ruang container yang sudah lebih lebar sejak Phase 2A. th/td (bare selector)
+   sengaja dibiarkan tanpa scope karena SEMUA tabel data (.table-wrap) memang
+   harus konsisten -- dikonfirmasi lewat inventory: 3 tabel (daftar item, alert
+   stok rendah, min-stock) semuanya lewat wrapper yang sama. Nilai px eksplisit
+   (bukan --space-*) karena tidak ada padanan skala 8pt yang cocok untuk 12-14px
+   dari basis 9-10px -- dipaksakan justru akan mengubah proporsi visual existing. */
+@media(min-width:1024px){
+  th{padding:12px 14px}
+  td{padding:12px 14px}
+  .hist-table th{padding:10px 12px}
+  .hist-table td{padding:11px 12px}
+}
 .hist-table tr:last-child td{border-bottom:none}
 .hist-table tr:hover td{background:var(--glass)}
 .badge-masuk{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border);padding:2px 8px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px}
@@ -442,6 +500,7 @@ body.light .trx-submit-bar{box-shadow:0 -6px 24px rgba(0,0,0,.1)}
 .hist-card-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
 .hist-card-jenis{display:flex;align-items:center;gap:6px}
 .hist-card-nama{font-size:var(--fs-13);font-weight:700;color:var(--text);line-height:1.3}
+.hist-card-spec{font-size:var(--fs-12);color:var(--text2);line-height:1.3;margin-top:1px}
 .hist-card-kode{font-family:var(--font-mono);font-size:var(--fs-11);color:var(--text3)}
 .hist-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .hist-card-qty{font-size:var(--fs-14);font-weight:700;white-space:nowrap}
@@ -467,6 +526,22 @@ body.light .trx-submit-bar{box-shadow:0 -6px 24px rgba(0,0,0,.1)}
 .item-detail-sheet{position:fixed;bottom:0;left:0;right:0;top:10dvh;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);box-shadow:0 -8px 40px rgba(0,0,0,.5);z-index:401;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:90dvh;display:flex;flex-direction:column}
 .item-detail-sheet.show{transform:translateY(0)}
 .item-detail-sheet.dragging{transition:none}
+
+/* ═══ UI PHASE 2B — Item detail sheet, desktop ═══
+   Sebelumnya full-bleed (left:0;right:0) di SEMUA lebar -- di desktop/large-desktop
+   ini terlihat seperti "mobile diperbesar" (bottom-sheet selebar 1920px). Dibatasi
+   lebar + di-tengahkan, pola SAMA seperti .modal yang sudah ada (max-width+margin
+   auto) -- bukan pola baru. z-index (401) TIDAK disentuh (tidak ada bukti masalah
+   stacking, lihat impact analysis). Panel 2-kolom berdampingan histori DITOLAK
+   (STOP-04, histori bukan blok DOM terpisah) -- lihat laporan implementasi.
+   PENTING: blok ini WAJIB berada SETELAH ".show"/".dragging" di atas -- keduanya
+   sama-sama selector ".item-detail-sheet.show" (spesifisitas sama), jadi urutan
+   sumber yang menentukan siapa menang; ditaruh di sini supaya versi desktop
+   yang berlaku saat sheet benar-benar terbuka. */
+@media(min-width:1024px){
+  .item-detail-sheet{left:50%;right:auto;max-width:720px;transform:translate(-50%,100%)}
+  .item-detail-sheet.show{transform:translate(-50%,0)}
+}
 .item-detail-handle-zone{flex-shrink:0;padding-top:2px;cursor:grab;touch-action:none}
 .item-detail-handle-zone:active{cursor:grabbing}
 .item-detail-handle{width:36px;height:4px;background:var(--border3);border-radius:var(--br-2);margin:10px auto 0}
@@ -768,6 +843,15 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .bar-fill.navy,.bar-fill.amber{background:linear-gradient(90deg,var(--amber),rgba(245,166,35,.7))}
 .bar-val{font-size:var(--fs-11);font-weight:700;color:var(--text);width:30px;text-align:right;flex-shrink:0}
 @media(max-width:640px){.dash-grid{grid-template-columns:1fr 1fr}.dash-2col{grid-template-columns:1fr}}
+
+/* ═══ UI PHASE 2B — Desktop dashboard breathing room ═══
+   Kolom TETAP 4 (tidak menambah KPI, sesuai Design Contract) -- container Phase 2A
+   sudah lebih lebar (1280/1520px), gap 12px lama terasa terlalu rapat untuk lebar
+   itu. --space-2 (16px) dipakai di sini karena padanannya memang pas (bagian dari
+   skala 8pt existing), bukan dipaksakan. */
+@media(min-width:1024px){
+  .dash-grid,.dash-2col{gap:var(--space-2)}
+}
 @media(max-width:640px){
   .dash-card-val{font-size:var(--fs-24)!important}
   .dash-card{padding:14px 12px}
@@ -1082,11 +1166,12 @@ mark.ac-hl{background:var(--amber-dim);color:var(--amber);border-radius:var(--br
 .ilc2-strip.non-bc{background:linear-gradient(180deg,var(--amber),#d97706)}
 .ilc2-main{flex:1;padding:6px 9px;min-width:0;display:flex;align-items:center;gap:8px}
 .ilc2-info{flex:1;min-width:0}
-.ilc2-top{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+.ilc2-top{display:flex;align-items:center;gap:5px;margin-bottom:1px;flex-wrap:wrap;row-gap:4px}
 .ilc2-left{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden}
 .ilc2-id{font-family:var(--font-mono);font-size:12.5px;font-weight:900;color:var(--amber);background:var(--amber-dim);padding:3px 7px;border-radius:var(--br-3);border:1px solid var(--amber-border);white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
 .ilc2-id.noid{color:#92400e;background:#fef3c7;border-color:#f59e0b}
 .ilc2-rak{font-size:10.5px;color:var(--blue-text);background:var(--blue-dim);border:1px solid var(--blue-border);padding:2px 6px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
+.ilc2-tgl{font-size:10.5px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:var(--br-3);white-space:nowrap;flex-shrink:0}
 .ilc2-stok{font-size:16px;font-weight:900;font-family:var(--font-mono);line-height:1;text-align:right;flex-shrink:0;display:flex;align-items:baseline;gap:3px}
 .ilc2-status-dot{font-size:11px;line-height:1;margin-right:1px}
 .ilc2-unit{font-size:8.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;font-family:inherit;font-weight:700}
@@ -1195,6 +1280,39 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 }
 
 /* ══════════════════════════════════════════════════════
+   BOOT SPLASH — layar pertama sebelum login-gate/app, murni branding+loading.
+   ══════════════════════════════════════════════════════ */
+.boot-splash{
+  position:fixed;inset:0;z-index:20000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(135deg,#003F88 0%,#1A56DB 100%);
+  transition:opacity .4s ease;
+}
+.boot-splash.hide{opacity:0;pointer-events:none}
+.boot-splash-logo{
+  width:72px;height:72px;border-radius:18px;overflow:hidden;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);
+  box-shadow:0 8px 24px rgba(0,20,60,.4);
+  border:2px solid rgba(255,255,255,.25);
+  animation:bootLogoPulse 1.6s ease-in-out infinite;
+}
+.boot-splash-logo::after{
+  content:'';position:absolute;left:0;right:0;height:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.85) 50%,rgba(255,255,255,0) 100%);
+  animation:bootLogoScan 1.8s ease-in-out infinite;
+}
+@keyframes bootLogoPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes bootLogoScan{0%{top:-16px}100%{top:100%}}
+.boot-splash-title{color:#fff;font-weight:800;font-size:16px;letter-spacing:.2px}
+.boot-splash-sub{color:rgba(255,255,255,.75);font-size:12px;margin-top:-8px}
+.boot-splash-dots{display:flex;gap:6px;margin-top:6px}
+.boot-splash-dots span{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,.85);animation:bootDotPulse 1.2s ease-in-out infinite}
+.boot-splash-dots span:nth-child(2){animation-delay:.15s}
+.boot-splash-dots span:nth-child(3){animation-delay:.3s}
+@keyframes bootDotPulse{0%,80%,100%{opacity:.25;transform:scale(.75)}40%{opacity:1;transform:scale(1)}}
+
+/* ══════════════════════════════════════════════════════
    LOGIN GATE — tampilan mirip Google Sign-In (bukan OAuth asli).
    Selalu terang (spt Google beneran), lepas dari tema gelap/terang app.
    ══════════════════════════════════════════════════════ */
@@ -1282,6 +1400,22 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 </head>
 <body>
 
+<!-- BOOT SPLASH — muncul instan sebelum JS sempat cek sesi, sebelum login-gate/app tampil.
+     Dulu pernah ada, hilang waktu fitur login-gate ditambahkan (login-gate ambil alih slot
+     "layar penuh pertama" ini). Sekarang dipisah lagi: splash ini murni boot/branding,
+     login-gate tetap ada setelahnya kalau sesi belum valid. -->
+<div id="boot-splash" class="boot-splash">
+  <div class="boot-splash-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="26" height="26">
+      <rect x="2" y="7" width="20" height="14" rx="2"/>
+      <path d="M8 7V5a4 4 0 018 0v2"/>
+    </svg>
+  </div>
+  <div class="boot-splash-title">RDI Indirect Scanner</div>
+  <div class="boot-splash-sub">PT Rayard Deli Indonesia</div>
+  <div class="boot-splash-dots"><span></span><span></span><span></span></div>
+</div>
+
 <!-- LOGIN GATE — tampilan mirip Google Sign-In, TAPI bukan akun Google asli.
      Kredensial (username/password) diatur admin lewat sheet Viewer_Accounts
      di backend. Login sukses -> akses lihat-saja (viewer), tidak bisa edit. -->
@@ -1324,7 +1458,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.17</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.23</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1420,7 +1554,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.17</span>
+    <span class="sheet-version" id="sheet-version-label">v14.23</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -2190,7 +2324,10 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
   </div>
 
   <div class="chart-wrap" style="margin-bottom:16px">
-    <div class="chart-title">📊 Stok Terendah (10 Item)</div>
+    <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span>📊 Stok Terendah (10 Item)</span>
+      <select id="dash-lowest-cat-filter" class="sel" style="width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:var(--fs-11);min-height:30px" onchange="renderLowestStockWidget()"><option value="">Semua Kategori</option></select>
+    </div>
     <div class="bar-chart" id="dash-lowest"></div>
   </div>
 
@@ -2553,7 +2690,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v14.17';
+var APP_VERSION = 'v14.23';
 var APP_BUILD_DATE = '2026-07-24';
 // Logo aplikasi (scanner + box), dipakai di topbar & layar login -- di-embed base64
 // biar file HTML ini tetap satu file utuh, tidak perlu file gambar terpisah.
@@ -3017,6 +3154,17 @@ function gasPost(body){
 // ══════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════
+// PHASE 1: identifier "niat transaksi" ini (BUKAN idempotency key backend, backend bikin cache-nya
+// sendiri) -- dikirim di setiap postTransaksi supaya retry request yang SAMA tidak menghasilkan
+// ledger dobel. Reuse selama qty/rak/vendor/noref/ket/jenis TIDAK berubah dari draft tersimpan
+// terakhir; begitu salah satu berubah, ini dianggap niat transaksi BARU -> requestId baru (lihat
+// saveTransaksiDraft()).
+var currentRequestId = null;
+function genRequestId(){
+  try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return 'rid-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
+}
+
 function xe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 // xeJs: xe() + escape kutip tunggal, WAJIB dipakai saat menyisipkan data ke argumen string JS
 // di dalam atribut inline seperti onclick="fn('...')" — kalau data mengandung ' (co: nama item
@@ -3130,6 +3278,7 @@ function loadData(){
       allRows=result.rows.map(function(r,i){ r._idx=i; return r; });
       syncMinStockMap();
       filteredRows=allRows.slice();
+      _applySort();
       renderTable(filteredRows); renderCatFilter();
       document.getElementById('last-load').textContent='Dimuat '+new Date().toLocaleTimeString('id-ID')+' · '+allRows.length+' item';
       showStatus('sbar-load','s-ok',IC.ok+' Berhasil memuat <strong>'+allRows.length+' item</strong>');
@@ -3805,6 +3954,7 @@ function loadDashboard(force){
         allRows=r.rows.map(function(row,i){row._idx=i;return row;});
         syncMinStockMap();
         filteredRows=allRows.slice();
+        _applySort();
       }
       gasGet({action:'getDashboard'}).then(renderDashboard).catch(function(){renderDashboardLocal();});
       renderDashAlertWidget();
@@ -3894,17 +4044,54 @@ function renderDashboardLocal(){
       +'<div class="bar-val">'+catCount[c]+'</div></div>';
   }).join('');
 
-  // Stok terendah — grup dulu per kode material (jumlahkan qty kalau kodenya sama),
+  // Stok terendah — dipisah jadi fungsi sendiri (renderLowestStockWidget) supaya dropdown
+  // kategori bisa memanggilnya ulang tanpa menumpuk ulang seluruh dashboard (yang akan
+  // menimpa dash-masuk/dash-keluar dari data backend, lihat catatan di renderDashboard()).
+  renderLowestStockWidget();
+
+  document.getElementById('dash-top5').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Perlu data history — klik Refresh untuk memuat dari GAS</div>';
+}
+
+function renderLowestStockWidget(){
+  var target = document.getElementById('dash-lowest');
+  if(!target) return;
+
+  // Isi/refresh opsi kategori di dropdown, sambil pertahankan kategori yg sedang dipilih user
+  var catSel = document.getElementById('dash-lowest-cat-filter');
+  var selectedCat = '';
+  if(catSel){
+    selectedCat = catSel.value;
+    var cats = Array.from(new Set(allRows.map(function(r){ return (r.kategori||'').trim(); }).filter(Boolean)))
+      .sort(function(a,b){ return a.localeCompare(b,'id'); });
+    var optsHtml = '<option value="">Semua Kategori</option>'+cats.map(function(c){
+      return '<option value="'+xe(c)+'">'+xe(c)+'</option>';
+    }).join('');
+    if(catSel.getAttribute('data-opts-sig') !== optsHtml){
+      catSel.innerHTML = optsHtml;
+      catSel.setAttribute('data-opts-sig', optsHtml);
+      catSel.value = selectedCat; // tetap di kategori yg sudah dipilih kalau opsinya masih ada
+      if(catSel.value !== selectedCat) selectedCat = ''; // kategori lama sudah tidak ada -> balik ke Semua
+    }
+  }
+
+  var srcRows = selectedCat ? allRows.filter(function(r){ return (r.kategori||'').trim()===selectedCat; }) : allRows;
+
+  // Grup dulu per kode material (jumlahkan qty kalau kodenya sama),
   // biar 1 kode nggak nongol berkali-kali di Top 10 & saldo yg ditampilkan itu total-nya
   var _lowGroup={}, _lowOrder=[];
-  allRows.forEach(function(r){
+  srcRows.forEach(function(r){
     var key=(r.id&&r.id.trim()!=='')?r.id:'__blank_'+_lowOrder.length; // baris tanpa kode tetap dihitung sendiri2
     if(!_lowGroup[key]){ _lowGroup[key]={id:r.id,nama:r.nama,unit:r.unit,qty:0}; _lowOrder.push(key); }
     _lowGroup[key].qty += parseInt(r.qty||0);
   });
   var sorted=_lowOrder.map(function(k){return _lowGroup[k];}).sort(function(a,b){return a.qty-b.qty;}).slice(0,10);
+
+  if(!sorted.length){
+    target.innerHTML='<div class="empty-state u-py24" style="padding:12px 0"><p>Tidak ada item di kategori ini</p></div>';
+    return;
+  }
   var maxQty=Math.max.apply(null,sorted.map(function(r){return parseInt(r.qty)||0;}).concat([1]));
-  document.getElementById('dash-lowest').innerHTML=sorted.map(function(r){
+  target.innerHTML=sorted.map(function(r){
     var q=parseInt(r.qty)||0;
     var pct=Math.round(q/maxQty*100)||2;
     var col=q===0?'keluar':q<=5?'keluar':'navy';
@@ -3912,8 +4099,6 @@ function renderDashboardLocal(){
       +'<div class="bar-track"><div class="bar-fill '+col+'" style="width:'+pct+'%"></div></div>'
       +'<div class="bar-val">'+q+'</div></div>';
   }).join('');
-
-  document.getElementById('dash-top5').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Perlu data history — klik Refresh untuk memuat dari GAS</div>';
 }
 
 function renderDashboard(data){
@@ -3996,6 +4181,7 @@ function loadAlert(){
 function openScanTransaksi(){
   // Nav tengah: selalu mulai dari step scan kamera (bukan sisa form transaksi sebelumnya)
   currentItem=null;
+  currentRequestId=null;
   document.getElementById('scan-id-input').value='';
   hideStatus('sbar-lookup');
   showScanStep('input');
@@ -4094,18 +4280,29 @@ function goTransaksiFromCekStok(){
 function saveTransaksiDraft(){
   if(!currentItem) return;
   try{
+    var qty=document.getElementById('qty-input').value, rak=document.getElementById('rak-input').value,
+        vendor=document.getElementById('vendor-input').value, noref=document.getElementById('noref-input').value,
+        ket=document.getElementById('ket-input').value;
+
+    // PHASE 1: kalau field yang menentukan transaksi berubah dari draft sebelumnya (mis. qty diedit
+    // setelah percobaan submit sebelumnya timeout), ini NIAT TRANSAKSI BARU -> requestId HARUS baru.
+    // Jangan diam-diam kirim payload berbeda dengan requestId lama (backend bisa salah anggap "request
+    // yang sama" lalu balikin hasil transaksi lama, bukan memproses transaksi yang sebenarnya baru).
+    var prev=null; try{ prev=JSON.parse(localStorage.getItem('rdi_trx_draft')||'null'); }catch(e){}
+    var sameIntent = prev && prev.itemId===currentItem.id && prev.jenis===currentJenis
+      && String(prev.qty)===String(qty) && String(prev.rak)===String(rak)
+      && String(prev.vendor)===String(vendor) && String(prev.noref)===String(noref) && String(prev.ket)===String(ket);
+    if(!sameIntent || !currentRequestId) currentRequestId = genRequestId();
+
     localStorage.setItem('rdi_trx_draft', JSON.stringify({
       itemId: currentItem.id, nama: currentItem.nama, jenis: currentJenis,
-      qty: document.getElementById('qty-input').value,
-      rak: document.getElementById('rak-input').value,
-      vendor: document.getElementById('vendor-input').value,
-      noref: document.getElementById('noref-input').value,
-      ket: document.getElementById('ket-input').value,
+      qty: qty, rak: rak, vendor: vendor, noref: noref, ket: ket,
+      requestId: currentRequestId,
       savedAt: Date.now()
     }));
   }catch(e){}
 }
-function clearTransaksiDraft(){ try{ localStorage.removeItem('rdi_trx_draft'); }catch(e){} }
+function clearTransaksiDraft(){ try{ localStorage.removeItem('rdi_trx_draft'); }catch(e){} currentRequestId=null; }
 
 function checkTransaksiDraft(){
   var raw; try{ raw = localStorage.getItem('rdi_trx_draft'); }catch(e){ return; }
@@ -4134,6 +4331,12 @@ function checkTransaksiDraft(){
         document.getElementById('vendor-input').value = d.vendor;
         document.getElementById('noref-input').value = d.noref;
         document.getElementById('ket-input').value = d.ket;
+        // PHASE 1: pakai ULANG requestId yang sama dari draft (bukan generate baru) -- draft ini
+        // kemungkinan besar hasil app di-kill tepat setelah tap Simpan, jadi requestId lama WAJIB
+        // dipertahankan supaya kalau transaksi itu ternyata sudah ter-commit di backend, retry-nya
+        // dikenali sebagai request yang sama, bukan transaksi baru. Fallback genRequestId() hanya
+        // untuk draft lama (tersimpan sebelum Phase 1) yang belum punya field ini.
+        currentRequestId = d.requestId || genRequestId();
         updateSaldoPreview();
         markRakChipSelection();
         showScanStep('transaksi');
@@ -4175,6 +4378,7 @@ function lookupItem(){
       btn.disabled=false; btn.innerHTML='Cari';
       if(result.status==='error'){ showStatus('sbar-lookup','s-err',IC.err+' '+xe(result.message)); return; }
       currentItem=result.item;
+      currentRequestId=null; // PHASE 1: item baru di-lookup = niat transaksi baru -> requestId baru (lihat saveTransaksiDraft)
       hideStatus('sbar-lookup');
 
       if(scanMode==='cekstok'){
@@ -4300,27 +4504,54 @@ function submitTransaksi(){
   btn.disabled=true; btn.innerHTML=IC.load+' Menyimpan...';
   showStatus('sbar-submit','s-info',IC.load+' Menyimpan transaksi...');
 
-  var payload={action:'postTransaksi', itemId:currentItem.id, jenis:currentJenis, qty:qty, rak:rak, vendor:vendor, noReferensi:noRef, keterangan:ket, admin:getAdminLabel()};
+  // PHASE 1: pastikan requestId sinkron persis dgn payload yang akan dikirim (kalau field ini
+  // sempat berubah tanpa lewat oninput, saveTransaksiDraft() di sini yang menjamin ID-nya benar).
+  saveTransaksiDraft();
+  var payload={action:'postTransaksi', itemId:currentItem.id, jenis:currentJenis, qty:qty, rak:rak, vendor:vendor, noReferensi:noRef, keterangan:ket, admin:getAdminLabel(), requestId:currentRequestId};
 
   gasPost(payload)
     .then(function(result){
       btn.disabled=false; btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan Transaksi';
-      if(result.status==='error'){ showStatus('sbar-submit','s-err',IC.err+' '+xe(result.message)); flagFieldError(result.message&&result.message.indexOf('RAK')>-1?'rak-input':'qty-input'); return; }
+
+      if(result.status==='error'){
+        // PHASE 1: request gagal SEBELUM sampai/diproses backend (network putus/timeout) beda
+        // dgn gagal validasi biasa -- backend mungkin SUDAH commit, response saja yang tidak
+        // sampai (UNKNOWN_AFTER_COMMIT). JANGAN bilang "gagal" & JANGAN clear draft/requestId --
+        // retry (tap Simpan lagi) akan pakai requestId sama sehingga aman dari duplikat.
+        var isNetworkErr = /^Network error/.test(result.message||'');
+        if(isNetworkErr){
+          showStatus('sbar-submit','s-warn',IC.info+' Status transaksi belum dapat dipastikan (koneksi terputus). JANGAN input transaksi baru untuk data yang sama. Tap Simpan lagi (aman, tidak akan tercatat dobel) atau cek History untuk memastikan.');
+          return;
+        }
+        showStatus('sbar-submit','s-err',IC.err+' '+xe(result.message)); flagFieldError(result.message&&result.message.indexOf('RAK')>-1?'rak-input':'qty-input'); return;
+      }
+
+      // status 'ok' ATAU 'partial' -- keduanya berarti backend SUDAH memproses request ini,
+      // jadi draft & requestId untuk niat transaksi ini selesai perannya, aman di-clear.
       clearTransaksiDraft();
       showResult(result, currentJenis, qty);
       showScanStep('result');
     })
     .catch(function(err){
+      // gasPost() pada dasarnya sudah menangkap error jaringan sendiri (lihat definisinya) dan
+      // resolve dgn status:'error', jadi .catch ini jalur cadangan utk exception tak terduga --
+      // diperlakukan sama hati-hatinya: JANGAN clear draft/requestId, JANGAN klaim gagal total.
       btn.disabled=false; btn.innerHTML='Simpan Transaksi';
-      showStatus('sbar-submit','s-err',IC.err+' '+xe(err.message));
+      showStatus('sbar-submit','s-warn',IC.info+' Status transaksi belum dapat dipastikan. JANGAN input ulang -- tap Simpan lagi atau cek History.');
     });
 }
 
 function showResult(result, jenis, qty){
   var isOk=result.status==='ok';
-  document.getElementById('result-card').className='result-card '+(isOk?'ok':'err');
-  document.getElementById('result-icon').className='result-icon '+(isOk?'ok':'err');
-  document.getElementById('result-title').textContent=isOk?'Transaksi Berhasil':'Transaksi Gagal';
+  // PHASE 1: 'partial' = ledger SUDAH tercatat tapi saldo belum sepenuhnya update (RECOVERY_REQUIRED).
+  // Ini BUKAN sukses (saldo yang ditampilkan operator bisa keliru) dan BUKAN gagal biasa (jangan
+  // sampai operator input ulang transaksi yang sebenarnya sudah tercatat) -- kelas visual & pesan
+  // sendiri (amber), jangan dipaksa masuk ok/err.
+  var isPartial=result.status==='partial';
+  var cls = isOk?'ok':(isPartial?'partial':'err');
+  document.getElementById('result-card').className='result-card '+cls;
+  document.getElementById('result-icon').className='result-icon '+cls;
+  document.getElementById('result-title').textContent=isOk?'Transaksi Berhasil':(isPartial?'Transaksi Tercatat, Perlu Verifikasi':'Transaksi Gagal');
   document.getElementById('result-sub').textContent=isOk?(jenis+' '+qty+' '+result.unit+' · '+xe(result.namaItem)):xe(result.message);
   if(isOk){
     document.getElementById('result-before').textContent=result.saldoSebelum+' '+result.unit;
@@ -4331,6 +4562,8 @@ function showResult(result, jenis, qty){
   } else {
     document.getElementById('result-saldo-change').style.display='none';
   }
+  // Saldo TIDAK dianggap pasti benar pada status partial -- jangan update currentItem.saldo
+  // dari angka yang justru gagal diverifikasi backend; biarkan lookup berikutnya yang mengoreksi.
   if(isOk&&currentItem) currentItem.saldo=result.saldoSesudah;
 }
 
@@ -4347,8 +4580,8 @@ function showQuickSearch(){
   document.getElementById('search-box').select();
 }
 
-function scanNext(){ currentItem=null; document.getElementById('scan-id-input').value=''; hideStatus('sbar-lookup'); showScanStep('input'); setTimeout(function(){document.getElementById('scan-id-input').focus();},100); }
-function transaksiLagi(){ if(currentItem)populatePreview(currentItem); setJenis('KELUAR'); document.getElementById('qty-input').value=1; document.getElementById('ket-input').value=''; document.getElementById('vendor-input').value=''; document.getElementById('noref-input').value=''; updateSaldoPreview(); hideStatus('sbar-submit'); showScanStep('transaksi'); }
+function scanNext(){ currentItem=null; currentRequestId=null; document.getElementById('scan-id-input').value=''; hideStatus('sbar-lookup'); showScanStep('input'); setTimeout(function(){document.getElementById('scan-id-input').focus();},100); }
+function transaksiLagi(){ currentRequestId=null; if(currentItem)populatePreview(currentItem); setJenis('KELUAR'); document.getElementById('qty-input').value=1; document.getElementById('ket-input').value=''; document.getElementById('vendor-input').value=''; document.getElementById('noref-input').value=''; updateSaldoPreview(); hideStatus('sbar-submit'); saveTransaksiDraft(); showScanStep('transaksi'); }
 function resetScanner(){ scanNext(); }
 
 // ══════════════════════════════════════════════════════
@@ -5059,6 +5292,7 @@ function renderHistFeed(){
       var time = parseTimeOnly(String(r.timestamp||''));
       var meta = getItemMeta(r.itemId);
       var nama = r.nama || meta.nama || '—';
+      var spec = r.spec || meta.spec || '';
       var qtyColor = isMasuk ? 'color:var(--green-text)' : 'color:var(--red-text)';
       var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'">'+(isMasuk?'↑ Barang Masuk':'↓ Barang Keluar')+'</span>';
       var cardKey = 'hc-'+ki+'-'+ri;
@@ -5068,6 +5302,7 @@ function renderHistFeed(){
           +'<div class="hist-card-jenis">'+badge+'</div>'
         +'</div>'
         +'<div class="hist-card-nama">'+xe(nama)+'</div>'
+        +(spec?'<div class="hist-card-spec">'+xe(spec)+'</div>':'')
         +'<div class="hist-card-kode">Kode : '+xe(r.itemId||'—')+'</div>'
         +'<div class="hist-card-bottom">'
           +'<span class="hist-card-qty" style="'+qtyColor+'">'+xe(r.qty)+' '+xe(r.unit||'')+'</span>'
@@ -5375,6 +5610,7 @@ function buildCardHtml(rows){
     var isZero=saldo===0;
     var isBC=(r.bc||'').toUpperCase();
     var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';
+    var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));
     // Audit 7: status stok = informasi paling penting, harus dikenali tanpa baca angka.
     // 3 level: 🔴 Habis (saldo 0) → 🟡 Minimum (≤ batas min) → 🟢 Aman (sisanya)
     var statusDot = isZero?'🔴':isAlert?'🟡':'🟢';
@@ -5390,6 +5626,7 @@ function buildCardHtml(rows){
             +'<div class="ilc2-top" style="margin-top:3px">'
               +(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
               +(r.rak&&r.rak!=='—'?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'')
+              +(tglKedatangan!=='—'?'<span class="ilc2-tgl" title="Tanggal transaksi masuk terakhir">'+tglKedatangan+'</span>':'')
             +'</div>'
           +'</div>'
           +'<div class="ilc2-stok" style="'+stokColor+'" title="Status stok: '+statusLabel+'">'
@@ -5485,7 +5722,7 @@ function openItemDetail(idx){
   if(histList) histList.style.display='none';
   if(histToggle){ var lbl=histToggle.querySelector('span'); if(lbl) lbl.textContent='▸ Riwayat Transaksi'; }
   checkLedgerReconciliation(r.id);
-  loadItemHistoryInDetail(r.id, r.unit);
+  loadItemHistoryInDetail(r.id, r.unit, r.spec);
 }
 
 // Upgrade: riwayat transaksi item langsung di halaman detail (scroll ke bawah)
@@ -5502,8 +5739,9 @@ function toggleDetailHist(){
   if(lbl) lbl.textContent = (isOpen?'▸':'▾')+' Riwayat Transaksi';
 }
 
-function loadItemHistoryInDetail(itemId, unit){
+function loadItemHistoryInDetail(itemId, unit, fallbackSpec){
   unit = unit || '';
+  fallbackSpec = fallbackSpec || '';
   var box = document.getElementById('idd-hist-list');
   var countLbl = document.getElementById('idd-hist-count');
   if(!box) return;
@@ -5527,12 +5765,14 @@ function loadItemHistoryInDetail(itemId, unit){
       var badge = '<span class="badge-'+(isMasuk?'masuk':'keluar')+'">'+(isMasuk?'↑ Masuk':'↓ Keluar')+'</span>';
       var parts = String(r.timestamp||'').split(' ');
       var tglPart = parts[0]||''; var jamPart = parts[1]||'';
+      var spec = r.spec || fallbackSpec || '—';
 
       return '<tr>'
         +'<td style="white-space:nowrap">'+xe(tglPart)+'<br><span style="color:var(--text3);font-size:10px">'+xe(jamPart)+'</span></td>'
         +'<td>'+badge+'</td>'
         +'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(r.qty)+'</td>'
         +'<td style="text-align:right;font-family:var(--font-mono);color:var(--amber);font-weight:700">'+xe(r.saldoSesudah)+' '+xe(unit)+'</td>'
+        +'<td style="font-size:11px;color:var(--amber);font-weight:600">'+xe(spec)+'</td>'
         +'<td>'+xe(r.admin||'—')+'</td>'
         +'<td><span class="hist-ket" title="'+xe(r.keterangan||'')+'">'+xe(r.keterangan||'—')+'</span></td>'
       +'</tr>';
@@ -5544,6 +5784,7 @@ function loadItemHistoryInDetail(itemId, unit){
         +'<th style="width:70px">Jenis</th>'
         +'<th style="width:55px;text-align:right">Qty</th>'
         +'<th style="width:70px;text-align:right">Saldo</th>'
+        +'<th style="width:90px">Spesifikasi</th>'
         +'<th style="width:65px">Operator</th>'
         +'<th>Keterangan</th>'
       +'</tr></thead>'
@@ -6174,15 +6415,27 @@ function startAppAfterAuth(){
   }
 }
 
+var _bootSplashStart = Date.now();
+function hideBootSplash(){
+  var el = document.getElementById('boot-splash');
+  if(!el) return;
+  el.classList.add('hide');
+  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 420);
+}
+
 window.addEventListener('DOMContentLoaded',function(){
   applyTheme();
   if(!hasValidSession()){
     showLoginGate();
-    return; // tunggu submitViewerLogin() -- app baru diinisialisasi setelah login sukses
+  } else {
+    hideLoginGate();
+    if(VIEWER_MODE) document.body.classList.add('viewer-mode');
+    startAppAfterAuth();
   }
-  hideLoginGate();
-  if(VIEWER_MODE) document.body.classList.add('viewer-mode');
-  startAppAfterAuth();
+  // Boot splash minimal tampil 600ms biar tidak cuma kedip di device/koneksi cepat,
+  // tapi tidak menambah delay kalau proses di atas kebetulan makan waktu lebih lama.
+  var elapsed = Date.now() - _bootSplashStart;
+  setTimeout(hideBootSplash, Math.max(0, 600 - elapsed));
 });
 </script>
 
@@ -6475,34 +6728,66 @@ function saveEditItem(){
     .then(function(res){
       btn.disabled = false;
       btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan';
+
+      // PHASE 2A (DI-01): backend minta konfirmasi eksplisit sebelum mengubah Unit item yang sudah
+      // punya histori transaksi (bisa membuat histori lama tertampil salah satuan). Pakai window.confirm()
+      // -- pola yang SAMA persis dipakai admin tools ("...akan mengubah data langsung di spreadsheet.
+      // Lanjutkan?") -- bukan mekanisme konfirmasi baru. Kalau operator setuju, kirim ulang SEKALI dengan
+      // confirmUnitChange:true; kalau tidak, batalkan (field lain juga TIDAK ikut tersimpan -- backend
+      // menunda seluruh update, bukan cuma Unit, supaya tidak ada partial-apply yang ambigu).
+      if(res.status === 'confirm_required'){
+        if(confirm(res.message)){
+          payload.confirmUnitChange = true;
+          btn.disabled = true; btn.innerHTML = IC.load+' Menyimpan...';
+          showStatus('sbar-edit','s-info',IC.load+' Menyimpan perubahan...');
+          gasPost(payload).then(function(res2){
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan';
+            if(res2.status !== 'ok'){ showStatus('sbar-edit','s-err',IC.err+' '+(res2.message||'Gagal menyimpan')); return; }
+            applyEditItemLocally(id, payload);
+          }).catch(function(err){
+            btn.disabled = false; btn.innerHTML = 'Simpan';
+            showStatus('sbar-edit','s-err',IC.err+' '+xe(err.message));
+          });
+        } else {
+          showStatus('sbar-edit','s-warn',IC.info+' Perubahan dibatalkan (Unit tidak diubah).');
+        }
+        return;
+      }
+
       if(res.status !== 'ok'){
         showStatus('sbar-edit','s-err',IC.err+' '+(res.message||'Gagal menyimpan'));
         return;
       }
-      // Update lokal allRows supaya langsung kelihatan tanpa refresh
-      var r = allRows.find(function(row){ return row.id === id; });
-      if(r){
-        r.nama     = payload.nama;
-        r.spec     = payload.spec;
-        r.user     = payload.user;
-        r.unit     = payload.unit;
-        r.bc       = payload.bc;
-        r.kategori = payload.kategori;
-        r.minStock = payload.minStock;
-        minStockMap[r.id] = parseInt(payload.minStock)||0;
-      }
-      renderTable(filteredRows);
-      updateAlertBadge();
-      closeEditSheet();
-      showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');
-      registerMasterValueIfNew('uom', payload.unit);
-      registerMasterValueIfNew('kategori', payload.kategori);
+      applyEditItemLocally(id, payload);
     })
     .catch(function(err){
       btn.disabled = false;
       btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simpan';
       showStatus('sbar-edit','s-err',IC.err+' '+xe(err.message));
     });
+}
+
+// Diekstrak dari saveEditItem() supaya bisa dipanggil dari 2 tempat (submit langsung sukses,
+// ATAU submit ulang setelah operator konfirmasi Unit change) tanpa duplikasi logic (Phase 2A).
+function applyEditItemLocally(id, payload){
+  var r = allRows.find(function(row){ return row.id === id; });
+  if(r){
+    r.nama     = payload.nama;
+    r.spec     = payload.spec;
+    r.user     = payload.user;
+    r.unit     = payload.unit;
+    r.bc       = payload.bc;
+    r.kategori = payload.kategori;
+    r.minStock = payload.minStock;
+    minStockMap[r.id] = parseInt(payload.minStock)||0;
+  }
+  renderTable(filteredRows);
+  updateAlertBadge();
+  closeEditSheet();
+  showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');
+  registerMasterValueIfNew('uom', payload.unit);
+  registerMasterValueIfNew('kategori', payload.kategori);
 }
 </script><datalist id="dl-uom"></datalist>
 <datalist id="dl-rak"></datalist>
