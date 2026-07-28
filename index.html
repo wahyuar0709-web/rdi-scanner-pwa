@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Indirect Scanner v14.23 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.24 – PT Rayard Deli Indonesia</title>
 <style>
 /* ═══ UI PHASE 2A — Responsive Breakpoint Reference (documentation only, tidak semua
    zona punya CSS rule tersendiri -- lihat penjelasan per titik) ═══
@@ -1458,7 +1458,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.23</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.24</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1554,7 +1554,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.23</span>
+    <span class="sheet-version" id="sheet-version-label">v14.24</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -2690,7 +2690,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v14.23';
+var APP_VERSION = 'v14.24';
 var APP_BUILD_DATE = '2026-07-24';
 // Logo aplikasi (scanner + box), dipakai di topbar & layar login -- di-embed base64
 // biar file HTML ini tetap satu file utuh, tidak perlu file gambar terpisah.
@@ -3125,31 +3125,81 @@ function checkUrl(){
   if(!GAS_URL){ throw new Error('GAS URL belum diset. Buka menu Lainnya → Pengaturan.'); }
 }
 
+// Parse response teks sebagai JSON. Kalau GAS/SW/proxy sempat mengembalikan HTML
+// (halaman login Google, error interstitial, atau cache Service Worker yang nyasar)
+// alih-alih JSON, ini akan gagal parse -- kita deteksi eksplisit supaya pesan error
+// jelas ("server tidak merespons dengan benar") bukan "Unexpected token '<'" yang membingungkan.
+function _parseGasJson(text){
+  var trimmed = String(text||'').trim();
+  if(trimmed.charAt(0)==='<'){
+    var e = new Error('Server mengembalikan halaman, bukan data (kemungkinan sesi Google/cache bermasalah)');
+    e._nonJson = true;
+    throw e;
+  }
+  return JSON.parse(trimmed);
+}
+
 function gasGet(params){
   if(!GAS_URL){ return Promise.resolve({status:'error', message:'GAS URL belum diset. Buka menu Lainnya → Pengaturan.'}); }
   params = Object.assign({}, params);
   if(EDITOR_KEY) params.editorKey = EDITOR_KEY;
   else if(VIEWER_TOKEN) params.viewerToken = VIEWER_TOKEN;
-  var qs=Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
-  return fetch(GAS_URL+'?'+qs, {method:'GET', redirect:'follow'})
-    .then(function(r){ return r.json(); })
+  var baseQs=Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  function attempt(bust){
+    var qs = baseQs + (bust?('&_r='+Date.now()):'');
+    return fetch(GAS_URL+'?'+qs, {method:'GET', redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(t){ return _parseGasJson(t); });
+  }
+  return attempt(false)
+    .catch(function(err){
+      // Kalau responsnya bukan JSON (SW/cache/login-interstitial nyasar), coba sekali lagi
+      // dengan cache-buster -- GET selalu aman untuk retry karena read-only.
+      if(err && err._nonJson) return attempt(true);
+      throw err;
+    })
     .then(function(res){ if(res && res.needLogin) forceReLogin(); return res; })
-    .catch(function(err){ return {status:'error', message:'Network error: '+err.message}; });
+    .catch(function(err){
+      var msg = (err && err._nonJson)
+        ? 'Server tidak merespons dengan benar (coba refresh halaman)'
+        : 'Network error: '+err.message;
+      return {status:'error', message: msg};
+    });
 }
 
 function gasPost(body){
   if(!GAS_URL){ return Promise.resolve({status:'error', message:'GAS URL belum diset. Buka menu Lainnya → Pengaturan.'}); }
   if(VIEWER_MODE){ return Promise.resolve({status:'error', message:'Mode lihat-saja: perubahan data tidak diizinkan.'}); }
   body.editorKey = EDITOR_KEY;
-  return fetch(GAS_URL, {
-    method:'POST',
-    redirect:'follow',
-    headers:{'Content-Type':'text/plain'}, // GAS doPost baca dari e.postData.contents
-    body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); })
+  // Retry otomatis HANYA aman kalau body punya requestId -- backend men-dedup lewat
+  // CacheService berbasis requestId (lihat postTransaksi di Code.gs), jadi kirim ulang
+  // body yang SAMA tidak akan menghasilkan transaksi dobel. Tanpa requestId, aksi lain
+  // (mis. edit master item) belum tentu idempotent, jadi tidak di-retry otomatis.
+  var canRetry = !!body.requestId;
+  function attempt(){
+    return fetch(GAS_URL, {
+      method:'POST',
+      redirect:'follow',
+      cache:'no-store',
+      headers:{'Content-Type':'text/plain'}, // GAS doPost baca dari e.postData.contents
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.text(); })
+      .then(function(t){ return _parseGasJson(t); });
+  }
+  return attempt()
+    .catch(function(err){
+      if(err && err._nonJson && canRetry) return attempt();
+      throw err;
+    })
     .then(function(res){ if(res && res.needLogin) forceReLogin(); return res; })
-    .catch(function(err){ return {status:'error', message:'Network error: '+err.message}; });
+    .catch(function(err){
+      var msg = (err && err._nonJson)
+        ? 'Server tidak merespons dengan benar (coba refresh halaman)'
+        : 'Network error: '+err.message;
+      return {status:'error', message: msg};
+    });
 }
+
 
 // ══════════════════════════════════════════════════════
 // HELPERS
