@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Indirect Scanner v14.26 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.30 – PT Rayard Deli Indonesia</title>
 <style>
 /* ═══ UI PHASE 2A — Responsive Breakpoint Reference (documentation only, tidak semua
    zona punya CSS rule tersendiri -- lihat penjelasan per titik) ═══
@@ -179,14 +179,20 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-hei
 }
 
 .panel{background:var(--surface);border:1px solid rgba(255,255,255,.13);border-radius:var(--rl);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
-.panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--surface2),var(--surface))}
+.panel-head{padding:14px 18px 14px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--surface2),var(--surface));position:relative;border-left:3px solid var(--amber-border)}
+.panel-head::after{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:10px 10px;
+  -webkit-mask-image:linear-gradient(90deg,#000,transparent 85%);mask-image:linear-gradient(90deg,#000,transparent 85%);
+}
 .panel-head h2{font-size:var(--fs-13);font-weight:800;color:var(--text);letter-spacing:.1px}
 .panel-head p{font-size:var(--fs-11);color:var(--text3);margin-top:1px}
 .panel-body{padding:16px 18px}
 
 .btn{padding:10px 15px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text2);font-size:var(--fs-12);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all var(--transition);font-family:inherit;letter-spacing:.1px;min-height:48px;-webkit-tap-highlight-color:transparent}
 .btn:hover{background:var(--surface3);border-color:var(--border3);color:var(--text);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.btn:active{transform:scale(.96) translateY(0);box-shadow:none}
+.btn:active{transform:scale(.94) translateY(1px);box-shadow:inset 0 2px 6px rgba(0,0,0,.25);transition:transform .08s,box-shadow .08s}
 .btn:disabled{opacity:.38;cursor:not-allowed;transform:none;box-shadow:none}
 .btn-primary{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(37,99,235,.35)}
 .btn-primary:hover{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(37,99,235,.45)}
@@ -249,14 +255,26 @@ th{padding:10px 10px;text-align:left;font-weight:800;color:var(--text3);font-siz
 th.c,td.c{text-align:center}
 td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--glass);color:var(--text)}
+tr:hover td{background:var(--glass);color:var(--text);box-shadow:inset 3px 0 0 var(--amber-border)}
 .tr-selected td{background:var(--blue-dim)!important;color:var(--text)!important}
 .badge{display:inline-block;padding:2px 7px;border-radius:var(--br-4);font-size:var(--fs-10);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
 .badge-bc{background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
 .badge-nonbc{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border)}
 .id-chip{font-family:var(--font-mono);font-size:var(--fs-12);font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:var(--br-4);border:1px solid var(--amber-border);white-space:nowrap;letter-spacing:.3px}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
-.empty-state p{font-size:var(--fs-12)}
+.empty-state::before{
+  content:'';display:block;width:56px;height:40px;margin:0 auto 14px;
+  background-image:repeating-linear-gradient(90deg,var(--text3) 0 3px,transparent 3px 6px,var(--text3) 6px 8px,transparent 8px 13px,var(--text3) 13px 17px,transparent 17px 21px,var(--text3) 21px 23px,transparent 23px 30px,var(--text3) 30px 34px,transparent 34px 40px,var(--text3) 40px 42px,transparent 42px 48px,var(--text3) 48px 51px,transparent 51px 56px);
+  opacity:.28;position:relative;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent 100%);mask-image:linear-gradient(180deg,#000 60%,transparent 100%);
+}
+.empty-state{position:relative}
+.empty-state p{font-size:var(--fs-12);position:relative;z-index:1}
+.empty-state p:first-of-type::after{
+  content:'';display:block;position:absolute;left:50%;top:-58px;transform:translateX(-50%);
+  width:56px;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);
+  animation:emptyScan 2.4s ease-in-out infinite;pointer-events:none;
+}
+@keyframes emptyScan{0%,100%{top:-58px;opacity:0}50%{top:-20px;opacity:1}}
 
 .print-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .print-hint{font-size:var(--fs-12);color:var(--text2)}
@@ -266,7 +284,12 @@ tr:hover td{background:var(--glass);color:var(--text)}
 .scan-step.active{display:block}
 .id-input-wrap{display:flex;gap:8px}
 .id-input-wrap input{font-family:var(--font-mono);font-size:var(--fs-15);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber)}
-.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);position:relative}
+.item-card::before{
+  content:'';position:absolute;top:0;left:14px;right:14px;height:2px;z-index:2;
+  background-image:linear-gradient(90deg,var(--amber-border) 0 6px,transparent 6px 12px);
+  background-size:12px 2px;opacity:.9;pointer-events:none;
+}
 .item-card-head{background:linear-gradient(135deg,var(--surface3),var(--surface2));border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:10px}
 .item-card-id{font-family:var(--font-mono);font-size:var(--fs-11);font-weight:900;letter-spacing:.6px;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-border);padding:3px 10px;border-radius:var(--br-20);flex-shrink:0}
 .item-card-nama{font-size:var(--fs-14);font-weight:800;color:var(--text);overflow-wrap:break-word;word-break:break-word}
@@ -831,9 +854,41 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .dash-card.navy .dash-card-val{color:var(--amber)}
 .dash-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow)}
-.chart-title{font-size:var(--fs-10);font-weight:800;margin-bottom:14px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px}
+.chart-title{font-size:var(--fs-10);font-weight:800;margin-bottom:14px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:8px}
+.chart-icon{
+  width:24px;height:24px;border-radius:var(--br-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.chart-icon svg{width:14px;height:14px}
+.chart-icon.blue{background:var(--blue-dim);color:var(--blue-text)}
+.chart-icon.green{background:rgba(34,197,94,.14);color:var(--green-text)}
+.chart-icon.red{background:rgba(239,68,68,.14);color:var(--red-text)}
+.chart-icon.amber{background:var(--amber-dim);color:var(--amber)}
 .bar-chart{display:flex;flex-direction:column;gap:8px}
 .bar-row{display:flex;align-items:center;gap:8px}
+
+/* Quick Action tiles (dashboard) — ganti tombol emoji polos dgn ikon SVG konsisten */
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.qa-tile{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  padding:14px 6px 11px;border-radius:var(--rl);border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;transition:all var(--transition);
+  -webkit-tap-highlight-color:transparent;font-family:inherit;position:relative;overflow:hidden;
+}
+.qa-tile::before{content:'';position:absolute;left:0;top:0;right:0;height:2px}
+.qa-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.qa-tile:active{transform:scale(.95) translateY(0)}
+.qa-tile-ic{width:38px;height:38px;border-radius:var(--br-15);display:flex;align-items:center;justify-content:center}
+.qa-tile-ic svg{width:19px;height:19px}
+.qa-tile span{font-size:var(--fs-10);font-weight:700;color:var(--text2);letter-spacing:.2px}
+.qa-tile.blue::before{background:var(--blue)}
+.qa-tile.blue .qa-tile-ic{background:var(--blue-dim);color:var(--blue-text)}
+.qa-tile.green::before{background:var(--green)}
+.qa-tile.green .qa-tile-ic{background:rgba(34,197,94,.14);color:var(--green-text)}
+.qa-tile.navy::before{background:var(--amber)}
+.qa-tile.navy .qa-tile-ic{background:var(--amber-dim);color:var(--amber)}
+.qa-tile.red::before{background:var(--red)}
+.qa-tile.red .qa-tile-ic{background:rgba(239,68,68,.14);color:var(--red-text)}
+@media(max-width:640px){.qa-grid{gap:6px}.qa-tile{padding:11px 4px 9px}.qa-tile-ic{width:32px;height:32px}.qa-tile-ic svg{width:16px;height:16px}}
 .bar-label{width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:var(--fs-11);flex-shrink:0}
 #dash-lowest .bar-label{width:150px}
 .bar-track{flex:1;background:var(--surface2);border-radius:var(--br-4);height:14px;overflow:hidden}
@@ -931,6 +986,28 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 /* Adjust page content to not be hidden behind bottom nav */
 .container{padding-bottom:80px}
 .container-sm{padding-bottom:80px}
+
+/* ══ DESKTOP/LAPTOP (≥1024px): nav pindah jadi sidebar kiri, bukan bar bawah ala HP ══
+   Bottom-nav tetap ada di markup/JS yang sama (switchTab dst tidak berubah) -- di sini
+   murni reposisi visual lewat CSS untuk layar lebar, karena di laptop tidak ada
+   keterbatasan jangkauan ibu jari yang membuat pola bottom-nav masuk akal. */
+@media(min-width:1024px){
+  body{padding-left:84px}
+  .tabnav{
+    top:0;left:0;right:auto;bottom:0;width:84px;height:100vh;
+    flex-direction:column;align-items:stretch;
+    border-top:none;border-right:1px solid rgba(255,255,255,.06);
+    box-shadow:6px 0 30px rgba(0,0,0,.5);
+    padding-top:56px; /* ruang utk topbar yg tetap full-width di atas */
+  }
+  .tab,.tab-fab{flex:0 0 76px;border-top:none;border-left:3px solid transparent;padding:10px 4px}
+  .tab.active{border-top-color:transparent;border-left-color:var(--amber)}
+  .tab-fab-inner{margin-top:0}
+  .tab-fab.active .tab-fab-inner{box-shadow:0 4px 20px rgba(54,104,212,.6),0 0 0 2px var(--amber-border)}
+  .container,.container-sm{padding-bottom:24px}
+  .trx-submit-bar{left:84px;bottom:0}
+  #cetak-action-bar{left:84px!important;bottom:0!important}
+}
 
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -1453,7 +1530,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.26</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.30</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1549,7 +1626,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.26</span>
+    <span class="sheet-version" id="sheet-version-label">v14.30</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -2263,7 +2340,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 <!-- TAB: DASHBOARD -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="page-section" id="section-dashboard">
-<div class="subpage-bar"><button class="subpage-back" onclick="switchTab('master')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Kembali</button><span class="subpage-title">Dashboard</span></div>
+<div class="subpage-bar"><span class="subpage-title">Dashboard</span></div>
 <div class="container">
 
   <div class="dash-grid">
@@ -2290,18 +2367,36 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
   </div>
 
   <!-- Quick Action -->
-  <div class="chart-title" style="margin-bottom:8px">⚡ Aksi Cepat</div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
-    <button class="btn btn-sm" style="flex-direction:column;height:64px;gap:4px" onclick="switchTab('scanner')">📦<span style="font-size:10px">Transaksi</span></button>
-    <button class="btn btn-sm" style="flex-direction:column;height:64px;gap:4px" onclick="switchTab('master');openAddSheet()">➕<span style="font-size:10px">Tambah</span></button>
-    <button class="btn btn-sm" style="flex-direction:column;height:64px;gap:4px" onclick="switchTab('cetak')">🖨<span style="font-size:10px">Cetak</span></button>
-    <button class="btn btn-sm" style="flex-direction:column;height:64px;gap:4px" onclick="switchTab('alert')">⚠<span style="font-size:10px">Alert</span></button>
+  <div class="chart-title" style="margin-bottom:8px">
+    <span class="chart-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>
+    Aksi Cepat
+  </div>
+  <div class="qa-grid">
+    <button class="qa-tile navy" onclick="switchTab('scanner')">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span>
+      <span>Transaksi</span>
+    </button>
+    <button class="qa-tile blue" onclick="switchTab('master');openAddSheet()">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+      <span>Tambah</span>
+    </button>
+    <button class="qa-tile green" onclick="switchTab('cetak')">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span>
+      <span>Cetak</span>
+    </button>
+    <button class="qa-tile red" onclick="switchTab('alert')">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+      <span>Alert</span>
+    </button>
   </div>
 
   <!-- Alert widget: ringkasan item kritis, bukan cuma angka -->
   <div class="chart-wrap" style="margin-bottom:16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>⚠ Item Perlu Perhatian</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="chart-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+        Item Perlu Perhatian
+      </span>
       <button class="btn btn-sm" style="min-height:32px;padding:4px 10px" onclick="switchTab('alert')">Lihat Semua</button>
     </div>
     <div id="dash-alert-widget"><div class="empty-state u-py24" style="padding:16px 0"><p>Memuat...</p></div></div>
@@ -2309,25 +2404,37 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 
   <div class="dash-2col">
     <div class="chart-wrap">
-      <div class="chart-title">🏆 Top 5 Item Paling Aktif</div>
+      <div class="chart-title">
+        <span class="chart-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/><circle cx="12" cy="8" r="7"/></svg></span>
+        Top 5 Item Paling Aktif
+      </div>
       <div class="bar-chart" id="dash-top5"></div>
     </div>
     <div class="chart-wrap">
-      <div class="chart-title">📦 Distribusi Kategori</div>
+      <div class="chart-title">
+        <span class="chart-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg></span>
+        Distribusi Kategori
+      </div>
       <div class="bar-chart" id="dash-kategori"></div>
     </div>
   </div>
 
   <div class="chart-wrap" style="margin-bottom:16px">
     <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span>📊 Stok Terendah (10 Item)</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="chart-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        Stok Terendah (10 Item)
+      </span>
       <select id="dash-lowest-cat-filter" class="sel" style="width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:var(--fs-11);min-height:30px" onchange="renderLowestStockWidget()"><option value="">Semua Kategori</option></select>
     </div>
     <div class="bar-chart" id="dash-lowest"></div>
   </div>
 
   <div class="chart-wrap" style="margin-bottom:16px">
-    <div class="chart-title">🕐 Aktivitas Terbaru</div>
+    <div class="chart-title">
+      <span class="chart-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>
+      Aktivitas Terbaru
+    </div>
     <div id="dash-recent-activity"><div class="empty-state u-py24" style="padding:16px 0"><p>Memuat...</p></div></div>
   </div>
 
@@ -2685,7 +2792,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v14.26';
+var APP_VERSION = 'v14.30';
 var APP_BUILD_DATE = '2026-07-24';
 // Logo aplikasi (scanner + box), dipakai di topbar & layar login -- di-embed base64
 // biar file HTML ini tetap satu file utuh, tidak perlu file gambar terpisah.
@@ -4084,19 +4191,7 @@ function loadDashRecentActivity(){
   });
 }
 
-function renderDashboardLocal(){
-  // Hitung dari data yang sudah ada di allRows
-  var totalItem=allRows.length;
-  var alertCount=allRows.filter(function(r){ var m=parseInt(minStockMap[r.id]||0); return m>0&&parseInt(r.qty||0)<=m; }).length;
-
-  document.getElementById('dash-total').textContent=totalItem;
-  document.getElementById('dash-total-sub').textContent='terdaftar';
-  document.getElementById('dash-masuk').textContent='—';
-  document.getElementById('dash-keluar').textContent='—';
-  document.getElementById('dash-alert').textContent=alertCount;
-  document.getElementById('dash-last-update').textContent='Data lokal (dari Master Item)';
-
-  // Kategori distribusi
+function renderKategoriWidget(){
   var catCount={};
   allRows.forEach(function(r){
     var c=(r.kategori||'Lainnya').trim()||'Lainnya';
@@ -4109,6 +4204,21 @@ function renderDashboardLocal(){
       +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
       +'<div class="bar-val">'+catCount[c]+'</div></div>';
   }).join('');
+}
+
+function renderDashboardLocal(){
+  // Hitung dari data yang sudah ada di allRows
+  var totalItem=allRows.length;
+  var alertCount=allRows.filter(function(r){ var m=parseInt(minStockMap[r.id]||0); return m>0&&parseInt(r.qty||0)<=m; }).length;
+
+  document.getElementById('dash-total').textContent=totalItem;
+  document.getElementById('dash-total-sub').textContent='terdaftar';
+  document.getElementById('dash-masuk').textContent='—';
+  document.getElementById('dash-keluar').textContent='—';
+  document.getElementById('dash-alert').textContent=alertCount;
+  document.getElementById('dash-last-update').textContent='Data lokal (dari Master Item)';
+
+  renderKategoriWidget();
 
   // Stok terendah — dipisah jadi fungsi sendiri (renderLowestStockWidget) supaya dropdown
   // kategori bisa memanggilnya ulang tanpa menumpuk ulang seluruh dashboard (yang akan
@@ -4188,10 +4298,12 @@ function renderDashboard(data){
       +'<div class="bar-val">'+t.count+'</div></div>';
   }).join(''):'<div style="color:var(--text3);font-size:12px;padding:8px 0">Belum ada data transaksi</div>';
 
-  // Fallback ke lokal untuk kategori & lowest
-  renderDashboardLocal();
-  // Override update text
-  document.getElementById('dash-last-update').textContent='Update: '+new Date().toLocaleString('id-ID');
+  // Kategori & stok terendah selalu dihitung dari data lokal (backend getDashboard tidak
+  // menyediakannya) -- panggil widget-nya langsung, JANGAN lewat renderDashboardLocal()
+  // karena itu akan menimpa balik dash-total/masuk/keluar/top5 yang baru saja diisi dari
+  // GAS di atas (bug lama: Top 5 & Total Masuk/Keluar selalu balik ke "—"/placeholder).
+  renderKategoriWidget();
+  renderLowestStockWidget();
 }
 
 // ══════════════════════════════════════════════════════
