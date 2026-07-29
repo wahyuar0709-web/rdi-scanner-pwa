@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<title>RDI Indirect Scanner v14.30 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.31 – PT Rayard Deli Indonesia</title>
 <style>
 /* ═══ UI PHASE 2A — Responsive Breakpoint Reference (documentation only, tidak semua
    zona punya CSS rule tersendiri -- lihat penjelasan per titik) ═══
@@ -987,27 +987,42 @@ body.light .theme-toggle-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,
 .container{padding-bottom:80px}
 .container-sm{padding-bottom:80px}
 
-/* ══ DESKTOP/LAPTOP (≥1024px): nav pindah jadi sidebar kiri, bukan bar bawah ala HP ══
+/* ══ DESKTOP/LAPTOP (≥1024px): nav pindah jadi sidebar kiri, auto-hide ══
    Bottom-nav tetap ada di markup/JS yang sama (switchTab dst tidak berubah) -- di sini
-   murni reposisi visual lewat CSS untuk layar lebar, karena di laptop tidak ada
-   keterbatasan jangkauan ibu jari yang membuat pola bottom-nav masuk akal. */
+   murni reposisi visual lewat CSS untuk layar lebar. Sidebar defaultnya menciut jadi
+   pinggiran tipis 12px di kiri layar; arahkan kursor ke situ untuk membukanya (overlay,
+   TIDAK mendorong konten -- jadi tidak perlu geser ulang layout tiap buka/tutup).
+   z-index sengaja dibuat LEBIH RENDAH dari semua modal/bottom-sheet/drawer (yang mulai
+   dari z-index 198 ke atas) supaya sidebar tidak pernah menutupi/memotong drawer "Lainnya"
+   dkk, walau kebetulan sedang terbuka penuh saat drawer muncul. */
 @media(min-width:1024px){
-  body{padding-left:84px}
+  body{padding-left:12px}
   .tabnav{
     top:0;left:0;right:auto;bottom:0;width:84px;height:100vh;
     flex-direction:column;align-items:stretch;
     border-top:none;border-right:1px solid rgba(255,255,255,.06);
     box-shadow:6px 0 30px rgba(0,0,0,.5);
     padding-top:56px; /* ruang utk topbar yg tetap full-width di atas */
+    z-index:60; /* di bawah semua modal/bottom-sheet (198+) -- lihat catatan di atas */
+    transform:translateX(-72px);
+    transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;
   }
+  .tabnav::after{
+    content:'';position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    width:3px;height:34px;border-radius:3px;background:rgba(255,255,255,.14);
+    transition:background .2s;pointer-events:none;
+  }
+  .tabnav:hover,.tabnav:focus-within{transform:translateX(0);box-shadow:10px 0 40px rgba(0,0,0,.6)}
+  .tabnav:hover::after,.tabnav:focus-within::after{background:var(--amber-border)}
   .tab,.tab-fab{flex:0 0 76px;border-top:none;border-left:3px solid transparent;padding:10px 4px}
   .tab.active{border-top-color:transparent;border-left-color:var(--amber)}
   .tab-fab-inner{margin-top:0}
   .tab-fab.active .tab-fab-inner{box-shadow:0 4px 20px rgba(54,104,212,.6),0 0 0 2px var(--amber-border)}
   .container,.container-sm{padding-bottom:24px}
-  .trx-submit-bar{left:84px;bottom:0}
-  #cetak-action-bar{left:84px!important;bottom:0!important}
+  .trx-submit-bar{left:12px;bottom:0}
+  #cetak-action-bar{left:12px!important;bottom:0!important}
 }
+
 
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -1530,7 +1545,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.30</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.31</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon">☀</span>
   </button>
@@ -1626,7 +1641,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.30</span>
+    <span class="sheet-version" id="sheet-version-label">v14.31</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -2792,7 +2807,7 @@ body.viewer-mode #btn-logout-viewer{ display:flex !important; }
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-var APP_VERSION = 'v14.30';
+var APP_VERSION = 'v14.31';
 var APP_BUILD_DATE = '2026-07-24';
 // Logo aplikasi (scanner + box), dipakai di topbar & layar login -- di-embed base64
 // biar file HTML ini tetap satu file utuh, tidak perlu file gambar terpisah.
