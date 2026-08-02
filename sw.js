@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v3'; // ⚠ NAIKKAN angka ini (v3, v4, ...) SETIAP kali deploy versi baru
+const CACHE = 'rdi-stok-v4'; // ⚠ NAIKKAN angka ini (v3, v4, ...) SETIAP kali deploy versi baru
 const ASSETS = [
   './manifest.json'
 ];
