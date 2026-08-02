@@ -7,13 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v14.89">
+<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v14.92">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
-<title>RDI Indirect Scanner v14.89 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.92 – PT Rayard Deli Indonesia</title>
 <link rel="stylesheet" href="style.css">
 
 </head>
@@ -31,10 +31,13 @@
 <div class="brand-topstrip"></div>
 
 <div id="boot-splash" class="boot-splash">
+  <div class="boot-splash-grid"></div>
+  <div class="boot-splash-vignette"></div>
+  <div class="boot-splash-scanline"></div>
   <div class="boot-splash-logo" id="boot-splash-logo"></div>
   <div class="boot-splash-title">RDI Indirect Scanner</div>
   <div class="boot-splash-sub">PT Rayard Deli Indonesia</div>
-  <div class="boot-splash-dots"><span></span><span></span><span></span></div>
+  <div class="boot-splash-progress"><div class="boot-splash-progress-bar"></div></div>
 </div>
 
 <!-- LOGIN GATE — identitas visual RDI (dark theme, sama dengan isi app).
@@ -79,7 +82,7 @@
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.89</span>
+  <span class="topbar-ver" id="topbar-version-label">v14.92</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon" style="display:inline-flex"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
   </button>
@@ -179,8 +182,49 @@
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.89</span>
+    <span class="sheet-version" id="sheet-version-label">v14.92</span>
     <span class="sheet-user" id="drawer-username"></span>
+  </div>
+</div>
+
+<!-- Quick Action Bottom Sheet (long-press pada Item Card Inventory) -->
+<div class="bottom-sheet-overlay" id="qa-overlay" onclick="closeQuickAction()" aria-hidden="true"></div>
+<div class="bottom-sheet" id="qa-sheet" role="dialog" aria-modal="true" aria-label="Aksi cepat item">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="u-flexfill" style="margin-left:0">
+      <div class="sheet-title" id="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Item</div>
+      <div class="u-cap-11" id="qa-sub" style="padding:0;margin-top:1px"></div>
+    </div>
+    <div class="sheet-close" onclick="closeQuickAction()" role="button" tabindex="0" aria-label="Tutup">✕</div>
+  </div>
+  <div class="sheet-menu">
+    <div class="sheet-grid">
+      <button class="more-menu-btn" id="qa-btn-trx">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+        <span>Transaksi</span>
+      </button>
+      <button class="more-menu-btn" id="qa-btn-detail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>Detail Barang</span>
+      </button>
+      <button class="more-menu-btn" id="qa-btn-rak">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Lihat Lokasi Rak</span>
+      </button>
+      <button class="more-menu-btn" id="qa-btn-hist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span>Riwayat Transaksi</span>
+      </button>
+      <button class="more-menu-btn" id="qa-btn-print">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Cetak QR</span>
+      </button>
+      <button class="more-menu-btn" id="qa-btn-cancel" onclick="closeQuickAction()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span>Batal</span>
+      </button>
+    </div>
   </div>
 </div>
 
