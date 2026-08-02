@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
 <title>RDI Indirect Scanner v14.89 – PT Rayard Deli Indonesia</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style-v2.min.css">
 
 </head>
 <body>
@@ -443,16 +443,18 @@
     <div id="batchcart-widget-body">
       <div style="display:flex;gap:var(--space-1);margin-bottom:10px">
         <button class="btn btn-sm" id="btn-batchcart-add" onclick="addCurrentScanToBatchCart()"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Tambah ke Keranjang</button>
-        <button class="btn btn-sm" id="btn-batchcart-clear" onclick="clearBatchCartWithConfirm()"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Kosongkan Keranjang</button>
+        <button class="btn btn-sm btn-danger" id="btn-batchcart-clear" style="display:none" onclick="clearBatchCartWithConfirm()"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Kosongkan</button>
       </div>
-      <div id="batchcart-body"><div class="empty-state u-py24 u-pad-16-0"><p>Belum ada item di Keranjang Batch.</p></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+      <div id="batchcart-body"><div class="batchcart-empty"><p>Keranjang masih kosong. Scan item lalu tap <b>Tambah ke Keranjang</b>.</p></div></div>
+      <div id="batchcart-footer" style="display:none;justify-content:space-between;font-size:12px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
         <span>Total Item: <b id="batchcart-total-item" style="color:var(--text)">0</b></span>
         <span>Total Qty: <b id="batchcart-total-qty" style="color:var(--text)">0</b></span>
       </div>
       <div id="batchcart-progress" style="font-size:11px;color:var(--text3);margin-top:6px;display:none"></div>
-      <button class="btn btn-primary" id="btn-batchcart-submit" style="width:100%;margin-top:10px" onclick="submitBatchCart()" disabled><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Kirim Semua</button>
-      <button class="btn btn-sm" id="btn-batchcart-retry-failed" style="width:100%;margin-top:8px" onclick="retryFailedBatchItems()" disabled><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Coba Lagi yang Gagal</button>
+      <div id="batchcart-actions" style="display:none">
+        <button class="btn btn-primary" id="btn-batchcart-submit" style="width:100%;margin-top:10px" onclick="submitBatchCart()" disabled><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Kirim Semua</button>
+        <button class="btn btn-sm" id="btn-batchcart-retry-failed" style="width:100%;margin-top:8px;display:none" onclick="retryFailedBatchItems()" disabled><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Coba Lagi yang Gagal</button>
+      </div>
     </div>
   </div>
 
@@ -1502,7 +1504,7 @@
   </div>
 </div>
 
-<script src="app.js" defer></script>
+<script src="app-v2.min.js" defer></script>
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- BOTTOM SHEET: CETAK BARCODE RAK -->
