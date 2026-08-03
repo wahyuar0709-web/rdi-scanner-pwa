@@ -18,3 +18,92 @@
 .boot-splash-progress-bar{width:40%;height:100%;border-radius:var(--br-999);background:linear-gradient(90deg,transparent,var(--amber),#fff,var(--amber),transparent);animation:bootProgressSlide 1.4s cubic-bezier(.45,0,.55,1) infinite}
 @keyframes bootProgressSlide{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
 @media(prefers-reduced-motion:reduce){.boot-splash-scanline,.boot-splash-progress-bar,.boot-splash-logo,.boot-splash-logo::before,.boot-splash-logo::after{animation:none}}.login-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:var(--sp-20);font-family:var(--font-sans);overflow:hidden;background:linear-gradient(120deg,var(--bg) 0%,var(--bg2) 45%,var(--surface3) 100%);background-size:220% 220%;animation:gateBgMove 14s ease-in-out infinite}.login-gate.hide{display:none}.login-gate::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:38px 38px;mask-image:radial-gradient(circle at 50% 40%,#000 0%,transparent 75%);-webkit-mask-image:radial-gradient(circle at 50% 40%,#000 0%,transparent 75%)}.login-gate::after{content:'';position:absolute;left:0;right:0;height:140px;background:linear-gradient(180deg,rgba(245,166,35,0) 0%,rgba(245,166,35,.16) 45%,rgba(245,166,35,0) 100%);animation:scanSweep 4.5s linear infinite;pointer-events:none}@keyframes gateBgMove{0%{background-position:0% 40%}50%{background-position:100% 60%}100%{background-position:0% 40%}}@keyframes scanSweep{0%{top:-140px}100%{top:100%}}.login-card{position:relative;width:100%;max-width:370px;border-radius:var(--rl);padding:38px var(--space-4) 30px;text-align:center;background:var(--surface);border:1px solid var(--border2);box-shadow:var(--shadow-lg);animation:cardIn .55s cubic-bezier(.2,.8,.3,1) both}@keyframes cardIn{0%{opacity:0;transform:translateY(22px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}.login-app-logo{position:relative;width:64px;height:64px;margin:0 auto 18px;border-radius:var(--rl);overflow:visible;background:radial-gradient(circle at 35% 30%,#fff,#f1f1f1);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);animation:logoPulse 2.6s ease-in-out infinite}.login-app-logo::before{content:'';position:absolute;inset:-8px;border-radius:calc(var(--rl) + 8px);padding:2.5px;background:conic-gradient(from 0deg,transparent 0deg,rgba(245,166,35,0) 0deg,var(--amber) 35deg,#fff 70deg,var(--amber) 105deg,rgba(245,166,35,0) 150deg,transparent 360deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:logoRing 1.7s linear infinite;pointer-events:none}.login-app-logo::after{content:'';position:absolute;inset:-8px;border-radius:calc(var(--rl) + 8px);box-shadow:0 0 16px 2px rgba(245,166,35,.35);animation:logoRing 1.7s linear infinite;pointer-events:none;opacity:.6}@keyframes logoPulse{0%,100%{box-shadow:0 6px 18px rgba(245,166,35,.35)}50%{box-shadow:0 6px 26px rgba(245,166,35,.6)}}@keyframes logoRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.login-brand{font-size:14px;font-weight:600;color:var(--text2);margin:0 0 2px;letter-spacing:.3px}.login-org{font-size:19px;font-weight:700;color:var(--text);margin:0 0 18px;letter-spacing:.2px}.login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:0 0 18px}.login-card h2{font-size:19px;font-weight:600;color:var(--text);margin:0 0 4px}.login-sub{font-size:13.5px;color:var(--text2);margin:0 0 22px}.login-field{margin-bottom:14px;text-align:left}.login-field input{width:100%;padding:var(--sp-12) var(--sp-14);border:1px solid var(--border2);border-radius:var(--br-6);font-size:15px;box-sizing:border-box;color:var(--text);background:var(--surface2);transition:border-color .15s,box-shadow .15s}.login-field input::placeholder{color:var(--text3)}.login-field input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim)}.login-error{color:var(--red-text);font-size:13px;margin:-4px 0 14px;text-align:left}.login-btn{width:100%;padding:var(--sp-12);background:linear-gradient(135deg,var(--amber),#c9840f);color:#1a1206;border:none;border-radius:var(--br-6);font-size:14px;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 4px 12px rgba(245,166,35,.3)}.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(245,166,35,.4)}.login-btn:active{transform:translateY(0)}.login-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}.login-foot{margin-top:20px;font-size:12px;color:var(--text3)}#login-logo-box{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:transform .18s ease,filter .18s ease}#login-logo-box.lg-holding{transform:scale(.88);filter:brightness(.8)}#modal-config.show{z-index:10500}[data-tt]{cursor:pointer}.tt-popup{position:fixed;z-index:12000;background:var(--surface3);color:var(--text);border:1px solid var(--border3);border-radius:var(--r);padding:var(--sp-7) var(--sp-11);font-size:12px;font-weight:500;line-height:1.4;max-width:min(280px,calc(100vw - 24px));box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;word-break:break-word;animation:tt-pop-in .13s ease}@keyframes tt-pop-in{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}.sk-line{position:relative;overflow:hidden;background:var(--surface3);border-radius:var(--br-4);display:block}.sk-h-10{height:10px}.sk-h-11{height:11px}.sk-h-12{height:12px}.sk-h-13{height:13px}.sk-line::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);animation:sk-shimmer 1.3s ease-in-out infinite}@keyframes sk-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}.sk-table-row td{padding:var(--sp-12) var(--space-1)}.sk-card-row{display:flex;flex-direction:column;gap:var(--space-1);padding:var(--sp-12) var(--sp-14);border-bottom:1px solid var(--border)}.sk-card-row:last-child{border-bottom:none}.u-flex-none{flex:none}.u-flex-1{flex:1}.u-pad-16-0{padding:16px 0}.u-pad-20-0{padding:20px 0}.u-mt-12{margin-top:12px}.u-mt-10{margin-top:10px}.u-mb-16{margin-bottom:16px}.u-mb-10{margin-bottom:10px}.u-flex-c-g1{display:flex;align-items:center;gap:var(--space-1)}.u-flex-bc-g1{display:flex;justify-content:space-between;align-items:center;gap:var(--space-1)}.u-flex-b-g10{display:flex;justify-content:space-between;gap:var(--sp-10)}.u-flex-b-g10-mt2{display:flex;justify-content:space-between;gap:var(--sp-10);margin-top:2px}.u-label-sm{font-size:10px;color:var(--text3)}.u-w100-mt2{width:100%;margin-top:2px}.u-caption-8{color:var(--text3);font-size:12px;padding:8px 0}.u-text-right{text-align:right}.u-cap-11{font-size:11px;color:var(--text3)}.u-flex-c-g7{display:flex;align-items:center;gap:var(--sp-7)}.u-flex-c-g5{display:flex;align-items:center;gap:var(--sp-5)}.u-flex-cc-g5{display:flex;align-items:center;justify-content:center;gap:var(--sp-5)}.u-btn-44{flex-shrink:0;height:44px;padding:0 14px}.u-items-start{align-items:flex-start}.u-ml-0{margin-left:0}.u-mt6-inline{margin-top:6px;display:inline-block}.u-mt-8{margin-top:8px}.u-mt-16{margin-top:16px}.u-pad-12-14{padding:var(--sp-12) var(--sp-14)}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}}
+/* ============================================================
+   REVISI DESKTOP v14.94 — Sidebar persisten, layout lebih rapi,
+   terstruktur, dan premium untuk layar >=1024px.
+   Tidak mengubah tampilan mobile/tablet (<1024px) & viewer-mode.
+   ============================================================ */
+@media(min-width:1024px){
+  /* --- Shell: sidebar persisten (bukan hover-reveal lagi) --- */
+  body:not(.viewer-mode){padding-left:236px}
+  body:not(.viewer-mode) .tabnav{
+    width:236px;
+    padding-top:56px;
+    transform:none;
+    box-shadow:1px 0 0 rgba(255,255,255,.07),8px 0 28px rgba(0,0,0,.35);
+    transition:none
+  }
+  body:not(.viewer-mode) .tabnav::after{display:none}
+  body:not(.viewer-mode) .tabnav::before{
+    content:'MENU UTAMA';
+    display:block;
+    padding:18px 24px 10px;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:var(--text3);
+    opacity:.55
+  }
+  body:not(.viewer-mode) .tab,
+  body:not(.viewer-mode) .tab-fab{
+    flex:0 0 auto;
+    flex-direction:row;
+    justify-content:flex-start;
+    align-items:center;
+    gap:14px;
+    padding:12px 22px;
+    margin:1px 10px;
+    border-radius:var(--r);
+    border-left:none;
+    text-align:left;
+    width:calc(100% - 20px)
+  }
+  body:not(.viewer-mode) .tab:hover{background:var(--glass);transform:none;color:var(--text2)}
+  body:not(.viewer-mode) .tab.active{background:var(--amber-dim);border-left:none;box-shadow:inset 3px 0 0 var(--amber)}
+  body:not(.viewer-mode) .tab span,
+  body:not(.viewer-mode) .tab-fab span{font-size:13px;font-weight:700;letter-spacing:.1px}
+  body:not(.viewer-mode) .tab svg{width:19px;height:19px}
+  body:not(.viewer-mode) .tab-fab{margin-top:6px;margin-bottom:6px;padding:8px 22px}
+  body:not(.viewer-mode) .tab-fab-inner{margin-top:0;width:42px;height:42px}
+  body:not(.viewer-mode) .tab-fab span{color:var(--text2)}
+  body:not(.viewer-mode) .tab-fab.active span{color:var(--amber)}
+  body:not(.viewer-mode) .trx-submit-bar{left:236px}
+  body:not(.viewer-mode) #cetak-action-bar{left:236px!important}
+  body.light:not(.viewer-mode) .tab:hover{background:rgba(0,0,0,.035)}
+
+  /* --- Topbar: sedikit lebih lega, sejajar dengan konten --- */
+  .topbar{padding:0 28px}
+  .topbar-title{font-size:14px}
+  .topbar-sub{font-size:10px}
+
+  /* --- Panel & kartu: napas lebih lega, kesan premium --- */
+  .panel{border-radius:var(--br-16);margin-bottom:20px}
+  .panel-head{padding:18px 26px}
+  .panel-head h2{font-size:14px}
+  .panel-body{padding:24px 26px}
+  .dash-card{padding:22px 24px 18px}
+  .chart-wrap{padding:22px 24px}
+  .item-card{margin-bottom:18px}
+
+  /* --- Kontrol: ukuran lebih presisi (bukan target sentuh) --- */
+  .btn{min-height:40px;padding:9px 18px}
+  .btn-sm{min-height:34px}
+  .btn-lg{min-height:46px}
+  input[type=text],input[type=number],input[type=date],select.sel{padding:10px 14px}
+  .search-input{padding:9px 13px 9px 40px}
+
+  /* --- Grid dashboard & tabel: kepadatan seimbang di layar lebar --- */
+  .dash-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+  .qa-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+  .dash-2col{gap:20px}
+  table{font-size:13px}
+  .table-wrap{border-radius:var(--br-16)}
+
+  /* --- Form modal & panel form dua kolom agar tidak memanjang --- */
+  .edit-sheet-body{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;align-content:start}
+  .edit-sheet-body>*:not(.edit-field){grid-column:1/-1}
+  .edit-sheet{border-radius:var(--br-18)}
+
+  /* --- Login card lebih lapang di layar besar --- */
+  .login-card{max-width:400px;padding:44px 40px 34px}
+}

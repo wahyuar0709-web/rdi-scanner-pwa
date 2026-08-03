@@ -1,5 +1,5 @@
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v14.93';var APP_BUILD_DATE='2026-08-03';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v14.94';var APP_BUILD_DATE='2026-08-03';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
 document.addEventListener('click',function(e){var t=e.target.closest('[data-tt]');if(t){e.stopPropagation();if(forEl===t){hideTT();}else{showTT(t);}}else{hideTT();}},true);document.addEventListener('scroll',hideTT,true);window.addEventListener('resize',hideTT);})();function skeletonCardRows(n){n=n||5;var row='<div class="sk-card-row">'
 +'<div class="u-flex-b-g10">'
