@@ -1,5 +1,5 @@
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v14.92';var APP_BUILD_DATE='2026-08-02';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v14.93';var APP_BUILD_DATE='2026-08-03';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
 document.addEventListener('click',function(e){var t=e.target.closest('[data-tt]');if(t){e.stopPropagation();if(forEl===t){hideTT();}else{showTT(t);}}else{hideTT();}},true);document.addEventListener('scroll',hideTT,true);window.addEventListener('resize',hideTT);})();function skeletonCardRows(n){n=n||5;var row='<div class="sk-card-row">'
 +'<div class="u-flex-b-g10">'
@@ -207,7 +207,6 @@ _lastInvRenderSig=sig;if(isMobileView){_tableStaleRows=pageRows;}else{_buildTabl
 renderCardList(pageRows);if(pag)_updateInvPaginationLabel(pag,rows,startIdx,pageRows,totalPages);}
 function _updateInvPaginationLabel(pag,rows,startIdx,pageRows,totalPages){if(rows.length<=INV_PAGE_SIZE){pag.style.display='none';}else{pag.style.display='flex';document.getElementById('inv-page-label').textContent='Halaman '+invPage+' dari '+totalPages+' ('+(startIdx+1)+'–'+(startIdx+pageRows.length)+' dari '+rows.length+')';document.getElementById('inv-prev').disabled=invPage<=1;document.getElementById('inv-next').disabled=invPage>=totalPages;}}
 var _tableStaleRows=null;function _fmtTglSingkat(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'});}
-function _fmtTglCard(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}
 function _stockDotSVG(level){var c=level==='red'?'var(--red)':level==='amber'?'var(--amber)':'var(--green)';return'<svg width="9" height="9" viewBox="0 0 9 9" style="vertical-align:-1px;flex:none"><circle cx="4.5" cy="4.5" r="4.5" fill="'+c+'"/></svg>';}
 function _buildTableHtml(rows){var tb=document.getElementById('table-body');tb.innerHTML=rows.map(function(r){var idHtml=r.id&&r.id.trim()!==''?'<span class="id-chip">'+xe(r.id)+'</span>':'<span class="badge" style="background:#fef3c7;color:#92400e">No ID</span>';var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';var statusDot=saldo===0?_stockDotSVG('red'):(minS>0&&saldo<=minS)?_stockDotSVG('amber'):_stockDotSVG('green');var minCell=r.id?'<input class="min-stock-input" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xeJs(r.id)+'\',this.value)" title="Set min stok">':'—';var catLabel=xe(r.kategori||'—');var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));return'<tr>'
 +'<td class="c" style="color:var(--text3);font-size:11px">'+xe(r.no)+'</td>'
@@ -748,69 +747,42 @@ var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div cla
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 var _cardRenderRows=[];var _cardRenderedCount=0;var CARD_BATCH_SIZE=30;var _cardScrollObserver=null;function renderCardList(rows){var cl=document.getElementById('card-list-body');if(!cl)return;if(!rows.length){cl.innerHTML=(typeof allRows!=='undefined'&&allRows.length===0)?'<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm u-mt-12" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>':'<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm u-mt-12" onclick="resetAllFilters()">Reset Filter</button></div>';return;}
 _cardRenderRows=rows;_cardRenderedCount=0;cl.innerHTML='<div id="card-list-sentinel"></div>';renderNextCardBatch();}
-function buildCardHtml(rows){return rows.map(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglCard(_tglMasukTs(r));var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokCls=isZero?'itc-stok-red':isAlert?'itc-stok-amber':'itc-stok-green';var arsip=_isArsip(r);return'<div class="itc'+(arsip?' itc-arsip':'')+'" data-idx="'+r._idx+'" role="button" tabindex="0" aria-label="'+xe(r.nama)+', stok '+xe(r.qty||0)+' '+xe(r.unit||'')+', status '+statusLabel+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.6':'')+'">'
-+'<div class="itc-strip '+stripCls+'"></div>'
-+'<div class="itc-body">'
-+'<div class="itc-nama" data-tt="'+xe(r.nama)+'">'+xe(r.nama)+(arsip?' <span class="itc-arsip-badge">📦 ARSIP</span>':'')+'</div>'
-+(r.spec?'<div class="itc-spec">'+xe(r.spec)+'</div>':'')
-+'<div class="itc-row3">'
-+'<span class="itc-stok '+stokCls+'"><span class="itc-dot" aria-hidden="true"></span>'+xe(r.qty||0)+' <span class="itc-unit">'+xe(r.unit||'pcs')+'</span>'+(isZero?'<span class="itc-tag">HABIS</span>':(isAlert?'<span class="itc-tag itc-tag-amber">MIN</span>':''))+'</span>'
-+(r.rak&&r.rak!=='—'?'<span class="itc-rak">📍 '+xe(rakDisplay(r.rak))+'</span>':'')
+function buildCardHtml(rows){return rows.map(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var arsip=_isArsip(r);return'<div class="ilc2'+(arsip?' ilc2-arsip':'')+'" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.62':'')+'">'
++'<div class="ilc2-strip '+stripCls+'"></div>'
++(tglKedatangan!=='—'?'<div class="ilc2-tgl-corner" data-tt="Tanggal transaksi masuk terakhir">'+tglKedatangan+'</div>':'')
++'<div class="ilc2-main" style="flex-direction:column;align-items:stretch">'
++'<div>'
++'<div class="ilc2-info">'
++'<div class="ilc2-nama" data-tt="'+xe(r.nama)+'">'+xe(r.nama)+(arsip?' <span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--br-10);padding:var(--sp-1) var(--sp-6);vertical-align:middle">📦 ARSIP</span>':'')+'</div>'
++(r.spec?'<div class="ilc2-spec">'+xe(r.spec)+'</div>':'')
++'<div class="ilc2-top">'
++(r.rak&&r.rak!=='—'?'<span class="ilc2-rak">'+xe(rakDisplay(r.rak))+'</span>':'')
++(r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>')
 +'</div>'
-+(tglKedatangan!=='—'?'<div class="itc-tgl">📅 '+tglKedatangan+'</div>':'')
++'</div>'
++'<div class="ilc2-stok" style="'+stokColor+'" data-tt="Status stok: '+statusLabel+'">'
++'<span class="ilc2-status-dot" aria-hidden="true">'+statusDot+'</span>'
++xe(r.qty||0)
++'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
++(isAlert&&!isZero?'<span class="ilc2-low">MINIMUM</span>':'')
++(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
++'</div>'
++'</div>'
++'<div class="ilc2-footer">'
++'<div class="ilc2-footer-info">'
++(r.kategori?'<span class="ilc2-cat">'+xe(r.kategori)+'</span>':'')
++(r.user?'<span class="ilc2-meta" data-tt="'+xe(r.user)+'">'+xe(r.user)+'</span>':'')
++'</div>'
++(arsip?'':'<button type="button" class="ilc2-btn-trx" onclick="event.stopPropagation();goToTransaksi(\''+xeJs(r.id)+'\')" title="Transaksi item ini">'
++'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>'
++'Trx'
++'</button>')
++'</div>'
 +'</div>'
 +'</div>';}).join('');}
 function renderNextCardBatch(){var cl=document.getElementById('card-list-body');var sentinel=document.getElementById('card-list-sentinel');if(!cl||!sentinel)return;var next=_cardRenderRows.slice(_cardRenderedCount,_cardRenderedCount+CARD_BATCH_SIZE);if(next.length){var frag=document.createElement('div');frag.innerHTML=buildCardHtml(next);while(frag.firstChild)cl.insertBefore(frag.firstChild,sentinel);_cardRenderedCount+=next.length;}
 if(_cardScrollObserver){_cardScrollObserver.disconnect();_cardScrollObserver=null;}
 if(_cardRenderedCount<_cardRenderRows.length){sentinel.textContent='';_cardScrollObserver=new IntersectionObserver(function(entries){if(entries[0].isIntersecting)renderNextCardBatch();},{rootMargin:'400px'});_cardScrollObserver.observe(sentinel);}else{sentinel.remove();}}
-var _qaIdx=null;function openQuickAction(idx){var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;if(_isArsip(r))return;_qaIdx=idx;var titleEl=document.getElementById('qa-title'),subEl=document.getElementById('qa-sub');if(titleEl)titleEl.textContent=r.nama||'—';if(subEl)subEl.textContent=(r.spec?r.spec+' · ':'')+'Stok '+(r.qty||0)+' '+(r.unit||'pcs');var overlay=document.getElementById('qa-overlay'),sheet=document.getElementById('qa-sheet');if(!overlay||!sheet)return;overlay.classList.remove('closing');sheet.classList.remove('closing');overlay.style.display='';overlay.classList.add('show');sheet.classList.add('show');}
-function closeQuickAction(){var overlay=document.getElementById('qa-overlay'),sheet=document.getElementById('qa-sheet');if(!overlay||!sheet)return;if(!sheet.classList.contains('show'))return;sheet.classList.add('closing');overlay.classList.add('closing');setTimeout(function(){sheet.classList.remove('show','closing');overlay.classList.remove('show','closing');},220);}
-(function(){function qaRun(fn){return function(){var idx=_qaIdx;closeQuickAction();if(idx==null)return;setTimeout(function(){fn(idx);},230);};}
-var btnTrx=document.getElementById('qa-btn-trx');if(btnTrx)btnTrx.addEventListener('click',qaRun(function(idx){var r=allRows.find(function(row){return row._idx===idx;});if(r)goToTransaksi(r.id);}));
-var btnDetail=document.getElementById('qa-btn-detail');if(btnDetail)btnDetail.addEventListener('click',qaRun(function(idx){openItemDetail(idx);}));
-var btnRak=document.getElementById('qa-btn-rak');if(btnRak)btnRak.addEventListener('click',qaRun(function(idx){var r=allRows.find(function(row){return row._idx===idx;});if(r&&r.rak&&r.rak!=='—'){switchTab('rak');setTimeout(function(){showRakDetail(r.rak);},80);}}));
-var btnHist=document.getElementById('qa-btn-hist');if(btnHist)btnHist.addEventListener('click',qaRun(function(idx){openItemDetail(idx);setTimeout(function(){var list=document.getElementById('idd-hist-list');if(list&&list.style.display==='none')toggleDetailHist();},260);}));
-var btnPrint=document.getElementById('qa-btn-print');if(btnPrint)btnPrint.addEventListener('click',qaRun(function(idx){printSingleItem(idx);}));
-})();
-(function(){
-var LP_MS=500,LP_MOVE_TOL=10;
-var lpTimer=null,lpFired=false,lpStartX=0,lpStartY=0,lpEl=null;
-function cardListEl(){return document.getElementById('card-list-body');}
-function clearLP(cancelFlash){clearTimeout(lpTimer);lpTimer=null;if(lpEl)lpEl.classList.remove('itc-pressing');lpEl=null;}
-document.addEventListener('pointerdown',function(e){
-var cl=cardListEl();if(!cl)return;var card=e.target.closest('.itc');
-if(!card||!cl.contains(card))return;
-if(e.pointerType==='mouse'&&e.button!==0)return;
-lpFired=false;lpEl=card;lpStartX=e.clientX;lpStartY=e.clientY;
-card.classList.add('itc-pressing');
-lpTimer=setTimeout(function(){
-lpFired=true;
-card.classList.remove('itc-pressing');
-card.classList.add('itc-lp-fired');
-setTimeout(function(){card.classList.remove('itc-lp-fired');},340);
-if(navigator.vibrate){try{navigator.vibrate(15);}catch(err){}}
-var idx=parseInt(card.getAttribute('data-idx'),10);
-if(!isNaN(idx))openQuickAction(idx);
-},LP_MS);
-},{passive:true});
-document.addEventListener('pointermove',function(e){
-if(!lpEl)return;
-if(Math.abs(e.clientX-lpStartX)>LP_MOVE_TOL||Math.abs(e.clientY-lpStartY)>LP_MOVE_TOL)clearLP();
-},{passive:true});
-document.addEventListener('pointerup',function(e){
-var card=e.target.closest('.itc');
-var wasFired=lpFired;
-clearLP();
-if(card&&!wasFired){
-var idx=parseInt(card.getAttribute('data-idx'),10);
-if(!isNaN(idx))openItemDetail(idx);
-}
-lpFired=false;
-});
-document.addEventListener('pointercancel',function(){clearLP();lpFired=false;});
-window.addEventListener('scroll',function(){clearLP();lpFired=false;},{passive:true,capture:true});
-})();
-window.openQuickAction=openQuickAction;window.closeQuickAction=closeQuickAction;
 var _detailIdx=null;function openItemDetail(idx){stopInlineScanner();stopInlineScannerHist();var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;_detailIdx=idx;var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var heroCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';document.getElementById('idd-id').textContent=r.id||'—';document.getElementById('idd-nama').textContent=r.nama||'—';document.getElementById('idd-spec').textContent=r.spec||'';document.getElementById('idd-stok').textContent=saldo;document.getElementById('idd-stok').className='item-detail-stok-big'+(isAlert?' alert':'');document.getElementById('idd-unit').textContent=r.unit||'pcs';document.getElementById('idd-low').style.display=isAlert?'block':'none';document.getElementById('idd-rak').textContent=rakDisplay(r.rak)||'—';document.getElementById('idd-rak-hero').textContent=rakDisplay(r.rak)||'—';document.getElementById('idd-kategori').textContent=r.kategori||'—';document.getElementById('idd-user').textContent=r.user||'—';document.getElementById('idd-bc').textContent=r.bc||'—';document.getElementById('idd-min-input').value=minStockMap[r.id]||0;var arsip=_isArsip(r);var arsipBadge=document.getElementById('idd-arsip-badge');if(arsipBadge)arsipBadge.classList.toggle('u-hide',!arsip);var trxBtn=document.getElementById('idd-btn-trx');if(trxBtn){trxBtn.disabled=arsip;trxBtn.style.opacity=arsip?'.5':'';trxBtn.title=arsip?'Item diarsipkan -- aktifkan kembali dulu untuk transaksi':'';}
 var archiveBtn=document.getElementById('idd-btn-archive');if(archiveBtn){archiveBtn.textContent=arsip?'↺ Aktifkan Kembali':'📦 Arsipkan Item';archiveBtn.className='btn btn-sm btn-block'+(arsip?'':' btn-danger');}
 hideStatus('sbar-idd-archive');var hero=document.getElementById('item-detail-hero');hero.className='item-detail-hero'+(heroCls?' '+heroCls:'');document.getElementById('item-detail-overlay').classList.add('show');document.getElementById('item-detail-sheet').classList.add('show');var histList=document.getElementById('idd-hist-list'),histToggle=document.getElementById('idd-hist-toggle');if(histList)histList.style.display='none';if(histToggle){var lbl=histToggle.querySelector('span');if(lbl)lbl.textContent='▸ Riwayat Transaksi';}
