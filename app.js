@@ -168,7 +168,7 @@ function hideStatus(elId){var el=document.getElementById(elId);el.className='sba
 var IC={ok:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',err:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',load:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>',info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'};function switchTab(name,skipAutoScan){if(name!=='more')closeMoreDrawer();if(name==='more'){var drawer=document.getElementById('more-drawer');var overlay=document.getElementById('more-overlay');var isOpen=drawer.classList.contains('show');if(isOpen){closeMoreDrawer();}else{drawer.classList.remove('closing');overlay.classList.remove('closing');overlay.style.display='';drawer.classList.add('show');overlay.classList.add('show');document.getElementById('drawer-username').textContent=currentUser?currentUser.name:'';document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');if(el.hasAttribute('aria-selected'))el.setAttribute('aria-selected','false');});var moreTab=document.getElementById('tab-more');if(moreTab){moreTab.classList.add('active');moreTab.setAttribute('aria-selected','true');}}
 return;}
 var wasScanner=document.getElementById('section-scanner').classList.contains('active');document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');});document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');if(el.hasAttribute('aria-selected'))el.setAttribute('aria-selected','false');});if(wasScanner&&name!=='scanner')stopInlineScanner();stopInlineScannerHist();stopInlineScannerRak();stopInlineScannerMaster();var section=document.getElementById('section-'+name);var tabEl=document.getElementById('tab-'+name);if(section)section.classList.add('active');document.documentElement.scrollTop=0;document.body.scrollTop=0;if(name==='dashboard'||name==='master'||name==='history'||name==='scanner')_lastMainTab=name;var cetakBar=document.getElementById('cetak-action-bar');if(cetakBar)cetakBar.style.display=(name==='cetak')?'block':'none';if(tabEl){tabEl.classList.add('active');if(tabEl.hasAttribute('aria-selected'))tabEl.setAttribute('aria-selected','true');}
-if(name==='dashboard')loadDashboard();if(name==='alert')loadAlert();if(name==='history')loadAllHistory();if(name==='scanner'&&!skipAutoScan)autoOpenScanner();if(name==='rak')loadRakList();if(name==='cetak')renderCetakList();}
+if(name==='dashboard')loadDashboard();if(name==='alert')loadAlert();if(name==='history')loadAllHistory();if(name==='scanner'&&!skipAutoScan)autoOpenScanner();if(name==='rak')loadRakList();if(name==='cetak')renderCetakList();if(name==='aset')loadAsetSummary();}
 function backFromSubpage(){switchTab(_lastMainTab);}
 function closeMoreDrawer(){var drawer=document.getElementById('more-drawer');var overlay=document.getElementById('more-overlay');var moreTab=document.getElementById('tab-more');if(moreTab){moreTab.classList.remove('active');moreTab.setAttribute('aria-selected','false');var activeSection=document.querySelector('.page-section.active');if(activeSection){var matchTab=document.getElementById('tab-'+activeSection.id.replace('section-',''));if(matchTab){matchTab.classList.add('active');if(matchTab.hasAttribute('aria-selected'))matchTab.setAttribute('aria-selected','true');}}}
 if(!drawer.classList.contains('show')){overlay.classList.remove('show','closing');overlay.style.display='none';return;}
@@ -949,3 +949,812 @@ applyEditItemLocally(id,payload);}).catch(function(err){btn.disabled=false;btn.i
 function applyEditItemLocally(id,payload){var r=allRows.find(function(row){return row.id===id;});if(r){r.nama=payload.nama;r.spec=payload.spec;r.user=payload.user;r.unit=payload.unit;r.bc=payload.bc;r.kategori=payload.kategori;r.minStock=payload.minStock;minStockMap[r.id]=parseInt(payload.minStock)||0;}
 renderTable(filteredRows);updateAlertBadge();closeEditSheet();showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');registerMasterValueIfNew('uom',payload.unit);registerMasterValueIfNew('kategori',payload.kategori);}
 window.applyEditItemLocally=applyEditItemLocally;window.closeAddSheet=closeAddSheet;window.closeEditSheet=closeEditSheet;window.flagFieldError=flagFieldError;window.openAddSheet=openAddSheet;window.openEditSheet=openEditSheet;window.saveAddItem=saveAddItem;window.saveEditItem=saveEditItem;window.updateAddRakHint=updateAddRakHint;})();
+(function(){
+'use strict';
+/* ============================================================
+   v5.20 — MODUL ASET SIRKULASI (saw blade/cutter: keluar-pakai-
+   kembali-diasah-pakai lagi). IIFE terpisah (bukan nempel ke IIFE
+   lama) supaya tidak menyentuh baris-baris lama yang sudah padat.
+   BAGIAN B (kerangka & navigasi): baru setAsetSubtab() + stub
+   loadAsetSummary(). Isi nyata (fetch data) menyusul di BAGIAN C-I.
+   ============================================================ */
+function setAsetSubtab(name){
+  ['ringkasan','daftar','asah'].forEach(function(key){
+    var panel=document.getElementById('aset-subtab-'+key);
+    var btn=document.getElementById('aset-subtab-btn-'+key);
+    if(panel)panel.classList.toggle('active',key===name);
+    if(btn){btn.classList.toggle('active',key===name);btn.setAttribute('aria-selected',key===name?'true':'false');}
+  });
+  if(name==='daftar')loadAsetItemList();
+  if(name==='asah')loadAsetKontrolAsah();
+}
+var _asetDashLoaded=false;
+function loadAsetSummary(){
+  // Lazy-load: hanya fetch sekali per sesi (pola sama seperti tab lain), kecuali dipaksa refresh nanti.
+  if(_asetDashLoaded)return;
+  _asetDashLoaded=true;
+  gasGet({action:'getAsetDashboard'}).then(function(result){
+    if(!result||result.status==='error'){
+      _asetDashLoaded=false; // biar bisa dicoba lagi kalau gagal
+      return;
+    }
+    var d=result.data;
+    document.getElementById('aset-kpi-total').textContent=d.totalUnit;
+    document.getElementById('aset-kpi-siap').textContent=d.siapPakai;
+    document.getElementById('aset-kpi-dipakai').textContent=d.sedangDipakai;
+    document.getElementById('aset-kpi-perhatian').textContent=d.itemButuhPerhatian;
+    document.getElementById('aset-kpi-tunggu').textContent=d.menungguAsah;
+    document.getElementById('aset-kpi-diasah').textContent=d.sedangDiasah;
+  }).catch(function(){ _asetDashLoaded=false; });
+}
+function asetPlaceholder(namaFitur){
+  alert('Fitur "'+namaFitur+'" belum tersedia — masih dalam tahap pembangunan bertahap.');
+}
+
+/* ============================================================
+   BAGIAN D — Daftar Alat: list jenis alat + filter status kondisi
+   + bottom-sheet detail 1 Kode_Alat.
+   ============================================================ */
+var _asetItemListLoaded=false;
+var _asetItemListCache=[];
+var _asetKondisiFilter='SEMUA';
+
+function loadAsetItemList(force){
+  if(_asetItemListLoaded&&!force)return;
+  var wrap=document.getElementById('aset-item-list');
+  wrap.innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+  gasGet({action:'getAsetItemList'}).then(function(result){
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat: '+xe(result?result.message:'tidak diketahui')+'</p><button class="btn btn-sm u-mt-10" onclick="loadAsetItemList(true)">Coba Lagi</button></div>';
+      return;
+    }
+    _asetItemListLoaded=true;
+    _asetItemListCache=result.data||[];
+    renderAsetItemList();
+  }).catch(function(err){
+    wrap.innerHTML='<div class="empty-state"><p>Network error: '+xe(err.message)+'</p></div>';
+  });
+}
+
+function asetFilterKondisi(kondisi){
+  _asetKondisiFilter=kondisi;
+  document.querySelectorAll('.aset-chip-kondisi').forEach(function(el){
+    var match=(el.dataset.kondisi===kondisi)||(kondisi==='KRITIS_HABIS'&&(el.dataset.kondisi==='KRITIS'||el.dataset.kondisi==='HABIS'));
+    el.classList.toggle('active',match);
+  });
+  renderAsetItemList();
+}
+
+function renderAsetItemList(){
+  var wrap=document.getElementById('aset-item-list');
+  var list=_asetItemListCache;
+  if(!list.length){
+    wrap.innerHTML='<div class="empty-state"><p>Belum ada jenis alat terdaftar</p><button class="btn btn-primary btn-sm u-mt-10" onclick="openAsetTambahItemModal()">+ Daftarkan Kode_Alat</button></div>';
+    return;
+  }
+  var filtered=list.filter(function(it){
+    if(_asetKondisiFilter==='SEMUA')return true;
+    if(_asetKondisiFilter==='KRITIS_HABIS')return it.statusKondisi==='KRITIS'||it.statusKondisi==='HABIS';
+    return it.statusKondisi===_asetKondisiFilter;
+  });
+  if(!filtered.length){
+    wrap.innerHTML='<div class="empty-state"><p>Tidak ada alat dengan status ini</p></div>';
+    return;
+  }
+  var stripColor={AMAN:'var(--green)',KRITIS:'var(--amber)',HABIS:'var(--red)'};
+  wrap.innerHTML=filtered.map(function(it){
+    return '<div class="item-list-card" onclick="openAsetItemDetail(\''+xe(it.kodeAlat)+'\')">'
+      +'<div class="ilc-strip" style="background:'+(stripColor[it.statusKondisi]||'var(--border3)')+'"></div>'
+      +'<div class="ilc-body">'
+        +'<div class="ilc-id-row"><span class="ilc-id">'+xe(it.kodeAlat)+'</span></div>'
+        +'<div class="ilc-nama">'+xe(it.namaAlat)+'</div>'
+        +'<div class="ilc-spec">'+xe(it.spesifikasi)+'</div>'
+        +'<div class="aset-mini-stat-row">'
+          +'<span class="aset-mini-stat green">'+it.siapPakai+'<small>Siap</small></span>'
+          +'<span class="aset-mini-stat blue">'+it.sedangDipakai+'<small>Dipakai</small></span>'
+          +'<span class="aset-mini-stat amber">'+it.menungguAsah+'<small>Tunggu</small></span>'
+          +'<span class="aset-mini-stat navydark">'+it.sedangDiasah+'<small>Diasah</small></span>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+var _asetDetailKodeAlat=null;
+function openAsetItemDetail(kodeAlat){
+  var it=_asetItemListCache.find(function(x){return x.kodeAlat===kodeAlat;});
+  if(!it)return;
+  _asetDetailKodeAlat=kodeAlat;
+  document.getElementById('asetd-kode').textContent=it.kodeAlat;
+  document.getElementById('asetd-nama').textContent=it.namaAlat||'—';
+  document.getElementById('asetd-spec').textContent=it.spesifikasi||'—';
+  document.getElementById('asetd-total').textContent=it.totalUnit;
+  document.getElementById('asetd-siap').textContent=it.siapPakai;
+  document.getElementById('asetd-dipakai').textContent=it.sedangDipakai;
+  document.getElementById('asetd-tunggu').textContent=it.menungguAsah;
+  document.getElementById('asetd-diasah').textContent=it.sedangDiasah;
+  document.getElementById('asetd-safety').textContent=it.safetyStock;
+  document.getElementById('asetd-brand').textContent=it.brand||'—';
+  document.getElementById('asetd-rak').textContent=it.rakPenyimpanan||'—';
+  document.getElementById('asetd-vendor').textContent=it.vendorAsahDefault||'—';
+  document.getElementById('aset-detail-overlay').classList.add('show');
+  document.getElementById('aset-detail-sheet').classList.add('show');
+}
+function closeAsetItemDetail(){
+  document.getElementById('aset-detail-overlay').classList.remove('show');
+  document.getElementById('aset-detail-sheet').classList.remove('show');
+}
+(function setupAsetDetailDragToClose(){
+  var sheet=document.getElementById('aset-detail-sheet');if(!sheet)return;
+  var dragHandle=document.getElementById('aset-detail-drag-handle');
+  var hero=document.getElementById('aset-detail-hero');
+  var startY=0,currentY=0,dragging=false,sheetH=0;
+  function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);currentY=startY;sheetH=sheet.offsetHeight||500;sheet.classList.add('dragging');}
+  function onMove(e){if(!dragging)return;currentY=(e.touches?e.touches[0].clientY:e.clientY);var delta=currentY-startY;if(delta<0)delta=0;sheet.style.transform='translateY('+delta+'px)';if(e.cancelable)e.preventDefault();}
+  function onEnd(){if(!dragging)return;dragging=false;sheet.classList.remove('dragging');var delta=Math.max(0,currentY-startY);sheet.style.transform='';if(delta>Math.max(110,sheetH*0.22))closeAsetItemDetail();}
+  [dragHandle,hero].forEach(function(el){if(!el)return;el.addEventListener('touchstart',onStart,{passive:true});el.addEventListener('touchmove',onMove,{passive:false});el.addEventListener('touchend',onEnd);el.addEventListener('touchcancel',onEnd);el.addEventListener('mousedown',onStart);});
+  window.addEventListener('mousemove',onMove);
+  window.addEventListener('mouseup',onEnd);
+})();
+
+/* ============================================================
+   BAGIAN E — Daftar Unit (drill-down per Kode_Alat). Toggle visibility
+   manual antara #aset-main-view <-> #aset-unit-subpage (BUKAN lewat
+   switchTab), supaya balik ke Daftar Alat, bukan ke _lastMainTab.
+   ============================================================ */
+var _asetUnitSubpageCache=[];
+var _asetUnitStatusFilter='SEMUA';
+var _asetUnitSubpageKodeAlat=null;
+
+var ASET_STATUS_LABEL={GUDANG:'Siap Pakai',DIPAKAI:'Dipakai',TUMPUL:'Tumpul',DIASAH:'Diasah',SCRAP:'Scrap'};
+var ASET_STATUS_CLASS={GUDANG:'gudang',DIPAKAI:'dipakai',TUMPUL:'tumpul',DIASAH:'diasah',SCRAP:'scrap'};
+
+function goToAsetUnitSubpageFromDetail(){
+  if(!_asetDetailKodeAlat)return;
+  closeAsetItemDetail();
+  openAsetUnitSubpage(_asetDetailKodeAlat);
+}
+
+function openAsetUnitSubpage(kodeAlat){
+  _asetUnitSubpageKodeAlat=kodeAlat;
+  _asetUnitStatusFilter='SEMUA';
+  document.querySelectorAll('.aset-chip-unit-status').forEach(function(el){
+    el.classList.toggle('active',el.dataset.status==='SEMUA');
+  });
+  document.getElementById('aset-unit-subpage-title').textContent=kodeAlat;
+  document.getElementById('aset-main-view').style.display='none';
+  document.getElementById('aset-unit-subpage').style.display='block';
+  var wrap=document.getElementById('aset-unit-subpage-list');
+  wrap.innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+  gasGet({action:'getAsetUnitList',kodeAlat:kodeAlat}).then(function(result){
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat: '+xe(result?result.message:'tidak diketahui')+'</p><button class="btn btn-sm u-mt-10" onclick="openAsetUnitSubpage(\''+xe(kodeAlat)+'\')">Coba Lagi</button></div>';
+      return;
+    }
+    _asetUnitSubpageCache=result.data||[];
+    renderAsetUnitSubpageList();
+  }).catch(function(err){
+    wrap.innerHTML='<div class="empty-state"><p>Network error: '+xe(err.message)+'</p></div>';
+  });
+}
+
+function closeAsetUnitSubpage(){
+  document.getElementById('aset-unit-subpage').style.display='none';
+  document.getElementById('aset-main-view').style.display='';
+}
+
+function asetFilterUnitStatus(status){
+  _asetUnitStatusFilter=status;
+  document.querySelectorAll('.aset-chip-unit-status').forEach(function(el){
+    el.classList.toggle('active',el.dataset.status===status);
+  });
+  renderAsetUnitSubpageList();
+}
+
+function renderAsetUnitSubpageList(){
+  var wrap=document.getElementById('aset-unit-subpage-list');
+  var list=_asetUnitSubpageCache;
+  if(!list.length){
+    wrap.innerHTML='<div class="empty-state"><p>Belum ada unit fisik utk alat ini</p><button class="btn btn-primary btn-sm u-mt-10" onclick="openAsetTambahUnitModal(\''+xe(_asetUnitSubpageKodeAlat)+'\')">+ Tambah Unit</button></div>';
+    return;
+  }
+  var filtered=(_asetUnitStatusFilter==='SEMUA')?list:list.filter(function(u){return u.statusUnit===_asetUnitStatusFilter;});
+  if(!filtered.length){
+    wrap.innerHTML='<div class="empty-state"><p>Tidak ada unit dengan status ini</p></div>';
+    return;
+  }
+  var stripColor={GUDANG:'var(--green)',DIPAKAI:'var(--blue)',TUMPUL:'var(--amber)',DIASAH:'#2e5fc7',SCRAP:'var(--red)'};
+  wrap.innerHTML=filtered.map(function(u){
+    var cls=ASET_STATUS_CLASS[u.statusUnit]||'';
+    var lbl=ASET_STATUS_LABEL[u.statusUnit]||u.statusUnit;
+    return '<div class="ilc2" onclick="openAsetUnitDetailSheet(\''+xe(u.unitId)+'\')">'
+      +'<div class="ilc2-strip" style="background:'+(stripColor[u.statusUnit]||'var(--border3)')+'"></div>'
+      +'<div class="ilc2-main">'
+        +'<div class="ilc2-info">'
+          +'<div class="ilc2-top">'
+            +'<span class="ilc2-id">'+xe(u.unitId)+'</span>'
+            +'<span class="aset-status-badge '+cls+'">'+xe(lbl)+'</span>'
+          +'</div>'
+          +'<div class="ilc2-spec">Diasah '+u.regrindCount+'x &middot; update '+_fmtTglSingkat(u.lastUpdate)+'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+/* ============================================================
+   BAGIAN F — Unit Detail Sheet (paling inti): riwayat pergerakan +
+   tombol aksi KONTEKSTUAL sesuai Status_Unit saat ini. Ini pencerminan
+   UI dari ASET_TRANSITION_RULES di backend (Code-v5_20.gs) -- tapi
+   validasi SESUNGGUHNYA tetap di backend (recordAsetMovement); mapping
+   di sini murni "tombol apa yang ditampilkan", bukan sumber kebenaran.
+   ============================================================ */
+var _asetUnitDetailCache=null; // unit yg sedang dibuka di sheet ini
+var ASET_ACTIONS_FOR_STATUS={
+  GUDANG:[{activity:'DIPASANG_KE_MESIN',label:'Pasang ke Mesin',cls:'btn-primary'}],
+  DIPAKAI:[{activity:'KEMBALI_KE_GUDANG_SIAP',label:'Kembali \u00b7 Siap Pakai',cls:'btn-green'},
+           {activity:'KEMBALI_KE_GUDANG_TUMPUL',label:'Kembali \u00b7 Tumpul',cls:'btn-amber'}],
+  TUMPUL:[{activity:'KIRIM_KE_VENDOR_ASAH',label:'Kirim ke Vendor Asah',cls:'btn-navy'}],
+  DIASAH:[{activity:'SELESAI_DIASAH',label:'Selesai Diasah',cls:'btn-green'}],
+  SCRAP:[]
+};
+
+function openAsetUnitDetailSheet(unitId){
+  document.getElementById('aset-unit-detail-overlay').classList.add('show');
+  document.getElementById('aset-unit-detail-sheet').classList.add('show');
+  document.getElementById('asetud-unitid').textContent=unitId;
+  document.getElementById('asetud-lokasi').textContent='Memuat...';
+  document.getElementById('asetud-cycle').textContent='';
+  document.getElementById('asetud-regrind').textContent='—';
+  document.getElementById('asetud-mesin').textContent='—';
+  document.getElementById('aset-unit-detail-actions').innerHTML='';
+  document.getElementById('asetud-history').innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+
+  gasGet({action:'getAsetUnitById',id:unitId}).then(function(result){
+    if(!result||result.status==='error'){
+      document.getElementById('asetud-lokasi').textContent='Gagal memuat data unit.';
+      return;
+    }
+    _asetUnitDetailCache=result.data;
+    renderAsetUnitDetailHero(result.data);
+    renderAsetUnitDetailActions(result.data.statusUnit);
+  });
+  gasGet({action:'getAsetMovementLog',id:unitId,limit:30}).then(function(result){
+    var wrap=document.getElementById('asetud-history');
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat riwayat.</p></div>';
+      return;
+    }
+    var rows=result.data||[];
+    if(!rows.length){wrap.innerHTML='<div class="empty-state"><p>Belum ada riwayat pergerakan.</p></div>';return;}
+    wrap.innerHTML=rows.map(function(r){
+      return '<div class="idd-hist-row">'
+        +'<div class="idd-hist-time">'+_fmtTglSingkat(r.timestamp)+'</div>'
+        +'<div class="idd-hist-main">'
+          +'<div>'+xe(r.activity)+'</div>'
+          +'<div class="idd-hist-meta">'+xe(r.pic||'—')+(r.kodeMesin?' &middot; '+xe(r.kodeMesin):'')+(r.vendor?' &middot; '+xe(r.vendor):'')+(r.keterangan?' &middot; '+xe(r.keterangan):'')+'</div>'
+        +'</div>'
+        +'<div class="idd-hist-right"><span class="idd-hist-saldo-lbl">Cycle</span><span class="idd-hist-saldo-val">'+xe(r.cycleId)+'</span></div>'
+      +'</div>';
+    }).join('');
+  });
+}
+
+function renderAsetUnitDetailHero(u){
+  var badge=document.getElementById('asetud-status-badge');
+  var cls=ASET_STATUS_CLASS[u.statusUnit]||'';
+  var lbl=ASET_STATUS_LABEL[u.statusUnit]||u.statusUnit;
+  badge.className='aset-status-badge '+cls;
+  badge.textContent=lbl;
+  document.getElementById('asetud-lokasi').textContent='Lokasi: '+(u.lokasiSaatIni||'—');
+  document.getElementById('asetud-cycle').textContent='Cycle terakhir: '+(u.lastCycleId||'—');
+  document.getElementById('asetud-regrind').textContent=u.regrindCount;
+  document.getElementById('asetud-mesin').textContent=u.kodeMesinSaatIni||'—';
+}
+
+function renderAsetUnitDetailActions(statusUnit){
+  var wrap=document.getElementById('aset-unit-detail-actions');
+  var primary=(ASET_ACTIONS_FOR_STATUS[statusUnit]||[]).map(function(a){
+    return '<button class="btn '+a.cls+' btn-lg btn-block u-mt-8" onclick="openAsetAksiModal(\''+a.activity+'\')">'+a.label+'</button>';
+  }).join('');
+  var secondary;
+  if(statusUnit==='SCRAP'){
+    secondary='<div class="empty-state" style="padding:12px 0 0"><p>Unit ini sudah berstatus Scrap.</p></div>';
+  }else{
+    secondary='<div style="display:flex;gap:8px;margin-top:8px">'
+      +'<button class="btn btn-sm" style="flex:1" onclick="openAsetAksiModal(\'KARAT\')">Tandai Karat</button>'
+      +'<button class="btn btn-sm btn-danger" style="flex:1" onclick="openAsetAksiModal(\'SCRAP_RUSAK\')">Scrap / Rusak</button>'
+    +'</div>';
+  }
+  wrap.innerHTML=primary+secondary;
+}
+
+function closeAsetUnitDetailSheet(){
+  document.getElementById('aset-unit-detail-overlay').classList.remove('show');
+  document.getElementById('aset-unit-detail-sheet').classList.remove('show');
+}
+(function setupAsetUnitDetailDragToClose(){
+  var sheet=document.getElementById('aset-unit-detail-sheet');if(!sheet)return;
+  var dragHandle=document.getElementById('aset-unit-detail-drag-handle');
+  var hero=document.getElementById('aset-unit-detail-hero');
+  var startY=0,currentY=0,dragging=false,sheetH=0;
+  function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);currentY=startY;sheetH=sheet.offsetHeight||500;sheet.classList.add('dragging');}
+  function onMove(e){if(!dragging)return;currentY=(e.touches?e.touches[0].clientY:e.clientY);var delta=currentY-startY;if(delta<0)delta=0;sheet.style.transform='translateY('+delta+'px)';if(e.cancelable)e.preventDefault();}
+  function onEnd(){if(!dragging)return;dragging=false;sheet.classList.remove('dragging');var delta=Math.max(0,currentY-startY);sheet.style.transform='';if(delta>Math.max(110,sheetH*0.22))closeAsetUnitDetailSheet();}
+  [dragHandle,hero].forEach(function(el){if(!el)return;el.addEventListener('touchstart',onStart,{passive:true});el.addEventListener('touchmove',onMove,{passive:false});el.addEventListener('touchend',onEnd);el.addEventListener('touchcancel',onEnd);el.addEventListener('mousedown',onStart);});
+  window.addEventListener('mousemove',onMove);
+  window.addEventListener('mouseup',onEnd);
+})();
+
+/* --- Modal aksi kontekstual: satu modal dipakai ulang utk semua activity --- */
+var ASET_ACTIVITY_LABEL={
+  DIPASANG_KE_MESIN:'Pasang ke Mesin',KEMBALI_KE_GUDANG_SIAP:'Kembali \u00b7 Siap Pakai',
+  KEMBALI_KE_GUDANG_TUMPUL:'Kembali \u00b7 Tumpul',KIRIM_KE_VENDOR_ASAH:'Kirim ke Vendor Asah',
+  SELESAI_DIASAH:'Selesai Diasah',KARAT:'Tandai Karat',SCRAP_RUSAK:'Scrap / Rusak'
+};
+var _asetAksiActivity=null;
+
+function openAsetAksiModal(activity){
+  if(!_asetUnitDetailCache)return;
+  _asetAksiActivity=activity;
+  document.getElementById('aset-aksi-modal-title').textContent=(ASET_ACTIVITY_LABEL[activity]||activity)+' — '+_asetUnitDetailCache.unitId;
+  document.getElementById('aset-aksi-input-mesin').value='';
+  document.getElementById('aset-aksi-input-vendor').value='';
+  document.getElementById('aset-aksi-input-keterangan').value='';
+  document.getElementById('aset-aksi-err').classList.remove('show');
+
+  var showMesin=(activity==='DIPASANG_KE_MESIN');
+  var showVendor=(activity==='KIRIM_KE_VENDOR_ASAH');
+  var showWarning=(activity==='SCRAP_RUSAK');
+  document.getElementById('aset-aksi-field-mesin').style.display=showMesin?'':'none';
+  document.getElementById('aset-aksi-field-vendor').style.display=showVendor?'':'none';
+  document.getElementById('aset-aksi-field-warning').style.display=showWarning?'':'none';
+  if(showWarning)document.getElementById('aset-aksi-warning-text').textContent='Unit akan ditandai SCRAP secara permanen dan keluar dari siklus pemakaian. Tindakan ini tidak bisa dibatalkan.';
+
+  if(showVendor){
+    var it=_asetItemListCache.find(function(x){return x.kodeAlat===_asetUnitDetailCache.kodeAlat;});
+    if(it&&it.vendorAsahDefault)document.getElementById('aset-aksi-input-vendor').value=it.vendorAsahDefault;
+  }
+
+  document.getElementById('modal-aset-aksi').classList.add('show');
+}
+function closeAsetAksiModal(){
+  document.getElementById('modal-aset-aksi').classList.remove('show');
+}
+function submitAsetAksi(){
+  if(!_asetUnitDetailCache||!_asetAksiActivity)return;
+  var btn=document.getElementById('aset-aksi-submit-btn');
+  var errBar=document.getElementById('aset-aksi-err');
+  errBar.classList.remove('show');
+  btn.disabled=true;btn.textContent='Menyimpan...';
+
+  var body={
+    action:'recordAsetMovement',
+    unitId:_asetUnitDetailCache.unitId,
+    activity:_asetAksiActivity,
+    kodeMesin:document.getElementById('aset-aksi-input-mesin').value.trim(),
+    vendor:document.getElementById('aset-aksi-input-vendor').value.trim(),
+    keterangan:document.getElementById('aset-aksi-input-keterangan').value.trim()
+  };
+  gasPost(body).then(function(result){
+    btn.disabled=false;btn.textContent='Simpan';
+    if(!result||result.status==='error'){
+      errBar.textContent=(result&&result.message)||'Gagal menyimpan, coba lagi.';
+      errBar.classList.add('show');
+      return;
+    }
+    closeAsetAksiModal();
+    // refresh sheet detail unit yg sedang dibuka
+    openAsetUnitDetailSheet(result.unitId);
+    // refresh list unit di subpage belakangnya (kalau sedang terbuka)
+    if(_asetUnitSubpageKodeAlat)openAsetUnitSubpage(_asetUnitSubpageKodeAlat);
+    // invalidasi cache Daftar Alat & Ringkasan supaya kefetch ulang saat dibuka lagi
+    _asetItemListLoaded=false;
+    _asetDashLoaded=false;
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent='Simpan';
+    errBar.textContent='Network error: '+err.message;
+    errBar.classList.add('show');
+  });
+}
+
+/* ============================================================
+   BAGIAN G — Tambah Unit Baru + inline "+ Daftarkan Kode_Alat Baru".
+   Satu alur menerus: kalau Kode_Alat blm ada, buka modal Tambah
+   Kode_Alat, sukses -> otomatis balik ke Tambah Unit dgn Kode_Alat
+   baru sudah terisi (tidak perlu tutup-buka menu manual).
+   ============================================================ */
+function _asetPopulateKodeAlatSelect(selectId,selectedKode){
+  var sel=document.getElementById(selectId);
+  var list=_asetItemListCache||[];
+  if(!list.length){
+    sel.innerHTML='<option value="">(belum ada Kode_Alat terdaftar)</option>';
+    return;
+  }
+  sel.innerHTML=list.map(function(it){
+    return '<option value="'+xe(it.kodeAlat)+'">'+xe(it.kodeAlat)+' — '+xe(it.namaAlat)+'</option>';
+  }).join('');
+  if(selectedKode)sel.value=selectedKode;
+}
+
+function openAsetTambahUnitModal(preselectKode){
+  document.getElementById('aset-tu-err').classList.remove('show');
+  document.getElementById('aset-tu-ok').classList.remove('show');
+  document.getElementById('aset-tu-input-jumlah').value='1';
+  document.getElementById('aset-tu-input-tanggal').value='';
+  function showModal(){
+    _asetPopulateKodeAlatSelect('aset-tu-select-kode',preselectKode);
+    document.getElementById('modal-aset-tambah-unit').classList.add('show');
+  }
+  if(!_asetItemListLoaded){
+    gasGet({action:'getAsetItemList'}).then(function(result){
+      if(result&&result.status!=='error'){_asetItemListLoaded=true;_asetItemListCache=result.data||[];}
+      showModal();
+    }).catch(showModal);
+  }else{
+    showModal();
+  }
+}
+function closeAsetTambahUnitModal(){
+  document.getElementById('modal-aset-tambah-unit').classList.remove('show');
+}
+function submitAsetTambahUnit(){
+  var kodeAlat=document.getElementById('aset-tu-select-kode').value;
+  var jumlah=parseInt(document.getElementById('aset-tu-input-jumlah').value,10)||0;
+  var tanggal=document.getElementById('aset-tu-input-tanggal').value;
+  var errBar=document.getElementById('aset-tu-err');
+  var okBar=document.getElementById('aset-tu-ok');
+  errBar.classList.remove('show');okBar.classList.remove('show');
+  if(!kodeAlat){errBar.textContent='Pilih Kode_Alat dulu (atau daftarkan yang baru).';errBar.classList.add('show');return;}
+  if(jumlah<1){errBar.textContent='Jumlah unit minimal 1.';errBar.classList.add('show');return;}
+
+  var btn=document.getElementById('aset-tu-submit-btn');
+  btn.disabled=true;btn.textContent='Menyimpan...';
+  gasPost({action:'addAsetUnit',kodeAlat:kodeAlat,jumlah:jumlah,tanggalMasuk:tanggal}).then(function(result){
+    btn.disabled=false;btn.textContent='Tambah Unit';
+    if(!result||result.status==='error'){
+      errBar.textContent=(result&&result.message)||'Gagal menambah unit.';
+      errBar.classList.add('show');
+      return;
+    }
+    okBar.textContent='Berhasil: '+result.jumlah+' unit baru ('+result.unitIds.join(', ')+')';
+    okBar.classList.add('show');
+    _asetItemListLoaded=false;_asetDashLoaded=false;
+    if(_asetUnitSubpageKodeAlat===kodeAlat)openAsetUnitSubpage(kodeAlat);
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent='Tambah Unit';
+    errBar.textContent='Network error: '+err.message;
+    errBar.classList.add('show');
+  });
+}
+
+function openAsetTambahItemModal(){
+  closeAsetTambahUnitModal();
+  document.getElementById('aset-ti-input-kode').value='';
+  document.getElementById('aset-ti-input-nama').value='';
+  document.getElementById('aset-ti-input-brand').value='';
+  document.getElementById('aset-ti-input-spesifikasi').value='';
+  document.getElementById('aset-ti-input-rak').value='';
+  document.getElementById('aset-ti-input-vendor').value='';
+  document.getElementById('aset-ti-input-safety').value='1';
+  document.getElementById('aset-ti-err').classList.remove('show');
+  document.getElementById('modal-aset-tambah-item').classList.add('show');
+}
+function closeAsetTambahItemModal(){
+  document.getElementById('modal-aset-tambah-item').classList.remove('show');
+  openAsetTambahUnitModal(); // balik ke form Tambah Unit (batal = kembali, bukan hilang total)
+}
+function submitAsetTambahItem(){
+  var kodeAlat=document.getElementById('aset-ti-input-kode').value.trim();
+  var namaAlat=document.getElementById('aset-ti-input-nama').value.trim();
+  var errBar=document.getElementById('aset-ti-err');
+  errBar.classList.remove('show');
+  if(!kodeAlat||!namaAlat){errBar.textContent='Kode_Alat dan Nama_Alat wajib diisi.';errBar.classList.add('show');return;}
+
+  var body={
+    action:'addAsetItem',kodeAlat:kodeAlat,namaAlat:namaAlat,
+    brand:document.getElementById('aset-ti-input-brand').value.trim(),
+    spesifikasi:document.getElementById('aset-ti-input-spesifikasi').value.trim(),
+    rakPenyimpanan:document.getElementById('aset-ti-input-rak').value.trim(),
+    vendorAsahDefault:document.getElementById('aset-ti-input-vendor').value.trim(),
+    safetyStock:document.getElementById('aset-ti-input-safety').value
+  };
+  var btn=document.getElementById('aset-ti-submit-btn');
+  btn.disabled=true;btn.textContent='Menyimpan...';
+  gasPost(body).then(function(result){
+    btn.disabled=false;btn.textContent='Daftarkan';
+    if(!result||result.status==='error'){
+      errBar.textContent=(result&&result.message)||'Gagal mendaftarkan Kode_Alat.';
+      errBar.classList.add('show');
+      return;
+    }
+    document.getElementById('modal-aset-tambah-item').classList.remove('show');
+    // paksa refresh cache, lalu balik ke Tambah Unit dgn Kode_Alat baru sudah terisi
+    gasGet({action:'getAsetItemList'}).then(function(r2){
+      if(r2&&r2.status!=='error'){_asetItemListLoaded=true;_asetItemListCache=r2.data||[];}
+      openAsetTambahUnitModal(kodeAlat);
+    });
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent='Daftarkan';
+    errBar.textContent='Network error: '+err.message;
+    errBar.classList.add('show');
+  });
+}
+
+/* ============================================================
+   BAGIAN H — Flow "Catat Pergerakan": urutan AKSI DULU baru UNIT.
+   Step 2 pakai getAsetEligibleUnits() -- satu sumber kebenaran yg
+   sama dgn ASET_TRANSITION_RULES di backend (recordAsetMovement),
+   supaya unit yg statusnya tidak valid TIDAK PERNAH muncul di pilihan.
+   ============================================================ */
+var _asetCpKodeAlat=null;
+var _asetCpActivity=null;
+var _asetCpUnitId=null;
+
+function showAsetCpStep(n){
+  [1,2,3,4].forEach(function(i){
+    var el=document.getElementById('aset-cp-step-'+i);
+    if(el)el.classList.toggle('active',i===n);
+  });
+  for(var i=1;i<=4;i++){
+    var dot=document.getElementById('asetcpprog-'+i);
+    if(!dot)continue;
+    dot.classList.remove('active','done');
+    if(i<n)dot.classList.add('done');else if(i===n)dot.classList.add('active');
+  }
+  for(var j=1;j<=3;j++){
+    var line=document.getElementById('asetcpprog-line'+j);
+    if(line)line.classList.toggle('done',n>j);
+  }
+}
+
+function openAsetCpModal(){
+  _asetCpKodeAlat=null;_asetCpActivity=null;_asetCpUnitId=null;
+  document.getElementById('aset-cp-input-mesin').value='';
+  document.getElementById('aset-cp-input-vendor').value='';
+  document.getElementById('aset-cp-input-keterangan').value='';
+  document.getElementById('aset-cp-err').classList.remove('show');
+  function showModal(){
+    _asetPopulateKodeAlatSelect('aset-cp-select-kode');
+    showAsetCpStep(1);
+    document.getElementById('modal-aset-cp').classList.add('show');
+  }
+  if(!_asetItemListLoaded){
+    gasGet({action:'getAsetItemList'}).then(function(result){
+      if(result&&result.status!=='error'){_asetItemListLoaded=true;_asetItemListCache=result.data||[];}
+      showModal();
+    }).catch(showModal);
+  }else{
+    showModal();
+  }
+}
+function closeAsetCpModal(){
+  document.getElementById('modal-aset-cp').classList.remove('show');
+}
+
+function asetCpPickActivity(activity){
+  _asetCpKodeAlat=document.getElementById('aset-cp-select-kode').value;
+  _asetCpActivity=activity;
+  if(!_asetCpKodeAlat){
+    alert('Pilih Kode_Alat dulu.');
+    return;
+  }
+  showAsetCpStep(2);
+  var wrap=document.getElementById('aset-cp-unit-list');
+  document.getElementById('aset-cp-step2-hint').textContent='Aksi: '+(ASET_ACTIVITY_LABEL[activity]||activity)+' — menampilkan unit '+_asetCpKodeAlat+' yang statusnya valid utk aksi ini.';
+  wrap.innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+  gasGet({action:'getAsetEligibleUnits',kodeAlat:_asetCpKodeAlat,activity:activity}).then(function(result){
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat: '+xe(result?result.message:'tidak diketahui')+'</p></div>';
+      return;
+    }
+    var list=result.data||[];
+    if(!list.length){
+      wrap.innerHTML='<div class="empty-state"><p>Tidak ada unit '+xe(_asetCpKodeAlat)+' yang berstatus valid untuk aksi "'+xe(ASET_ACTIVITY_LABEL[activity]||activity)+'" saat ini.</p></div>';
+      return;
+    }
+    wrap.innerHTML=list.map(function(u){
+      var cls=ASET_STATUS_CLASS[u.statusUnit]||'';
+      var lbl=ASET_STATUS_LABEL[u.statusUnit]||u.statusUnit;
+      return '<div class="ilc2" onclick="asetCpPickUnit(\''+xe(u.unitId)+'\')">'
+        +'<div class="ilc2-strip" style="background:var(--amber)"></div>'
+        +'<div class="ilc2-main">'
+          +'<div class="ilc2-info">'
+            +'<div class="ilc2-top">'
+              +'<span class="ilc2-id">'+xe(u.unitId)+'</span>'
+              +'<span class="aset-status-badge '+cls+'">'+xe(lbl)+'</span>'
+            +'</div>'
+            +'<div class="ilc2-spec">Diasah '+u.regrindCount+'x</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }).catch(function(err){
+    wrap.innerHTML='<div class="empty-state"><p>Network error: '+xe(err.message)+'</p></div>';
+  });
+}
+
+function asetCpPickUnit(unitId){
+  _asetCpUnitId=unitId;
+  var showMesin=(_asetCpActivity==='DIPASANG_KE_MESIN');
+  var showVendor=(_asetCpActivity==='KIRIM_KE_VENDOR_ASAH');
+  var showWarning=(_asetCpActivity==='SCRAP_RUSAK');
+  document.getElementById('aset-cp-field-mesin').style.display=showMesin?'':'none';
+  document.getElementById('aset-cp-field-vendor').style.display=showVendor?'':'none';
+  document.getElementById('aset-cp-field-warning').style.display=showWarning?'':'none';
+  if(showWarning)document.getElementById('aset-cp-warning-text').textContent='Unit akan ditandai SCRAP secara permanen. Tindakan ini tidak bisa dibatalkan.';
+  if(showVendor){
+    var it=_asetItemListCache.find(function(x){return x.kodeAlat===_asetCpKodeAlat;});
+    if(it&&it.vendorAsahDefault)document.getElementById('aset-cp-input-vendor').value=it.vendorAsahDefault;
+  }
+  document.getElementById('aset-cp-err').classList.remove('show');
+  showAsetCpStep(3);
+}
+
+function submitAsetCp(){
+  if(!_asetCpUnitId||!_asetCpActivity)return;
+  var btn=document.getElementById('aset-cp-submit-btn');
+  var errBar=document.getElementById('aset-cp-err');
+  errBar.classList.remove('show');
+  btn.disabled=true;btn.textContent='Menyimpan...';
+
+  var body={
+    action:'recordAsetMovement',
+    unitId:_asetCpUnitId,
+    activity:_asetCpActivity,
+    kodeMesin:document.getElementById('aset-cp-input-mesin').value.trim(),
+    vendor:document.getElementById('aset-cp-input-vendor').value.trim(),
+    keterangan:document.getElementById('aset-cp-input-keterangan').value.trim()
+  };
+  gasPost(body).then(function(result){
+    btn.disabled=false;btn.textContent='Simpan';
+    if(!result||result.status==='error'){
+      errBar.textContent=(result&&result.message)||'Gagal menyimpan, coba lagi.';
+      errBar.classList.add('show');
+      return;
+    }
+    document.getElementById('aset-cp-result-title').textContent='Berhasil Dicatat';
+    document.getElementById('aset-cp-result-sub').textContent=
+      result.unitId+': '+result.statusSebelum+' \u2192 '+result.statusSesudah+
+      (result.cycleId?' (Cycle: '+result.cycleId+')':'');
+    showAsetCpStep(4);
+    // invalidasi cache supaya Ringkasan/Daftar Alat/Daftar Unit fetch ulang saat dibuka
+    _asetItemListLoaded=false;
+    _asetDashLoaded=false;
+    if(_asetUnitSubpageKodeAlat===_asetCpKodeAlat)openAsetUnitSubpage(_asetCpKodeAlat);
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent='Simpan';
+    errBar.textContent='Network error: '+err.message;
+    errBar.classList.add('show');
+  });
+}
+
+/* ============================================================
+   BAGIAN I — Kontrol Asah (lead time per siklus) + Performa Vendor.
+   ============================================================ */
+var _asetKontrolAsahLoaded=false;
+var _asetKontrolAsahCache=[];
+var _asetKontrolStatusFilter='SEMUA';
+var ASET_KONTROL_STATUS_LABEL={MENUNGGU_KIRIM:'Menunggu Kirim',PROSES_ASAH:'Proses Asah',SELESAI:'Selesai'};
+var ASET_KONTROL_STATUS_CLASS={MENUNGGU_KIRIM:'tumpul',PROSES_ASAH:'diasah',SELESAI:'gudang'};
+
+function loadAsetKontrolAsah(force){
+  if(_asetKontrolAsahLoaded&&!force)return;
+  var wrap=document.getElementById('aset-asah-list');
+  wrap.innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+  gasGet({action:'getKontrolAsah'}).then(function(result){
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat: '+xe(result?result.message:'tidak diketahui')+'</p><button class="btn btn-sm u-mt-10" onclick="loadAsetKontrolAsah(true)">Coba Lagi</button></div>';
+      return;
+    }
+    _asetKontrolAsahLoaded=true;
+    _asetKontrolAsahCache=result.data||[];
+    renderAsetKontrolAsahList();
+  }).catch(function(err){
+    wrap.innerHTML='<div class="empty-state"><p>Network error: '+xe(err.message)+'</p></div>';
+  });
+}
+
+function asetFilterKontrolStatus(status){
+  _asetKontrolStatusFilter=status;
+  document.querySelectorAll('.aset-chip-asah-status').forEach(function(el){
+    el.classList.toggle('active',el.dataset.status===status);
+  });
+  renderAsetKontrolAsahList();
+}
+
+function renderAsetKontrolAsahList(){
+  var wrap=document.getElementById('aset-asah-list');
+  var list=_asetKontrolAsahCache;
+  if(!list.length){
+    wrap.innerHTML='<div class="empty-state"><p>Belum ada siklus asah tercatat.</p></div>';
+    return;
+  }
+  var filtered=(_asetKontrolStatusFilter==='SEMUA')?list:list.filter(function(c){return c.statusAsah===_asetKontrolStatusFilter;});
+  if(!filtered.length){
+    wrap.innerHTML='<div class="empty-state"><p>Tidak ada siklus dengan status ini.</p></div>';
+    return;
+  }
+  wrap.innerHTML=filtered.map(function(c){
+    var cls=ASET_KONTROL_STATUS_CLASS[c.statusAsah]||'';
+    var lbl=ASET_KONTROL_STATUS_LABEL[c.statusAsah]||c.statusAsah;
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">'
+        +'<div><span class="id-chip">'+xe(c.kodeAlat)+'</span> <span class="ilc2-id">'+xe(c.unitId)+'</span></div>'
+        +'<span class="aset-status-badge '+cls+'">'+xe(lbl)+'</span>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Cycle '+xe(c.cycleId)+' &middot; siklus ke-'+c.counter+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12px;color:var(--text2)">'
+        +'<div><span style="color:var(--text3)">Tumpul:</span> '+_fmtTglSingkat(c.tglMasukGudangTumpul)+'</div>'
+        +'<div><span style="color:var(--text3)">Kirim:</span> '+(c.tglKirimVendor?_fmtTglSingkat(c.tglKirimVendor):'—')+'</div>'
+        +'<div><span style="color:var(--text3)">Lead Tunggu:</span> '+(c.leadTimeTunggu!=null?c.leadTimeTunggu+' hari':'—')+'</div>'
+        +'<div><span style="color:var(--text3)">Vendor:</span> '+xe(c.vendor||'—')+'</div>'
+        +'<div><span style="color:var(--text3)">Terima:</span> '+(c.tglTerimaAsah?_fmtTglSingkat(c.tglTerimaAsah):'—')+'</div>'
+        +'<div><span style="color:var(--text3)">Lead Asah:</span> '+(c.leadTimeAsah!=null?c.leadTimeAsah+' hari':'—')+'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function openAsetPerformaVendorModal(){
+  document.getElementById('modal-aset-performa-vendor').classList.add('show');
+  var wrap=document.getElementById('aset-performa-vendor-chart');
+  wrap.innerHTML='<div class="empty-state"><p>Memuat...</p></div>';
+  gasGet({action:'getAsetPerformaVendor'}).then(function(result){
+    if(!result||result.status==='error'){
+      wrap.innerHTML='<div class="empty-state"><p>Gagal memuat data performa vendor.</p></div>';
+      return;
+    }
+    var list=result.data||[];
+    if(!list.length){
+      wrap.innerHTML='<div class="empty-state"><p>Belum ada siklus asah yang selesai.</p></div>';
+      return;
+    }
+    var maxLt=Math.max.apply(null,list.map(function(v){return v.leadTimeRataRata;}).concat([1]));
+    wrap.innerHTML='<div class="bar-chart">'+list.map(function(v){
+      var pct=Math.round(v.leadTimeRataRata/maxLt*100)||2;
+      return '<div class="bar-row"><div class="bar-label" data-tt="'+xe(v.vendor)+'">'+xe(v.vendor)+'</div>'
+        +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
+        +'<div class="bar-val">'+v.leadTimeRataRata+'</div></div>';
+    }).join('')+'</div>'
+    +'<div class="field-hint u-mt-10">Angka = rata-rata lead time asah (hari), dari siklus yang sudah selesai. Diurutkan dari yang paling lama.</div>';
+  }).catch(function(err){
+    wrap.innerHTML='<div class="empty-state"><p>Network error: '+xe(err.message)+'</p></div>';
+  });
+}
+function closeAsetPerformaVendorModal(){
+  document.getElementById('modal-aset-performa-vendor').classList.remove('show');
+}
+window.setAsetSubtab=setAsetSubtab;
+window.loadAsetSummary=loadAsetSummary;
+window.asetPlaceholder=asetPlaceholder;
+window.asetFilterKondisi=asetFilterKondisi;
+window.loadAsetItemList=loadAsetItemList;
+window.openAsetItemDetail=openAsetItemDetail;
+window.closeAsetItemDetail=closeAsetItemDetail;
+window.goToAsetUnitSubpageFromDetail=goToAsetUnitSubpageFromDetail;
+window.openAsetUnitSubpage=openAsetUnitSubpage;
+window.closeAsetUnitSubpage=closeAsetUnitSubpage;
+window.asetFilterUnitStatus=asetFilterUnitStatus;
+window.openAsetUnitDetailSheet=openAsetUnitDetailSheet;
+window.closeAsetUnitDetailSheet=closeAsetUnitDetailSheet;
+window.openAsetAksiModal=openAsetAksiModal;
+window.closeAsetAksiModal=closeAsetAksiModal;
+window.submitAsetAksi=submitAsetAksi;
+window.openAsetTambahUnitModal=openAsetTambahUnitModal;
+window.closeAsetTambahUnitModal=closeAsetTambahUnitModal;
+window.submitAsetTambahUnit=submitAsetTambahUnit;
+window.openAsetTambahItemModal=openAsetTambahItemModal;
+window.closeAsetTambahItemModal=closeAsetTambahItemModal;
+window.submitAsetTambahItem=submitAsetTambahItem;
+window.showAsetCpStep=showAsetCpStep;
+window.openAsetCpModal=openAsetCpModal;
+window.closeAsetCpModal=closeAsetCpModal;
+window.asetCpPickActivity=asetCpPickActivity;
+window.asetCpPickUnit=asetCpPickUnit;
+window.submitAsetCp=submitAsetCp;
+window.loadAsetKontrolAsah=loadAsetKontrolAsah;
+window.asetFilterKontrolStatus=asetFilterKontrolStatus;
+window.openAsetPerformaVendorModal=openAsetPerformaVendorModal;
+window.closeAsetPerformaVendorModal=closeAsetPerformaVendorModal;
+})();

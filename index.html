@@ -156,6 +156,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
         <span>Cek Per Rak</span>
       </button>
+      <button class="more-menu-btn" onclick="switchTab('aset');closeMoreDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        <span>Aset Sirkulasi</span>
+      </button>
     </div>
     <div class="sheet-group-label">Akun & Pengaturan</div>
     <div class="sheet-grid">
@@ -1268,6 +1272,142 @@
 </div>
 </div>
 
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI (saw blade/cutter: keluar-pakai-
+     kembali-diasah-pakai lagi, bukan barang habis pakai). Kerangka
+     dulu (BAGIAN B) -- isi panel diisi bertahap di BAGIAN C-I. -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page-section" id="section-aset">
+<div class="subpage-bar"><span class="subpage-title">Aset Sirkulasi</span></div>
+<div class="container">
+
+  <div id="aset-main-view">
+  <div class="dash-subtab-nav" role="tablist" aria-label="Bagian Aset Sirkulasi">
+    <button type="button" class="dash-subtab-btn active" id="aset-subtab-btn-ringkasan" onclick="setAsetSubtab('ringkasan')" role="tab" aria-selected="true">Ringkasan</button>
+    <button type="button" class="dash-subtab-btn" id="aset-subtab-btn-daftar" onclick="setAsetSubtab('daftar')" role="tab" aria-selected="false">Daftar Alat</button>
+    <button type="button" class="dash-subtab-btn" id="aset-subtab-btn-asah" onclick="setAsetSubtab('asah')" role="tab" aria-selected="false">Kontrol Asah</button>
+  </div>
+
+  <!-- PANEL: RINGKASAN (BAGIAN C) -->
+  <div class="dash-subtab-panel active" id="aset-subtab-ringkasan">
+
+  <div class="dash-grid">
+    <div class="dash-card blue">
+      <div class="dash-card-val" id="aset-kpi-total">—</div>
+      <div class="dash-card-lbl">Total Unit</div>
+      <div class="dash-card-sub">seluruh status</div>
+    </div>
+    <div class="dash-card green">
+      <div class="dash-card-val" id="aset-kpi-siap">—</div>
+      <div class="dash-card-lbl">Siap Pakai</div>
+      <div class="dash-card-sub">ready to use</div>
+    </div>
+    <div class="dash-card navy">
+      <div class="dash-card-val" id="aset-kpi-dipakai">—</div>
+      <div class="dash-card-lbl">Sedang Dipakai</div>
+      <div class="dash-card-sub">terpasang di mesin</div>
+    </div>
+    <div class="dash-card red">
+      <div class="dash-card-val" id="aset-kpi-perhatian">—</div>
+      <div class="dash-card-lbl">Perlu Perhatian</div>
+      <div class="dash-card-sub">item kritis/habis</div>
+    </div>
+  </div>
+  <div class="dash-grid">
+    <div class="dash-card navy">
+      <div class="dash-card-val" id="aset-kpi-tunggu">—</div>
+      <div class="dash-card-lbl">Menunggu Asah</div>
+      <div class="dash-card-sub">di gudang, tumpul</div>
+    </div>
+    <div class="dash-card blue">
+      <div class="dash-card-val" id="aset-kpi-diasah">—</div>
+      <div class="dash-card-lbl">Sedang Diasah</div>
+      <div class="dash-card-sub">di vendor asah</div>
+    </div>
+  </div>
+
+  <!-- Quick Action -->
+  <div class="chart-title" style="margin-bottom:8px">
+    <span class="chart-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>
+    Aksi Cepat
+  </div>
+  <div class="qa-grid">
+    <button class="qa-tile navy" onclick="openAsetCpModal()">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg></span>
+      <span>Catat Pergerakan</span>
+    </button>
+    <button class="qa-tile blue" onclick="openAsetTambahUnitModal()">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+      <span>Tambah Unit Baru</span>
+    </button>
+    <button class="qa-tile green" onclick="openAsetPerformaVendorModal()">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-4 4"/></svg></span>
+      <span>Performa Vendor</span>
+    </button>
+    <button class="qa-tile red" onclick="setAsetSubtab('daftar');asetFilterKondisi('KRITIS_HABIS')">
+      <span class="qa-tile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+      <span>Item Kritis/Habis</span>
+    </button>
+  </div>
+
+  </div>
+  <!-- ═══ /PANEL: RINGKASAN ═══ -->
+
+  <!-- PANEL: DAFTAR ALAT (BAGIAN D) -->
+  <div class="dash-subtab-panel" id="aset-subtab-daftar">
+    <div class="chip-row">
+      <button class="chip chip-filter aset-chip-kondisi active" data-kondisi="SEMUA" onclick="asetFilterKondisi('SEMUA')">Semua</button>
+      <button class="chip chip-filter aset-chip-kondisi" data-kondisi="AMAN" onclick="asetFilterKondisi('AMAN')">Aman</button>
+      <button class="chip chip-filter aset-chip-kondisi" data-kondisi="KRITIS" onclick="asetFilterKondisi('KRITIS')">Kritis</button>
+      <button class="chip chip-filter aset-chip-kondisi" data-kondisi="HABIS" onclick="asetFilterKondisi('HABIS')">Habis</button>
+    </div>
+    <div class="item-list-cards" style="display:flex" id="aset-item-list">
+      <div class="empty-state"><p>Memuat...</p></div>
+    </div>
+  </div>
+
+  <!-- PANEL: KONTROL ASAH (BAGIAN I) -->
+  <div class="dash-subtab-panel" id="aset-subtab-asah">
+    <div class="chip-row">
+      <button class="chip chip-filter aset-chip-asah-status active" data-status="SEMUA" onclick="asetFilterKontrolStatus('SEMUA')">Semua</button>
+      <button class="chip chip-filter aset-chip-asah-status" data-status="MENUNGGU_KIRIM" onclick="asetFilterKontrolStatus('MENUNGGU_KIRIM')">Menunggu Kirim</button>
+      <button class="chip chip-filter aset-chip-asah-status" data-status="PROSES_ASAH" onclick="asetFilterKontrolStatus('PROSES_ASAH')">Proses Asah</button>
+      <button class="chip chip-filter aset-chip-asah-status" data-status="SELESAI" onclick="asetFilterKontrolStatus('SELESAI')">Selesai</button>
+    </div>
+    <div id="aset-asah-list">
+      <div class="empty-state"><p>Memuat...</p></div>
+    </div>
+  </div>
+  </div>
+  <!-- ═══ /#aset-main-view ═══ -->
+
+  <!-- ═══ SUBPAGE: Daftar Unit per Kode_Alat (BAGIAN E) ═══
+       Toggle visibility manual (bukan lewat switchTab), supaya tidak
+       mengganggu state tab utama app -- balik ke Daftar Alat, bukan
+       ke _lastMainTab. -->
+  <div id="aset-unit-subpage" style="display:none">
+    <div style="display:flex;align-items:center;gap:var(--sp-10);margin-bottom:var(--space-2)">
+      <button class="subpage-back" onclick="closeAsetUnitSubpage()" style="padding:6px 8px 6px 0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Kembali
+      </button>
+      <span class="id-chip" id="aset-unit-subpage-title">—</span>
+    </div>
+    <div class="chip-row">
+      <button class="chip chip-filter aset-chip-unit-status active" data-status="SEMUA" onclick="asetFilterUnitStatus('SEMUA')">Semua</button>
+      <button class="chip chip-filter aset-chip-unit-status" data-status="GUDANG" onclick="asetFilterUnitStatus('GUDANG')">Siap Pakai</button>
+      <button class="chip chip-filter aset-chip-unit-status" data-status="DIPAKAI" onclick="asetFilterUnitStatus('DIPAKAI')">Dipakai</button>
+      <button class="chip chip-filter aset-chip-unit-status" data-status="TUMPUL" onclick="asetFilterUnitStatus('TUMPUL')">Tumpul</button>
+      <button class="chip chip-filter aset-chip-unit-status" data-status="DIASAH" onclick="asetFilterUnitStatus('DIASAH')">Diasah</button>
+      <button class="chip chip-filter aset-chip-unit-status" data-status="SCRAP" onclick="asetFilterUnitStatus('SCRAP')">Scrap</button>
+    </div>
+    <div id="aset-unit-subpage-list">
+      <div class="empty-state"><p>Memuat...</p></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
 <!-- Sticky cetak bar — hanya tampil saat section-cetak aktif -->
 <div id="cetak-action-bar" style="display:none;position:fixed;bottom:66px;left:0;right:0;background:var(--bg2);border-top:1px solid rgba(255,255,255,.15);padding:var(--sp-12) var(--space-2);z-index:150;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
   <div style="max-width:540px;margin:0 auto">
@@ -1371,6 +1511,338 @@
     </div>
     <button type="button" class="btn btn-sm btn-block u-mt-8" id="idd-btn-archive" onclick="toggleArchiveFromDetail()">Arsipkan Item</button>
     <div id="sbar-idd-archive" class="sbar u-mt-8"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI: bottom-sheet detail satu Kode_Alat
+     (BAGIAN D2). Sheet TERPISAH dari item-detail-sheet Master_Item
+     di atas -- id & fungsi buka/tutup sendiri, supaya tidak bentrok
+     state antar 2 sheet. -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="item-detail-overlay" id="aset-detail-overlay" onclick="closeAsetItemDetail()" aria-hidden="true"></div>
+<div class="item-detail-sheet" id="aset-detail-sheet" role="dialog" aria-modal="true" aria-label="Detail jenis alat">
+  <div class="item-detail-handle-zone" id="aset-detail-drag-handle">
+    <div class="item-detail-handle"></div>
+  </div>
+  <button type="button" class="item-detail-close" onclick="closeAsetItemDetail()" aria-label="Tutup detail alat">✕</button>
+  <div class="item-detail-hero" id="aset-detail-hero">
+    <span class="item-detail-id" id="asetd-kode">—</span>
+    <div class="item-detail-nama" id="asetd-nama">—</div>
+    <div class="item-detail-spec" id="asetd-spec">—</div>
+  </div>
+  <div class="item-detail-body">
+    <div class="item-detail-section-lbl">Ringkasan Status</div>
+    <div class="item-detail-grid">
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Total Unit</div>
+        <div class="item-detail-field-val mono" id="asetd-total">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Siap Pakai</div>
+        <div class="item-detail-field-val mono" id="asetd-siap">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Sedang Dipakai</div>
+        <div class="item-detail-field-val mono" id="asetd-dipakai">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Menunggu Asah</div>
+        <div class="item-detail-field-val mono" id="asetd-tunggu">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Sedang Diasah</div>
+        <div class="item-detail-field-val mono" id="asetd-diasah">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Safety Stock</div>
+        <div class="item-detail-field-val mono" id="asetd-safety">—</div>
+      </div>
+    </div>
+    <div class="item-detail-section-lbl">Info Lain</div>
+    <div class="item-detail-grid">
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Brand</div>
+        <div class="item-detail-field-val" id="asetd-brand">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Rak Penyimpanan</div>
+        <div class="item-detail-field-val" id="asetd-rak">—</div>
+      </div>
+      <div class="item-detail-field full">
+        <div class="item-detail-field-lbl">Vendor Asah Default</div>
+        <div class="item-detail-field-val" id="asetd-vendor">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="item-detail-footer">
+    <button class="btn btn-primary btn-lg btn-block" onclick="goToAsetUnitSubpageFromDetail()">Lihat Semua Unit</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI: sheet detail 1 UNIT + tombol aksi
+     kontekstual (BAGIAN F, paling inti). Sheet TERPISAH dari 2 sheet
+     aset sebelumnya -- id & fungsi buka/tutup sendiri. -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="item-detail-overlay" id="aset-unit-detail-overlay" onclick="closeAsetUnitDetailSheet()" aria-hidden="true"></div>
+<div class="item-detail-sheet" id="aset-unit-detail-sheet" role="dialog" aria-modal="true" aria-label="Detail unit alat">
+  <div class="item-detail-handle-zone" id="aset-unit-detail-drag-handle">
+    <div class="item-detail-handle"></div>
+  </div>
+  <button type="button" class="item-detail-close" onclick="closeAsetUnitDetailSheet()" aria-label="Tutup detail unit">✕</button>
+  <div class="item-detail-hero" id="aset-unit-detail-hero">
+    <span class="item-detail-id" id="asetud-unitid">—</span>
+    <span class="aset-status-badge" id="asetud-status-badge" style="margin-left:6px">—</span>
+    <div class="item-detail-nama" id="asetud-lokasi" style="margin-top:8px">—</div>
+    <div class="item-detail-spec" id="asetud-cycle">—</div>
+  </div>
+  <div class="item-detail-body">
+    <div class="item-detail-grid">
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Regrind Count</div>
+        <div class="item-detail-field-val mono" id="asetud-regrind">—</div>
+      </div>
+      <div class="item-detail-field">
+        <div class="item-detail-field-lbl">Kode Mesin</div>
+        <div class="item-detail-field-val" id="asetud-mesin">—</div>
+      </div>
+    </div>
+    <div class="item-detail-section-lbl">Riwayat Pergerakan</div>
+    <div id="asetud-history">
+      <div class="empty-state"><p>Memuat...</p></div>
+    </div>
+  </div>
+  <div class="item-detail-footer" id="aset-unit-detail-actions">
+    <!-- diisi dinamis oleh renderAsetUnitDetailActions() sesuai Status_Unit saat ini -->
+  </div>
+</div>
+
+<!-- Modal aksi kontekstual (dipakai bareng utk semua activity, field yg tampil beda2 sesuai activity) -->
+<div class="modal-overlay" id="modal-aset-aksi" role="dialog" aria-modal="true" aria-label="Catat pergerakan alat">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="aset-aksi-modal-title">Catat Pergerakan</h3>
+      <button type="button" class="sheet-close" onclick="closeAsetAksiModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group" id="aset-aksi-field-mesin" style="display:none">
+        <label class="field-label">Kode Mesin</label>
+        <input type="text" id="aset-aksi-input-mesin" placeholder="mis. RDS017">
+      </div>
+      <div class="field-group" id="aset-aksi-field-vendor" style="display:none">
+        <label class="field-label">Vendor Asah</label>
+        <input type="text" id="aset-aksi-input-vendor" placeholder="Nama vendor">
+      </div>
+      <div class="field-group" id="aset-aksi-field-warning" style="display:none">
+        <div class="sbar s-warn show"><span>⚠</span><span id="aset-aksi-warning-text">Tindakan ini tidak bisa dibatalkan.</span></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Keterangan (opsional)</label>
+        <input type="text" id="aset-aksi-input-keterangan" placeholder="Catatan tambahan">
+      </div>
+      <div class="sbar s-err" id="aset-aksi-err"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeAsetAksiModal()">Batal</button>
+      <button class="btn btn-primary" id="aset-aksi-submit-btn" onclick="submitAsetAksi()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI: Tambah Unit Baru + inline Tambah
+     Kode_Alat Baru (BAGIAN G). 2 modal terpisah -- dari Tambah Unit,
+     kalau Kode_Alat belum ada, buka modal Tambah Kode_Alat, sukses
+     lanjut otomatis balik ke Tambah Unit dgn Kode_Alat baru terisi. -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-aset-tambah-unit" role="dialog" aria-modal="true" aria-label="Tambah unit alat baru">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Tambah Unit Baru</h3>
+      <button type="button" class="sheet-close" onclick="closeAsetTambahUnitModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Kode Alat</label>
+        <select class="sel" id="aset-tu-select-kode"></select>
+        <div class="field-hint">
+          Tidak ada di daftar? <a href="#" onclick="openAsetTambahItemModal();return false" style="color:var(--amber);font-weight:700">+ Daftarkan Kode_Alat Baru</a>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Jumlah Unit</label>
+        <input type="number" id="aset-tu-input-jumlah" value="1" min="1">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Tanggal Masuk (opsional)</label>
+        <input type="date" id="aset-tu-input-tanggal">
+      </div>
+      <div class="sbar s-err" id="aset-tu-err"></div>
+      <div class="sbar s-ok" id="aset-tu-ok"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeAsetTambahUnitModal()">Batal</button>
+      <button class="btn btn-primary" id="aset-tu-submit-btn" onclick="submitAsetTambahUnit()">Tambah Unit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-aset-tambah-item" role="dialog" aria-modal="true" aria-label="Daftarkan jenis alat baru">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Daftarkan Kode_Alat Baru</h3>
+      <button type="button" class="sheet-close" onclick="closeAsetTambahItemModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Kode Alat *</label>
+        <input type="text" id="aset-ti-input-kode" placeholder="mis. Hau-SB-08">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Nama Alat *</label>
+        <input type="text" id="aset-ti-input-nama" placeholder="mis. Saw Blade-Haupt">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Brand</label>
+        <input type="text" id="aset-ti-input-brand" placeholder="mis. Haupt">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Spesifikasi</label>
+        <input type="text" id="aset-ti-input-spesifikasi" placeholder='mis. 200X4,3/5,3X45_Z40'>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Rak Penyimpanan</label>
+        <input type="text" id="aset-ti-input-rak" placeholder="mis. 1J">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Vendor Asah Default</label>
+        <input type="text" id="aset-ti-input-vendor" placeholder="mis. PT. AKE PRIMA SEJAHTERA">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Safety Stock</label>
+        <input type="number" id="aset-ti-input-safety" value="1" min="0">
+      </div>
+      <div class="field-hint">Field lain (material, mesin, berat, dst) bisa dilengkapi belakangan langsung di sheet Aset_Item.</div>
+      <div class="sbar s-err" id="aset-ti-err"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeAsetTambahItemModal()">Batal</button>
+      <button class="btn btn-primary" id="aset-ti-submit-btn" onclick="submitAsetTambahItem()">Daftarkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI: flow "Catat Pergerakan" (BAGIAN H).
+     Urutan AKSI DULU baru UNIT (bukan sebaliknya) -- unit yang tampil
+     di step 2 sudah tersaring oleh getAsetEligibleUnits() di backend
+     (satu sumber kebenaran yg sama dgn recordAsetMovement). -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-aset-cp" role="dialog" aria-modal="true" aria-label="Catat pergerakan alat">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Catat Pergerakan</h3>
+      <button type="button" class="sheet-close" onclick="closeAsetCpModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="trx-progress" id="aset-cp-progress">
+        <div class="trx-progress-step active" id="asetcpprog-1"><div class="trx-progress-dot">1</div><div class="trx-progress-lbl">Alat&amp;Aksi</div></div>
+        <div class="trx-progress-line" id="asetcpprog-line1"></div>
+        <div class="trx-progress-step" id="asetcpprog-2"><div class="trx-progress-dot">2</div><div class="trx-progress-lbl">Pilih Unit</div></div>
+        <div class="trx-progress-line" id="asetcpprog-line2"></div>
+        <div class="trx-progress-step" id="asetcpprog-3"><div class="trx-progress-dot">3</div><div class="trx-progress-lbl">Detail</div></div>
+        <div class="trx-progress-line" id="asetcpprog-line3"></div>
+        <div class="trx-progress-step" id="asetcpprog-4"><div class="trx-progress-dot">4</div><div class="trx-progress-lbl">Selesai</div></div>
+      </div>
+
+      <!-- STEP 1: pilih Kode_Alat + Aksi -->
+      <div class="scan-step active" id="aset-cp-step-1">
+        <div class="field-group">
+          <label class="field-label">Kode Alat</label>
+          <select class="sel" id="aset-cp-select-kode"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Pilih Aksi</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary btn-block" onclick="asetCpPickActivity('DIPASANG_KE_MESIN')">Pasang ke Mesin</button>
+            <button class="btn btn-green btn-block" onclick="asetCpPickActivity('KEMBALI_KE_GUDANG_SIAP')">Kembali &middot; Siap Pakai</button>
+            <button class="btn btn-amber btn-block" onclick="asetCpPickActivity('KEMBALI_KE_GUDANG_TUMPUL')">Kembali &middot; Tumpul</button>
+            <button class="btn btn-navy btn-block" onclick="asetCpPickActivity('KIRIM_KE_VENDOR_ASAH')">Kirim ke Vendor Asah</button>
+            <button class="btn btn-green btn-block" onclick="asetCpPickActivity('SELESAI_DIASAH')">Selesai Diasah</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" style="flex:1" onclick="asetCpPickActivity('KARAT')">Tandai Karat</button>
+              <button class="btn btn-sm btn-danger" style="flex:1" onclick="asetCpPickActivity('SCRAP_RUSAK')">Scrap/Rusak</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: daftar unit tersaring (getAsetEligibleUnits) -->
+      <div class="scan-step" id="aset-cp-step-2">
+        <div class="field-hint u-mt-8" id="aset-cp-step2-hint" style="margin-bottom:10px">—</div>
+        <div id="aset-cp-unit-list"><div class="empty-state"><p>Memuat...</p></div></div>
+        <button class="btn btn-block u-mt-10" onclick="showAsetCpStep(1)">&larr; Ganti Alat/Aksi</button>
+      </div>
+
+      <!-- STEP 3: form kontekstual -->
+      <div class="scan-step" id="aset-cp-step-3">
+        <div class="field-group" id="aset-cp-field-mesin" style="display:none">
+          <label class="field-label">Kode Mesin</label>
+          <input type="text" id="aset-cp-input-mesin" placeholder="mis. RDS017">
+        </div>
+        <div class="field-group" id="aset-cp-field-vendor" style="display:none">
+          <label class="field-label">Vendor Asah</label>
+          <input type="text" id="aset-cp-input-vendor" placeholder="Nama vendor">
+        </div>
+        <div class="field-group" id="aset-cp-field-warning" style="display:none">
+          <div class="sbar s-warn show"><span>⚠</span><span id="aset-cp-warning-text"></span></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Keterangan (opsional)</label>
+          <input type="text" id="aset-cp-input-keterangan" placeholder="Catatan tambahan">
+        </div>
+        <div class="sbar s-err" id="aset-cp-err"></div>
+        <button class="btn btn-primary btn-block u-mt-10" id="aset-cp-submit-btn" onclick="submitAsetCp()">Simpan</button>
+        <button class="btn btn-block u-mt-8" onclick="showAsetCpStep(2)">&larr; Pilih Unit Lain</button>
+      </div>
+
+      <!-- STEP 4: hasil -->
+      <div class="scan-step" id="aset-cp-step-4">
+        <div class="result-card ok" id="aset-cp-result-card">
+          <div class="result-icon ok" id="aset-cp-result-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="result-title" id="aset-cp-result-title">Berhasil</div>
+          <div class="result-sub" id="aset-cp-result-sub">—</div>
+        </div>
+        <button class="btn btn-primary btn-block u-mt-10" onclick="closeAsetCpModal()">Selesai</button>
+        <button class="btn btn-block u-mt-8" onclick="showAsetCpStep(1)">Catat Lagi</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- v5.20 — MODUL ASET SIRKULASI: modal Performa Vendor (BAGIAN I2) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-aset-performa-vendor" role="dialog" aria-modal="true" aria-label="Performa vendor asah">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Performa Vendor Asah</h3>
+      <button type="button" class="sheet-close" onclick="closeAsetPerformaVendorModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chart-title">
+        <span class="chart-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-4 4"/></svg></span>
+        Rata-rata Lead Time Asah per Vendor
+      </div>
+      <div id="aset-performa-vendor-chart">
+        <div class="empty-state"><p>Memuat...</p></div>
+      </div>
+    </div>
   </div>
 </div>
 

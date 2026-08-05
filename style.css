@@ -107,3 +107,24 @@
   /* --- Login card lebih lapang di layar besar --- */
   .login-card{max-width:400px;padding:44px 40px 34px}
 }
+
+/* ============================================================
+   v5.20 — MODUL ASET SIRKULASI: mini stat 4-segmen di item-list-card
+   Daftar Alat (BAGIAN D). Minimal CSS baru -- pola 4-segmen status
+   belum ada sebelumnya di app, sisanya reuse token warna yang sudah ada.
+   ============================================================ */
+.aset-mini-stat-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.aset-mini-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:44px;padding:4px 2px;border-radius:var(--br-6);font-family:var(--font-mono);font-weight:800;font-size:13px;line-height:1.15}
+.aset-mini-stat small{font-family:var(--font-sans);font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:.3px;margin-top:2px;opacity:.85}
+.aset-mini-stat.green{background:var(--green-dim);color:var(--green-text)}
+.aset-mini-stat.blue{background:var(--blue-dim);color:var(--blue-text)}
+.aset-mini-stat.amber{background:var(--amber-dim);color:var(--amber)}
+.aset-mini-stat.navydark{background:rgba(26,58,122,.18);color:#7ea2e8}
+
+/* v5.20 — BAGIAN E: badge status unit di daftar unit (ilc2 rows) */
+.aset-status-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:800;padding:2px 7px;border-radius:var(--br-4);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.aset-status-badge.gudang{background:var(--green-dim);color:var(--green-text);border:1px solid var(--green-border)}
+.aset-status-badge.dipakai{background:var(--blue-dim);color:var(--blue-text);border:1px solid var(--blue-border)}
+.aset-status-badge.tumpul{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-border)}
+.aset-status-badge.diasah{background:rgba(26,58,122,.18);color:#7ea2e8;border:1px solid rgba(46,95,199,.4)}
+.aset-status-badge.scrap{background:var(--red-dim);color:var(--red-text);border:1px solid var(--red-border);text-decoration:line-through;opacity:.75}
