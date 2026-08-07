@@ -1,5 +1,5 @@
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v14.94';var APP_BUILD_DATE='2026-08-03';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v14.97';var APP_BUILD_DATE='2026-08-07';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
 document.addEventListener('click',function(e){var t=e.target.closest('[data-tt]');if(t){e.stopPropagation();if(forEl===t){hideTT();}else{showTT(t);}}else{hideTT();}},true);document.addEventListener('scroll',hideTT,true);window.addEventListener('resize',hideTT);})();function skeletonCardRows(n){n=n||5;var row='<div class="sk-card-row">'
 +'<div class="u-flex-b-g10">'
@@ -240,7 +240,8 @@ function fitAcDropdown(drop){var anchor=drop.parentElement;var rect=anchor.getBo
 var _acDebounceTimer={};function acShowDebounced(ctx){clearTimeout(_acDebounceTimer[ctx]);_acDebounceTimer[ctx]=setTimeout(function(){acShow(ctx);},150);}
 function acFocusAndShow(ctx){var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';var dropId=ctx==='scan'?'ac-scan':'ac-hist';var el=document.getElementById(inputId);if(el){setTimeout(function(){el.scrollIntoView({block:'start',behavior:'smooth'});setTimeout(function(){var drop=document.getElementById(dropId);if(drop&&drop.classList.contains('show'))fitAcDropdown(drop);},350);},300);}
 acShow(ctx);}
-function acShow(ctx){if(!allRows.length)return;var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';var dropId=ctx==='scan'?'ac-scan':'ac-hist';var inputEl=document.getElementById(inputId);var drop=document.getElementById(dropId);if(!inputEl||!drop)return;/* AUDIT FIX F-04 (v14.90): guard null sebelum akses .value */var q=(inputEl.value||'').trim();if(!q){acHide(ctx);return;}
+function acShow(ctx){var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';var dropId=ctx==='scan'?'ac-scan':'ac-hist';var inputEl=document.getElementById(inputId);var drop=document.getElementById(dropId);if(!inputEl||!drop)return;/* AUDIT FIX F-04 (v14.90): guard null sebelum akses .value */var q=(inputEl.value||'').trim();if(!q){acHide(ctx);return;}
+/* FIX (v14.97): allRows belum termuat (mis. koneksi lambat / GAS URL belum diset) -- dulu di sini langsung return diam-diam sehingga dropdown tidak pernah muncul dan operator mengira fitur cari rusak. Sekarang beri pesan + tombol muat ulang. */if(!allRows.length){drop.innerHTML='<div class="ac-empty">Data item belum termuat. <button type="button" class="btn btn-sm" style="margin-top:6px" onmousedown="event.preventDefault();loadData().then(function(){acShow(\''+ctx+'\')})">Muat Data</button></div>';drop.classList.add('show');fitAcDropdown(drop);_acIdx[ctx]=-1;return;}
 var scored=[];var needFuzzy=[];allRows.forEach(function(r){if(!r.id&&!r.nama)return;var cheap=fuzzyMatch(r,q,true);if(cheap.match)scored.push({r:r,score:cheap.score});else needFuzzy.push(r);});if(scored.length<8){needFuzzy.forEach(function(r){var res=fuzzyMatch(r,q,false);if(res.match)scored.push({r:r,score:res.score});});}
 scored.sort(function(a,b){return b.score-a.score;});var top=scored.slice(0,8);if(!top.length){drop.innerHTML='<div class="ac-empty">Tidak ditemukan — coba kata lain</div>';drop.classList.add('show');fitAcDropdown(drop);_acIdx[ctx]=-1;return;}
 function hl(txt,q){if(!txt||!q)return xe(txt||'');var lo=txt.toLowerCase(),ql=q.toLowerCase();var i=lo.indexOf(ql);if(i>=0)return xe(txt.slice(0,i))+'<mark class="ac-hl">'+xe(txt.slice(i,i+q.length))+'</mark>'+xe(txt.slice(i+q.length));return xe(txt);}
@@ -1429,8 +1430,10 @@ function submitAsetTambahUnit(){
   });
 }
 
-function openAsetTambahItemModal(){
-  closeAsetTambahUnitModal();
+var _asetTiFromUnitModal=false;
+function openAsetTambahItemModal(fromUnitModal){
+  _asetTiFromUnitModal=!!fromUnitModal;
+  if(_asetTiFromUnitModal)closeAsetTambahUnitModal();
   document.getElementById('aset-ti-input-kode').value='';
   document.getElementById('aset-ti-input-nama').value='';
   document.getElementById('aset-ti-input-brand').value='';
@@ -1443,7 +1446,7 @@ function openAsetTambahItemModal(){
 }
 function closeAsetTambahItemModal(){
   document.getElementById('modal-aset-tambah-item').classList.remove('show');
-  openAsetTambahUnitModal(); // balik ke form Tambah Unit (batal = kembali, bukan hilang total)
+  if(_asetTiFromUnitModal)openAsetTambahUnitModal(); // balik ke form Tambah Unit hanya jika memang datang dari situ
 }
 function submitAsetTambahItem(){
   var kodeAlat=document.getElementById('aset-ti-input-kode').value.trim();
@@ -1758,4 +1761,6 @@ window.loadAsetKontrolAsah=loadAsetKontrolAsah;
 window.asetFilterKontrolStatus=asetFilterKontrolStatus;
 window.openAsetPerformaVendorModal=openAsetPerformaVendorModal;
 window.closeAsetPerformaVendorModal=closeAsetPerformaVendorModal;
+window.toggleSidebar=toggleSidebar;
+window.removeManualRakLabel=removeManualRakLabel;
 })();
