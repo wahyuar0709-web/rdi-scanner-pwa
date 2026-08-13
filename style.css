@@ -73,6 +73,11 @@
   body:not(.viewer-mode) .tab-fab-inner{margin-top:0;width:42px;height:42px}
   body:not(.viewer-mode) .trx-submit-bar{left:80px}
   body:not(.viewer-mode) #cetak-action-bar{left:80px!important}
+  /* Bottom-sheet (drawer "Lainnya", cetak barcode rak, dll) sebelumnya full-width
+     dari left:0 sehingga ketiban sidebar (sidebar z-index 200 lebih tinggi dari
+     bottom-sheet z-index 199) — bagian kirinya jadi kepotong. Geser ke 80px. */
+  body:not(.viewer-mode) .bottom-sheet{left:80px}
+  body:not(.viewer-mode) .bottom-sheet-overlay{left:80px}
   body:not(.viewer-mode) .container,body:not(.viewer-mode) .container-sm{padding-bottom:var(--space-3)}
   body.light:not(.viewer-mode) .tab:hover{background:rgba(0,0,0,.035)}
   body.light:not(.viewer-mode) .tab.active{background:rgba(26,86,219,.08);color:var(--brand-2);box-shadow:inset 3px 0 0 var(--brand-2)}
