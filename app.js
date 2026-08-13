@@ -663,7 +663,7 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0;background:#fff}.page{box-shadow:none!important;margin:0!important;page-break-after:always;page-break-inside:avoid}.page.last-page{page-break-after:avoid!important}}'
 +'*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}'
 +'body{background:#dde3ef;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}'
-+'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-auto-rows:1fr;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
++'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);grid-auto-rows:1fr;align-content:start;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
 +'.lbl2{border:1px dashed #99a3b8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5mm 1mm;gap:.5mm;overflow:hidden;break-inside:avoid}'
 +'.lbl2-co{font-size:3pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
 +'.lbl2-qr{width:15mm;height:15mm;flex-shrink:0}'
