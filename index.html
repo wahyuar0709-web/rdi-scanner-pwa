@@ -230,7 +230,7 @@
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v14.98</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.1</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon" style="display:inline-flex"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
   </button>
@@ -334,7 +334,7 @@
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v14.98</span>
+    <span class="sheet-version" id="sheet-version-label">v15.1</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -2143,7 +2143,7 @@
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.0';var APP_BUILD_DATE='2026-08-14';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.1';var APP_BUILD_DATE='2026-08-15';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -2414,6 +2414,21 @@ function fitAcDropdown(drop){var anchor=drop.parentElement;_acDoFit(drop,anchor)
 var _acDebounceTimer={};function acShowDebounced(ctx){clearTimeout(_acDebounceTimer[ctx]);_acDebounceTimer[ctx]=setTimeout(function(){acShow(ctx);},150);}
 function acFocusAndShow(ctx){var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';var dropId=ctx==='scan'?'ac-scan':'ac-hist';var el=document.getElementById(inputId);if(el){setTimeout(function(){el.scrollIntoView({block:'start',behavior:'smooth'});setTimeout(function(){var drop=document.getElementById(dropId);if(drop&&drop.classList.contains('show'))fitAcDropdown(drop);},350);},300);}
 acShow(ctx);}
+/* FIX BUG#1-lanjutan (v14.99): jaring pengaman independen dari event 'oninput'. Ditemukan dari screenshot user: kamera QR scanner kadang TIDAK ikut collapse walau field sudah terisi teks (mestinya collapseCameraOnType() jalan tiap ketikan) -- loop scanFrame() (drawImage+getImageData+jsQR tiap ~80ms) sangat berat di main thread dan bisa membuat debounce dropdown & event lain telat/kelewat, apalagi di device yang lebih lawas. Watcher ini polling perubahan value tiap 200ms lalu memaksa collapse kamera + tampilkan dropdown, terlepas dari apakah event oninput sempat jalan normal atau tidak. */
+var _acWatchVal={scan:'',hist:''};
+setInterval(function(){
+  ['scan','hist'].forEach(function(ctx){
+    var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';
+    var el=document.getElementById(inputId);
+    if(!el)return;
+    var v=el.value||'';
+    if(v!==_acWatchVal[ctx]){
+      _acWatchVal[ctx]=v;
+      collapseCameraOnType(ctx);
+      acShow(ctx);
+    }
+  });
+},200);
 function acShow(ctx){var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';var dropId=ctx==='scan'?'ac-scan':'ac-hist';var inputEl=document.getElementById(inputId);var drop=document.getElementById(dropId);if(!inputEl||!drop)return;/* AUDIT FIX F-04 (v14.90): guard null sebelum akses .value */var q=(inputEl.value||'').trim();if(!q){acHide(ctx);return;}
 /* FIX (v14.97): allRows belum termuat (mis. koneksi lambat / GAS URL belum diset) -- dulu di sini langsung return diam-diam sehingga dropdown tidak pernah muncul dan operator mengira fitur cari rusak. Sekarang beri pesan + tombol muat ulang. */if(!allRows.length){drop.innerHTML='<div class="ac-empty">Data item belum termuat. <button type="button" class="btn btn-sm" style="margin-top:6px" onmousedown="event.preventDefault();loadData().then(function(){acShow(\''+ctx+'\')})">Muat Data</button></div>';drop.classList.add('show');fitAcDropdown(drop);_acIdx[ctx]=-1;return;}
 var scored=[];var needFuzzy=[];allRows.forEach(function(r){if(!r.id&&!r.nama)return;var cheap=fuzzyMatch(r,q,true);if(cheap.match)scored.push({r:r,score:cheap.score});else needFuzzy.push(r);});if(scored.length<8){needFuzzy.forEach(function(r){var res=fuzzyMatch(r,q,false);if(res.match)scored.push({r:r,score:res.score});});}
@@ -3105,7 +3120,7 @@ function toggleInlineScanner(caller){if(caller==='scanner'){var c=document.getEl
 function startInlineScanner(caller){_scanCaller=caller;var videoId=caller==='scanner'?'qr-video':'qr-video-hist';var labelId=caller==='scanner'?'qr-label':'qr-label-hist';var video=document.getElementById(videoId);var label=document.getElementById(labelId);if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){label.textContent='Kamera tidak didukung browser ini';label.classList.add('detected');return;}
 navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(function(stream){if(caller==='scanner')_scanStream=stream;else _scanStreamHist=stream;video.srcObject=stream;video.play();label.textContent='Arahkan kamera ke QR Code';label.classList.remove('detected');scanFrame(caller);}).catch(function(err){label.textContent='Izin kamera ditolak: '+err.message;label.classList.add('detected');});}
 function scanFrame(caller){var videoId=caller==='scanner'?'qr-video':'qr-video-hist';var canvasId=caller==='scanner'?'qr-canvas':'qr-canvas-hist';var labelId=caller==='scanner'?'qr-label':'qr-label-hist';var video=document.getElementById(videoId);var canvas=document.getElementById(canvasId);var label=document.getElementById(labelId);if(!video||video.readyState<2){var rafId=requestAnimationFrame(function(){scanFrame(caller);});if(caller==='scanner')_scanRaf=rafId;else _scanRafHist=rafId;return;}
-var now=performance.now();var lastKey=caller==='scanner'?'_lastScanAt':'_lastScanAtHist';if(!window[lastKey])window[lastKey]=0;if(now-window[lastKey]<80){var rafIdSkip=requestAnimationFrame(function(){scanFrame(caller);});if(caller==='scanner')_scanRaf=rafIdSkip;else _scanRafHist=rafIdSkip;return;}
+var now=performance.now();var lastKey=caller==='scanner'?'_lastScanAt':'_lastScanAtHist';if(!window[lastKey])window[lastKey]=0;if(now-window[lastKey]<160){/* FIX (v14.99): throttle diperlambat dari 80ms(~12.5fps) ke 160ms(~6fps) supaya loop decode QR (drawImage+getImageData+jsQR, semuanya berat & synchronous) tidak terlalu banyak menyita main thread saat kamera masih terbuka bersamaan dengan operator mengetik. */var rafIdSkip=requestAnimationFrame(function(){scanFrame(caller);});if(caller==='scanner')_scanRaf=rafIdSkip;else _scanRafHist=rafIdSkip;return;}
 window[lastKey]=now;/* AUDIT FIX F-07 (v14.90): jsQR/getImageData dibungkus try/catch + guard CDN-load-failure, supaya kegagalan decode tidak menghentikan scan loop secara diam-diam tanpa pesan ke user. */try{if(typeof jsQR==='undefined'){label.textContent='Modul scanner QR gagal dimuat. Cek koneksi internet lalu muat ulang halaman.';label.classList.add('detected');return;}
 var ctx=canvas.getContext('2d');var vw=video.videoWidth,vh=video.videoHeight;var maxDim=480;var scale=Math.min(1,maxDim/Math.max(vw,vh));canvas.width=Math.round(vw*scale);canvas.height=Math.round(vh*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});if(code){var raw=code.data.trim();var id=raw.split('|')[0].trim().toUpperCase();label.textContent='✓ QR terdeteksi: '+id;label.classList.add('detected');if(caller==='scanner'){stopInlineScanner();document.getElementById('scan-id-input').value=id;setTimeout(lookupItem,200);}else{stopInlineScannerHist();document.getElementById('hist-id-input').value=id;setTimeout(loadHistory,200);}
 return;}
