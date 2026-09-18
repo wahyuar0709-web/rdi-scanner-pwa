@@ -3,152 +3,6 @@
 //  PT Rayard Deli Indonesia
 //  PWA Edition: support doGet + doPost + CORS
 //
-//  CHANGELOG v5.22 (Export Excel — ganti ke format PERSIS meniru file lama
-//  "Tools & Spare Part Inventory ....xlsx", per-batch + simulasi FIFO):
-//   - getExportData(dateFrom, dateTo) DIROMBAK dari versi v5.21 (2-sheet
-//     generik) menjadi meniru struktur ASLI file referensi user: satu
-//     SHEET per Kategori (dinamis dari Master_Item, bukan 4 nama hardcode),
-//     satu BARIS per BATCH KEDATANGAN (bukan per item), kolom tanggal
-//     berisi Qty KELUAR pada tanggal itu (bukan saldo), kolom terakhir
-//     "Stok Akhir" = sisa batch itu.
-//   - Karena skema aktif (v5.0+) cuma simpan saldo AGREGAT per item di
-//     Transaksi_Log (tidak tahu KELUAR mana motong batch MASUK yang mana),
-//     fungsi ini MENYIMULASIKAN alokasi FIFO (batch tertua dipakai duluan)
-//     dari seluruh riwayat transaksi item itu. Ini ASUMSI, bukan fakta
-//     tercatat -- hasil bisa beda dari praktik fisik asli kalau dulu
-//     petugas tidak selalu ambil FIFO. Simulasi selalu pakai SELURUH
-//     histori (supaya Stok Akhir akurat); dateFrom/dateTo cuma membatasi
-//     kolom tanggal mana yang ditampilkan, bukan data yang disimulasikan.
-//   - Kolom User & BC/Non BC SEKARANG SELALU ada di semua sheet kategori
-//     (penyederhanaan dari file lama yg dulu cuma taruh kolom ini di
-//     sheet Consumable & Indirect) -- karena field ini melekat di SETIAP
-//     item di skema sekarang, bukan cuma sebagian kategori.
-//   - Read-only, tidak mengubah skema/data apa pun. Boleh diakses editor
-//     ATAU viewer (sama seperti getData/getHistory/getLedger yg lain),
-//     tunduk pada checkAnyAccess() yang sudah ada di doGet.
-//
-//  CHANGELOG v5.14 (Fix CRITICAL — Audit Final G-01: ID collision):
-//   - Ditambah adminTool 'findIdCollisions': deteksi ID_Item yang dipakai >1 baris
-//     Master_Item berbeda (2 barang beda ditempel 1 ID yang sama). Untuk tiap ID
-//     yang collide, dihitung juga breakdown Nama_Item di Transaksi_Log + flag
-//     `splitSafe` (true kalau semua transaksi historisnya bisa dibedakan otomatis
-//     berdasarkan Nama_Item persis, false kalau ada yang ambigu/tidak cocok siapa
-//     pun -- wajib direview manual dulu).
-//   - Ditambah adminTool 'resolveIdCollision' (param: oldId, namaToMove, newId
-//     opsional, dryRun opsional): memindahkan SATU barang (dikenali dari Nama
-//     Material persis) dari ID lama yang collide ke ID baru -- baris Master_Item
-//     + semua baris Transaksi_Log dgn ID+Nama yang cocok ikut dipindah, lalu
-//     Stok_Saldo/Stok_Per_Rak di-recalculate PENUH (bukan incremental) supaya
-//     kedua ID dijamin sinkron. Fail-safe: ditolak kalau bukan persis 1 baris
-//     Master_Item yang cocok (0 = salah nama, >1 = ambigu). Dukung dryRun:true
-//     utk preview sebelum eksekusi sungguhan.
-//   - runAdminToolAPI() sekarang menerima `body` penuh (bukan cuma `fn`), karena
-//     resolveIdCollision butuh parameter tambahan; adminTool lain tidak terpengaruh.
-//   - Ini TIDAK mengotomasi keputusan pemisahan itu sendiri -- admin tetap yang
-//     menentukan barang mana dapat ID baru, tool ini cuma mengeksekusi perpindahan
-//     data dengan aman (fail-safe kalau ambigu) begitu keputusan itu dibuat.
-//
-//  CHANGELOG v5.17 (Fix LOW — Audit Final F-07: full-scan per item):
-//   - getHistory()/getStockLedger() dulu baca getRange(2,1,lastRow-1,13).getValues()
-//     -- SELURUH Transaksi_Log, semua 13 kolom, semua baris -- lalu filter per itemId
-//     di JS loop. Padahal biasanya cuma sebagian kecil baris yang cocok utk 1 item.
-//   - Ditambah helper findMatchingRowNumbers_() (scan HANYA kolom ID_Item, 1 kolom)
-//     dan getRowsByNumbers_() (ambil data 13-kolom lengkap CUMA utk baris yang match,
-//     lewat getRangeList -- satu panggilan API, bukan N round-trip per baris).
-//   - getHistory/getStockLedger sekarang pakai pola ini -- urutan/isi hasil TIDAK
-//     berubah (tetap kronologis dari sheet, getHistory tetap reverse ke newest-first
-//     di akhir seperti sebelumnya), murni mengurangi volume data yang ditransfer dari
-//     Sheets API. Kolom ID tetap harus di-scan penuh sekali (Sheets tidak punya
-//     indeks bawaan) -- ini bukan O(1) lookup, tapi tetap perbaikan nyata dibanding
-//     baca 13 kolom penuh utk tiap baris yang ternyata tidak cocok.
-//
-//  CHANGELOG v5.16 (Fix MEDIUM — Audit Final F-04: LockService global):
-//   - postTransaksi() dulu memegang LockService.getScriptLock() SELAMA SELURUH
-//     proses (append Transaksi_Log + update 2 sheet saldo) -- artinya transaksi
-//     ITEM A ikut menunggu transaksi ITEM B selesai walau dua-duanya tidak
-//     berkaitan sama sekali. Di volume transaksi tinggi ini jadi bottleneck.
-//   - Ditambah acquirePerItemLock_(itemId, timeoutMs): script lock sekarang cuma
-//     dipegang SANGAT SINGKAT untuk uji-dan-set flag mutex per itemId di
-//     CacheService (TTL 20dtk, self-healing kalau proses macet). Transaksi item
-//     BERBEDA sekarang jalan paralel; transaksi item YANG SAMA tetap antre
-//     berurutan (tetap wajib, supaya saldo item yang sama tidak race).
-//   - Fail-safe dipertahankan: gagal dapat lock dalam 15dtk -> balikin pesan
-//     "server sibuk" (sama seperti perilaku lama), bukan diam-diam lanjut tanpa
-//     proteksi. Tidak ada perubahan pada urutan validasi/appendRow/update saldo.
-//
-//  CHANGELOG v5.15 (Fix MEDIUM — Audit Final F-06: magic number kolom):
-//   - Ditambah konstanta COL_MASTER/COL_TRX/COL_SALDO/COL_RAK_SALDO/COL_EDITOR_ACC/
-//     COL_VIEWER_ACC (0-based, lihat definisi di atas SHEET_*) -- menggantikan
-//     ~114 titik akses r[7], row[9], dst yang sebelumnya hardcoded tanpa nama.
-//   - SEMUA fungsi yang baca/tulis Master_Item, Transaksi_Log, Stok_Saldo,
-//     Stok_Per_Rak, Editor_Accounts, Viewer_Accounts sudah dipetakan ulang ke
-//     konstanta ini (getSheetData, getItemById, getDashboard, updateItem,
-//     archiveItem, getSaldoFullMap, getRakBreakdown/SummaryMap, getAllHistory,
-//     getHistory, getStockLedger, recalculateAllSaldoCore, updateSaldo,
-//     updateRakSaldo, findOrphanItemsCore, findDuplicateItemsCore,
-//     findIdCollisionsCore, resolveIdCollisionCore, setupMasterListSheetsCore,
-//     checkEditorAccountKey_, checkViewerCredentials, migrateAddIDCore,
-//     generateID, getAllRakBreakdown, getLastVendorRefMap, getItemUnitMap).
-//   - Beberapa getRange() yang dulu baca kolom sempit tidak dari kolom 1 (mis.
-//     trx.getRange(2,2,...,2) di findOrphanItemsCore/findIdCollisionsCore)
-//     dilebarkan mulai kolom 1 supaya index array-nya konsisten 1:1 dgn
-//     COL_TRX -- baca sedikit kolom ekstra yang tidak dipakai, TIDAK mengubah
-//     hasil, cuma menghilangkan kasus "index relatif vs absolut" yang beda.
-//   - SENGAJA TIDAK disentuh: migrateToMultiRakSchema()/oldData (skema lama 14
-//     kolom pra-v5.0), karena ini fungsi migrasi 1x yang sudah dijadwalkan utk
-//     dipisah/dihapus terpisah (F-08), bukan bagian dari skema aktif sekarang --
-//     memetakannya ke COL_MASTER/COL_TRX yang skema BARU justru akan salah/menyesatkan.
-//   - Verifikasi: node --check lolos, jumlah fungsi & keseimbangan kurung kurawal
-//     identik sebelum/sesudah (70 fungsi, 500/500 { }). Ini refactor MURNI
-//     penamaan -- tidak ada perubahan logika, urutan baca, atau nilai literal.
-//
-//  CHANGELOG v5.13 (Fix HIGH — Audit Final F-02, F-03, G-02, G-03):
-//   - F-02 (password Viewer_Accounts plaintext): sekarang disimpan "salt$hashSHA256".
-//     Akun lama otomatis dimigrasi ke hash begitu login sukses sekali (tidak perlu
-//     migrasi manual). setupViewerAccountsSheet() bikin akun contoh dengan hash.
-//   - F-03 (identitas admin transaksi tidak diverifikasi): sheet baru opsional
-//     Editor_Accounts (Nama | EditorKey | Aktif, lihat setupEditorAccountsSheet()).
-//     checkEditorKey() sekarang balikin `nama` terverifikasi kalau editorKey cocok
-//     salah satu akun di sana; doPost meneruskannya sbg verifiedAdmin, dipakai
-//     postTransaksi/addItem menggantikan field admin bebas dari client. Fallback
-//     non-breaking: kalau sheet belum disetup, tetap pakai EDITOR_KEY tunggal lama
-//     seperti sebelumnya (identitas admin belum terverifikasi di mode ini).
-//   - G-02 (item yatim — punya transaksi/saldo tapi tidak ada di Master_Item):
-//     postTransaksi() SUDAH lama mewajibkan getItemById() sukses dulu (jalur normal
-//     app tidak bisa bikin item yatim baru). Ditambah adminTool baru findOrphanItems
-//     utk DETEKSI item yatim dari data lama/migrasi (perbaikannya tetap manual --
-//     perlu keputusan nama/spek/kategori barangnya).
-//   - G-03 (baris Master_Item kembar): adminTool baru findDuplicateItems, deteksi
-//     baris dgn Nama Material+Spesifikasi identik. Deteksi saja, bukan auto-merge --
-//     menggabungkan riwayat transaksi 2 ID perlu direview manusia dulu.
-//   - F-05 (doGet tanpa try/catch): sekarang dibungkus, balikin JSON error alih-alih
-//     halaman HTML error bawaan Apps Script kalau ada exception tak terduga.
-//   - G-04/G-05/G-06 (Master_Kategori/Rak/Vendor/UOM basi & penuh duplikat casing):
-//     setupMasterListSheets() (dulu HANYA manual dari editor Apps Script) sekarang
-//     ada versi API-nya (apiResyncMasterLists, adminTool 'resyncMasterLists') --
-//     bisa diklik dari tombol Admin Database di aplikasi. Sekalian nambah dedup
-//     case-insensitive ("Acme" & "ACME" jadi 1 entri) yang dulu tidak ada.
-//
-//  CHANGELOG v5.12 (Fix CRITICAL — Audit Phase 1 finding F-01: silent saldo
-//  update failure): updateSaldo()/updateRakSaldo() DULU membungkus isinya
-//  dengan try/catch yang HANYA console.log() kalau gagal (tidak throw, tidak
-//  lapor balik) -- postTransaksi() tetap appendRow ke Transaksi_Log lalu
-//  SELALU balikin status:'ok', walau update Stok_Saldo/Stok_Per_Rak diam-diam
-//  gagal. Akibatnya Transaksi_Log & Stok_Saldo bisa divergen tanpa ada yang
-//  tahu, sampai seseorang manual jalankan recalculateAllSaldo(). Sekarang:
-//   - updateSaldo()/updateRakSaldo() melempar Error kalau gagal (bukan cuma log).
-//   - postTransaksi() menangkap kegagalan itu SETELAH appendRow (log transaksi
-//     tetap sumber kebenaran, TIDAK di-rollback -- appendRow sudah commit &
-//     rollback manual berisiko lebih merusak daripada membiarkan). Kegagalan
-//     dicatat ke sheet baru Sync_Errors (bukan cuma console.log yang tak
-//     terlihat siapa pun di production) DAN dikirim balik ke frontend lewat
-//     field baru saldoSyncOk:false + saldoSyncWarning, dengan message yang
-//     eksplisit bilang saldo belum sinkron -- bukan lagi status:'ok' polos.
-//   - Non-breaking: field lama (status, saldoSebelum, saldoSesudah, dst) TIDAK
-//     berubah; klien lama yang cuma cek status==='ok' berperilaku sama seperti
-//     sebelumnya, klien baru bisa opsional cek saldoSyncOk untuk tampilkan
-//     warning ke user.
-//
 //  CHANGELOG v5.0 (Restrukturisasi skema data - standar inventory):
 //   - Master_Item DIRAMPINGKAN jadi identitas barang saja:
 //     No, ID_Item, Nama Material, Spesifikasi, User/Dept,
@@ -235,44 +89,6 @@
 //     ada UI-nya. migrateAddID() & recalculateAllSaldo() dipisah jadi versi
 //     "Core" (tanpa getUi(), dipakai API) + versi asli (pakai getUi(), tetap
 //     bisa dijalankan manual dari editor Apps Script seperti biasa).
-//  CHANGELOG v5.11 (PP-02, Audit UX v14.70): item Master_Item sebelumnya tidak
-//  bisa dihapus/dinonaktifkan sama sekali dari aplikasi -- harus diedit manual
-//  di Google Sheets, di luar alur yang diaudit. Ditambah action baru
-//  'archiveItem' (arsipkan/aktifkan kembali item, editorKey wajib -- setara
-//  "role Editor" karena app cuma kenal Editor vs Viewer). Kolom Status (kolom
-//  10) dibuat otomatis di Master_Item saat pertama kali dipakai, tidak perlu
-//  migrasi manual. getSheetData()/getItemById() sekarang menyertakan field
-//  status ('Aktif'/'Arsip'); postTransaksi() menolak transaksi baru utk item
-//  berstatus 'Arsip' (defense-in-depth -- frontend juga sudah menyaring).
-//  CHANGELOG v5.10 (Fix P3 dari PHASE 0 Architecture Audit -- duplicate row-lookup
-//  logic): updateSaldo, updateRakSaldo, dan getStockLedger masing-masing punya loop
-//  "getValues() lalu for cari row yg cocok" yang ditulis ulang terpisah, identik
-//  kecuali kolom/jumlah kriteria yang dibandingkan. Diekstrak jadi 1 helper
-//  findRowIndex(data, matchers). TIDAK mengubah data apa yang dibaca dari sheet
-//  atau kapan (setiap fungsi tetap getRange/getValues persis seperti sebelumnya,
-//  jadi karakteristik performa v5.4/v5.9 di atas TIDAK berubah) -- murni
-//  menghilangkan duplikasi logic pencariannya. Perilaku & hasil identik.
-//  CHANGELOG v5.9 (Fix P1 dari PHASE 0 Architecture Audit -- getAllHistory scan
-//  seluruh Transaksi_Log): getAllHistory(limit) dulu SELALU baca seluruh sheet lalu
-//  potong ke `limit` di akhir -- cost baca tumbuh terus (O(total transaksi
-//  sepanjang masa)) walau yang diminta cuma N transaksi terbaru. Sekarang baca
-//  langsung `limit` baris terakhir saja (Transaksi_Log selalu ditulis kronologis
-//  via appendRow, jadi N terbaru selalu di N baris paling bawah) -- O(limit)
-//  konstan. Hasil (isi/urutan/pembatasan) IDENTIK, tidak ada perubahan API/kontrak.
-//  getHistory(itemId) & getStockLedger(itemId) BELUM disentuh di versi ini --
-//  keduanya butuh SEMUA transaksi milik 1 item yang posisinya tersebar di seluruh
-//  log, jadi tidak bisa dioptimasi dgn trik "baca dari bawah" seperti di atas;
-//  solusi sebenarnya (index per-item) berarti menambah struktur data baru, di luar
-//  batasan "non-breaking, tidak ubah struktur database" utk revisi PHASE 0 ini.
-//  CHANGELOG v5.8 (Fix P0/P1 audit finding F2: postTransaksi sekarang benar-benar
-//  dedup berbasis requestId via CacheService -- LockService v5.7 cuma cegah race
-//  ANTAR request paralel, tidak cegah retry SEKUENSIAL dgn body identik jadi
-//  transaksi dobel. Frontend index.html sudah kirim requestId & mengasumsikan
-//  dedup ini ada sejak sebelum v5.7 -- sekarang diimplementasikan. Non-breaking:
-//  requestId kosong (klien lama) = perilaku persis sama seperti sebelumnya.)
-//  CHANGELOG v5.7 (Fix CRITICAL: LockService di postTransaksi -- cegah race
-//  condition saldo saat 2+ transaksi item sama diproses nyaris bersamaan.
-//  Sebelumnya updateSaldo/updateRakSaldo pola read-modify-write TANPA lock.)
 //  CHANGELOG v5.6 (Login viewer dgn username/password -- TAMPILAN mirip Google
 //  Sign-In, TAPI BUKAN OAuth Google asli. Ini shared-secret biasa, cuma dibungkus
 //  halaman login supaya viewer harus login dulu, bukan sekadar buka link):
@@ -288,6 +104,190 @@
 //     kalau cocok & Aktif=TRUE, balikin token bertanda-tangan (HMAC) yg berlaku
 //     30 hari. Token ini yang dipakai viewer di semua request berikutnya
 //     (viewerToken), TANPA perlu kirim ulang password.
+//  CHANGELOG v5.7 (Fix CRITICAL: LockService di postTransaksi -- cegah race
+//  condition saldo saat 2+ transaksi item sama diproses nyaris bersamaan.
+//  Sebelumnya updateSaldo/updateRakSaldo pola read-modify-write TANPA lock.)
+//  CHANGELOG v5.8 (Fix P0/P1 audit finding F2: postTransaksi sekarang benar-benar
+//  dedup berbasis requestId via CacheService -- LockService v5.7 cuma cegah race
+//  ANTAR request paralel, tidak cegah retry SEKUENSIAL dgn body identik jadi
+//  transaksi dobel. Frontend index.html sudah kirim requestId & mengasumsikan
+//  dedup ini ada sejak sebelum v5.7 -- sekarang diimplementasikan. Non-breaking:
+//  requestId kosong (klien lama) = perilaku persis sama seperti sebelumnya.)
+//  CHANGELOG v5.9 (Fix P1 dari PHASE 0 Architecture Audit -- getAllHistory scan
+//  seluruh Transaksi_Log): getAllHistory(limit) dulu SELALU baca seluruh sheet lalu
+//  potong ke `limit` di akhir -- cost baca tumbuh terus (O(total transaksi
+//  sepanjang masa)) walau yang diminta cuma N transaksi terbaru. Sekarang baca
+//  langsung `limit` baris terakhir saja (Transaksi_Log selalu ditulis kronologis
+//  via appendRow, jadi N terbaru selalu di N baris paling bawah) -- O(limit)
+//  konstan. Hasil (isi/urutan/pembatasan) IDENTIK, tidak ada perubahan API/kontrak.
+//  getHistory(itemId) & getStockLedger(itemId) BELUM disentuh di versi ini --
+//  keduanya butuh SEMUA transaksi milik 1 item yang posisinya tersebar di seluruh
+//  log, jadi tidak bisa dioptimasi dgn trik "baca dari bawah" seperti di atas;
+//  solusi sebenarnya (index per-item) berarti menambah struktur data baru, di luar
+//  batasan "non-breaking, tidak ubah struktur database" utk revisi PHASE 0 ini.
+//  CHANGELOG v5.10 (Fix P3 dari PHASE 0 Architecture Audit -- duplicate row-lookup
+//  logic): updateSaldo, updateRakSaldo, dan getStockLedger masing-masing punya loop
+//  "getValues() lalu for cari row yg cocok" yang ditulis ulang terpisah, identik
+//  kecuali kolom/jumlah kriteria yang dibandingkan. Diekstrak jadi 1 helper
+//  findRowIndex(data, matchers). TIDAK mengubah data apa yang dibaca dari sheet
+//  atau kapan (setiap fungsi tetap getRange/getValues persis seperti sebelumnya,
+//  jadi karakteristik performa v5.4/v5.9 di atas TIDAK berubah) -- murni
+//  menghilangkan duplikasi logic pencariannya. Perilaku & hasil identik.
+//  CHANGELOG v5.11 (PP-02, Audit UX v14.70): item Master_Item sebelumnya tidak
+//  bisa dihapus/dinonaktifkan sama sekali dari aplikasi -- harus diedit manual
+//  di Google Sheets, di luar alur yang diaudit. Ditambah action baru
+//  'archiveItem' (arsipkan/aktifkan kembali item, editorKey wajib -- setara
+//  "role Editor" karena app cuma kenal Editor vs Viewer). Kolom Status (kolom
+//  10) dibuat otomatis di Master_Item saat pertama kali dipakai, tidak perlu
+//  migrasi manual. getSheetData()/getItemById() sekarang menyertakan field
+//  status ('Aktif'/'Arsip'); postTransaksi() menolak transaksi baru utk item
+//  berstatus 'Arsip' (defense-in-depth -- frontend juga sudah menyaring).
+//  CHANGELOG v5.12 (Fix CRITICAL — Audit Phase 1 finding F-01: silent saldo
+//  update failure): updateSaldo()/updateRakSaldo() DULU membungkus isinya
+//  dengan try/catch yang HANYA console.log() kalau gagal (tidak throw, tidak
+//  lapor balik) -- postTransaksi() tetap appendRow ke Transaksi_Log lalu
+//  SELALU balikin status:'ok', walau update Stok_Saldo/Stok_Per_Rak diam-diam
+//  gagal. Akibatnya Transaksi_Log & Stok_Saldo bisa divergen tanpa ada yang
+//  tahu, sampai seseorang manual jalankan recalculateAllSaldo(). Sekarang:
+//   - updateSaldo()/updateRakSaldo() melempar Error kalau gagal (bukan cuma log).
+//   - postTransaksi() menangkap kegagalan itu SETELAH appendRow (log transaksi
+//     tetap sumber kebenaran, TIDAK di-rollback -- appendRow sudah commit &
+//     rollback manual berisiko lebih merusak daripada membiarkan). Kegagalan
+//     dicatat ke sheet baru Sync_Errors (bukan cuma console.log yang tak
+//     terlihat siapa pun di production) DAN dikirim balik ke frontend lewat
+//     field baru saldoSyncOk:false + saldoSyncWarning, dengan message yang
+//     eksplisit bilang saldo belum sinkron -- bukan lagi status:'ok' polos.
+//   - Non-breaking: field lama (status, saldoSebelum, saldoSesudah, dst) TIDAK
+//     berubah; klien lama yang cuma cek status==='ok' berperilaku sama seperti
+//     sebelumnya, klien baru bisa opsional cek saldoSyncOk untuk tampilkan
+//     warning ke user.
+//
+//  CHANGELOG v5.13 (Fix HIGH — Audit Final F-02, F-03, G-02, G-03):
+//   - F-02 (password Viewer_Accounts plaintext): sekarang disimpan "salt$hashSHA256".
+//     Akun lama otomatis dimigrasi ke hash begitu login sukses sekali (tidak perlu
+//     migrasi manual). setupViewerAccountsSheet() bikin akun contoh dengan hash.
+//   - F-03 (identitas admin transaksi tidak diverifikasi): sheet baru opsional
+//     Editor_Accounts (Nama | EditorKey | Aktif, lihat setupEditorAccountsSheet()).
+//     checkEditorKey() sekarang balikin `nama` terverifikasi kalau editorKey cocok
+//     salah satu akun di sana; doPost meneruskannya sbg verifiedAdmin, dipakai
+//     postTransaksi/addItem menggantikan field admin bebas dari client. Fallback
+//     non-breaking: kalau sheet belum disetup, tetap pakai EDITOR_KEY tunggal lama
+//     seperti sebelumnya (identitas admin belum terverifikasi di mode ini).
+//   - G-02 (item yatim — punya transaksi/saldo tapi tidak ada di Master_Item):
+//     postTransaksi() SUDAH lama mewajibkan getItemById() sukses dulu (jalur normal
+//     app tidak bisa bikin item yatim baru). Ditambah adminTool baru findOrphanItems
+//     utk DETEKSI item yatim dari data lama/migrasi (perbaikannya tetap manual --
+//     perlu keputusan nama/spek/kategori barangnya).
+//   - G-03 (baris Master_Item kembar): adminTool baru findDuplicateItems, deteksi
+//     baris dgn Nama Material+Spesifikasi identik. Deteksi saja, bukan auto-merge --
+//     menggabungkan riwayat transaksi 2 ID perlu direview manusia dulu.
+//   - F-05 (doGet tanpa try/catch): sekarang dibungkus, balikin JSON error alih-alih
+//     halaman HTML error bawaan Apps Script kalau ada exception tak terduga.
+//   - G-04/G-05/G-06 (Master_Kategori/Rak/Vendor/UOM basi & penuh duplikat casing):
+//     setupMasterListSheets() (dulu HANYA manual dari editor Apps Script) sekarang
+//     ada versi API-nya (apiResyncMasterLists, adminTool 'resyncMasterLists') --
+//     bisa diklik dari tombol Admin Database di aplikasi. Sekalian nambah dedup
+//     case-insensitive ("Acme" & "ACME" jadi 1 entri) yang dulu tidak ada.
+//
+//  CHANGELOG v5.14 (Fix CRITICAL — Audit Final G-01: ID collision):
+//   - Ditambah adminTool 'findIdCollisions': deteksi ID_Item yang dipakai >1 baris
+//     Master_Item berbeda (2 barang beda ditempel 1 ID yang sama). Untuk tiap ID
+//     yang collide, dihitung juga breakdown Nama_Item di Transaksi_Log + flag
+//     `splitSafe` (true kalau semua transaksi historisnya bisa dibedakan otomatis
+//     berdasarkan Nama_Item persis, false kalau ada yang ambigu/tidak cocok siapa
+//     pun -- wajib direview manual dulu).
+//   - Ditambah adminTool 'resolveIdCollision' (param: oldId, namaToMove, newId
+//     opsional, dryRun opsional): memindahkan SATU barang (dikenali dari Nama
+//     Material persis) dari ID lama yang collide ke ID baru -- baris Master_Item
+//     + semua baris Transaksi_Log dgn ID+Nama yang cocok ikut dipindah, lalu
+//     Stok_Saldo/Stok_Per_Rak di-recalculate PENUH (bukan incremental) supaya
+//     kedua ID dijamin sinkron. Fail-safe: ditolak kalau bukan persis 1 baris
+//     Master_Item yang cocok (0 = salah nama, >1 = ambigu). Dukung dryRun:true
+//     utk preview sebelum eksekusi sungguhan.
+//   - runAdminToolAPI() sekarang menerima `body` penuh (bukan cuma `fn`), karena
+//     resolveIdCollision butuh parameter tambahan; adminTool lain tidak terpengaruh.
+//   - Ini TIDAK mengotomasi keputusan pemisahan itu sendiri -- admin tetap yang
+//     menentukan barang mana dapat ID baru, tool ini cuma mengeksekusi perpindahan
+//     data dengan aman (fail-safe kalau ambigu) begitu keputusan itu dibuat.
+//
+//  CHANGELOG v5.15 (Fix MEDIUM — Audit Final F-06: magic number kolom):
+//   - Ditambah konstanta COL_MASTER/COL_TRX/COL_SALDO/COL_RAK_SALDO/COL_EDITOR_ACC/
+//     COL_VIEWER_ACC (0-based, lihat definisi di atas SHEET_*) -- menggantikan
+//     ~114 titik akses r[7], row[9], dst yang sebelumnya hardcoded tanpa nama.
+//   - SEMUA fungsi yang baca/tulis Master_Item, Transaksi_Log, Stok_Saldo,
+//     Stok_Per_Rak, Editor_Accounts, Viewer_Accounts sudah dipetakan ulang ke
+//     konstanta ini (getSheetData, getItemById, getDashboard, updateItem,
+//     archiveItem, getSaldoFullMap, getRakBreakdown/SummaryMap, getAllHistory,
+//     getHistory, getStockLedger, recalculateAllSaldoCore, updateSaldo,
+//     updateRakSaldo, findOrphanItemsCore, findDuplicateItemsCore,
+//     findIdCollisionsCore, resolveIdCollisionCore, setupMasterListSheetsCore,
+//     checkEditorAccountKey_, checkViewerCredentials, migrateAddIDCore,
+//     generateID, getAllRakBreakdown, getLastVendorRefMap, getItemUnitMap).
+//   - Beberapa getRange() yang dulu baca kolom sempit tidak dari kolom 1 (mis.
+//     trx.getRange(2,2,...,2) di findOrphanItemsCore/findIdCollisionsCore)
+//     dilebarkan mulai kolom 1 supaya index array-nya konsisten 1:1 dgn
+//     COL_TRX -- baca sedikit kolom ekstra yang tidak dipakai, TIDAK mengubah
+//     hasil, cuma menghilangkan kasus "index relatif vs absolut" yang beda.
+//   - SENGAJA TIDAK disentuh: migrateToMultiRakSchema()/oldData (skema lama 14
+//     kolom pra-v5.0), karena ini fungsi migrasi 1x yang sudah dijadwalkan utk
+//     dipisah/dihapus terpisah (F-08), bukan bagian dari skema aktif sekarang --
+//     memetakannya ke COL_MASTER/COL_TRX yang skema BARU justru akan salah/menyesatkan.
+//   - Verifikasi: node --check lolos, jumlah fungsi & keseimbangan kurung kurawal
+//     identik sebelum/sesudah (70 fungsi, 500/500 { }). Ini refactor MURNI
+//     penamaan -- tidak ada perubahan logika, urutan baca, atau nilai literal.
+//
+//  CHANGELOG v5.16 (Fix MEDIUM — Audit Final F-04: LockService global):
+//   - postTransaksi() dulu memegang LockService.getScriptLock() SELAMA SELURUH
+//     proses (append Transaksi_Log + update 2 sheet saldo) -- artinya transaksi
+//     ITEM A ikut menunggu transaksi ITEM B selesai walau dua-duanya tidak
+//     berkaitan sama sekali. Di volume transaksi tinggi ini jadi bottleneck.
+//   - Ditambah acquirePerItemLock_(itemId, timeoutMs): script lock sekarang cuma
+//     dipegang SANGAT SINGKAT untuk uji-dan-set flag mutex per itemId di
+//     CacheService (TTL 20dtk, self-healing kalau proses macet). Transaksi item
+//     BERBEDA sekarang jalan paralel; transaksi item YANG SAMA tetap antre
+//     berurutan (tetap wajib, supaya saldo item yang sama tidak race).
+//   - Fail-safe dipertahankan: gagal dapat lock dalam 15dtk -> balikin pesan
+//     "server sibuk" (sama seperti perilaku lama), bukan diam-diam lanjut tanpa
+//     proteksi. Tidak ada perubahan pada urutan validasi/appendRow/update saldo.
+//
+//  CHANGELOG v5.17 (Fix LOW — Audit Final F-07: full-scan per item):
+//   - getHistory()/getStockLedger() dulu baca getRange(2,1,lastRow-1,13).getValues()
+//     -- SELURUH Transaksi_Log, semua 13 kolom, semua baris -- lalu filter per itemId
+//     di JS loop. Padahal biasanya cuma sebagian kecil baris yang cocok utk 1 item.
+//   - Ditambah helper findMatchingRowNumbers_() (scan HANYA kolom ID_Item, 1 kolom)
+//     dan getRowsByNumbers_() (ambil data 13-kolom lengkap CUMA utk baris yang match,
+//     lewat getRangeList -- satu panggilan API, bukan N round-trip per baris).
+//   - getHistory/getStockLedger sekarang pakai pola ini -- urutan/isi hasil TIDAK
+//     berubah (tetap kronologis dari sheet, getHistory tetap reverse ke newest-first
+//     di akhir seperti sebelumnya), murni mengurangi volume data yang ditransfer dari
+//     Sheets API. Kolom ID tetap harus di-scan penuh sekali (Sheets tidak punya
+//     indeks bawaan) -- ini bukan O(1) lookup, tapi tetap perbaikan nyata dibanding
+//     baca 13 kolom penuh utk tiap baris yang ternyata tidak cocok.
+//
+//  CHANGELOG v5.22 (Export Excel — ganti ke format PERSIS meniru file lama
+//  "Tools & Spare Part Inventory ....xlsx", per-batch + simulasi FIFO):
+//   - getExportData(dateFrom, dateTo) DIROMBAK dari versi v5.21 (2-sheet
+//     generik) menjadi meniru struktur ASLI file referensi user: satu
+//     SHEET per Kategori (dinamis dari Master_Item, bukan 4 nama hardcode),
+//     satu BARIS per BATCH KEDATANGAN (bukan per item), kolom tanggal
+//     berisi Qty KELUAR pada tanggal itu (bukan saldo), kolom terakhir
+//     "Stok Akhir" = sisa batch itu.
+//   - Karena skema aktif (v5.0+) cuma simpan saldo AGREGAT per item di
+//     Transaksi_Log (tidak tahu KELUAR mana motong batch MASUK yang mana),
+//     fungsi ini MENYIMULASIKAN alokasi FIFO (batch tertua dipakai duluan)
+//     dari seluruh riwayat transaksi item itu. Ini ASUMSI, bukan fakta
+//     tercatat -- hasil bisa beda dari praktik fisik asli kalau dulu
+//     petugas tidak selalu ambil FIFO. Simulasi selalu pakai SELURUH
+//     histori (supaya Stok Akhir akurat); dateFrom/dateTo cuma membatasi
+//     kolom tanggal mana yang ditampilkan, bukan data yang disimulasikan.
+//   - Kolom User & BC/Non BC SEKARANG SELALU ada di semua sheet kategori
+//     (penyederhanaan dari file lama yg dulu cuma taruh kolom ini di
+//     sheet Consumable & Indirect) -- karena field ini melekat di SETIAP
+//     item di skema sekarang, bukan cuma sebagian kategori.
+//   - Read-only, tidak mengubah skema/data apa pun. Boleh diakses editor
+//     ATAU viewer (sama seperti getData/getHistory/getLedger yg lain),
+//     tunduk pada checkAnyAccess() yang sudah ada di doGet.
+//
 // ============================================================
 
 var SHEET_MASTER    = 'Master_Item';
@@ -1380,72 +1380,6 @@ function postTransaksi(params) {
   } finally {
     lock.release();
   }
-}
-
-// ============================================================
-//  FIND ROW INDEX (helper — PHASE 0 audit P3: konsolidasi duplicate logic)
-//  Dulu pola "getValues() lalu loop for cari row yang cocok" ditulis ulang
-//  scara terpisah di updateSaldo, updateRakSaldo, dan getStockLedger --
-//  masing-masing identik persis kecuali kolom & jumlah kriteria yang
-//  dibandingkan. Diekstrak jadi 1 helper di sini; TIDAK mengubah cara/kapan
-//  data dibaca dari sheet (caller tetap yang menentukan range getRange/
-//  getValues, jadi karakteristik performa tiap fungsi TIDAK berubah) --
-//  murni menghilangkan duplikasi logic pencariannya saja.
-//  `data`     : hasil getValues() (array 2D) yang SUDAH dibaca oleh caller.
-//  `matchers` : array pasangan [kolomIndex, nilaiPembanding], semua harus
-//               cocok (AND). Perbandingan selalu trim+uppercase, konsisten
-//               dengan kebiasaan existing code (ID_Item, RAK, dst).
-//  Return: index baris di `data` (0-based) yang cocok, atau -1 kalau tidak ketemu.
-// ============================================================
-function findRowIndex(data, matchers) {
-  for (var i=0; i<data.length; i++) {
-    var row = data[i];
-    var isMatch = true;
-    for (var j=0; j<matchers.length; j++) {
-      var col = matchers[j][0], val = matchers[j][1];
-      if (String(row[col]||'').trim().toUpperCase() !== val) { isMatch = false; break; }
-    }
-    if (isMatch) return i;
-  }
-  return -1;
-}
-
-// ============================================================
-//  ROW LOOKUP BY COLUMN VALUE (Audit F-07, Low) — getHistory/getStockLedger dulu
-//  membaca SELURUH Transaksi_Log (semua 13 kolom, semua baris) ke memory Apps
-//  Script lalu filter per-item di JS, padahal biasanya cuma sebagian kecil baris
-//  yang cocok untuk 1 itemId. Sekarang: scan HANYA kolom ID_Item (1 kolom, bukan
-//  13) untuk cari nomor baris yang cocok, baru getRangeList() untuk ambil data
-//  LENGKAP cuma baris-baris yang match itu. Kolom ID tetap harus di-scan penuh
-//  (Sheets tidak punya indeks bawaan tanpa struktur data tambahan), tapi volume
-//  data yang ditransfer dari Sheets API turun drastis (1 kolom + N baris cocok,
-//  bukan 13 kolom x seluruh baris) -- makin besar Transaksi_Log, makin terasa.
-// ============================================================
-function findMatchingRowNumbers_(sheet, colIndex0, lastRow, matchValueUpper) {
-  if (lastRow < 2) return [];
-  var colVals = sheet.getRange(2, colIndex0+1, lastRow-1, 1).getValues();
-  var rowNums = [];
-  for (var i=0; i<colVals.length; i++) {
-    if (String(colVals[i][0]||'').trim().toUpperCase() === matchValueUpper) rowNums.push(i+2); // nomor baris sheet asli (1-based, +1 utk header)
-  }
-  return rowNums;
-}
-
-function getRowsByNumbers_(sheet, rowNumbers, numCols) {
-  if (!rowNumbers.length) return [];
-  var lastCol = columnToLetter_(numCols);
-  var a1 = rowNumbers.map(function(r){ return 'A'+r+':'+lastCol+r; });
-  return sheet.getRangeList(a1).getRanges().map(function(rg){ return rg.getValues()[0]; });
-}
-
-function columnToLetter_(colNum) {
-  var letter = '';
-  while (colNum > 0) {
-    var rem = (colNum-1) % 26;
-    letter = String.fromCharCode(65+rem) + letter;
-    colNum = Math.floor((colNum-1)/26);
-  }
-  return letter;
 }
 
 // ============================================================
@@ -3497,6 +3431,72 @@ function apiResyncMasterLists() {
   } catch(err) {
     return { status:'error', message:'apiResyncMasterLists: '+err.message };
   }
+}
+
+// ============================================================
+//  FIND ROW INDEX (helper — PHASE 0 audit P3: konsolidasi duplicate logic)
+//  Dulu pola "getValues() lalu loop for cari row yang cocok" ditulis ulang
+//  scara terpisah di updateSaldo, updateRakSaldo, dan getStockLedger --
+//  masing-masing identik persis kecuali kolom & jumlah kriteria yang
+//  dibandingkan. Diekstrak jadi 1 helper di sini; TIDAK mengubah cara/kapan
+//  data dibaca dari sheet (caller tetap yang menentukan range getRange/
+//  getValues, jadi karakteristik performa tiap fungsi TIDAK berubah) --
+//  murni menghilangkan duplikasi logic pencariannya saja.
+//  `data`     : hasil getValues() (array 2D) yang SUDAH dibaca oleh caller.
+//  `matchers` : array pasangan [kolomIndex, nilaiPembanding], semua harus
+//               cocok (AND). Perbandingan selalu trim+uppercase, konsisten
+//               dengan kebiasaan existing code (ID_Item, RAK, dst).
+//  Return: index baris di `data` (0-based) yang cocok, atau -1 kalau tidak ketemu.
+// ============================================================
+function findRowIndex(data, matchers) {
+  for (var i=0; i<data.length; i++) {
+    var row = data[i];
+    var isMatch = true;
+    for (var j=0; j<matchers.length; j++) {
+      var col = matchers[j][0], val = matchers[j][1];
+      if (String(row[col]||'').trim().toUpperCase() !== val) { isMatch = false; break; }
+    }
+    if (isMatch) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+//  ROW LOOKUP BY COLUMN VALUE (Audit F-07, Low) — getHistory/getStockLedger dulu
+//  membaca SELURUH Transaksi_Log (semua 13 kolom, semua baris) ke memory Apps
+//  Script lalu filter per-item di JS, padahal biasanya cuma sebagian kecil baris
+//  yang cocok untuk 1 itemId. Sekarang: scan HANYA kolom ID_Item (1 kolom, bukan
+//  13) untuk cari nomor baris yang cocok, baru getRangeList() untuk ambil data
+//  LENGKAP cuma baris-baris yang match itu. Kolom ID tetap harus di-scan penuh
+//  (Sheets tidak punya indeks bawaan tanpa struktur data tambahan), tapi volume
+//  data yang ditransfer dari Sheets API turun drastis (1 kolom + N baris cocok,
+//  bukan 13 kolom x seluruh baris) -- makin besar Transaksi_Log, makin terasa.
+// ============================================================
+function findMatchingRowNumbers_(sheet, colIndex0, lastRow, matchValueUpper) {
+  if (lastRow < 2) return [];
+  var colVals = sheet.getRange(2, colIndex0+1, lastRow-1, 1).getValues();
+  var rowNums = [];
+  for (var i=0; i<colVals.length; i++) {
+    if (String(colVals[i][0]||'').trim().toUpperCase() === matchValueUpper) rowNums.push(i+2); // nomor baris sheet asli (1-based, +1 utk header)
+  }
+  return rowNums;
+}
+
+function getRowsByNumbers_(sheet, rowNumbers, numCols) {
+  if (!rowNumbers.length) return [];
+  var lastCol = columnToLetter_(numCols);
+  var a1 = rowNumbers.map(function(r){ return 'A'+r+':'+lastCol+r; });
+  return sheet.getRangeList(a1).getRanges().map(function(rg){ return rg.getValues()[0]; });
+}
+
+function columnToLetter_(colNum) {
+  var letter = '';
+  while (colNum > 0) {
+    var rem = (colNum-1) % 26;
+    letter = String.fromCharCode(65+rem) + letter;
+    colNum = Math.floor((colNum-1)/26);
+  }
+  return letter;
 }
 
 // ============================================================
