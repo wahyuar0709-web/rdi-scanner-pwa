@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<title>RDI Indirect Scanner v14.98 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v15.2 – PT Rayard Deli Indonesia</title>
 <style>
 /* ===================================================================
    RDI INDIRECT SCANNER — STYLESHEET (v14.98)
@@ -231,7 +231,7 @@
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.1</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.2</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon" style="display:inline-flex"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
   </button>
@@ -339,7 +339,7 @@
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v15.1</span>
+    <span class="sheet-version" id="sheet-version-label">v15.2</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1423,7 +1423,7 @@
         </button>
         <button class="chip chip-tool u-flex-1" onclick="openSortSheet()">↕ Sort</button>
       </div>
-      <div id="cetak-item-list" style="max-height:calc(100vh - 320px);overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+      <div id="cetak-item-list" style="border:1px solid var(--border);border-radius:var(--r)">
         <div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>
       </div>
     </div>
@@ -2148,7 +2148,7 @@
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.1';var APP_BUILD_DATE='2026-08-15';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.2';var APP_BUILD_DATE='2026-09-18';/* v15.2: fix #cetak-item-list overlap dgn #cetak-action-bar di layar lebar (desktop) -- max-height:calc(100vh - 320px) dilepas, list ikut scroll .container yg sudah punya padding-bottom:140px */(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
