@@ -2903,14 +2903,20 @@ function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 var cols=4,rows=6,perPage=cols*rows;
 var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+item.rak);return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
-+'<img class="lbl2-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous" alt="Kode QR item '+ex(qrID)+'">'
++'<img class="lbl2-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous" alt="Kode QR item '+ex(qrID)+'">'
 +'<div class="lbl2-kode">'+ex(qrID)+'</div>'
 +'<div class="lbl2-nama">'+ex(item.nama)+'</div>'
 +(item.spec?'<div class="lbl2-spec">'+ex(item.spec)+'</div>':'')
 +'</div>';});
 var pages=[];for(var p=0;p<cards.length;p+=perPage)pages.push(cards.slice(p,p+perPage));
 var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';}).join('');
-var scriptAction=mode==='download'?'<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=function(){var pgs=document.querySelectorAll(".page");var pdf=html2pdf();var seq=Promise.resolve();pdf.set({margin:0,filename:"'+pdfFilename+'",image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(document.getElementById("pw")).save().then(function(){setTimeout(function(){window.close();},1500);});}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
+// FIX (revisi label print): mode download dulu pakai html2pdf.bundle (auto-split 1 canvas raksasa
+// ke halaman A4 berdasarkan piksel) -- pembulatan mm->px kadang meleset sedikit sehingga muncul 1
+// halaman ekstra yang nyaris kosong, walau jumlah item tidak melebihi kapasitas per halaman (24).
+// Sekarang tiap .page dirender TERPISAH jadi 1 canvas sendiri lalu ditempel sebagai 1 halaman PDF
+// (html2canvas + jsPDF langsung, bukan html2pdf.bundle) -- jumlah halaman PDF dijamin PERSIS sama
+// dengan jumlah elemen .page (pages.length), tidak mungkin lebih.
+var scriptAction=mode==='download'?'<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script><script>window.onload=function(){var pageEls=document.querySelectorAll(".page");var pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});var idx=0;function renderNext(){if(idx>=pageEls.length){pdf.save("'+pdfFilename+'");setTimeout(function(){window.close();},1500);return;}html2canvas(pageEls[idx],{scale:2,useCORS:true,logging:false}).then(function(canvas){var imgData=canvas.toDataURL("image/jpeg",.98);if(idx>0)pdf.addPage("a4","portrait");pdf.addImage(imgData,"JPEG",0,0,210,297);idx++;renderNext();});}renderNext();}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
 return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label Barang</title><style>'
 +'@page{size:A4 portrait;margin:0mm}'
 +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0;background:#fff}.page{box-shadow:none!important;margin:0!important;page-break-after:always;page-break-inside:avoid}.page.last-page{page-break-after:avoid!important}}'
@@ -2918,11 +2924,11 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'body{background:#dde3ef;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}'
 +'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);grid-auto-rows:1fr;align-content:start;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
 +'.lbl2{border:1px dashed #99a3b8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5mm 1mm;gap:.5mm;overflow:hidden;break-inside:avoid}'
-+'.lbl2-co{font-size:3pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
-+'.lbl2-qr{width:15mm;height:15mm;flex-shrink:0}'
-+'.lbl2-kode{font-family:"Courier New",monospace;font-size:6pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
-+'.lbl2-nama{font-size:5.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
-+'.lbl2-spec{font-size:4.5pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-co{font-size:3.2pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
++'.lbl2-qr{width:26mm;height:26mm;flex-shrink:0}'
++'.lbl2-kode{font-family:"Courier New",monospace;font-size:9pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
++'.lbl2-nama{font-size:7.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-spec{font-size:6pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'@media print{.lbl2{border:1px dashed #99a3b8!important}}'
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 function buildPrintHTML(items,mode,pSize){var now=new Date();var tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='kartu-stok.'+yyyy+'.'+mm+'.'+dd+'.pdf';var cpp=pSize==='A5'?2:4;var pages=[];for(var p=0;p<items.length;p+=cpp){var c=items.slice(p,p+cpp);while(c.length<cpp)c.push(null);pages.push(c);}
