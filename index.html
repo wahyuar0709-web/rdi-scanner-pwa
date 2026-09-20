@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-window.xe=xe;window.gasGet=gasGet;})();(function(){'use strict';function openAddSheet
-window.updateAddRakHint=updateAddRakHint;})();
 <meta name="theme-color" content="#0e1623">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2279,7 +2276,7 @@ function gasPost(body){if(!GAS_URL){return Promise.resolve({status:'error',messa
 if(VIEWER_MODE){return Promise.resolve({status:'error',message:'Mode lihat-saja: perubahan data tidak diizinkan.'});}
 body.editorKey=EDITOR_KEY;var canRetry=!!body.requestId;function attempt(){return fetch(GAS_URL,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).then(function(r){return r.text();}).then(function(t){return _parseGasJson(t);});}
 return attempt().catch(function(err){if(err&&err._nonJson&&canRetry)return attempt();throw err;}).then(function(res){if(res&&res.needLogin)forceReLogin();return res;}).catch(function(err){var msg=(err&&err._nonJson)?'Server tidak merespons dengan benar (coba refresh halaman)':'Network error: '+err.message;return{status:'error',message:msg};});}
-var currentRequestId=null;function genRequestId(){try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}
+window.gasGet=gasGet;window.gasPost=gasPost;var currentRequestId=null;function genRequestId(){try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}
 return'rid-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);}
 function xe(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function rakDisplay(v){if(!v)return v;var s=String(v).trim();var m=s.replace(/\s*:\s*\d+(\.\d+)?\s*$/,'').trim();return m||s;}
