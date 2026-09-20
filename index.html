@@ -3245,7 +3245,7 @@ function applyEditItemLocally(id,payload){var r=allRows.find(function(row){retur
 renderTable(filteredRows);updateAlertBadge();closeEditSheet();showStatus('sbar-load','s-ok',IC.ok+' Item <strong>'+xe(id)+'</strong> berhasil diupdate');registerMasterValueIfNew('uom',payload.unit);registerMasterValueIfNew('kategori',payload.kategori);}
 window.applyEditItemLocally=applyEditItemLocally;window.closeAddSheet=closeAddSheet;window.closeEditSheet=closeEditSheet;window.flagFieldError=flagFieldError;window.openAddSheet=openAddSheet;window.openEditSheet=openEditSheet;window.saveAddItem=saveAddItem;window.saveEditItem=saveEditItem;window.updateAddRakHint=updateAddRakHint;})();
 (function(){
-'use strict';
+'use strict';var gasGet=window.gasGet;var gasPost=window.gasPost;
 /* ============================================================
    v5.20 — MODUL ASET SIRKULASI (saw blade/cutter: keluar-pakai-
    kembali-diasah-pakai lagi). IIFE terpisah (bukan nempel ke IIFE
@@ -4084,7 +4084,8 @@ window.removeManualRakLabel=removeManualRakLabel;
 })();
 
 </script>
-
+window.gasGet=gasGet;window.IC=IC;window.acFocusAndShow=acFocusAndShow;
+window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;
 <!-- ═══════════════════════════════════════════ -->
 <!-- BOTTOM SHEET: CETAK BARCODE RAK -->
 <!-- ═══════════════════════════════════════════ -->
