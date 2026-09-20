@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<title>RDI Indirect Scanner v15.2 – PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v14.98 – PT Rayard Deli Indonesia</title>
 <style>
 /* ===================================================================
    RDI INDIRECT SCANNER — STYLESHEET (v14.98)
@@ -231,7 +231,7 @@
     <div class="topbar-title">PT Rayard Deli Indonesia <span class="viewer-badge" style="display:none;font-size:9px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:#f59e0b;color:#1a1a1a;vertical-align:middle;margin-left:4px">LIHAT SAJA</span></div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.2</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.1</span>
   <button class="theme-toggle-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Ganti Tema" aria-label="Ganti tema terang/gelap">
     <span id="theme-icon" style="display:inline-flex"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
   </button>
@@ -339,7 +339,7 @@
     </div>
   </div>
   <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v15.2</span>
+    <span class="sheet-version" id="sheet-version-label">v15.1</span>
     <span class="sheet-user" id="drawer-username"></span>
   </div>
 </div>
@@ -1423,7 +1423,7 @@
         </button>
         <button class="chip chip-tool u-flex-1" onclick="openSortSheet()">↕ Sort</button>
       </div>
-      <div id="cetak-item-list" style="border:1px solid var(--border);border-radius:var(--r)">
+      <div id="cetak-item-list" style="max-height:calc(100vh - 320px);overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
         <div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>
       </div>
     </div>
@@ -2148,7 +2148,7 @@
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.2';var APP_BUILD_DATE='2026-09-18';/* v15.2: fix #cetak-item-list overlap dgn #cetak-action-bar di layar lebar (desktop) -- max-height:calc(100vh - 320px) dilepas, list ikut scroll .container yg sudah punya padding-bottom:140px */(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.1';var APP_BUILD_DATE='2026-08-15';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -2395,7 +2395,8 @@ function _buildTableHtml(rows){var tb=document.getElementById('table-body');tb.i
 +'<td class="c" '+alertCls+' data-tt="Status stok">'+statusDot+' '+xe(r.qty)+'</td>'
 +'<td style="color:var(--text2)">'+xe(r.unit)+'</td>'
 +'<td class="c">'+minCell+'</td>'
-+'<td class="c"><button class="btn btn-sm" style="padding:var(--sp-3) var(--space-1);font-size:10px" onclick="openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>'
++'<td class="c u-flex-cc-g5"><button class="btn btn-sm" style="padding:var(--sp-3) var(--space-1);font-size:10px" onclick="openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
++(r.id&&!_isArsip(r)?'<button class="btn btn-sm btn-green" style="padding:var(--sp-3) var(--space-1);font-size:10px" onclick="goToTransaksi(\''+xeJs(r.id)+'\')" title="Transaksi item ini" aria-label="Transaksi item ini"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></button>':'')+'</td>'
 +'</tr>';}).join('');_tableStaleRows=null;}
 window.addEventListener('resize',function(){if(_tableStaleRows&&!window.matchMedia('(max-width:640px)').matches){_buildTableHtml(_tableStaleRows);}});function fuzzyScore(haystack,needle,cheapOnly){if(!haystack||!needle)return 0;var h=haystack.toLowerCase().replace(/[^a-z0-9\s]/g,'');var n=needle.toLowerCase().replace(/[^a-z0-9\s]/g,'');if(!n)return 0;if(h.includes(n))return 100+(1-n.length/Math.max(h.length,1));var tokens=n.split(/\s+/).filter(Boolean);var words=h.split(/[\s\-_\/,\.]+/).filter(Boolean);var allPrefix=tokens.every(function(t){return words.some(function(w){return w.startsWith(t);});});if(allPrefix)return 80;if(cheapOnly)return 0;function ngrams(s,n){var t={},p='  '+s+'  ';for(var i=0;i<p.length-(n-1);i++)t[p.slice(i,i+n)]=true;return t;}
 var hBi=ngrams(h,2),nBi=ngrams(n,2);var nBiKeys=Object.keys(nBi),biInter=0;nBiKeys.forEach(function(k){if(hBi[k])biInter++;});var biSim=nBiKeys.length?biInter/nBiKeys.length:0;if(biSim>=0.35)return Math.round(biSim*75);var hTri=ngrams(h,3),nTri=ngrams(n,3);var nTriKeys=Object.keys(nTri),triInter=0;nTriKeys.forEach(function(k){if(hTri[k])triInter++;});var triSim=nTriKeys.length?triInter/nTriKeys.length:0;if(triSim>=0.3)return Math.round(triSim*60);function lev(a,b){if(a===b)return 0;var m=a.length,nn=b.length;if(m===0)return nn;if(nn===0)return m;var dp=[];for(var i=0;i<=m;i++){dp[i]=[i];}
@@ -2903,20 +2904,14 @@ function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 var cols=4,rows=6,perPage=cols*rows;
 var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+item.rak);return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
-+'<img class="lbl2-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous" alt="Kode QR item '+ex(qrID)+'">'
++'<img class="lbl2-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous" alt="Kode QR item '+ex(qrID)+'">'
 +'<div class="lbl2-kode">'+ex(qrID)+'</div>'
 +'<div class="lbl2-nama">'+ex(item.nama)+'</div>'
 +(item.spec?'<div class="lbl2-spec">'+ex(item.spec)+'</div>':'')
 +'</div>';});
 var pages=[];for(var p=0;p<cards.length;p+=perPage)pages.push(cards.slice(p,p+perPage));
 var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';}).join('');
-// FIX (revisi label print): mode download dulu pakai html2pdf.bundle (auto-split 1 canvas raksasa
-// ke halaman A4 berdasarkan piksel) -- pembulatan mm->px kadang meleset sedikit sehingga muncul 1
-// halaman ekstra yang nyaris kosong, walau jumlah item tidak melebihi kapasitas per halaman (24).
-// Sekarang tiap .page dirender TERPISAH jadi 1 canvas sendiri lalu ditempel sebagai 1 halaman PDF
-// (html2canvas + jsPDF langsung, bukan html2pdf.bundle) -- jumlah halaman PDF dijamin PERSIS sama
-// dengan jumlah elemen .page (pages.length), tidak mungkin lebih.
-var scriptAction=mode==='download'?'<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script><script>window.onload=function(){var pageEls=document.querySelectorAll(".page");var pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});var idx=0;function renderNext(){if(idx>=pageEls.length){pdf.save("'+pdfFilename+'");setTimeout(function(){window.close();},1500);return;}html2canvas(pageEls[idx],{scale:2,useCORS:true,logging:false}).then(function(canvas){var imgData=canvas.toDataURL("image/jpeg",.98);if(idx>0)pdf.addPage("a4","portrait");pdf.addImage(imgData,"JPEG",0,0,210,297);idx++;renderNext();});}renderNext();}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
+var scriptAction=mode==='download'?'<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=function(){var pgs=document.querySelectorAll(".page");var pdf=html2pdf();var seq=Promise.resolve();pdf.set({margin:0,filename:"'+pdfFilename+'",image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(document.getElementById("pw")).save().then(function(){setTimeout(function(){window.close();},1500);});}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
 return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label Barang</title><style>'
 +'@page{size:A4 portrait;margin:0mm}'
 +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0;background:#fff}.page{box-shadow:none!important;margin:0!important;page-break-after:always;page-break-inside:avoid}.page.last-page{page-break-after:avoid!important}}'
@@ -2924,11 +2919,11 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'body{background:#dde3ef;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}'
 +'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);grid-auto-rows:1fr;align-content:start;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
 +'.lbl2{border:1px dashed #99a3b8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5mm 1mm;gap:.5mm;overflow:hidden;break-inside:avoid}'
-+'.lbl2-co{font-size:3.2pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
-+'.lbl2-qr{width:26mm;height:26mm;flex-shrink:0}'
-+'.lbl2-kode{font-family:"Courier New",monospace;font-size:9pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
-+'.lbl2-nama{font-size:7.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
-+'.lbl2-spec{font-size:6pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-co{font-size:3pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
++'.lbl2-qr{width:15mm;height:15mm;flex-shrink:0}'
++'.lbl2-kode{font-family:"Courier New",monospace;font-size:6pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
++'.lbl2-nama{font-size:5.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-spec{font-size:4.5pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'@media print{.lbl2{border:1px dashed #99a3b8!important}}'
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 function buildPrintHTML(items,mode,pSize){var now=new Date();var tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='kartu-stok.'+yyyy+'.'+mm+'.'+dd+'.pdf';var cpp=pSize==='A5'?2:4;var pages=[];for(var p=0;p<items.length;p+=cpp){var c=items.slice(p,p+cpp);while(c.length<cpp)c.push(null);pages.push(c);}
