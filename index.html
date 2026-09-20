@@ -2148,7 +2148,7 @@
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.3';var APP_BUILD_DATE='2026-09-20';(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.3';var APP_BUILD_DATE='2026-09-20';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -2386,7 +2386,7 @@ var totalPages=invTotalPages();if(invPage>totalPages)invPage=totalPages;var star
 _lastInvRenderSig=sig;if(isMobileView){_tableStaleRows=pageRows;_tableStaleStartIdx=startIdx;}else{_buildTableHtml(pageRows,startIdx);}
 renderCardList(pageRows);if(pag)_updateInvPaginationLabel(pag,rows,startIdx,pageRows,totalPages);}
 function _updateInvPaginationLabel(pag,rows,startIdx,pageRows,totalPages){if(rows.length<=INV_PAGE_SIZE){pag.style.display='none';}else{pag.style.display='flex';document.getElementById('inv-page-label').textContent='Halaman '+invPage+' dari '+totalPages+' ('+(startIdx+1)+'–'+(startIdx+pageRows.length)+' dari '+rows.length+')';document.getElementById('inv-prev').disabled=invPage<=1;document.getElementById('inv-next').disabled=invPage>=totalPages;}}
-var _tableStaleRows=null;var _tableStaleStartIdx=0;function _fmtTglSingkat(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'});}
+var _tableStaleRows=null;var _tableStaleStartIdx=0;function _formatHistoryTime(value){var text=String(value||'').trim();var match=text.match(/^(\d{1,2})\.(\d{2})\.(\d{2})$/);return match?String(match[1]).padStart(2,'0')+':'+match[2]+':'+match[3]:text||'—';}function _fmtTglSingkat(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'});}
 function _stockDotSVG(level){var c=level==='red'?'var(--red)':level==='amber'?'var(--amber)':'var(--green)';return'<svg width="9" height="9" viewBox="0 0 9 9" style="vertical-align:-1px;flex:none"><circle cx="4.5" cy="4.5" r="4.5" fill="'+c+'"/></svg>';}
 
 // ===== SECTION: TABEL INVENTORY: render, stock dot, autocomplete search =====
@@ -2504,7 +2504,7 @@ box.innerHTML=critical.map(function(r){var isZero=parseInt(r.qty||0)<=0;return'<
 +'</div>';}).join('');}
 function loadDashRecentActivity(){var box=document.getElementById('dash-recent-activity');if(!box)return;gasGet({action:'getAllHistory',limit:5}).then(function(res){if(res.status!=='ok'||!res.rows.length){box.innerHTML='<div class="empty-state u-py24 u-pad-16-0"><p>Belum ada transaksi</p></div>';return;}
 box.innerHTML=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()==='MASUK';var qtyColor=isMasuk?'color:var(--green-text,#2ecc71)':'color:var(--red-text,#e74c3c)';var parts=String(r.timestamp||'').split(' ');return'<div class="idd-hist-row">'
-+'<div class="idd-hist-time">'+xe(parts[0]||'')+'<br>'+xe(parts[1]||'')+'</div>'
++'<div class="idd-hist-time">'+xe(parts[0]||'')+'<br>'+xe(_formatHistoryTime(parts[1]||''))+'</div>'
 +'<div class="idd-hist-main">'
 +'<span style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+xe(r.nama)+'</span>'
 +'<span class="idd-hist-meta" data-tt="'+xe(r.itemId||'')+'">'+xe(r.itemId||'')+'</span>'
