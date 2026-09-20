@@ -2191,7 +2191,7 @@ var allRows=[];var filteredRows=[];var _activeCat='';var _showArsip=false;var _l
 // ===== SECTION: SORT SHEET =====
 function openSortSheet(){document.querySelectorAll('#sort-list .sort-row').forEach(function(el){var active=el.dataset.field===_sortField&&+el.dataset.dir===_sortDir;el.classList.toggle('active',active);el.setAttribute('aria-pressed',active?'true':'false');});document.getElementById('modal-sort').classList.add('show');}
 function closeSortSheet(){document.getElementById('modal-sort').classList.remove('show');}
-function applySortOption(field,dir,label){_sortField=field;_sortDir=dir;document.getElementById('sort-btn-label').textContent=label;refreshActiveList();closeSortSheet();_updateThSortIndicators();}
+function applySortOption(field,dir,label){_sortField=field;_sortDir=dir;document.getElementById('sort-btn-label').textContent=label;document.querySelectorAll('#sort-list .sort-row').forEach(function(el){var active=el.dataset.field===field&&+el.dataset.dir===dir;el.classList.toggle('active',active);el.setAttribute('aria-pressed',active?'true':'false');});refreshActiveList();closeSortSheet();_updateThSortIndicators();}
 function sortByColumn(field,label){var dir;if(_sortField===field){dir=_sortDir*-1;}else{dir=(field==='_idx'||field==='qty'||field==='minStock')?-1:1;}
 var lbl;if(field==='_idx')lbl=dir===-1?'Terbaru':'Terlama';else if(field==='qty'||field==='minStock')lbl=label+(dir===-1?' Tertinggi':' Terendah');else lbl=label+(dir===-1?' Z-A':' A-Z');
 applySortOption(field,dir,lbl);}
