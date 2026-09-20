@@ -503,8 +503,8 @@ function verifyViewerToken(token) {
 }
 // Cek akses utk doGet -- lolos kalau editorKey ATAU viewerToken valid.
 function checkAnyAccess(params) {
-  var requiredKey = getEditorKey();
-  if (requiredKey && String(params.editorKey||'') === requiredKey) return { ok:true, role:'editor' };
+  var editorAuth = checkEditorKey({ editorKey: String(params.editorKey||'') });
+  if (editorAuth.ok) return { ok:true, role:'editor', nama:editorAuth.nama||'' };
   if (params.viewerToken) {
     var v = verifyViewerToken(params.viewerToken);
     if (v.ok) return { ok:true, role:'viewer' };
@@ -1391,7 +1391,7 @@ function updateSaldo(itemId, nama, unit, jenis, qty) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var saldo = ss.getSheetByName(SHEET_SALDO);
-    if (!saldo) return;
+    if (!saldo) throw new Error('Sheet '+SHEET_SALDO+' tidak ditemukan. Jalankan setupSheets() atau recalculateAllSaldo().');
 
     var masukDelta  = jenis==='MASUK'  ? qty : 0;
     var keluarDelta = jenis==='KELUAR' ? qty : 0;
@@ -1435,7 +1435,7 @@ function updateRakSaldo(itemId, rak, jenis, qty) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sh = ss.getSheetByName(SHEET_RAK_SALDO);
-    if (!sh) return;
+    if (!sh) throw new Error('Sheet '+SHEET_RAK_SALDO+' tidak ditemukan. Jalankan setupSheets() atau recalculateAllSaldo().');
 
     var delta = jenis==='MASUK' ? qty : -qty;
 

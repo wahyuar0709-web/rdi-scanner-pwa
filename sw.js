@@ -1,6 +1,11 @@
-const CACHE = 'rdi-stok-v8'; // ⚠ NAIKKAN angka ini (v3, v4, ...) SETIAP kali deploy versi baru
+const CACHE = 'rdi-stok-v9'; // bump cache whenever the app shell changes
 const ASSETS = [
-  './manifest.json'
+  './',
+  './index.html',
+  './scanner.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', e => {
