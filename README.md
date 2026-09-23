@@ -21,12 +21,14 @@ Aplikasi berjalan penuh di browser (bisa di-*install* ke HP/desktop seperti app 
 ├── index.html      # Aplikasi utama (daftar item, transaksi, riwayat, dashboard, pengaturan)
 ├── scanner.html     # Halaman scanner kamera (dipanggil dari index.html)
 ├── manifest.json    # PWA manifest (nama, ikon, tema)
-├── sw.js             # Service worker (offline caching)
+├── sw.js            # Service worker (offline caching)
+├── jsQR.min.js      # Library decode QR (self-hosted, v1.4.0 — tidak bergantung CDN)
+├── Code.gs          # Backend Google Apps Script (deploy terpisah ke Apps Script)
 ├── icon-192.png
 └── icon-512.png
 ```
 
-Backend (Google Apps Script) **tidak ada di repo ini** — dikelola terpisah sebagai Apps Script project yang terhubung ke Google Sheets database.
+Backend (`Code.gs`) ada di repo ini sebagai **sumber kode** — tetap harus di-*paste*/push ke project Apps Script dan di-*deploy* sebagai Web App terpisah (lihat Setup).
 
 ## Cara Kerja
 
@@ -34,8 +36,15 @@ Backend (Google Apps Script) **tidak ada di repo ini** — dikelola terpisah seb
 Browser (PWA)  <──HTTP GET/POST──>  Google Apps Script (Web App)  <──>  Google Sheets
 ```
 
-- **GET** — ambil data (daftar item, riwayat, dashboard, dll), bisa diakses Editor maupun Viewer
-- **POST** — tulis data (transaksi, tambah/edit item, dll), wajib `editorKey` yang valid
+- **GET** — ambil data (daftar item, riwayat, dashboard, dll), bisa diakses Editor maupun Viewer (via header `X-Editor-Key` / `X-Viewer-Token`)
+- **POST** — tulis data (transaksi, tambah/edit item, dll), wajib `editorKey` yang valid (body atau header)
+
+### Offline-first
+
+- **Shell aplikasi** (HTML/CSS/JS/ikon) di-cache service worker → buka app tanpa internet tetap bisa (menu, draft, history lokal).
+- **Data live** dari Google Sheets selalu network-first — tidak di-cache SW (akurat).
+- Draft transaksi & outbox tersimpan di `localStorage`; saat offline, submit ditahan sebagai status ambigu / outbox dan dapat dicek ulang via History setelah koneksi kembali.
+- Setelah **deploy ubahan app shell**, **bump `CACHE` di `sw.js`** (mis. `rdi-stok-v9` → `rdi-stok-v10`) supaya HP lama tidak terjebak cache versi sebelumnya.
 
 ### Skema data (Google Sheets)
 
@@ -82,10 +91,14 @@ Buka `index.html` di Chrome/Safari mobile → menu browser → **Add to Home Scr
 
 ## Keamanan
 
-- Semua aksi tulis (`postTransaksi`, `addItem`, dll) wajib `editorKey` yang cocok dengan Script Property `EDITOR_KEY`
-- Password akun Viewer disimpan ter-hash (SHA-256 + salt), bukan plaintext
-- Token sesi Viewer ditandatangani (HMAC), berlaku 30 hari
-- **Editor Key jangan dibagikan ke sembarang orang** — siapa pun yang memilikinya bisa mengubah data
+- Semua aksi tulis (`postTransaksi`, `addItem`, dll) wajib `editorKey` yang cocok dengan Script Property `EDITOR_KEY` (dibanding *constant-time*, disimpan ter-hash di server bila memungkinkan)
+- Password akun Viewer disimpan ter-hash (PBKDF2/SHA-256 + salt, banyak iterasi), bukan plaintext
+- Token sesi Viewer ditandatangani (HMAC), berlaku **12 jam**, dengan mekanisme **revocation / denylist jti** dan versi password (reset password mematikan sesi lama)
+- Login Viewer punya **rate limit** (mis. 5 gagal / 15 menit) untuk mencegah brute-force
+- Error ke user bersifat **umum** (tidak membocorkan detail internal stack/exception)
+- `doGet` pembacaan sensitif bisa divalidasi via header `X-Editor-Key` / `X-Viewer-Token`
+- Idempotensi: body-hash + `requestId` untuk cegah double-submit; mutex Script Lock pada tulis saldo
+- **Editor Key jangan dibagikan ke sembarang orang** — siapa pun yang memilikinya bisa mengubah data; di perangkat, key disimpan di storage lokal (sessionStorage/localStorage) — jangan pakai perangkat bersama tanpa logout
 
 ## Kontak / Maintainer
 

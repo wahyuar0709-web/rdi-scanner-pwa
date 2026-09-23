@@ -118,10 +118,24 @@ var btnTorch=document.getElementById('btn-torch');
 // Ambil caller dari URL param
 var urlParams=new URLSearchParams(window.location.search);
 var caller=urlParams.get('caller')||'scanner';
-var parentOrigin=urlParams.get('origin')||'*';
+// FIX: origin harus location.origin sendiri — jangan percaya param URL (spoofable),
+// dan jangan pernah postMessage ke '*'.
+var parentOrigin=location.origin;
+var didSend=false;
+
+function postToOpener(msg){
+  // Kirim hanya ke SATU target: opener jika ada, selain itu parent frame.
+  if(window.opener && !window.opener.closed){
+    try{ window.opener.postMessage(msg, parentOrigin); return; }catch(e){}
+  }
+  if(window.parent && window.parent!==window){
+    try{ window.parent.postMessage(msg, parentOrigin); }catch(e){}
+  }
+}
 
 function sendResult(rawValue){
-  if(!scanning) return;
+  if(!scanning || didSend) return;
+  didSend=true;
   scanning=false;
   clearInterval(scanTimer);
 
@@ -130,26 +144,27 @@ function sendResult(rawValue){
   foundEl.classList.add('show');
   setStatus('✅ Ditemukan: '+id,'ok');
 
-  // Kirim ke parent (opener atau parent frame)
-  var msg={type:'QR_RESULT',id:id,caller:caller};
-  if(window.opener){
-    window.opener.postMessage(msg,'*');
-  }
-  if(window.parent && window.parent!==window){
-    window.parent.postMessage(msg,'*');
-  }
+  postToOpener({type:'QR_RESULT',id:id,caller:caller});
 
-  setTimeout(function(){ stopCamera(); window.close(); },1200);
+  setTimeout(function(){ stopCamera(); closeScanner(); },1200);
 }
 
 function closeScanner(){
   stopCamera();
+  // FIX: window.close() sering diblokir jika tidak dibuka script — fallback history.
   window.close();
+  setTimeout(function(){
+    if(!window.closed){
+      if(history.length>1) history.back();
+      else { document.body.innerHTML='<p style="padding:24px;font-family:sans-serif">Scanner ditutup. Kembali ke aplikasi.</p>'; }
+    }
+  },400);
 }
 
 function stopCamera(){
   clearInterval(scanTimer);
   if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; }
+  scanning=false;
 }
 
 function setStatus(msg,cls){
@@ -165,26 +180,33 @@ function toggleTorch(){
   btnTorch.classList.toggle('on',torchOn);
 }
 
+// FIX: busy flag mencegah detect() overlap (bisa double-send / race).
+var nativeBusy=false;
 function startNativeScan(){
   setStatus('Scanning…','scanning');
   loaderEl.classList.add('hidden');
   scanTimer=setInterval(function(){
-    if(!scanning) return;
+    if(!scanning || nativeBusy) return;
+    nativeBusy=true;
     detector.detect(cam).then(function(barcodes){
+      nativeBusy=false;
       if(barcodes.length>0) sendResult(barcodes[0].rawValue);
-    }).catch(function(){});
+    }).catch(function(){ nativeBusy=false; });
   },200);
 }
 
+var jsqBusy=false;
 function startJsQrScan(){
   setStatus('Scanning…','scanning');
   loaderEl.classList.add('hidden');
   scanTimer=setInterval(function(){
-    if(!scanning||cam.readyState<2) return;
+    if(!scanning||jsqBusy||cam.readyState<2) return;
+    jsqBusy=true;
     cnv.width=cam.videoWidth; cnv.height=cam.videoHeight;
     ctx.drawImage(cam,0,0,cnv.width,cnv.height);
     var imageData=ctx.getImageData(0,0,cnv.width,cnv.height);
     var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+    jsqBusy=false;
     if(code) sendResult(code.data);
   },250);
 }
@@ -193,10 +215,13 @@ function loadJsQR(callback){
   if(window.jsQR){callback();return;}
   loaderMsg.textContent='Memuat library scanner…';
   var s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+  // FIX: self-host agar tetap jalan offline & tanpa CDN dependency
+  s.src='./jsQR.min.js';
   s.onload=callback;
   s.onerror=function(){
-    setStatus('Gagal memuat library. Cek koneksi.','err');
+    // FIX: stop kamera jika library gagal dimuat (kamera tidak berguna tanpa decoder)
+    stopCamera();
+    setStatus('Gagal memuat library scanner.','err');
     loaderMsg.textContent='Gagal memuat library.';
   };
   document.head.appendChild(s);
@@ -223,9 +248,16 @@ async function initCamera(){
     }
   }
 
-  cam.srcObject=stream; cam.play();
+  cam.srcObject=stream;
+  // FIX: cam.play() bisa reject (autoplay policy) — jangan diam-diam gagal
+  cam.play().catch(function(){ setStatus('Tekan ▶ untuk mulai preview kamera','scanning'); });
 
   var track=stream.getVideoTracks()[0];
+  // FIX: track ended (mis. kamera diambil app lain) → beri tahu user, jangan diam
+  track.addEventListener('ended',function(){
+    scanning=false; clearInterval(scanTimer);
+    setStatus('Kamera terputus.','err');
+  });
   var caps=track.getCapabilities?track.getCapabilities():{};
   if(caps.torch){ btnTorch.style.display=''; }
 

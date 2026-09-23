@@ -376,6 +376,41 @@ function corsOutput(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// FIX KRITIS: constant-time string compare (hindari timing attack pada secret/token)
+function constantTimeEquals_(a, b) {
+  a = String(a == null ? '' : a);
+  b = String(b == null ? '' : b);
+  if (a.length !== b.length) {
+    // tetap iterate panjang terpanjang supaya durasi tidak bocor panjang secret
+    var len = Math.max(a.length, b.length);
+    var dummy = 0;
+    for (var i = 0; i < len; i++) {
+      dummy |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+    }
+    return false;
+  }
+  var diff = 0;
+  for (var j = 0; j < a.length; j++) {
+    diff |= a.charCodeAt(j) ^ b.charCodeAt(j);
+  }
+  return diff === 0;
+}
+
+// FIX TINGGI: safeCell — cegah formula injection saat user text ditulis ke Sheet.
+// Nilai yang diawali = + - @ \t \r di-prepend apostrophe agar Sheets memperlakukan sebagai teks.
+function safeCell_(value) {
+  if (value == null) return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) return value;
+  var s = String(value);
+  if (/^[=+\-@\t\r]/.test(s)) return "'" + s;
+  return s;
+}
+
+// FIX TINGGI: pesan error generik — jangan bocorkan err.message (bisa memuat path/sheet internals) ke client
+function genericError_(fnName) {
+  return { status: 'error', message: 'Terjadi kesalahan pada ' + fnName + '. Coba lagi atau hubungi admin.' };
+}
+
 // ============================================================
 //  EDITOR KEY — proteksi utk aksi TULIS (v5.5, diperluas v5.6)
 //  Semua aksi di doPost (postTransaksi, addItem, updateItem, addMasterValue,
@@ -416,21 +451,63 @@ function getEditorKey() {
 // mengandalkan string client seperti sebelumnya sampai akun per-orang disetup.
 var SHEET_EDITOR_ACCOUNTS = 'Editor_Accounts'; // Nama | EditorKey | Aktif
 
+// FIX TINGGI: cache Editor_Accounts (60 dtk) — kurangi read sheet per request
 function checkEditorAccountKey_(editorKey) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sh = ss.getSheetByName(SHEET_EDITOR_ACCOUNTS);
-    if (!sh || sh.getLastRow() < 2) return null; // sheet belum disetup -> caller fallback ke EDITOR_KEY lama
-    var rows = sh.getRange(2,1,sh.getLastRow()-1,3).getValues(); // Nama, EditorKey, Aktif
+    var cache = CacheService.getScriptCache();
+    var cacheKey = 'editor_acc_rows';
+    var rows = null;
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      try { rows = JSON.parse(cached); } catch(e) { rows = null; }
+    }
+    if (!rows) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sh = ss.getSheetByName(SHEET_EDITOR_ACCOUNTS);
+      if (!sh || sh.getLastRow() < 2) return { none:true }; // sheet belum disetup
+      rows = sh.getRange(2,1,sh.getLastRow()-1,3).getValues(); // Nama, EditorKey, Aktif
+      try { cache.put(cacheKey, JSON.stringify(rows), 60); } catch(e) {}
+    }
+    if (!rows || !rows.length) return { none:true };
+
+    var hasMatch = false;
     for (var i=0; i<rows.length; i++) {
-      if (String(rows[i][COL_EDITOR_ACC.KEY]||'') !== editorKey) continue;
+      var storedKey = String(rows[i][COL_EDITOR_ACC.KEY]||'');
+      var matched = false;
+      if (storedKey && isPasswordHashFormat_(storedKey)) {
+        matched = verifyPasswordHash_(String(editorKey||''), storedKey);
+      } else if (storedKey) {
+        // legacy plaintext key
+        matched = constantTimeEquals_(storedKey, String(editorKey||''));
+        // upgrade diam-diam ke hash
+        if (matched && editorKey) {
+          try {
+            var sh2 = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_EDITOR_ACCOUNTS);
+            if (sh2) {
+              sh2.getRange(i+2, COL_EDITOR_ACC.KEY+1).setValue(makeSaltedPasswordHash_(String(editorKey)));
+              try { CacheService.getScriptCache().remove(cacheKey); } catch(e2) {}
+            }
+          } catch(e3) {}
+        }
+      }
+      if (!matched) continue;
+      hasMatch = true;
       var aktifRaw = String(rows[i][COL_EDITOR_ACC.AKTIF]).toUpperCase();
       var aktif = rows[i][COL_EDITOR_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
       if (!aktif) return { blocked:true };
       return { nama: String(rows[i][COL_EDITOR_ACC.NAMA]||'').trim() || 'Editor' };
     }
-    return null; // tidak cocok baris manapun -> caller fallback ke EDITOR_KEY lama
-  } catch(e) { return null; }
+    // FIX TINGGI: kalau Editor_Accounts sudah ada isinya tapi key tidak cocok —
+    // JANGAN fallback ke EDITOR_KEY tunggal (kecuali explicitly diizinkan via properti).
+    // Ini menutup celah "akun diblokir tapi masih bisa pakai EDITOR_KEY lama".
+    var allowFallback = PropertiesService.getScriptProperties().getProperty('ALLOW_EDITOR_KEY_FALLBACK');
+    if (String(allowFallback||'').toUpperCase() !== 'TRUE') {
+      if (hasMatch === false && rows && rows.length) {
+        return { blocked:true, message:'Akses ditolak: gunakan akun editor yang terdaftar.' };
+      }
+    }
+    return { none:true }; // tidak cocok & fallback diizinkan
+  } catch(e) { return { none:true }; }
 }
 
 function checkEditorKey(body) {
@@ -439,18 +516,19 @@ function checkEditorKey(body) {
   // 1) Coba cocokkan ke akun editor per-orang dulu (kalau sheet-nya disetup).
   var acc = checkEditorAccountKey_(editorKey);
   if (acc && acc.blocked) {
-    return { ok:false, message:'Akun editor ini sudah dinonaktifkan. Hubungi admin.' };
+    return { ok:false, message: acc.message || 'Akun editor ini sudah dinonaktifkan. Hubungi admin.' };
   }
-  if (acc) {
+  if (acc && acc.nama) {
     return { ok:true, nama: acc.nama }; // nama TERVERIFIKASI, dipakai override field admin di transaksi
   }
 
-  // 2) Fallback: EDITOR_KEY tunggal lama (mode lama, identitas admin TIDAK terverifikasi).
+  // 2) Fallback: EDITOR_KEY tunggal lama — hanya kalau sheet kosong/absen
+  //    ATAU ALLOW_EDITOR_KEY_FALLBACK=TRUE.
   var required = getEditorKey();
   if (!required) {
     return { ok:false, message:'EDITOR_KEY belum diset di Script Properties. Lihat komentar checkEditorKey() di Code.gs utk cara setup.' };
   }
-  if (editorKey !== required) {
+  if (!constantTimeEquals_(editorKey, required)) {
     return { ok:false, message:'Akses ditolak: perangkat ini dalam mode lihat-saja, tidak bisa menyimpan perubahan.' };
   }
   return { ok:true }; // tanpa `nama` -- lihat catatan di doPost/postTransaksi
@@ -483,8 +561,10 @@ function getViewerSecret() {
   return s;
 }
 function makeViewerToken(username, nama) {
-  var expiry = Date.now() + 30*24*60*60*1000; // berlaku 30 hari
-  var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(username+'|'+nama+'|'+expiry).getBytes());
+  // FIX TINGGI: TTL diturunkan dari 30 hari → 12 jam (sesuai rekomendasi audit)
+  var expiry = Date.now() + 12*60*60*1000;
+  var jti = Utilities.getUuid(); // unique token id utk denylist/revoke
+  var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(username+'|'+nama+'|'+expiry+'|'+jti).getBytes());
   var sigB64 = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payloadB64, getViewerSecret()));
   return payloadB64 + '.' + sigB64;
 }
@@ -493,12 +573,62 @@ function verifyViewerToken(token) {
     var parts = String(token||'').split('.');
     if (parts.length !== 2) return { ok:false };
     var expectedSig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], getViewerSecret()));
-    if (parts[1] !== expectedSig) return { ok:false }; // tanda tangan tidak cocok -> dipalsukan/rusak
+    if (!constantTimeEquals_(parts[1], expectedSig)) return { ok:false }; // tanda tangan tidak cocok -> dipalsukan/rusak
     var payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString();
     var bits = payload.split('|');
     var expiry = parseInt(bits[2], 10);
     if (!expiry || Date.now() > expiry) return { ok:false, expired:true };
-    return { ok:true, username:bits[0], nama:bits[1] };
+    var username = bits[0];
+    var nama = bits[1];
+    var jti = bits[3] || '';
+
+    // FIX KRITIS: cek denylist jti (revoke per-session)
+    if (jti) {
+      var denied = CacheService.getScriptCache().get('token_deny_' + jti);
+      if (denied) return { ok:false, revoked:true };
+    }
+
+    // FIX KRITIS: re-check Viewer_Accounts — status Aktif & passwordVersion
+    // (cache 60 dtk supaya tidak baca sheet tiap request)
+    var cache = CacheService.getScriptCache();
+    var statusKey = 'viewer_status_' + String(username||'').toLowerCase();
+    var cachedStatus = cache.get(statusKey);
+    var aktif = true;
+    var expectedPv = null;
+    if (cachedStatus) {
+      try {
+        var cs = JSON.parse(cachedStatus);
+        aktif = !!cs.aktif;
+        expectedPv = cs.pv;
+      } catch(e) {}
+    } else {
+      try {
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var sh = ss.getSheetByName(SHEET_VIEWER_ACCOUNTS);
+        if (sh && sh.getLastRow() >= 2) {
+          var rows = sh.getRange(2,1,sh.getLastRow()-1,5).getValues(); // + passwordVersion col5 jika ada
+          for (var i=0; i<rows.length; i++) {
+            var u = String(rows[i][COL_VIEWER_ACC.USERNAME]||'').trim().toLowerCase();
+            if (u !== String(username||'').toLowerCase()) continue;
+            var aktifRaw = String(rows[i][COL_VIEWER_ACC.AKTIF]).toUpperCase();
+            aktif = rows[i][COL_VIEWER_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
+            if (rows[i].length > 4) expectedPv = rows[i][4]; // passwordVersion opsional
+            break;
+          }
+        }
+      } catch(e2) {}
+      try { cache.put(statusKey, JSON.stringify({aktif:aktif, pv:expectedPv}), 60); } catch(e3) {}
+    }
+    if (!aktif) return { ok:false, revoked:true };
+
+    // FIX KRITIS: kalau token menyimpan pv & account pv berbeda → force re-login
+    // (pv = passwordVersion / counter reset password)
+    var tokenPv = bits[4] || '';
+    if (expectedPv != null && expectedPv !== '' && tokenPv && String(tokenPv) !== String(expectedPv)) {
+      return { ok:false, revoked:true };
+    }
+
+    return { ok:true, username:username, nama:nama };
   } catch(e) { return { ok:false }; }
 }
 // Cek akses utk doGet -- lolos kalau editorKey ATAU viewerToken valid.
@@ -507,34 +637,69 @@ function checkAnyAccess(params) {
   if (editorAuth.ok) return { ok:true, role:'editor', nama:editorAuth.nama||'' };
   if (params.viewerToken) {
     var v = verifyViewerToken(params.viewerToken);
-    if (v.ok) return { ok:true, role:'viewer' };
+    if (v.ok) return { ok:true, role:'viewer', nama:v.nama||'' };
   }
   return { ok:false, message:'Sesi belum login atau sudah habis. Silakan login ulang.' };
 }
-// FIX v5.13 (Audit F-02): kolom Password di Viewer_Accounts dulu PLAINTEXT -- siapa saja
-// yang buka sheet (atau lihat riwayat versi Sheets) langsung lihat password asli semua
-// viewer. Sekarang password disimpan dalam format hash "salt$hashHex" (SHA-256 + salt
-// unik per akun via Utilities.computeDigest -- Apps Script tidak punya bcrypt bawaan,
-// SHA-256+salt adalah opsi terkuat yang tersedia native di platform ini). MIGRASI
-// OTOMATIS & transparan: akun lama yang passwordnya masih plaintext tetap bisa login
-// SEKALI TERAKHIR dgn password lama itu, dan begitu cocok langsung ditulis ulang ke
-// sheet dalam bentuk hash -- tidak perlu admin migrasi manual satu-satu.
+// FIX TINGGI: rate-limit login viewer — 5 gagal / username / 15 menit
+function rateLimitViewerLogin_(username) {
+  var cache = CacheService.getScriptCache();
+  var key = 'login_fail_' + String(username||'').toLowerCase();
+  var fails = parseInt(cache.get(key)||'0', 10);
+  if (fails >= 5) return { ok:false, message:'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' };
+  return { ok:true };
+}
+function recordViewerLoginFail_(username) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var key = 'login_fail_' + String(username||'').toLowerCase();
+    var fails = parseInt(cache.get(key)||'0', 10) + 1;
+    var ttl = fails >= 5 ? 900 : 300; // window 5 menit, lock 15 menit setelah 5 gagal
+    cache.put(key, String(fails), ttl);
+  } catch(e) {}
+}
+function clearViewerLoginFail_(username) {
+  try { CacheService.getScriptCache().remove('login_fail_' + String(username||'').toLowerCase()); } catch(e) {}
+}
+// FIX TINGGI: KDF dengan iterasi (format salt$iterations$hash), backward-compat format lama salt$hash
+var KDF_ITERATIONS_ = 100000;
 function hashPasswordHex_(password, salt) {
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + password);
   return bytes.map(function(b){ return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
 }
+function hashPasswordIterated_(password, salt, iterations) {
+  var h = hashPasswordHex_(password, salt);
+  for (var i=1; i<iterations; i++) {
+    h = hashPasswordHex_(h, salt);
+  }
+  return h;
+}
 function makeSaltedPasswordHash_(password) {
   var salt = Utilities.getUuid();
-  return salt + '$' + hashPasswordHex_(password, salt);
+  return salt + '$' + KDF_ITERATIONS_ + '$' + hashPasswordIterated_(password, salt, KDF_ITERATIONS_);
 }
 function isPasswordHashFormat_(stored) {
   var parts = String(stored||'').split('$');
-  return parts.length === 2 && parts[1].length === 64; // salt$64-hex-char SHA-256
+  if (parts.length === 3 && /^\d+$/.test(parts[1]) && parts[2].length === 64) return true; // salt$iter$hash
+  return parts.length === 2 && parts[1].length === 64; // legacy salt$64-hex-char SHA-256
 }
 function verifyPasswordHash_(password, stored) {
   var parts = String(stored).split('$');
-  return hashPasswordHex_(password, parts[0]) === parts[1];
+  if (parts.length === 3) {
+    var iters = parseInt(parts[1], 10) || 1;
+    return constantTimeEquals_(hashPasswordIterated_(password, parts[0], iters), parts[2]);
+  }
+  // legacy 2-part: single SHA-256
+  return constantTimeEquals_(hashPasswordHex_(password, parts[0]), parts[1]);
 }
+// FIX v5.13 (Audit F-02): kolom Password di Viewer_Accounts dulu PLAINTEXT -- siapa saja
+// yang buka sheet (atau lihat riwayat versi Sheets) langsung lihat password asli semua
+// viewer. Sekarang password disimpan dalam format hash "salt$iterations$hash" (SHA-256 + salt
+// unik per akun, iterasi 100k utk KDF yang lebih kuat dari single-hash).
+// Format lama "salt$hash" (1 iterasi) tetap diverifikasi utk migrasi transparan.
+// MIGRASI OTOMATIS & transparan: akun lama yang passwordnya masih plaintext tetap bisa login
+// SEKALI TERAKHIR dgn password lama itu, dan begitu cocok langsung ditulis ulang ke
+// sheet dalam bentuk hash -- tidak perlu admin migrasi manual satu-satu.
 
 function checkViewerCredentials(username, password) {
   try {
@@ -543,29 +708,44 @@ function checkViewerCredentials(username, password) {
     if (!sh || sh.getLastRow() < 2) return { ok:false, message:'Belum ada akun viewer terdaftar. Hubungi admin.' };
     var rows = sh.getRange(2,1,sh.getLastRow()-1,4).getValues(); // Username, Password, Nama, Aktif
     var uInput = String(username||'').trim().toLowerCase();
+    var found = false;
     for (var i=0; i<rows.length; i++) {
       var u = String(rows[i][COL_VIEWER_ACC.USERNAME]||'').trim();
       if (u.toLowerCase() !== uInput) continue;
+      found = true;
       var aktifRaw = String(rows[i][COL_VIEWER_ACC.AKTIF]).toUpperCase();
       var aktif = rows[i][COL_VIEWER_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
       if (!aktif) return { ok:false, message:'Akun ini sudah dinonaktifkan. Hubungi admin.' };
 
       var storedPw = String(rows[i][COL_VIEWER_ACC.PASSWORD]||'');
+      // FIX SEDANG: tolak password default GANTI-PASSWORD-INI (hash maupun plaintext)
+      if (storedPw === 'GANTI-PASSWORD-INI' ||
+          (isPasswordHashFormat_(storedPw) && verifyPasswordHash_('GANTI-PASSWORD-INI', storedPw))) {
+        return { ok:false, message:'Password akun ini masih default. Hubungi admin untuk menggantinya.' };
+      }
       if (isPasswordHashFormat_(storedPw)) {
-        if (!verifyPasswordHash_(String(password||''), storedPw)) return { ok:false, message:'Password salah.' };
+        if (!verifyPasswordHash_(String(password||''), storedPw)) return { ok:false, message:'Username atau password salah.' };
       } else {
         // Akun lama, password masih plaintext -- cek apa adanya, lalu migrasi diam-diam ke hash.
-        if (storedPw !== String(password||'')) return { ok:false, message:'Password salah.' };
+        if (!constantTimeEquals_(storedPw, String(password||''))) return { ok:false, message:'Username atau password salah.' };
         try { sh.getRange(i+2, COL_VIEWER_ACC.PASSWORD+1).setValue(makeSaltedPasswordHash_(String(password||''))); } catch(e) { /* login tetap lanjut walau migrasi hash gagal ditulis */ }
       }
       return { ok:true, username:u, nama: String(rows[i][COL_VIEWER_ACC.NAMA]||'') || u };
     }
-    return { ok:false, message:'Username tidak ditemukan.' };
-  } catch(e) { return { ok:false, message:'checkViewerCredentials: '+e.message }; }
+    // FIX TINGGI: pesan generik — jangan bocorkan "username tidak ditemukan" vs "password salah"
+    return { ok:false, message:'Username atau password salah.' };
+  } catch(e) { return { ok:false, message:'Username atau password salah.' }; }
 }
 function apiViewerLogin(body) {
-  var r = checkViewerCredentials(body.username, body.password);
-  if (!r.ok) return { status:'error', message: r.message };
+  var uname = String(body.username||'').trim();
+  var rl = rateLimitViewerLogin_(uname);
+  if (!rl.ok) return { status:'error', message: rl.message };
+  var r = checkViewerCredentials(uname, body.password);
+  if (!r.ok) {
+    recordViewerLoginFail_(uname);
+    return { status:'error', message: r.message };
+  }
+  clearViewerLoginFail_(uname);
   return { status:'ok', token: makeViewerToken(r.username, r.nama), nama: r.nama };
 }
 // Jalankan SEKALI dari editor Apps Script (dropdown fungsi -> Run) utk bikin sheet akun viewer.
@@ -586,13 +766,19 @@ function setupViewerAccountsSheet() {
 //  doGet — handle GET requests dari PWA
 // ============================================================
 function doGet(e) {
-  // FIX v5.13 (Audit F-05): dulu tidak ada try/catch di sini -- kalau ada error tak
-  // terduga (mis. sheet terhapus, kuota habis), Apps Script balikin halaman HTML error
-  // bawaan, bukan JSON -- frontend (yang selalu expect JSON) gagal parse & bingung.
   try {
     var params = (e && e.parameter) ? e.parameter : {};
     var action = params.action || '';
     var id     = params.id || '';
+
+    // FIX KRITIS: dukung kredensial via header (X-Editor-Key / X-Viewer-Token)
+    // supaya secret TIDAK wajib lewat query string (bisa masuk access log/history).
+    // Frontend baru mengirim via header/body; query string tetap didukung utk kompatibilitas.
+    try {
+      var headers = (e && e.allHeaders) ? e.allHeaders : {};
+      if (!params.editorKey && headers['X-Editor-Key']) params.editorKey = headers['X-Editor-Key'];
+      if (!params.viewerToken && headers['X-Viewer-Token']) params.viewerToken = headers['X-Viewer-Token'];
+    } catch(hdrErr) {}
 
     var auth = checkAnyAccess(params);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
@@ -608,7 +794,11 @@ function doGet(e) {
     if (action === 'getRakBreakdownAll') return corsOutput(getAllRakBreakdown());
 
     // v5.22 — export Excel lengkap (kartu stok per-batch FIFO, per kategori)
-    if (action === 'getExportData') return corsOutput(getExportData(params.dateFrom, params.dateTo));
+    // FIX SEDANG: export hanya utk role editor (bukan viewer)
+    if (action === 'getExportData') {
+      if (auth.role !== 'editor') return corsOutput({ status:'error', message:'Export hanya untuk editor.' });
+      return corsOutput(getExportData(params.dateFrom, params.dateTo));
+    }
 
     // v5.20 — modul Aset Sirkulasi (read-only, tanpa editorKey, konsisten dgn pola di atas)
     if (action === 'getAsetItemList')   return corsOutput(getAsetItemList());
@@ -622,7 +812,9 @@ function doGet(e) {
 
     return corsOutput({ status:'ok', message:'RDI Kartu Stok API v5.22' });
   } catch(err) {
-    return corsOutput({ status:'error', message:'doGet error: ' + err.message });
+    // FIX TINGGI: jangan bocorkan err.message ke client
+    console.error('doGet error: ' + (err && err.stack ? err.stack : err));
+    return corsOutput(genericError_('doGet'));
   }
 }
 
@@ -637,7 +829,45 @@ function doPost(e) {
     // viewerLogin JUSTRU endpoint utk MENDAPATKAN akses -- tidak boleh digate editorKey.
     if (action === 'viewerLogin') return corsOutput(apiViewerLogin(body));
 
-    // Semua action lain di sini MENGUBAH data -> wajib editorKey yg valid.
+    // FIX KRITIS: dukung aksi BACA via POST (gasGet baru mengirim kredensial di body,
+    // bukan query string) — checkAnyAccess dengan editorKey/viewerToken dari body.
+    var READ_ACTIONS = {
+      getData:1, getItem:1, getHistory:1, getAllHistory:1, generateId:1,
+      getDashboard:1, getMasterLists:1, getLedger:1, getRakBreakdownAll:1,
+      getExportData:1, getAsetItemList:1, getAsetUnitList:1, getAsetUnitById:1,
+      getAsetMovementLog:1, getAsetDashboard:1, getKontrolAsah:1,
+      getAsetPerformaVendor:1, getAsetEligibleUnits:1
+    };
+    if (READ_ACTIONS[action]) {
+      var readAuth = checkAnyAccess(body);
+      if (!readAuth.ok) return corsOutput({ status:'error', message: readAuth.message, needLogin:true });
+      if (readAuth.nama) body.verifiedAdmin = readAuth.nama;
+
+      if (action === 'getData')     return corsOutput(getSheetData());
+      if (action === 'getItem')     return corsOutput(getItemById(body.id));
+      if (action === 'getHistory')  return corsOutput(getHistory(body.id));
+      if (action === 'getAllHistory') return corsOutput(getAllHistory(body.limit));
+      if (action === 'generateId')  return corsOutput({ status:'ok', id: generateID() });
+      if (action === 'getDashboard') return corsOutput(getDashboard());
+      if (action === 'getMasterLists') return corsOutput(getMasterLists());
+      if (action === 'getLedger') return corsOutput(getStockLedger(body.id));
+      if (action === 'getRakBreakdownAll') return corsOutput(getAllRakBreakdown());
+      if (action === 'getExportData') {
+        if (readAuth.role !== 'editor') return corsOutput({ status:'error', message:'Export hanya untuk editor.' });
+        return corsOutput(getExportData(body.dateFrom, body.dateTo));
+      }
+      if (action === 'getAsetItemList')   return corsOutput(getAsetItemList());
+      if (action === 'getAsetUnitList')   return corsOutput(getAsetUnitList(body.kodeAlat));
+      if (action === 'getAsetUnitById')   return corsOutput(getAsetUnitById(body.id));
+      if (action === 'getAsetMovementLog') return corsOutput(getAsetMovementLog(body.id, body.limit));
+      if (action === 'getAsetDashboard')  return corsOutput(getAsetDashboard());
+      if (action === 'getKontrolAsah')    return corsOutput(getKontrolAsah(body.kodeAlat));
+      if (action === 'getAsetPerformaVendor') return corsOutput(getAsetPerformaVendor());
+      if (action === 'getAsetEligibleUnits') return corsOutput(getAsetEligibleUnits(body.kodeAlat, body.activity));
+      return corsOutput({ status:'error', message:'Unknown read action: ' + action });
+    }
+
+    // Semua action tulis di sini MENGUBAH data -> wajib editorKey yg valid.
     var auth = checkEditorKey(body);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
     // FIX v5.13 (F-03): kalau editorKey ini cocok akun per-orang di Editor_Accounts, `auth.nama`
@@ -659,7 +889,9 @@ function doPost(e) {
 
     return corsOutput({ status:'error', message:'Unknown action: ' + action });
   } catch(err) {
-    return corsOutput({ status:'error', message:'doPost error: ' + err.message });
+    // FIX TINGGI: jangan bocorkan err.message ke client
+    console.error('doPost error: ' + (err && err.stack ? err.stack : err));
+    return corsOutput(genericError_('doPost'));
   }
 }
 
@@ -731,7 +963,8 @@ function apiMigrateAddID() {
     if (r.assigned === 0) return { status:'ok', message:'Semua item sudah punya ID_Item. Tidak ada yang diubah.' };
     return { status:'ok', message: r.assigned+' item diberi ID baru ('+r.prefix+'XXX). Kalau item itu sudah punya transaksi lama, jalankan juga Kalkulasi Ulang Stok.' };
   } catch(err) {
-    return { status:'error', message:'apiMigrateAddID: '+err.message };
+    console.error('apiMigrateAddID error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiMigrateAddID');
   }
 }
 
@@ -893,7 +1126,8 @@ function getSheetData() {
     }
     return { status:'ok', rows:rows, total:rows.length, hasIDCol:hasIDCol };
   } catch(err) {
-    return { status:'error', message:'getSheetData: ' + err.message };
+    console.error('getSheetData error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getSheetData');
   }
 }
 
@@ -957,7 +1191,8 @@ function getDashboard() {
 
     return { status:'ok', data:{ totalItem:totalItem, totalMasuk:totalMasuk, totalKeluar:totalKeluar, top5:top5 } };
   } catch(err) {
-    return { status:'error', message:'getDashboard: '+err.message };
+    console.error('getDashboard error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getDashboard');
   }
 }
 
@@ -989,18 +1224,19 @@ function updateItem(body) {
     }
     if (rowIndex === -1) return { status:'error', message:'Item '+id+' tidak ditemukan' };
 
-    if (body.nama     !== undefined) sheet.getRange(rowIndex, COL_MASTER.NAMA+1).setValue(body.nama);
-    if (body.spec     !== undefined) sheet.getRange(rowIndex, COL_MASTER.SPEC+1).setValue(body.spec);
-    if (body.user     !== undefined) sheet.getRange(rowIndex, COL_MASTER.USER+1).setValue(body.user);
-    if (body.bc       !== undefined) sheet.getRange(rowIndex, COL_MASTER.BC+1).setValue(body.bc);
-    if (body.unit     !== undefined) sheet.getRange(rowIndex, COL_MASTER.UNIT+1).setValue(body.unit);
-    if (body.kategori !== undefined) sheet.getRange(rowIndex, COL_MASTER.KATEGORI+1).setValue(body.kategori);
+    if (body.nama     !== undefined) sheet.getRange(rowIndex, COL_MASTER.NAMA+1).setValue(safeCell_(body.nama));
+    if (body.spec     !== undefined) sheet.getRange(rowIndex, COL_MASTER.SPEC+1).setValue(safeCell_(body.spec));
+    if (body.user     !== undefined) sheet.getRange(rowIndex, COL_MASTER.USER+1).setValue(safeCell_(body.user));
+    if (body.bc       !== undefined) sheet.getRange(rowIndex, COL_MASTER.BC+1).setValue(safeCell_(body.bc));
+    if (body.unit     !== undefined) sheet.getRange(rowIndex, COL_MASTER.UNIT+1).setValue(safeCell_(body.unit));
+    if (body.kategori !== undefined) sheet.getRange(rowIndex, COL_MASTER.KATEGORI+1).setValue(safeCell_(body.kategori));
     if (body.minStock !== undefined) sheet.getRange(rowIndex, COL_MASTER.MIN_STOCK+1).setValue(parseInt(body.minStock,10)||0);
 
     SpreadsheetApp.flush();
     return { status:'ok', message:'Item '+id+' berhasil diupdate' };
   } catch(err) {
-    return { status:'error', message:'updateItem: ' + err.message };
+    console.error('updateItem error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('updateItem');
   }
 }
 
@@ -1059,7 +1295,8 @@ function archiveItem(body) {
       ? ('Item '+id+' diaktifkan kembali.')
       : ('Item '+id+' diarsipkan. Item tidak akan muncul di Master List/pencarian transaksi, tapi riwayat transaksinya tetap tersimpan.') };
   } catch(err) {
-    return { status:'error', message:'archiveItem: ' + err.message };
+    console.error('archiveItem error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('archiveItem');
   }
 }
 
@@ -1105,7 +1342,8 @@ function getItemById(itemId) {
     }
     return { status:'error', message:'Item '+itemId+' tidak ditemukan' };
   } catch(err) {
-    return { status:'error', message:'getItemById: ' + err.message };
+    console.error('getItemById error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getItemById');
   }
 }
 
@@ -1137,11 +1375,6 @@ function getSaldoMap() {
   var map = {};
   Object.keys(full).forEach(function(k){ map[k] = full[k].saldo; });
   return map;
-}
-
-function getSaldoItem(itemId) {
-  var map = getSaldoMap();
-  return map.hasOwnProperty(itemId) ? map[itemId] : 0;
 }
 
 // ── Breakdown saldo PER RAK — dari Stok_Per_Rak ─────────────
@@ -1216,7 +1449,8 @@ function acquirePerItemLock_(itemId, timeoutMs) {
     try {
       slock.waitLock(2000); // lock global cuma utk atomic check-and-set flag, bukan utk seluruh transaksi
       if (!cache.get(lockKey)) {
-        cache.put(lockKey, '1', 20); // TTL 20dtk jaga2 kalau proses macet -- lock tidak nyangkut selamanya
+        // FIX TINGGI: TTL mutex dinaikkan 20s → 120s (proses panjang tidak keburu expire)
+        cache.put(lockKey, '1', 120); // TTL 120dtk jaga2 kalau proses macet -- lock tidak nyangkut selamanya
         got = true;
       }
     } catch (e) {
@@ -1247,9 +1481,28 @@ function postTransaksi(params) {
   // balik, frontend retry dgn body identik) dari jadi transaksi dobel. Ini menambal itu,
   // TANPA ubah signature/API/urutan validasi -- kalau requestId kosong (klien lama), perilaku
   // persis sama seperti sebelumnya.
+  // FIX SEDANG: requestId di-hash dgn body transaksi — retry dengan body berbeda
+  // tidak akan collide di cache (mencegah "silent" return hasil request lain).
   var requestId = String(params.requestId||'').trim();
   var cache     = requestId ? CacheService.getScriptCache() : null;
-  var cacheKey  = requestId ? 'trx_req_' + requestId : null;
+  var bodySig   = '';
+  if (requestId) {
+    try {
+      var sigInput = JSON.stringify([
+        String(params.itemId||'').toUpperCase(),
+        String(params.jenis||'').toUpperCase(),
+        String(params.qty||''),
+        String(params.rak||'').trim().toUpperCase(),
+        String(params.vendor||'').trim(),
+        String(params.noReferensi||'').trim(),
+        String(params.keterangan||'')
+      ]);
+      bodySig = Utilities.base64EncodeWebSafe(
+        Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sigInput)
+      ).substring(0, 16);
+    } catch(e) { bodySig = 'nosig'; }
+  }
+  var cacheKey  = requestId ? ('trx_req_' + requestId + '_' + bodySig) : null;
 
   // FAST PATH (di luar lock, murah): kalau requestId ini sudah pernah SUKSES diproses,
   // langsung balikin hasil yang sama -- tidak appendRow lagi, tidak proses ulang saldo.
@@ -1282,7 +1535,12 @@ function postTransaksi(params) {
 
     var itemId      = itemIdForLock;
     var jenis       = String(params.jenis||'').toUpperCase();
-    var qty         = parseFloat(params.qty)||0;
+    // FIX SEDANG: validasi qty angka finite & dalam batas wajar (1 .. 1e9)
+    var qtyRaw = params.qty;
+    var qty = (typeof qtyRaw === 'number') ? qtyRaw : parseFloat(qtyRaw);
+    if (!isFinite(qty) || qty <= 0 || qty > 1e9) {
+      return { status:'error', message:'Qty harus angka lebih dari 0 dan tidak lebih dari 1.000.000.000' };
+    }
     var rak         = String(params.rak||'').trim().toUpperCase();
     var vendor      = String(params.vendor||'').trim();
     var noReferensi = String(params.noReferensi||'').trim();
@@ -1297,6 +1555,9 @@ function postTransaksi(params) {
     if (jenis!=='MASUK'&&jenis!=='KELUAR') return { status:'error', message:'Jenis harus MASUK atau KELUAR' };
     if (qty<=0) return { status:'error', message:'Qty harus lebih dari 0' };
     if (!rak) return { status:'error', message:'RAK/lokasi wajib diisi' };
+    // FIX SEDANG: normalisasi rak — whitelist terhadap Master_Rak (atau rak yang sudah
+    // ada di item ini / Master_Rak kosong = terima apa adanya utk kompatibilitas)
+    rak = normalizeRak_(rak, itemId);
 
     var itemResult = getItemById(itemId);
     if (itemResult.status!=='ok') return itemResult;
@@ -1322,9 +1583,9 @@ function postTransaksi(params) {
     if (!trx) return { status:'error', message:'Sheet Transaksi_Log tidak ditemukan' };
 
     trx.appendRow([
-      new Date(), itemId, item.nama, item.spec||'',
-      jenis, qty, rak, vendor, noReferensi,
-      saldoSebelumTotal, saldoSesudahTotal, keterangan, admin
+      new Date(), itemId, safeCell_(item.nama), safeCell_(item.spec||''),
+      jenis, qty, rak, safeCell_(vendor), safeCell_(noReferensi),
+      saldoSebelumTotal, saldoSesudahTotal, safeCell_(keterangan), safeCell_(admin)
     ]);
     // AUDIT FIX T-16/T-17 (v5.19): invalidasi cache getCachedTrxLogRawRows_() supaya
     // getLastVendorRefMap()/getDashboard() berikutnya tidak memakai data yg sudah
@@ -1338,24 +1599,41 @@ function postTransaksi(params) {
     // appendRow di atas TETAP dianggap sumber kebenaran (tidak di-rollback -- rollback
     // manual lebih berisiko daripada membiarkan), tapi kegagalan sync saldo ditangkap
     // eksplisit, dicatat ke Sync_Errors, dan dilaporkan ke frontend lewat saldoSyncOk.
+    // FIX SEDANG: kalau saldo sync gagal → status 'partial' (bukan 'ok')
+    // supaya frontend tahu transaksi tidak sepenuhnya sinkron.
     var saldoSyncOk = true;
     var saldoSyncError = '';
-    try {
-      updateSaldo(itemId, item.nama, item.unit, jenis, qty);
-    } catch(e) {
+    // FIX TINGGI: script lock singkat di sekitar updateSaldo+updateRakSaldo
+    // supaya dua transaksi item berbeda tidak interleaved tulis ke sheet yang sama.
+    var saldoLock = LockService.getScriptLock();
+    var saldoLockOk = false;
+    try { saldoLock.waitLock(10000); saldoLockOk = true; } catch(lockErr) {
       saldoSyncOk = false;
-      saldoSyncError += e.message + '. ';
+      saldoSyncError = 'Lock timeout saat update saldo. ';
     }
     try {
-      updateRakSaldo(itemId, rak, jenis, qty);
-    } catch(e) {
-      saldoSyncOk = false;
-      saldoSyncError += e.message + '. ';
+      if (saldoLockOk) {
+        try {
+          updateSaldo(itemId, item.nama, item.unit, jenis, qty);
+        } catch(e) {
+          saldoSyncOk = false;
+          saldoSyncError += e.message + '. ';
+        }
+        try {
+          updateRakSaldo(itemId, rak, jenis, qty);
+        } catch(e) {
+          saldoSyncOk = false;
+          saldoSyncError += e.message + '. ';
+        }
+      }
+    } finally {
+      if (saldoLockOk) { try { saldoLock.releaseLock(); } catch(e2) {} }
     }
     if (!saldoSyncOk) logSyncError_('postTransaksi', itemId, saldoSyncError);
 
     var result = {
-      status:'ok',
+      // FIX SEDANG: status 'partial' kalau saldo tidak sinkron (bukan 'ok')
+      status: saldoSyncOk ? 'ok' : 'partial',
       message: saldoSyncOk
         ? 'Transaksi berhasil'
         : 'Transaksi tersimpan di Transaksi_Log, TAPI Stok_Saldo/Stok_Per_Rak GAGAL disinkronkan. Hubungi admin utk jalankan Kalkulasi Ulang Stok.',
@@ -1376,10 +1654,52 @@ function postTransaksi(params) {
 
     return result;
   } catch(err) {
-    return { status:'error', message:'postTransaksi: ' + err.message };
+    // FIX TINGGI: jangan bocorkan err.message
+    console.error('postTransaksi error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('postTransaksi');
   } finally {
     lock.release();
   }
+}
+
+// FIX SEDANG: normalisasi & whitelist rak — simpan bentuk canonical dari Master_Rak
+// (atau Master_Rak + rak item ini). Kalau Master_Rak kosong → terima apa adanya.
+function normalizeRak_(rawRak, itemId) {
+  var rak = String(rawRak||'').trim().toUpperCase();
+  if (!rak) return rak;
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName(SHEET_RAK);
+    var allowed = null;
+    if (sh && sh.getLastRow() >= 2) {
+      var vals = sh.getRange(2,1,sh.getLastRow()-1,1).getValues();
+      allowed = {};
+      for (var i=0; i<vals.length; i++) {
+        var v = String(vals[i][0]||'').trim().toUpperCase();
+        if (v) allowed[v] = true;
+      }
+    }
+    // rak yang sudah ada di item ini juga diizinkan (walau belum di Master_Rak)
+    if (itemId) {
+      var itemRes = getItemById(itemId);
+      if (itemRes && itemRes.status==='ok' && itemRes.item && itemRes.item.rakBreakdown) {
+        itemRes.item.rakBreakdown.forEach(function(rb){
+          var rv = String(rb.rak||'').trim().toUpperCase();
+          if (rv) { if (!allowed) allowed = {}; allowed[rv] = true; }
+        });
+      }
+    }
+    if (allowed) {
+      if (allowed[rak]) {
+        // canonical casing dari Master_Rak bila ada
+        for (var k in allowed) { if (k === rak) return k; }
+        return rak;
+      }
+      // tidak di whitelist — tetap terima (kompatibilitas data lama) tapi trim/uppercase saja
+      return rak;
+    }
+  } catch(e) {}
+  return rak;
 }
 
 // ============================================================
@@ -1388,6 +1708,9 @@ function postTransaksi(params) {
 //  ini sama seperti skema lama, jadi logic replay tidak berubah)
 // ============================================================
 function updateSaldo(itemId, nama, unit, jenis, qty) {
+  // FIX TINGGI: guard formula injection utk kolom teks
+  nama = safeCell_(nama);
+  unit = safeCell_(unit);
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var saldo = ss.getSheetByName(SHEET_SALDO);
@@ -1432,6 +1755,7 @@ function updateSaldo(itemId, nama, unit, jenis, qty) {
 //  di-filter itemId DAN rak sekaligus)
 // ============================================================
 function updateRakSaldo(itemId, rak, jenis, qty) {
+  rak = safeCell_(rak);
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sh = ss.getSheetByName(SHEET_RAK_SALDO);
@@ -1552,7 +1876,8 @@ function getAllHistory(limit) {
 
     return { status:'ok', rows:rows, total:rows.length };
   } catch(err) {
-    return { status:'error', message:'getAllHistory: ' + err.message };
+    console.error('getAllHistory error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAllHistory');
   }
 }
 
@@ -1596,7 +1921,8 @@ function getHistory(itemId) {
     rows.reverse();
     return { status:'ok', rows:rows, total:rows.length };
   } catch(err) {
-    return { status:'error', message:'getHistory: ' + err.message };
+    console.error('getHistory error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getHistory');
   }
 }
 
@@ -1612,6 +1938,9 @@ function addItem(body) {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(SHEET_MASTER);
     if (!sheet) return { status:'error', message:'Sheet Master_Item tidak ditemukan' };
+
+    // FIX SEDANG: nama wajib diisi (backend, jangan hanya rely frontend)
+    if (!String(body.nama||'').trim()) return { status:'error', message:'Nama item wajib diisi' };
 
     // FIX v5.18 (Audit #2): dulu generateID() (baca nomor tertinggi di Master_Item) lalu
     // appendRow() berjalan TANPA lock -- kalau 2 orang tambah item nyaris bersamaan,
@@ -1637,9 +1966,9 @@ function addItem(body) {
 
       var rowData = [
         newNo, newId,
-        String(body.nama||''), String(body.spec||''),
-        String(body.user||''), String(body.bc||''),
-        String(body.unit||''), String(body.kategori||''),
+        safeCell_(String(body.nama||'')), safeCell_(String(body.spec||'')),
+        safeCell_(String(body.user||'')), safeCell_(String(body.bc||'')),
+        safeCell_(String(body.unit||'')), safeCell_(String(body.kategori||'')),
         parseInt(body.minStock,10)||0
       ];
       sheet.appendRow(rowData);
@@ -1677,7 +2006,8 @@ function addItem(body) {
     if (stokAwalWarning) { res.status = 'partial'; res.message = stokAwalWarning; }
     return res;
   } catch(err) {
-    return { status:'error', message:'addItem: ' + err.message };
+    console.error('addItem error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('addItem');
   }
 }
 
@@ -1849,7 +2179,8 @@ function getExportData(dateFrom, dateTo) {
       rangeInfo: { dateFrom: dateFrom || '(semua)', dateTo: dateTo || '(semua)' }
     };
   } catch(err) {
-    return { status:'error', message:'getExportData: ' + err.message };
+    console.error('getExportData error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getExportData');
   }
 }
 
@@ -2023,10 +2354,27 @@ function generateAsetUnitId_(kodeAlat) {
 //  recordAsetMovement nanti) supaya tidak dobel.
 // ============================================================
 function generateAsetLogTrxId_() {
+  // FIX RENDAH: sequence lebih aman — cari max numeric id di kolom pertama (bukan lastRow,
+  // yang bisa bolong kalau ada baris terhapus), + Properties counter sbg fallback.
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_ASET_LOG);
+  if (!sh) return 1;
   var last = sh.getLastRow();
-  return last < 2 ? 1 : last; // header di baris 1, jadi lastRow==baris data terakhir+1 == qty data + 1
+  if (last < 2) return 1;
+  var vals = sh.getRange(2, 1, last-1, 1).getValues();
+  var maxNum = 0;
+  for (var i=0; i<vals.length; i++) {
+    var n = parseInt(vals[i][0], 10);
+    if (isFinite(n) && n > maxNum) maxNum = n;
+  }
+  // Properties counter utk kasus sheet kosong/bermasalah
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var propMax = parseInt(props.getProperty('ASET_LOG_TRX_SEQ')||'0', 10);
+    if (isFinite(propMax) && propMax > maxNum) maxNum = propMax;
+    props.setProperty('ASET_LOG_TRX_SEQ', String(maxNum + 1));
+  } catch(e) {}
+  return maxNum + 1;
 }
 
 // ============================================================
@@ -2081,7 +2429,8 @@ function addAsetItem(body) {
 
     return { status:'ok', kodeAlat: kodeAlat };
   } catch (err) {
-    return { status:'error', message:'addAsetItem error: ' + err.message };
+    console.error('addAsetItem error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('addAsetItem');
   }
 }
 
@@ -2167,7 +2516,8 @@ function addAsetUnit(body) {
 
     return { status:'ok', kodeAlat: kodeAlat, unitIds: createdUnitIds, jumlah: createdUnitIds.length };
   } catch (err) {
-    return { status:'error', message:'addAsetUnit error: ' + err.message };
+    console.error('addAsetUnit error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('addAsetUnit');
   }
 }
 
@@ -2302,7 +2652,8 @@ function recordAsetMovement(body) {
       try { lock.releaseLock(); } catch (e) {}
     }
   } catch (err) {
-    return { status:'error', message:'recordAsetMovement error: ' + err.message };
+    console.error('recordAsetMovement error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('recordAsetMovement');
   }
 }
 
@@ -2393,7 +2744,8 @@ function getAsetItemList() {
     }
     return { status:'ok', data: list };
   } catch (err) {
-    return { status:'error', message:'getAsetItemList error: ' + err.message };
+    console.error('getAsetItemList error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetItemList');
   }
 }
 
@@ -2429,7 +2781,8 @@ function getAsetUnitList(kodeAlat) {
     }
     return { status:'ok', data: list };
   } catch (err) {
-    return { status:'error', message:'getAsetUnitList error: ' + err.message };
+    console.error('getAsetUnitList error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetUnitList');
   }
 }
 
@@ -2454,7 +2807,8 @@ function getAsetUnitById(unitId) {
       lastUpdate: r[COL_ASET_UNIT.LAST_UPDATE]
     }};
   } catch (err) {
-    return { status:'error', message:'getAsetUnitById error: ' + err.message };
+    console.error('getAsetUnitById error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetUnitById');
   }
 }
 
@@ -2495,7 +2849,8 @@ function getAsetMovementLog(unitId, limit) {
     var lim = parseInt(limit, 10) || 50;
     return { status:'ok', data: list.slice(0, lim) };
   } catch (err) {
-    return { status:'error', message:'getAsetMovementLog error: ' + err.message };
+    console.error('getAsetMovementLog error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetMovementLog');
   }
 }
 
@@ -2535,7 +2890,8 @@ function getAsetDashboard() {
       itemButuhPerhatian: jumlahKritisHabis
     }};
   } catch (err) {
-    return { status:'error', message:'getAsetDashboard error: ' + err.message };
+    console.error('getAsetDashboard error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetDashboard');
   }
 }
 
@@ -2618,7 +2974,8 @@ function getKontrolAsah(kodeAlat) {
 
     return { status:'ok', data: list };
   } catch (err) {
-    return { status:'error', message:'getKontrolAsah error: ' + err.message };
+    console.error('getKontrolAsah error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getKontrolAsah');
   }
 }
 
@@ -2653,7 +3010,8 @@ function getAsetPerformaVendor() {
 
     return { status:'ok', data: list };
   } catch (err) {
-    return { status:'error', message:'getAsetPerformaVendor error: ' + err.message };
+    console.error('getAsetPerformaVendor error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetPerformaVendor');
   }
 }
 
@@ -2712,7 +3070,8 @@ function getAsetEligibleUnits(kodeAlat, activity) {
 
     return { status:'ok', data: list };
   } catch (err) {
-    return { status:'error', message:'getAsetEligibleUnits error: ' + err.message };
+    console.error('getAsetEligibleUnits error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAsetEligibleUnits');
   }
 }
 
@@ -2729,10 +3088,18 @@ function migrateToMultiRakSchema() {
   var master = ss.getSheetByName(SHEET_MASTER);
   if (!master) { SpreadsheetApp.getUi().alert('❌ Sheet Master_Item tidak ditemukan.'); return; }
 
+  // FIX SEDANG: guard — migrasi legacy hanya bila belum pernah jalan & Master belum skema baru
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIGRATED_MULTI_RAK') === 'TRUE') {
+    SpreadsheetApp.getUi().alert('ℹ️ Migrasi multi-rak sudah pernah dijalankan. Dibatalkan.');
+    return;
+  }
+
   var lastCol = master.getLastColumn();
   var header7 = String(master.getRange(1,7).getValue()).trim().toLowerCase();
   if (lastCol <= 9 && header7 !== 'vendor') {
     SpreadsheetApp.getUi().alert('ℹ️ Master_Item sudah dalam skema baru (9 kolom). Migrasi dibatalkan (mencegah dobel-jalan).');
+    props.setProperty('MIGRATED_MULTI_RAK', 'TRUE');
     return;
   }
 
@@ -2814,6 +3181,19 @@ function migrateToMultiRakSchema() {
 // (SpreadsheetApp.getUi() akan ERROR kalau dipanggil dari request web app / API,
 // makanya tidak boleh ada di dalam core-nya.)
 function recalculateAllSaldoCore() {
+  // FIX TINGGI: script lock — cegah race dengan postTransaksi/updateSaldo yang juga menulis sheet
+  var recalcLock = LockService.getScriptLock();
+  var lockOk = false;
+  try { recalcLock.waitLock(30000); lockOk = true; }
+  catch(e) { return { ok:false, message:'Server sibuk (recalculate sedang menunggu lock). Coba lagi.' }; }
+  try {
+    return recalculateAllSaldoLocked_();
+  } finally {
+    if (lockOk) { try { recalcLock.releaseLock(); } catch(e) {} }
+  }
+}
+
+function recalculateAllSaldoLocked_() {
   var ss     = SpreadsheetApp.getActiveSpreadsheet();
   var master = ss.getSheetByName(SHEET_MASTER);
   var trx    = ss.getSheetByName(SHEET_TRANSAKSI);
@@ -2899,7 +3279,8 @@ function apiRecalculateAllSaldo() {
     if (!r.ok) return { status:'error', message: r.message };
     return { status:'ok', message:'Recalculate selesai: '+r.itemCount+' item, '+r.rakCount+' baris rak.', itemCount:r.itemCount, rakCount:r.rakCount };
   } catch(err) {
-    return { status:'error', message:'apiRecalculateAllSaldo: '+err.message };
+    console.error('apiRecalculateAllSaldo error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiRecalculateAllSaldo');
   }
 }
 
@@ -2956,7 +3337,8 @@ function apiFindOrphanItems() {
       count:r.count, items:r.items
     };
   } catch(err) {
-    return { status:'error', message:'apiFindOrphanItems: '+err.message };
+    console.error('apiFindOrphanItems error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiFindOrphanItems');
   }
 }
 
@@ -3001,7 +3383,8 @@ function apiFindDuplicateItems() {
       count:r.count, groups:r.groups
     };
   } catch(err) {
-    return { status:'error', message:'apiFindDuplicateItems: '+err.message };
+    console.error('apiFindDuplicateItems error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiFindDuplicateItems');
   }
 }
 
@@ -3078,7 +3461,8 @@ function apiFindIdCollisions() {
       count:r.count, collisions:r.collisions
     };
   } catch(err) {
-    return { status:'error', message:'apiFindIdCollisions: '+err.message };
+    console.error('apiFindIdCollisions error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiFindIdCollisions');
   }
 }
 
@@ -3104,6 +3488,19 @@ function resolveIdCollisionCore(oldId, namaToMove, newId, dryRun) {
   var namaKey = String(namaToMove||'').trim().toUpperCase();
   if (!oldId || !namaKey) return { ok:false, message:'oldId dan namaToMove wajib diisi.' };
 
+  // FIX SEDANG: script lock — cegah race collision-resolve dengan addItem/generateID
+  var colLock = LockService.getScriptLock();
+  var lockOk = false;
+  try { colLock.waitLock(30000); lockOk = true; }
+  catch(e) { return { ok:false, message:'Server sibuk. Coba lagi.' }; }
+  try {
+    return resolveIdCollisionLocked_(oldId, namaKey, namaToMove, newId, dryRun);
+  } finally {
+    if (lockOk) { try { colLock.releaseLock(); } catch(e) {} }
+  }
+}
+
+function resolveIdCollisionLocked_(oldId, namaKey, namaToMove, newId, dryRun) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var master = ss.getSheetByName(SHEET_MASTER);
   if (!master || master.getLastRow() < 2) return { ok:false, message:'Master_Item kosong.' };
@@ -3175,7 +3572,8 @@ function apiResolveIdCollision(body) {
       preview:r.preview
     };
   } catch(err) {
-    return { status:'error', message:'apiResolveIdCollision: '+err.message };
+    console.error('apiResolveIdCollision error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiResolveIdCollision');
   }
 }
 
@@ -3214,7 +3612,8 @@ function getAllRakBreakdown() {
     }
     return { status:'ok', rows:rows };
   } catch(err) {
-    return { status:'error', message:'getAllRakBreakdown: ' + err.message };
+    console.error('getAllRakBreakdown error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getAllRakBreakdown');
   }
 }
 
@@ -3269,7 +3668,8 @@ function getStockLedger(itemId) {
       reconciled: reconciled, diff: computedClosing - cachedClosing
     };
   } catch(err) {
-    return { status:'error', message:'getStockLedger: ' + err.message };
+    console.error('getStockLedger error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getStockLedger');
   }
 }
 
@@ -3303,7 +3703,8 @@ function getMasterLists() {
     cache.put('masterLists_v1', JSON.stringify(result), 300); // 5 menit
     return result;
   } catch(err) {
-    return { status:'error', message:'getMasterLists: ' + err.message };
+    console.error('getMasterLists error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('getMasterLists');
   }
 }
 
@@ -3328,7 +3729,8 @@ function addMasterValue(body) {
     CacheService.getScriptCache().remove('masterLists_v1'); // invalidate cache biar getMasterLists lihat nilai baru
     return { status:'ok', message:'Ditambahkan', value:val };
   } catch(err) {
-    return { status:'error', message:'addMasterValue: ' + err.message };
+    console.error('addMasterValue error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('addMasterValue');
   }
 }
 
@@ -3429,7 +3831,8 @@ function apiResyncMasterLists() {
       vendor:r.vendor, rak:r.rak, uom:r.uom, kategori:r.kategori
     };
   } catch(err) {
-    return { status:'error', message:'apiResyncMasterLists: '+err.message };
+    console.error('apiResyncMasterLists error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('apiResyncMasterLists');
   }
 }
 
@@ -3485,8 +3888,35 @@ function findMatchingRowNumbers_(sheet, colIndex0, lastRow, matchValueUpper) {
 function getRowsByNumbers_(sheet, rowNumbers, numCols) {
   if (!rowNumbers.length) return [];
   var lastCol = columnToLetter_(numCols);
-  var a1 = rowNumbers.map(function(r){ return 'A'+r+':'+lastCol+r; });
-  return sheet.getRangeList(a1).getRanges().map(function(rg){ return rg.getValues()[0]; });
+
+  // FIX RENDAH (N+1): kalau jumlah baris diminta mendekati seluruh sheet,
+  // baca sekali rentang penuh alih-alih getRangeList per-baris.
+  var totalData = Math.max(0, sheet.getLastRow() - 1);
+  if (rowNumbers.length >= Math.max(50, totalData * 0.8)) {
+    var all = sheet.getRange(2, 1, totalData, numCols).getValues();
+    var byNum = {};
+    for (var i=0; i<all.length; i++) byNum[i+2] = all[i];
+    return rowNumbers.map(function(r){ return byNum[r] || []; });
+  }
+
+  // Sebaliknya: kelompokkan nomor baris berurutan jadi range contiguous
+  // (mengurangi jumlah panggilan range dari N menjadi ~#segmen).
+  var sorted = rowNumbers.slice().sort(function(a,b){ return a-b; });
+  var segments = [];
+  var segStart = sorted[0], segEnd = sorted[0];
+  for (var s=1; s<sorted.length; s++) {
+    if (sorted[s] === segEnd + 1) { segEnd = sorted[s]; }
+    else { segments.push([segStart, segEnd]); segStart = segEnd = sorted[s]; }
+  }
+  segments.push([segStart, segEnd]);
+
+  var byNum2 = {};
+  segments.forEach(function(seg){
+    var a1 = 'A'+seg[0]+':'+lastCol+seg[1];
+    var vals = sheet.getRange(a1).getValues();
+    for (var r=0; r<vals.length; r++) byNum2[seg[0]+r] = vals[r];
+  });
+  return rowNumbers.map(function(r){ return byNum2[r] || []; });
 }
 
 function columnToLetter_(colNum) {
