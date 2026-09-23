@@ -560,13 +560,51 @@ function getViewerSecret() {
   }
   return s;
 }
-function makeViewerToken(username, nama) {
+function makeViewerToken(username, nama, pv) {
   // FIX TINGGI: TTL diturunkan dari 30 hari → 12 jam (sesuai rekomendasi audit)
+  // FIX HIGH: sertakan passwordVersion (kolom opsional ke-5) di payload — tanpa ini
+  // verifyViewerToken tidak pernah bisa mematikan sesi lama saat password diganti.
   var expiry = Date.now() + 12*60*60*1000;
   var jti = Utilities.getUuid(); // unique token id utk denylist/revoke
-  var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(username+'|'+nama+'|'+expiry+'|'+jti).getBytes());
+  var pvStr = (pv == null || pv === '') ? '' : String(pv);
+  var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(username+'|'+nama+'|'+expiry+'|'+jti+'|'+pvStr).getBytes());
   var sigB64 = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payloadB64, getViewerSecret()));
   return payloadB64 + '.' + sigB64;
+}
+// FIX HIGH: fingerprint singkat dari hash password — berubah ⇒ sesi lama harus mati
+// (dipakai saat kolom passwordVersion di sheet belum ada).
+function passwordPv_(stored) {
+  try {
+    if (!stored) return '';
+    var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, 'pv:' + String(stored), Utilities.Charset.UTF_8);
+    var hex = '';
+    for (var i = 0; i < digest.length; i++) {
+      var b = digest[i] < 0 ? digest[i] + 256 : digest[i];
+      hex += (b < 16 ? '0' : '') + b.toString(16);
+    }
+    return hex.slice(0, 16);
+  } catch(e) { return ''; }
+}
+// FIX HIGH: endpoint logout/revoke — tulis jti ke denylist cache (TTL = sisa umur token,
+// maks 12 jam). Tanpa ini, logout di frontend hanya membersihkan localStorage/sessionStorage
+// dan token curi tetap valid di server sampai expired.
+function apiViewerLogout(body) {
+  try {
+    var token = String(body && body.viewerToken || '');
+    if (!token) return { status:'ok' };
+    var parts = token.split('.');
+    if (parts.length !== 2) return { status:'ok' };
+    var expectedSig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], getViewerSecret()));
+    if (!constantTimeEquals_(parts[1], expectedSig)) return { status:'ok' }; // token palsu → tidak perlu denylist
+    var payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString();
+    var bits = payload.split('|');
+    var expiry = parseInt(bits[2], 10);
+    var jti = bits[3] || '';
+    if (!jti) return { status:'ok' };
+    var ttlSec = Math.max(1, Math.min(12*60*60, Math.floor((expiry - Date.now()) / 1000)));
+    try { CacheService.getScriptCache().put('token_deny_' + jti, '1', ttlSec); } catch(e) {}
+    return { status:'ok' };
+  } catch(e) { return { status:'ok' }; }
 }
 function verifyViewerToken(token) {
   try {
@@ -595,11 +633,13 @@ function verifyViewerToken(token) {
     var cachedStatus = cache.get(statusKey);
     var aktif = true;
     var expectedPv = null;
+    var expectedHashPv = null;
     if (cachedStatus) {
       try {
         var cs = JSON.parse(cachedStatus);
         aktif = !!cs.aktif;
         expectedPv = cs.pv;
+        expectedHashPv = cs.hpv;
       } catch(e) {}
     } else {
       try {
@@ -613,18 +653,29 @@ function verifyViewerToken(token) {
             var aktifRaw = String(rows[i][COL_VIEWER_ACC.AKTIF]).toUpperCase();
             aktif = rows[i][COL_VIEWER_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
             if (rows[i].length > 4) expectedPv = rows[i][4]; // passwordVersion opsional
+            // FIX HIGH: fingerprint hash password — kalau kolom pv kosong, ganti password
+            // tetap mematikan token lama.
+            expectedHashPv = passwordPv_(String(rows[i][COL_VIEWER_ACC.PASSWORD]||''));
             break;
           }
         }
       } catch(e2) {}
-      try { cache.put(statusKey, JSON.stringify({aktif:aktif, pv:expectedPv}), 60); } catch(e3) {}
+      try { cache.put(statusKey, JSON.stringify({aktif:aktif, pv:expectedPv, hpv:expectedHashPv}), 60); } catch(e3) {}
     }
     if (!aktif) return { ok:false, revoked:true };
 
     // FIX KRITIS: kalau token menyimpan pv & account pv berbeda → force re-login
-    // (pv = passwordVersion / counter reset password)
+    // (pv = passwordVersion / counter reset password, atau fingerprint hash password)
     var tokenPv = bits[4] || '';
     if (expectedPv != null && expectedPv !== '' && tokenPv && String(tokenPv) !== String(expectedPv)) {
+      return { ok:false, revoked:true };
+    }
+    if (tokenPv && expectedHashPv && expectedPv !== tokenPv && String(tokenPv) !== String(expectedHashPv)) {
+      // token memakai fingerprint hash lama → password sudah diganti
+      return { ok:false, revoked:true };
+    }
+    if (!tokenPv && expectedHashPv) {
+      // token lama tanpa field pv (pre-fix) → paksa re-login sekali
       return { ok:false, revoked:true };
     }
 
@@ -730,7 +781,20 @@ function checkViewerCredentials(username, password) {
         if (!constantTimeEquals_(storedPw, String(password||''))) return { ok:false, message:'Username atau password salah.' };
         try { sh.getRange(i+2, COL_VIEWER_ACC.PASSWORD+1).setValue(makeSaltedPasswordHash_(String(password||''))); } catch(e) { /* login tetap lanjut walau migrasi hash gagal ditulis */ }
       }
-      return { ok:true, username:u, nama: String(rows[i][COL_VIEWER_ACC.NAMA]||'') || u };
+      // baca kolom ke-5 passwordVersion (jika sheet sudah ditambah kolomnya);
+      // fallback ke fingerprint hash password agar ganti password selalu mematikan sesi.
+      var passwordVersion = null;
+      try {
+        var w = Math.min(5, Math.max(1, sh.getLastColumn()));
+        if (w >= 5) {
+          var pvCell = sh.getRange(i+2, 5).getValue();
+          if (pvCell !== '' && pvCell != null) passwordVersion = String(pvCell);
+        }
+      } catch(ePv) {}
+      if (passwordVersion == null || passwordVersion === '') {
+        passwordVersion = passwordPv_(storedPw);
+      }
+      return { ok:true, username:u, nama: String(rows[i][COL_VIEWER_ACC.NAMA]||'') || u, passwordVersion: passwordVersion };
     }
     // FIX TINGGI: pesan generik — jangan bocorkan "username tidak ditemukan" vs "password salah"
     return { ok:false, message:'Username atau password salah.' };
@@ -746,7 +810,7 @@ function apiViewerLogin(body) {
     return { status:'error', message: r.message };
   }
   clearViewerLoginFail_(uname);
-  return { status:'ok', token: makeViewerToken(r.username, r.nama), nama: r.nama };
+  return { status:'ok', token: makeViewerToken(r.username, r.nama, r.passwordVersion), nama: r.nama };
 }
 // Jalankan SEKALI dari editor Apps Script (dropdown fungsi -> Run) utk bikin sheet akun viewer.
 function setupViewerAccountsSheet() {
@@ -828,6 +892,8 @@ function doPost(e) {
 
     // viewerLogin JUSTRU endpoint utk MENDAPATKAN akses -- tidak boleh digate editorKey.
     if (action === 'viewerLogin') return corsOutput(apiViewerLogin(body));
+    // FIX HIGH: logout/revoke — jangan digate editorKey; cukup token yang mau dicabut.
+    if (action === 'viewerLogout') return corsOutput(apiViewerLogout(body));
 
     // FIX KRITIS: dukung aksi BACA via POST (gasGet baru mengirim kredensial di body,
     // bukan query string) — checkAnyAccess dengan editorKey/viewerToken dari body.

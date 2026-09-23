@@ -2181,12 +2181,12 @@ function parseViewerToken(token){if(typeof token!=='string')return null;var part
 function hasValidSession(){if(EDITOR_KEY){/* FIX TINGGI: cek TTL sessionStorage editor key */var setAt=parseInt(readSecureStorage('rdi_editor_key_set_at')||'0',10);if(setAt&&Date.now()-setAt>EDITOR_KEY_TTL_DAYS*24*60*60*1000){clearSecureStorage('rdi_editor_key');clearSecureStorage('rdi_editor_key_set_at');EDITOR_KEY='';VIEWER_MODE=true;return false;}return true;}return!!parseViewerToken(VIEWER_TOKEN);}
 function showLoginGate(){document.getElementById('login-gate').classList.remove('hide');}
 function hideLoginGate(){document.getElementById('login-gate').classList.add('hide');}
-function forceReLogin(){clearSecureStorage('rdi_viewer_token');VIEWER_TOKEN='';showLoginGate();}
+function forceReLogin(){var t=VIEWER_TOKEN||readSecureStorage('rdi_viewer_token');if(t&&GAS_URL){try{fetch(GAS_URL,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogout',viewerToken:t})}).catch(function(){});}catch(e){}}clearSecureStorage('rdi_viewer_token');VIEWER_TOKEN='';showLoginGate();}
 function submitViewerLogin(){var u=document.getElementById('login-username').value.trim();var p=document.getElementById('login-password').value;var btn=document.getElementById('login-submit-btn');var errEl=document.getElementById('login-error');errEl.style.display='none';if(!u||!p){errEl.textContent='Isi username dan password.';errEl.style.display='block';return;}
 if(!GAS_URL){errEl.textContent='GAS URL belum diset. Hubungi admin.';errEl.style.display='block';return;}
 btn.disabled=true;btn.textContent='Memeriksa…';fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogin',username:u,password:p})}).then(function(r){return r.json();}).then(function(res){btn.disabled=false;btn.textContent='Masuk';if(res.status==='ok'&&res.token&&parseViewerToken(res.token)){VIEWER_TOKEN=res.token;writeSecureStorage('rdi_viewer_token',res.token);VIEWER_MODE=true;if(res.nama){currentUser={name:res.nama,dept:currentUser.dept||''};localStorage.setItem('rdi_user',JSON.stringify(currentUser));var unameEl=document.getElementById('topbar-username');if(unameEl)unameEl.textContent=res.nama;}
 document.body.classList.add('viewer-mode');hideLoginGate();startAppAfterAuth();}else{errEl.textContent=res.message||'Login gagal.';errEl.style.display='block';}}).catch(function(err){btn.disabled=false;btn.textContent='Masuk';errEl.textContent='Gagal terhubung ke server: '+err.message;errEl.style.display='block';});}
-function logoutViewer(){clearSecureStorage('rdi_viewer_token');location.reload();}
+function logoutViewer(){var t=VIEWER_TOKEN||readSecureStorage('rdi_viewer_token');if(t&&GAS_URL){try{fetch(GAS_URL,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogout',viewerToken:t})}).catch(function(){});}catch(e){}}clearSecureStorage('rdi_viewer_token');VIEWER_TOKEN='';location.reload();}
 function logoutEditor(){if(!confirm('Keluar dari mode Editor? Setelah ini kamu perlu login ulang (Editor Key atau akun lihat-saja) untuk masuk lagi.'))return;clearSecureStorage('rdi_editor_key');clearSecureStorage('rdi_editor_key_set_at');location.reload();}
 document.addEventListener('keydown',function(e){if(e.key==='Enter'){var gate=document.getElementById('login-gate');if(gate&&!gate.classList.contains('hide'))submitViewerLogin();}});var _isDark=localStorage.getItem('rdi_theme')!=='light';function applyTheme(){document.body.classList.toggle('light',!_isDark);var icon=document.getElementById('theme-icon');if(icon)icon.innerHTML=_isDark?'<svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>':'<svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';}
 
@@ -2618,11 +2618,11 @@ function closeExportExcelModal(){document.getElementById('modal-export-excel').c
 function doExportExcelLengkap(){
 var from=document.getElementById('exp-date-from').value;var to=document.getElementById('exp-date-to').value;var sbar=document.getElementById('sbar-export');var btn=document.getElementById('btn-do-export');
 btn.disabled=true;sbar.className='sbar s-info show';sbar.innerHTML='Mengambil & menyimulasikan data (FIFO)...';
-try{checkUrl();}catch(e){sbar.className='sbar s-err show';sbar.innerHTML=e.message;btn.disabled=false;return;}
+try{checkUrl();}catch(e){sbar.className='sbar s-err show';sbar.innerHTML=xe(e.message);btn.disabled=false;return;}
 var params={action:'getExportData'};if(from)params.dateFrom=from;if(to)params.dateTo=to;
 gasGet(params).then(function(res){
-if(res.status!=='ok'){sbar.className='sbar s-err show';sbar.innerHTML=res.message;btn.disabled=false;return;}
-if(!res.sheets||!res.sheets.length){sbar.className='sbar s-err show';sbar.innerHTML='Tidak ada data untuk diexport.';btn.disabled=false;return;}
+if(res.status!=='ok'){sbar.className='sbar s-err show';sbar.innerHTML=xe(res.message||'Export gagal.');btn.disabled=false;return;}
+if(!res.sheets||!res.sheets.length){sbar.className='sbar s-err show';sbar.innerHTML=xe('Tidak ada data untuk diexport.');btn.disabled=false;return;}
 var wb=XLSX.utils.book_new();
 var baseHeaders=['No','Material Code','Material Name','Material Specification','User','BC/Non BC','Vendor','No Referensi','Received Date','RAK','Qty In','Unit'];
 res.sheets.forEach(function(sheetData){
@@ -2640,9 +2640,9 @@ XLSX.utils.book_append_sheet(wb,ws,safeName);
 });
 var fname='RDI-Export-'+new Date().toISOString().slice(0,10)+'.xlsx';
 XLSX.writeFile(wb,fname);
-sbar.className='sbar s-ok show';sbar.innerHTML='Export berhasil: '+fname+' ('+res.sheets.length+' sheet kategori, alokasi stok pakai simulasi FIFO)';
+sbar.className='sbar s-ok show';sbar.innerHTML='Export berhasil: '+xe(fname)+' ('+xe(String(res.sheets.length))+' sheet kategori, alokasi stok pakai simulasi FIFO)';
 btn.disabled=false;
-}).catch(function(e){sbar.className='sbar s-err show';sbar.innerHTML='Gagal: '+e.message;btn.disabled=false;});
+}).catch(function(e){sbar.className='sbar s-err show';sbar.innerHTML='Gagal: '+xe(e.message);btn.disabled=false;});
 }
 function showScanStep(name){document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});document.getElementById('step-'+name).classList.add('active');var subBar=document.getElementById('trx-submit-bar');if(subBar)subBar.style.display=(name==='transaksi')?'block':'none';if(name!=='transaksi')stopInlineScannerRak();updateTrxProgress(name);}
 function updateTrxProgress(name){var stepOf={input:1,transaksi:2,cekstok:2,result:3};var current=stepOf[name]||1;for(var i=1;i<=3;i++){var el=document.getElementById('trxprog-'+i);if(!el)continue;el.classList.remove('active','done');if(i<current)el.classList.add('done');else if(i===current)el.classList.add('active');}
