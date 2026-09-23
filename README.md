@@ -93,7 +93,7 @@ Buka `index.html` di Chrome/Safari mobile → menu browser → **Add to Home Scr
 
 - Semua aksi tulis (`postTransaksi`, `addItem`, dll) wajib `editorKey` yang cocok dengan Script Property `EDITOR_KEY` (dibanding *constant-time*, disimpan ter-hash di server bila memungkinkan)
 - Password akun Viewer disimpan ter-hash (PBKDF2/SHA-256 + salt, banyak iterasi), bukan plaintext
-- Token sesi Viewer ditandatangani (HMAC), berlaku **12 jam**, dengan mekanisme **revocation / denylist jti** dan versi password (reset password mematikan sesi lama)
+- Token sesi Viewer ditandatangani (HMAC), berlaku **6 jam**, dengan mekanisme **revocation / denylist jti** dan versi password (reset password / ganti hash mematikan sesi lama)
 - Login Viewer punya **rate limit** (mis. 5 gagal / 15 menit) untuk mencegah brute-force
 - Error ke user bersifat **umum** (tidak membocorkan detail internal stack/exception)
 - `doGet` pembacaan sensitif bisa divalidasi via header `X-Editor-Key` / `X-Viewer-Token`

@@ -561,10 +561,9 @@ function getViewerSecret() {
   return s;
 }
 function makeViewerToken(username, nama, pv) {
-  // FIX TINGGI: TTL diturunkan dari 30 hari → 12 jam (sesuai rekomendasi audit)
-  // FIX HIGH: sertakan passwordVersion (kolom opsional ke-5) di payload — tanpa ini
-  // verifyViewerToken tidak pernah bisa mematikan sesi lama saat password diganti.
-  var expiry = Date.now() + 12*60*60*1000;
+  // FIX: TTL 6 jam — batas maks CacheService (21600s). Sebelumnya 12 jam, denylist
+  // logout hanya bertahan 6 jam → token curi bisa hidup lagi sisa 6 jam setelah logout.
+  var expiry = Date.now() + 6*60*60*1000;
   var jti = Utilities.getUuid(); // unique token id utk denylist/revoke
   var pvStr = (pv == null || pv === '') ? '' : String(pv);
   var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(username+'|'+nama+'|'+expiry+'|'+jti+'|'+pvStr).getBytes());
@@ -586,8 +585,8 @@ function passwordPv_(stored) {
   } catch(e) { return ''; }
 }
 // FIX HIGH: endpoint logout/revoke — tulis jti ke denylist cache (TTL = sisa umur token,
-// maks 12 jam). Tanpa ini, logout di frontend hanya membersihkan localStorage/sessionStorage
-// dan token curi tetap valid di server sampai expired.
+// maks 6 jam / batas CacheService). Tanpa ini, logout di frontend hanya membersihkan
+// sessionStorage dan token curi tetap valid di server sampai expired.
 function apiViewerLogout(body) {
   try {
     var token = String(body && body.viewerToken || '');
@@ -601,7 +600,7 @@ function apiViewerLogout(body) {
     var expiry = parseInt(bits[2], 10);
     var jti = bits[3] || '';
     if (!jti) return { status:'ok' };
-    var ttlSec = Math.max(1, Math.min(12*60*60, Math.floor((expiry - Date.now()) / 1000)));
+    var ttlSec = Math.max(1, Math.min(6*60*60, Math.floor((expiry - Date.now()) / 1000)));
     try { CacheService.getScriptCache().put('token_deny_' + jti, '1', ttlSec); } catch(e) {}
     return { status:'ok' };
   } catch(e) { return { status:'ok' }; }
