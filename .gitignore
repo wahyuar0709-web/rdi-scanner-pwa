@@ -1,0 +1,30 @@
+# secrets / local env — never commit
+.env
+.env.*
+*.pem
+*.key
+editor_creds.json
+viewer_creds.json
+.clasprc.json
+
+# node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# test / tooling artifacts
+tests/results/
+*.log
+chrome-profile-*/
+cdp-*-*/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# opencode local (if any)
+.opencode/local/
+
+# accidental result artifacts under tests/l1
+tests/l1/*.json
