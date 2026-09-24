@@ -507,7 +507,13 @@ function checkEditorAccountKey_(editorKey) {
       }
     }
     return { none:true }; // tidak cocok & fallback diizinkan
-  } catch(e) { return { none:true }; }
+  } catch(e) {
+    // FIX GS-01: exception saat baca Editor_Accounts/Cache = FAIL CLOSED.
+    // Dulu return {none:true} → lolos ke jalur EDITOR_KEY tunggal, sehingga
+    // akun Aktif=FALSE bisa bypass saat sheet/cache error sementara.
+    console.error('checkEditorAccountKey_ error: ' + (e && e.stack ? e.stack : e));
+    return { blocked:true, message:'Gagal memverifikasi akun editor (server sibuk). Coba lagi sebentar.' };
+  }
 }
 
 function checkEditorKey(body) {
@@ -860,7 +866,11 @@ function doGet(e) {
     if (action === 'getItem')     return corsOutput(getItemById(id));
     if (action === 'getHistory')  return corsOutput(getHistory(id));
     if (action === 'getAllHistory') return corsOutput(getAllHistory(params.limit));
-    if (action === 'generateId')  return corsOutput({ status:'ok', id: generateID() });
+    if (action === 'generateId') {
+      // FIX GS-02: generateId hanya editor (least privilege; viewer sudah punya getData)
+      if (auth.role !== 'editor') return corsOutput({ status:'error', message:'generateId hanya untuk editor.' });
+      return corsOutput({ status:'ok', id: generateID() });
+    }
     if (action === 'getDashboard') return corsOutput(getDashboard());
     if (action === 'getMasterLists') return corsOutput(getMasterLists());
     if (action === 'getLedger') return corsOutput(getStockLedger(id));
@@ -922,7 +932,11 @@ function doPost(e) {
       if (action === 'getItem')     return corsOutput(getItemById(body.id));
       if (action === 'getHistory')  return corsOutput(getHistory(body.id));
       if (action === 'getAllHistory') return corsOutput(getAllHistory(body.limit));
-      if (action === 'generateId')  return corsOutput({ status:'ok', id: generateID() });
+      if (action === 'generateId') {
+        // FIX GS-02: generateId hanya editor (least privilege; viewer sudah punya getData)
+        if (readAuth.role !== 'editor') return corsOutput({ status:'error', message:'generateId hanya untuk editor.' });
+        return corsOutput({ status:'ok', id: generateID() });
+      }
       if (action === 'getDashboard') return corsOutput(getDashboard());
       if (action === 'getMasterLists') return corsOutput(getMasterLists());
       if (action === 'getLedger') return corsOutput(getStockLedger(body.id));

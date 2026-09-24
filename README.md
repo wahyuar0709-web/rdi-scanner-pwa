@@ -19,7 +19,7 @@ Aplikasi berjalan penuh di browser (bisa di-*install* ke HP/desktop seperti app 
 
 ```
 ├── index.html      # Aplikasi utama (daftar item, transaksi, riwayat, dashboard, pengaturan)
-├── scanner.html     # Halaman scanner kamera (dipanggil dari index.html)
+├── scanner.html     # Scanner fullscreen terpisah (dibuka dari index via tombol; hasil via postMessage)
 ├── manifest.json    # PWA manifest (nama, ikon, tema)
 ├── sw.js            # Service worker (offline caching)
 ├── jsQR.min.js      # Library decode QR (self-hosted, v1.4.0 — tidak bergantung CDN)
@@ -43,7 +43,7 @@ Browser (PWA)  <──HTTP GET/POST──>  Google Apps Script (Web App)  <─�
 
 - **Shell aplikasi** (HTML/CSS/JS/ikon) di-cache service worker → buka app tanpa internet tetap bisa (menu, draft, history lokal).
 - **Data live** dari Google Sheets selalu network-first — tidak di-cache SW (akurat).
-- Draft transaksi & outbox tersimpan di `localStorage`; saat offline, submit ditahan sebagai status ambigu / outbox dan dapat dicek ulang via History setelah koneksi kembali.
+- Draft transaksi & outbox tersimpan di `localStorage`; saat offline, submit ditahan sebagai outbox. Saat koneksi kembali online (atau app dibuka), outbox otomatis dikirim ulang (FIFO, retry 30s).
 - Setelah **deploy ubahan app shell**, **bump `CACHE` di `sw.js`** (mis. `rdi-stok-v9` → `rdi-stok-v10`) supaya HP lama tidak terjebak cache versi sebelumnya.
 
 ### Skema data (Google Sheets)
