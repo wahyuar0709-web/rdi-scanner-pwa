@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | 2026-09-24 |
-| Repo HEAD | `2696ebb` |
-| App version | `v15.6` / SW `rdi-stok-v14` / GAS deployment `@41` |
+| Repo HEAD | `27e805b` (pre T2/T3 batch) |
+| App version | `v15.7` / SW `rdi-stok-v15` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,17 +45,18 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `2696ebb` | — |
-| Working tree | bersih (sebelum PLAN.md) | — |
-| `APP_VERSION` | `v15.6` (source of truth + title/apple/css/js labels sinkron setelah fix VER-01) | L1 PASS |
+| Git HEAD | `27e805b` (pre T2/T3 batch) | — |
+| Working tree | dirty (T2/T3 in progress) | — |
+| `APP_VERSION` | `v15.7` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v14` (`sw.js:1`) | L1 |
-| `index.html` lines | ~4141 | L1 |
-| Suite L1 in-repo | `tests/l1/` 13 suite · `npm run test:l1` | **L1 PASS 211/0** (2026-09-24) |
+| SW `CACHE` | `rdi-stok-v15` (`sw.js:1`) | L1+L2 |
+| `index.html` lines | ~4363 | L1 |
+| Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
+| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 80/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
-| Suites di Temp | 37 file `.js` | inventory |
-| Suite terakhir label | 48 PASS / 0 FAIL / 3 NOT TESTED | L1+L2 |
-| Suite terakhir browser | 32 PASS / 0 FAIL | L2 |
+| Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
+| Suite terakhir label | 48 PASS / 0 FAIL | **L2 PASS** |
+| Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
 | L4 device | belum dijalankan | **NOT TESTED** / DEVICE-DEPENDENT |
 | L5 operational | belum | **NOT TESTED** |
 
@@ -74,10 +75,11 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | LBL-01 | MEDIUM | QR payload `rak undefined` | **DONE** `2696ebb` |
 | VER-01 | MEDIUM | Label versi statis title/apple/css/js/topbar `v15.5` vs `APP_VERSION=v15.6` | **DONE** (sesi PLAN F2; L1 13/13) |
 | LBL-02 | LOW–MED | QR via external `api.qrserver.com` (offline/privasi) | T1 keputusan |
-| LBL-03 | INFO | Page math 25 label NOT TESTED (IIFE harness) | T1 / T2 |
+| LBL-03 | INFO | Page math 25 label NOT TESTED (IIFE harness) | **DONE** `label_pagemath.js` L1 18/0 |
 | LBL-04 | INFO | Print/PDF device-dependent | T1 L4 |
 | MONO-01 | INFO | Monolit `index.html` ±4k baris; IIFE sulit test | T2 F4 |
 | TEST-01 | MED | Suite di Temp, bukan `tests/` repo | **DONE** F2 wave-1 |
+| F-01 | MED | Multi-copy cetak (n label/item) | **DONE** v15.7 `cetak-copies` |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -172,7 +174,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | T2.3 | Runner L1 sequential + JSON | `tests/run-l1.js` | **DONE** |
 | T2.4 | `.gitignore` secrets/artifacts | `.gitignore` | **DONE** |
 | T2.5 | `TESTING.md` level + cara run | `TESTING.md` | **DONE** |
-| T2.6 | Suite L2 di repo (opsional copy / pointer) | `tests/l2/` | F2 wave-3 |
+| T2.6 | Suite L2 di repo | `tests/l2/` (2 suite) | **DONE** F2 wave-2 |
+| T2.6b | Runner L2 sequential + npm script | `tests/run-l2.js`, `package.json` | **DONE** `test:l2` |
 | T2.7 | CI GitHub L1 only (opsional) | `.github/workflows/` | deferred |
 | T2.8 | Re-run harness-audit setelah F2 | chat | metrics |
 
@@ -200,8 +203,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | Prio | ID | Fitur | Impact | Urgency | Syarat masuk |
 |------|-----|-------|--------|---------|--------------|
 | P0 | F-00 | QR lokal (jika keputusan §3.3 #1 = b) | H | H (offline) | keputusan |
-| P0 | F-00b | Fix label 25 (LBL-03) | H | H | harness |
-| P1 | F-01 | Multi-copy cetak (n label/item) | H | M | suite label |
+| P0 | F-00b | Fix label 25 (LBL-03) | H | H | **DONE** `label_pagemath.js` |
+| P1 | F-01 | Multi-copy cetak (n label/item) | H | M | **DONE** v15.7 `cetak-copies` input + expand |
 | P1 | F-02 | Template label (4×6 vs lain) | M | M | setelah F-01 |
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | render test |
 | P2 | F-04 | Alert low stock (min_stock) | M | L | dashboard |
@@ -311,7 +314,18 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] **Run 1:** 206P / 5F → FAIL `version_consistency` (VER-01)  
 - [x] **Fix VER-01:** title/apple/css/js/topbar/sheet `v15.5` → `v15.6` (komentar historis `F4 v15.5` tetap)  
 - [x] **Run 2:** `L1 PASS | suites=13 | assertPass=211 | assertFail=0`  
-- [ ] Commit (butuh approval terpisah)  
+- [x] Commit `27e805b` (approval sesi)  
+
+### F2 wave-2 + F3 — T2/T3 batch (2026-09-24)
+- [x] Copy L2 suites → `tests/l2/` (`r2_browser_suite`, `r2_label_suite`)  
+- [x] `tests/run-l2.js` + `npm run test:l2`  
+- [x] L1 suite `label_pagemath.js` (LBL-03: 25→2 halaman, grid 24, F-01 expand)  
+- [x] F-01 multi-copy: input `cetak-copies` + `generateOutput` expand + `updateCetakCount` total  
+- [x] Version bump shell: `APP_VERSION=v15.7`, SW `rdi-stok-v15`  
+- [x] L2 suite SW assert → dynamic read dari `sw.js` (tidak hardcode)  
+- [x] **L1 run:** `PASS | suites=14 | assertPass=229 | assertFail=0`  
+- [x] **L2 run:** `PASS | suites=2 | assertPass=80 | assertFail=0`  
+- [ ] Commit T2/T3 batch (butuh approval terpisah)  
 
 ### F1 — T1 (butuh Anda untuk L4)
 - [ ] Keputusan §3.3 (default: accept QR; fix label 25; 1 Android)  
@@ -340,7 +354,9 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | LBL-03 masuk track T1/T2 | cetak = daily driver gudang | §3.3 |
 | 2026-09-24 | F2 wave-1 dieksekusi | user: plan → execute → test → revise | §10 |
 | 2026-09-24 | VER-01: sinkron label versi statis ke v15.6 | L1 `version_consistency` 5 FAIL | run #1→#2 |
-| 2026-09-24 | L1 hijau 211/0 di-repo | gate C2 terpenuhi (belum commit) | `tests/results/l1_latest.json` |
+| 2026-09-24 | L1 hijau 211/0 di-repo | gate C2 terpenuhi | `tests/results/l1_latest.json` |
+| 2026-09-24 | T2/T3 batch: L2 ke repo, LBL-03 test, F-01 multi-copy, v15.7 | user: LANJUTKAN SEMUA | PLAN.md v1.2 |
+| 2026-09-24 | L1 229/0 + L2 80/0 hijau | F2 wave-2 + F3 gate | `tests/results/*_latest.json` |
 | _isian sesi_ | | | |
 
 ---
@@ -351,8 +367,8 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 
 | Level | Lokasi suite |
 |-------|--------------|
-| L1 | **`tests/l1/`** (in-repo, `npm run test:l1`) — `version_consistency`, `kartu_contract`, `r2_contract_leak`, `sec_classify`, `sim_*`, `r2_qr_decoder`, `xss_audit`, … |
-| L2 | Temp: `r2_browser_suite.js`, `r2_label_suite.js`, `switchtab_runtime.js`, `chrome_dom.js`, `chrome_scanner.js` (F2 wave-3: pindah ke `tests/l2/`) |
+| L1 | **`tests/l1/`** (in-repo, `npm run test:l1`) — `version_consistency`, `label_pagemath`, `kartu_contract`, `r2_contract_leak`, `sec_classify`, `sim_*`, `r2_qr_decoder`, `xss_audit`, … |
+| L2 | **`tests/l2/`** (in-repo, `npm run test:l2`) — `r2_browser_suite`, `r2_label_suite` |
 | L3 | Temp: `sec11_probe.js`, `gas_readonly_parity.js`, `r2_gas_redirect.js` |
 | L4 | checklist D1–D12 manual (`PLAN.md` §3.4) |
 | L5 | §3.5 operasional |

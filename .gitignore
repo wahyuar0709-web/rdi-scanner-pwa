@@ -28,3 +28,4 @@ Desktop.ini
 
 # accidental result artifacts under tests/l1
 tests/l1/*.json
+tests/l2/*.json

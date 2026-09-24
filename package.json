@@ -1,11 +1,12 @@
 {
   "name": "rdi-scanner-pwa",
-  "version": "15.6.0",
+  "version": "15.7.0",
   "private": true,
   "description": "RDI Indirect Scanner PWA — stock/inventory PWA + Google Apps Script backend",
   "scripts": {
     "test": "node tests/run-l1.js",
-    "test:l1": "node tests/run-l1.js"
+    "test:l1": "node tests/run-l1.js",
+    "test:l2": "node tests/run-l2.js"
   },
   "engines": {
     "node": ">=18"
