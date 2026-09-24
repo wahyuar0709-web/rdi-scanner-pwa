@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v19'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v20'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,8 @@ const ASSETS = [
   './qrcode.min.js',
   './js/util.js',
   './js/cetak.js',
-  './js/outbox.js'
+  './js/outbox.js',
+  './js/format.js'
 ];
 
 self.addEventListener('install', e => {

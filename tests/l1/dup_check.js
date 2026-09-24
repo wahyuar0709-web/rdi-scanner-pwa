@@ -3,7 +3,8 @@ const path = require('path');
 const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const outbox = fs.existsSync(path.join(ROOT, 'js', 'outbox.js')) ? fs.readFileSync(path.join(ROOT, 'js', 'outbox.js'), 'utf8') : '';
-const lines = (html + '\n' + outbox).split('\n');
+const formatSrc = fs.existsSync(path.join(ROOT, 'js', 'format.js')) ? fs.readFileSync(path.join(ROOT, 'js', 'format.js'), 'utf8') : '';
+const lines = (html + '\n' + outbox + '\n' + formatSrc).split('\n');
 const pats = [
   'function attempt(',
   'function ex(',
