@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.12 |
+| Version | 1.13 |
 | Date | 2026-09-24 |
 | Repo HEAD | `0a7cbb8` (F-05) |
 | App version | `v15.15` / SW `rdi-stok-v23` / GAS deployment `@41` |
@@ -84,6 +84,20 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | F-03 | MED | Filter cetak per rak/kategori | **DONE** v15.14 `_activeRak` |
 | F-04 | MED | Alert low stock (min_stock) | **DONE** pre-existing; locked `alert_lowstock.js` |
 | F-05 | LOW | Export QR massal | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
+| UI-01 | HIGH | Fokus tak dipindahkan ke/dari modal (audit UI/UX) | F-06a (spesi §5.1.4) |
+| UI-02 | HIGH | 14/17 `.sbar` tanpa `aria-live`; `role="alert"` = 0 | F-06a (spesi §5.1.4) |
+| UI-03 | HIGH | ≥28 input placeholder-only tanpa label/`aria-label` | F-06b (spesi §5.1.4) |
+| UI-04 | MED | Escape hanya 7/20 overlay; backdrop modal tak bisa diklik | F-06b (spesi §5.1.4) |
+| UI-05 | MED | 9 `<th th-sortable>` onclick tanpa role/tabindex (tak keyboard) | F-06c (spesi §5.1.4) |
+| UI-06 | MED | Tombol ikon `&times;`/`▾`/`↻`/`✕`/🔦 tanpa accessible name | F-06c (spesi §5.1.4) |
+| UI-07 | MED | 43 rule font <12px (min 8px) di label esensial | F-06d (spesi §5.1.4) |
+| UI-08 | MED | `--text3` 4.18:1 di atas `--bg` (gagal AA); hex amber hardcoded | F-06d (spesi §5.1.4) |
+| UI-09 | MED | `100vh` ×4 tanpa fallback `100dvh` (index.html) | F-06e (spesi §5.1.4) |
+| UI-10 | LOW | `modal-filter`/`modal-sort` tanpa `role="dialog"`/`aria-modal` | F-06e (spesi §5.1.4) |
+| UI-11 | LOW | `<h2>Masuk</h2>` L263 sebelum `<h1>` L412 (urutan heading) | F-06f (spesi §5.1.4) |
+| UI-12 | LOW | `.sheet-close`/`.ilc3-fab` 30px < 44px target sentuh | F-06f (spesi §5.1.4) |
+| UI-13 | LOW | Deep linking tak ada (tab tak tercermin di URL/hash) | F-06f (spesi §5.1.4) |
+| UI-14 | LOW | `prefers-color-scheme` tak dipakai (tema manual `rdi_theme`) | F-06f (spesi §5.1.4) |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -244,7 +258,8 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | **DONE** v15.14 `_activeRak` (spesi §5.1.2) |
 | P2 | F-04 | Alert low stock (min_stock) | M | L | **DONE** (pre-existing; locked `alert_lowstock.js` 53/0) |
 | P2 | F-05 | Export QR massal | M | L | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
-| P3 | F-06+ | ide lain | — | — | antrian |
+| P2 | F-06 | Paket perbaikan UI/UX aksesibilitas (14 temuan audit) | H | M | **spesi §5.1.4**; gelombang F-06a→f, maks 2 temuan/siklus |
+| P3 | F-07+ | ide lain | — | — | antrian |
 
 ### 5.1.1 Spesi F-02 — Template label (4×6 vs lain)
 
@@ -278,6 +293,38 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | **Scope out** | ZIP (tanpa dep baru); QR rak; edit payload; GAS-side generate; dry-run print (L4). |
 | **Done = ?** | `#btn-export-qr` + `#modal-export-qr` + `exportQRMassal()`/`doExportQR()`; L1 `export_qr.js` GREEN; regression L1+L2 hijau; bump shell. |
 | **Acceptance** | Scope kosong → alert; html → popup sheet berisi N QR payload benar + ID/nama; png → trigger download per item (id-based filename); xe/ex escape; `buildQrPayload` dipakai ulang; L1 static + sim payload. |
+
+### 5.1.4 Spesi F-06 — Paket perbaikan UI/UX aksesibilitas (audit)
+
+| Field | Isi |
+|-------|-----|
+| **User** | Operator gudang (HP, scanner) + pengguna keyboard/screen reader + admin desktop |
+| **Pain** | Audit UI/UX detail keseluruhan (2026-09-24, inspeksi statis L1, skill `ui-ux-pro-max`) menemukan 14 temuan: pesan error tak diumumkan, modal tanpa manajemen fokus/Escape, input tanpa label, sort tabel tak bisa keyboard, font <12px, kontras caption 4.18:1. |
+| **Scope in** | Perbaikan bertahap **UI-01…UI-14** per gelombang (anti-creep: maks 2 temuan/siklus): **F-06a** UI-01+UI-02 · **F-06b** UI-03+UI-04 · **F-06c** UI-05+UI-06 · **F-06d** UI-07+UI-08 · **F-06e** UI-09+UI-10 · **F-06f** UI-11…UI-14 (batch LOW). Tiap gelombang: RED test (assert statis aria/escape/label di `tests/l1/`) → implement → GREEN → gate L1+L2 → bump shell bila `index.html`/`scanner.html` berubah. Helper sentral `openModal(id,trigger)`/`closeModal(id)` dipakai ulang lintas modal. |
+| **Scope out** | Redesign visual/layout; ganti framework/component lib; rework tema gelap penuh; perubahan GAS/Sheet; L4 device (tetap track F1); keputusan produk di luar 14 temuan (= antrian F-07+). |
+| **Done = ?** | Tiap gelombang gate hijau (L1+L2); seluruh UI-01…UI-14 di §1.4 berstatus **FIXED** atau **ACCEPTED LIMITATION** (alasan tertulis); tidak ada regresi suite label/cetak. |
+| **Acceptance** | UI-01: fokus pindah ke modal saat open & kembali ke pemicu saat close (semua modal yang dikelola helper). UI-02: 17/17 `.sbar` punya `aria-live`/`role="status"`, `.s-err` = `role="alert"`. UI-03: 0 input utama placeholder-only (label/`aria-label` ada). UI-04: Escape menutup overlay teratas; klik backdrop tertutup. UI-05: sort kolom jalan dari keyboard. UI-06: 0 tombol ikon tanpa `aria-label`. UI-07: 0 font <12px untuk info esensial. UI-08: pasangan teks utama ≥4.5:1. UI-09: fallback `100dvh`. UI-10–14: atribut/urutan/hash/theme sesuai rekomendasi. |
+
+**Temuan audit (read-only; status = hasil inspeksi statis L1, belum diperbaiki):**
+
+| ID | Sev | Lokasi | Evidence / rekomendasi | Status |
+|----|-----|--------|------------------------|--------|
+| UI-01 | HIGH | `index.html` `openExportQRModal` L2686, `openExportExcelModal` L2663, `showUserModal` L2460, `showConfig` L2437 | open hanya `classList.add('show')`; hanya 6 `.focus()` di app (qty/search/scan/add/edit); tak ada restore fokus ke pemicu → helper `openModal(id,trigger)` fokuskan kontrol pertama + kembalikan saat close | UNVERIFIED |
+| UI-02 | HIGH | 14 `.sbar` MUTE: L748, L998, L1756, L1881, L1887, L1924–1925, L1970, L2043, L2049, L2112, L2183, L4252, L4278 (live hanya L478/L624/L874); `role="alert"` = 0 | hasil lookup/error visual-only (guideline *Error Messages*) → `role="status"` utk info, `role="alert"` utk `.s-err` | UNVERIFIED |
+| UI-03 | HIGH | ≥28 input: `login-username` L266, `login-password` L269, `search-box` L471, `noref-input` L852, `rak-search-box` L1430, `cetak-search` L1497, `idd-min-input` L1723, field aset L1874–1922; global `aria-describedby`=0, `aria-invalid`=0 | placeholder-only; hilang saat mengetik → `<label class="sr-only" for>`/`aria-label` + kaitkan error | NOT TESTED |
+| UI-04 | MEDIUM | handler Escape global hanya 7 id (item-detail, edit, add, rak-label, config, user, more-drawer); 13 `.modal-overlay` tanpa `onclick` backdrop; `closest('.modal-overlay')` = 0 | `modal-filter`, `modal-sort`, `modal-hist-card-detail`, 5× aset, `modal-admin-tools`, `modal-export-excel`, `modal-export-qr` tak tertutup via Escape/backdrop → handler terpusat (overlay teratas) + klik backdrop = tutup | NOT TESTED |
+| UI-05 | MEDIUM | `<th class="th-sortable" onclick>` L597–605 (9 kolom) | `th` bukan fokus, tanpa role/tabindex/onkeydown → bungkus `<button type="button">` di dalam `th` | NOT TESTED |
+| UI-06 | MEDIUM | `&times;` L4247 & L4262 (tanpa `aria-label`; sheet-close lain L1869–2078 sudah), `▾` L666/L1302/L1321, `↻` L1007, `✕` L1015, `scanner.html` L101 🔦 | teks 1 karakter → `aria-label` ("Tutup dialog", "Refresh", "Obor", …) | NOT TESTED |
+| UI-07 | MEDIUM | 43 rule font-size 8–11px: `8px` `.ilc2-low`; `9px` `.trx-progress-lbl`, `.hdr-saldo-lbl`, `.idd-hist-saldo-lbl`, `.item-detail-stok-badge`, `.hamburger-badge`, `.ilc2-tgl-corner`; `10px` `.item-detail-id`, `.ftbadge`, `.ilc2-rak`, `.ilc3-rak`, `.ilc2-btn-trx` | label saldo/rak/badge tak terbaca di kondisi gudang → naikkan ≥12px (`--text-caption`) utk info esensial | DEVICE-DEPENDENT |
+| UI-08 | MEDIUM | `--text3` #78716c di atas `--bg` #f3efe6 = **4.18:1**; hardcoded `#f59e0b` teks di `showRakDetail` L2934 | caption/placeholder gagal AA 4.5:1 (guideline *Color Contrast*) → gelapkan `--text3` utk bg / pakai `--text2`; ganti hex hardcoded | UNVERIFIED |
+| UI-09 | MEDIUM | `index.html` L28, L32, L69 (`height:100vh`), L1506 (`calc(100vh - 320px)`); `100dvh` = 0 (`scanner.html` sudah 1) | overlap toolbar iOS Safari → fallback `100dvh` setelah `100vh` | DEVICE-DEPENDENT |
+| UI-10 | LOW | `modal-filter`, `modal-sort` (2-satunya `.modal-overlay` tanpa atribut; 13 lain lengkap) | tambah `role="dialog" aria-modal="true" aria-label` | UNVERIFIED |
+| UI-11 | LOW | `<h2>Masuk</h2>` L263 sebelum `<h1>` L412 | urutan heading logis AT → login gate `<h1>` atau geser setelah h1 app | UNVERIFIED |
+| UI-12 | LOW | `.sheet-close` `height:30px`, `.ilc3-fab` `height:30px` (`.btn` lain 48px) | target sentuh <44px → `min-height:44px`/padding area sentuh | DEVICE-DEPENDENT |
+| UI-13 | LOW | `switchTab` — URL/hash tak berubah | deep link/tab state → update `location.hash` saat ganti tab (guideline *Deep Linking*) | UNVERIFIED |
+| UI-14 | LOW | tema hanya `localStorage rdi_theme` + `body.light`; `prefers-color-scheme` = 0 | auto-detect sistem saat pertama kali (default tetap gelap bila user pilih) | UNVERIFIED |
+
+**Referensi guideline** (skill `ui-ux-pro-max`, domain `ux`): query `keyboard navigation focus visible modal`, `destructive action confirmation delete`, `color contrast accessibility`, `navigation tab active state aria`; query `dark mode toggle theme switching` → 0 hasil DB (UI-14 memakai praktik umum). *Catatan:* rekap hitungan benar = **3 HIGH / 6 MEDIUM / 5 LOW** (koreksi dari ringkasan lisan sesi).
 
 ### 5.2 Pipeline per fitur (DoD fitur)
 
@@ -417,6 +464,9 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-03 spesi §5.1.2 · RED 13F · implement `_activeRak`/`rak-filter-bar` · GREEN 19/0 · gate L1 277/0 + L2 32/0 + label 49/0 · v15.14 / sw v22  
 - [x] Pipeline §5.2 → F-04: feature pre-existing (`loadAlert`/`section-alert`/`badge`/`dash-widget`/`saveMinStock`); locked by `alert_lowstock.js` 53/0 · L1 330/0 (17 suite) · tanpa shell change / tanpa bump  
 - [x] Pipeline §5.2 → F-05 spesi §5.1.3 · RED `export_qr.js` 10F · implement `exportQRMassal`/`doExportQR`/`#modal-export-qr` · GREEN 27/0 · gate L1 357/0 (18 suite) + L2 32/0 + label 49/0 · v15.15 / sw v23  
+- [x] Audit UI/UX detail keseluruhan (read-only, statis L1, skill `ui-ux-pro-max`) → 14 temuan UI-01…UI-14 → backlog §1.4 + spesi §5.1.4 (tanpa fix, report first)  
+- [ ] Pipeline §5.2 → F-06a (UI-01 fokus modal + UI-02 aria-live sbar)  
+- [ ] Pipeline §5.2 → F-06b…F-06f (maks 2 temuan/siklus)  
 - [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
@@ -457,6 +507,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | F-03 Filter rak: `_activeRak` + `#rak-filter-bar` + `renderRakFilter`/`setRakFilter`, exact match di `renderCetakList`/`cetakSelectAll`/`_doFilter`, badge/chip/reset, v15.14, sw `rdi-stok-v22` | fitur product P1 kedua F3; spesi §5.1.2 → RED `cetak_filter.js` 13F → GREEN 19/0 → gate L1 277/0 (16 suite) + L2 browser 32/0 + label 49/0; kategori `_activeCat` tetap | PLAN.md v1.10 |
 | 2026-09-24 | F-04 Alert low stock: feature pre-existing (`loadAlert`, `section-alert`, `updateAlertBadge`, `renderDashAlertWidget`, `saveMinStock`, HABIS/RENDAH); locked by new L1 `alert_lowstock.js` 53/0 | no shell change, no bump; L1 330/0 (17 suite); sim: min=0 never alerts, boundary qty==min alerts, HABIS only when saldo==0 | PLAN.md v1.11 |
 | 2026-09-24 | F-05 Export QR massal: `exportQRMassal`/`doExportQR` + `#modal-export-qr` + More drawer button; scope all/filtered/selected + format html/png; payload `buildQrPayload(id,nama,rak)`; v15.15, sw `rdi-stok-v23` | fitur product P2 pertama F3; spesi §5.1.3 → RED `export_qr.js` 10F → GREEN 27/0 → gate L1 357/0 (18 suite) + L2 browser 32/0 + label 49/0 | PLAN.md v1.12 |
+| 2026-09-24 | Audit UI/UX detail keseluruhan: 14 temuan UI-01…UI-14 (3 HIGH / 6 MEDIUM / 5 LOW) → backlog F-06 gelombang a–f, spesi §5.1.4; read-only tanpa fix (report first); tool: skill `ui-ux-pro-max` + audit script statis | user pilih opsi A (tulis ke backlog) | PLAN.md v1.13 |
 | _isian sesi_ | | | |
 
 ---
@@ -513,5 +564,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.10 | 2026-09-24 | F-03 Filter rak `_activeRak`/`rak-filter-bar` (v15.14, sw `rdi-stok-v22`); spesi §5.1.2; L1 suite baru `cetak_filter.js` (16 suite, 277/0); gate L1 277/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.11 | 2026-09-24 | F-04 Alert low stock pre-existing locked by `alert_lowstock.js` (17 suite, L1 330/0); no shell change / no bump; §5.1, §10, §11, §13 |
 | 1.12 | 2026-09-24 | F-05 Export QR massal `exportQRMassal`/`doExportQR` (v15.15, sw `rdi-stok-v23`); spesi §5.1.3; L1 suite baru `export_qr.js` (18 suite, 357/0); gate L1 357/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
+| 1.13 | 2026-09-24 | Audit UI/UX detail: 14 temuan UI-01…UI-14 (3 HIGH / 6 MED / 5 LOW) → backlog §1.4 + spesi F-06 §5.1.4 (gelombang F-06a…f); P2 baris F-06, antrian F-07+; §1.4, §5.1, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
