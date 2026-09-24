@@ -5,7 +5,7 @@
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
 | Version | 1.10 |
 | Date | 2026-09-24 |
-| Repo HEAD | `54ff5fd` (F-02) — F-03 ready to commit |
+| Repo HEAD | `934ace3` (F-03) |
 | App version | `v15.14` / SW `rdi-stok-v22` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
@@ -45,8 +45,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `54ff5fd` (F-02) — F-03 dirty | — |
-| Working tree | dirty (F-03 ready to commit) | — |
+| Git HEAD | `934ace3` (F-03) | — |
+| Working tree | clean | — |
 | `APP_VERSION` | `v15.14` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
 | SW `CACHE` | `rdi-stok-v22` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
@@ -81,6 +81,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | TEST-01 | MED | Suite di Temp, bukan `tests/` repo | **DONE** F2 wave-1 |
 | F-01 | MED | Multi-copy cetak (n label/item) | **DONE** v15.7 `cetak-copies` |
 | F-02 | MED | Template label (4×6 vs lain) | **DONE** v15.13 `label-tpl` |
+| F-03 | MED | Filter cetak per rak/kategori | **DONE** v15.14 `_activeRak` |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
