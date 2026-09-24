@@ -1,7 +1,7 @@
 // OI-04 kartu() contract — brace-match extraction, escape via xe()/ex(), caller shape
 const fs = require('fs');
 const path = require('path');
-const ROOT = 'c:/projec/rdi-scanner-pwa';
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 let pass = 0, fail = 0;
 function t(name, ok, ev) {
   if (ok === true) { pass++; console.log('PASS | ' + name + (ev ? ' | ' + ev : '')); }

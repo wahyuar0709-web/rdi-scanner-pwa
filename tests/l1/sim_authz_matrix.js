@@ -1,7 +1,9 @@
 // Simulasi routing authorization Code.gs (bukan runtime GAS asli)
 // Membaca pola gate dari Code.gs untuk memverifikasi ALLOW/DENY per role×action
 const fs = require('fs');
-const gs = fs.readFileSync('C:/projec/rdi-scanner-pwa/Code.gs', 'utf8');
+const path = require('path');
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
+const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 let pass = 0, fail = 0;
 function t(name, ok, ev) {
   if (ok) { pass++; console.log('PASS | ' + name); }
@@ -79,7 +81,7 @@ for (const [label, , action, opts, exp] of M) {
 t('Code.gs verifyViewerToken checks denylist', /token_deny_|denylist|cache\.get\(['"]token_deny_/.test(gs));
 t('Code.gs verifyViewerToken checks passwordVersion/pv', /passwordVersion|passwordPv_|expectedHashPv|tokenPv/.test(gs));
 t('Code.gs verifyViewerToken checks expired', /exp|expiry|Date\.now\(\)/.test(gs));
-t('frontend export message escaped (xe)', fs.readFileSync('C:/projec/rdi-scanner-pwa/index.html','utf8').includes('res.sheets') || true);
+t('frontend export message escaped (xe)', fs.readFileSync(path.join(ROOT, 'index.html'),'utf8').includes('res.sheets') || true);
 
 console.log('---');
 console.log(pass + ' PASS / ' + fail + ' FAIL');

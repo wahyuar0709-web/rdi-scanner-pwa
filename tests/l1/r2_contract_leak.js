@@ -1,7 +1,7 @@
 // API contract + static→runtime flow + document.write + event leak + SW deep audit
 const fs = require('fs');
 const path = require('path');
-const ROOT = 'c:/projec/rdi-scanner-pwa';
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');

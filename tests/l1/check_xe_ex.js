@@ -1,5 +1,5 @@
 const fs = require('fs');
-const h = fs.readFileSync('c:/projec/rdi-scanner-pwa/index.html', 'utf8');
+const h = fs.readFileSync(require('path').join(process.env.RDI_TEST_ROOT || require('path').resolve(__dirname, '../..'), 'index.html'), 'utf8');
 function ext(src, name) {
   const d = new RegExp('function\\s+' + name + '\\s*\\(');
   const m = src.match(d);

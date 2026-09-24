@@ -3,7 +3,7 @@
 // 25 items must yield 2 page divs (not 1, not 3).
 const fs = require('fs');
 const path = require('path');
-const ROOT = process.env.RDI_TEST_ROOT || 'c:/projec/rdi-scanner-pwa';
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 let pass = 0,
   fail = 0;
 function t(name, ok, ev) {

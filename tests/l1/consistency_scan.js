@@ -1,6 +1,8 @@
 const fs = require('fs');
 // Data consistency static checks on Code.gs patterns
-const s = fs.readFileSync('c:/projec/rdi-scanner-pwa/Code.gs','utf8');
+const path = require('path');
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
+const s = fs.readFileSync(path.join(ROOT, 'Code.gs'),'utf8');
 const checks = [
   [/qty\s*<=\s*0/, 'reject qty<=0'],
   [/isFinite\(qty\)/, 'isFinite qty'],
@@ -34,7 +36,7 @@ console.log((/qty <= 0/.test(s)?'PASS':'FAIL')+': reject non-positive qty');
 console.log((/new Date\(\)/.test(s)?'PASS':'FAIL')+': uses new Date() for trx timestamp');
 
 // frontend xe / xeJs
-const html = fs.readFileSync('c:/projec/rdi-scanner-pwa/index.html','utf8');
+const html = fs.readFileSync(path.join(ROOT, 'index.html'),'utf8');
 console.log('\n=== XSS ESCAPE HELPERS ===');
 console.log((/function xe\(/.test(html)?'PASS':'FAIL')+': xe defined');
 console.log((/function xeJs\(/.test(html)?'PASS':'FAIL')+': xeJs defined');
@@ -43,7 +45,7 @@ const xeJsOnclick = (html.match(/onclick="[^"]*xeJs\(/g)||[]).length;
 console.log('onclick with xeJs count:', xeJsOnclick);
 
 // scanner postMessage
-const sc = fs.readFileSync('c:/projec/rdi-scanner-pwa/scanner.html','utf8');
+const sc = fs.readFileSync(path.join(ROOT, 'scanner.html'),'utf8');
 console.log('\n=== SCANNER SECURITY ===');
 console.log((/postMessage\s*\([^)]*,\s*['"]\*['"]/.test(sc)?'FAIL: wildcard postMessage':'PASS: no wildcard postMessage'));
 console.log((/location\.origin/.test(sc)?'PASS: uses location.origin':'FAIL: no location.origin'));

@@ -1,5 +1,6 @@
 const fs = require('fs');
-const html = fs.readFileSync('c:/projec/rdi-scanner-pwa/index.html','utf8');
+const ROOT = process.env.RDI_TEST_ROOT || require('path').resolve(__dirname, '../..');
+const html = fs.readFileSync(require('path').join(ROOT, 'index.html'),'utf8');
 const lines = html.split('\n');
 console.log('=== INNERHTML / INSERTADJACENT / OUTERHTML / WRITE SINKS ===');
 let count = 0;
@@ -29,7 +30,7 @@ console.log('\n=== showModal occurrences ===');
 lines.forEach((l,i)=>{ if(/function\s+showModal|showModal\s*=/.test(l)) console.log('L'+(i+1)+': '+l.trim().slice(0,200)); });
 
 console.log('\n=== getAsetEligibleUnits definition in Code.gs ===');
-const gs = fs.readFileSync('c:/projec/rdi-scanner-pwa/Code.gs','utf8');
+const gs = fs.readFileSync(require('path').join(ROOT, 'Code.gs'),'utf8');
 console.log((/function\s+getAsetEligibleUnits/.test(gs)?'FOUND function getAsetEligibleUnits':'MISSING function getAsetEligibleUnits'));
 const m = gs.match(/function\s+getAsetEligibleUnits[\s\S]{0,400}/);
 if(m) console.log(m[0].slice(0,400));

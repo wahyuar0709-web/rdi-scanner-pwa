@@ -1,8 +1,10 @@
 // Security classification helper — evaluates known findings against current code
 const fs = require('fs');
-const gs = fs.readFileSync('C:/projec/rdi-scanner-pwa/Code.gs', 'utf8');
-const html = fs.readFileSync('C:/projec/rdi-scanner-pwa/index.html', 'utf8');
-const sw = fs.readFileSync('C:/projec/rdi-scanner-pwa/sw.js', 'utf8');
+const path = require('path');
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
+const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const findings = [];
 function F(id, name, detail, cls) { findings.push({ id, name, detail, cls }); }
 
@@ -31,7 +33,7 @@ F('SEC-10', 'setInterval 200ms jalan terus saat scanner closed', '_acWatchStart/
 const openRead = /action\s*===\s*['"]getData['"]/.test(gs);
 F('SEC-11', 'GET data tanpa auth token (opsional viewer)', 'READ via checkAnyAccess / open read untuk PWA boot; write tetap gated', openRead ? 'ACCEPTED RISK — read-only inventory list tanpa rahasia; write wajib editor key' : 'REVIEW');
 // 12. local jsQR (CDN removed)
-F('SEC-12', 'jsQR CDN supply-chain', 'jsQR lokal', fs.existsSync('C:/projec/rdi-scanner-pwa/jsQR.js') || html.includes('jsQR') ? 'FIXED' : 'OPEN');
+F('SEC-12', 'jsQR CDN supply-chain', 'jsQR lokal', fs.existsSync(path.join(ROOT, 'jsQR.js')) || html.includes('jsQR') ? 'FIXED' : 'OPEN');
 
 for (const f of findings) {
   console.log((f.cls.startsWith('OPEN') ? 'OPEN' : f.cls.startsWith('FIXED') ? 'FIXED' : 'CLASS') + ' | ' + f.id + ' | ' + f.name + ' | ' + f.cls + ' | ' + f.detail);

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const html = fs.readFileSync('c:/projec/rdi-scanner-pwa/index.html', 'utf8');
+const html = fs.readFileSync(require('path').join(process.env.RDI_TEST_ROOT || require('path').resolve(__dirname, '../..'), 'index.html'), 'utf8');
 const lines = html.split('\n');
 const pats = [
   'function attempt(',

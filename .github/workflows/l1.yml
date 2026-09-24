@@ -1,0 +1,26 @@
+name: L1
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  l1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run L1 suites
+        run: node tests/run-l1.js
+      - name: Upload L1 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l1-results
+          path: tests/results/
+          if-no-files-found: ignore

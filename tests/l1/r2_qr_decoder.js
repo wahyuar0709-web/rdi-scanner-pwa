@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const ROOT = 'c:/projec/rdi-scanner-pwa';
+const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 const jsQRCode = fs.readFileSync(path.join(ROOT, 'jsQR.min.js'), 'utf8');
 
 // Minimal QR matrix via qrcode algorithm — use a pure-JS QR encoder if available,
