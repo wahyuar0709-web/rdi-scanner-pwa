@@ -5,7 +5,7 @@
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
 | Version | 1.11 |
 | Date | 2026-09-24 |
-| Repo HEAD | `934ace3` (F-03) |
+| Repo HEAD | `2db9fef` (F-04) |
 | App version | `v15.14` / SW `rdi-stok-v22` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
@@ -45,7 +45,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `934ace3` (F-03) | — |
+| Git HEAD | `2db9fef` (F-04) | — |
 | Working tree | clean | — |
 | `APP_VERSION` | `v15.14` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
