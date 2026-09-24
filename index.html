@@ -2205,7 +2205,7 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.5';var APP_BUILD_DATE='2026-09-24';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.6';var APP_BUILD_DATE='2026-09-24';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -3000,7 +3000,7 @@ w.document.write(html);w.document.close();}
 function buildLabelHTML(items,mode){var now=new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';
 function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 var cols=4,rows=6,perPage=cols*rows;
-var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+item.rak);return'<div class="lbl2">'
+var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+(item.rak||''));return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
 +'<img class="lbl2-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data='+qrData+'" width="100%" height="100%" crossorigin="anonymous" alt="Kode QR item '+ex(qrID)+'">'
 +'<div class="lbl2-kode">'+ex(qrID)+'</div>'
@@ -3026,7 +3026,7 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 function buildPrintHTML(items,mode,pSize){var now=new Date();var tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='kartu-stok.'+yyyy+'.'+mm+'.'+dd+'.pdf';var cpp=pSize==='A5'?2:4;var pages=[];for(var p=0;p<items.length;p+=cpp){var c=items.slice(p,p+cpp);while(c.length<cpp)c.push(null);pages.push(c);}
 /* AUDIT FIX T-19 (v14.90): escaper lama tidak escape '"', dipakai di konteks atribut HTML. */function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function kartu(item,idx){if(!item)return'<div class="kartu kartu-empty"></div>';var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+item.rak);var rows='';for(var n=2;n<=15;n++)rows+='<div class="tr"><div class="td no">'+n+'</div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td last"></div></div>';return'<div class="kartu">'
+function kartu(item,idx){if(!item)return'<div class="kartu kartu-empty"></div>';var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrData=encodeURIComponent(qrID+'|'+item.nama+'|'+(item.rak||''));var rows='';for(var n=2;n<=15;n++)rows+='<div class="tr"><div class="td no">'+n+'</div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td last"></div></div>';return'<div class="kartu">'
 +'<div class="bar"></div>'
 +'<div class="kh">'
 +'<div class="khl">'
