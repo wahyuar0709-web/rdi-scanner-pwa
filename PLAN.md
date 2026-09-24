@@ -3,9 +3,9 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.3 |
+| Version | 1.4 |
 | Date | 2026-09-24 |
-| Repo HEAD | `886cc49` (T2.7 CI; pre LBL-02 batch) |
+| Repo HEAD | `c76d10b` (LBL-02 batch pushed) |
 | App version | `v15.8` / SW `rdi-stok-v16` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
@@ -185,7 +185,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Fase | Isi | Gate |
 |------|-----|------|
-| F4.1 | Peta modul (auth, data, cetak, scanner, outbox, UI) — dokumen saja | review |
+| F4.1 | Peta modul (auth, data, cetak, scanner, outbox, UI) — dokumen saja | **DONE** §4.3 |
 | F4.2 | Ekstrak util murni (`ex`/`xe`, format, QR payload) → `js/util.js` | L1 contract + L2 smoke |
 | F4.3 | Ekstrak cetak/label | `r2_label_suite` hijau |
 | F4.4 | Ekstrak outbox/API client | sim_outbox + L2 |
@@ -193,6 +193,33 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 **Strategi:** refactor bertahap + test gate (strangler), **bukan** rewrite big-bang.  
 **SW CACHE bump** bila path shell berubah. Approval per file protected.
+
+### 4.3 F4.1 — Peta modul `index.html` (4369 baris, 2026-09-24)
+
+Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–4182** · boot/trailer 4183–4369.
+
+| Modul | Baris JS (approx) | Isi | Target F4 |
+|-------|-------------------|-----|-----------|
+| **util / escape** | 2340–2361, 3008, 3037, 2884+3009 | `gasGet/Post`, `xe`/`ex`/`xeJs`, `qrImgSrc` (dup), escapers | **F4.2 → `js/util.js`** |
+| **auth / session** | 2231–2248 | login viewer/editor, session | F4.4 (bersama API client) |
+| **UI chrome** | 2214–2301, 2419–2453, 3316–3320 | tooltip, theme, sort/filter, master lists, config modal, status bar, tab nav, boot splash | shell / F4.5 |
+| **data load** | 2454–2470 | `loadData`, pagination `allRows` | F4.4 |
+| **inventory table** | 2471–2665 | tabel, min stock, dashboard widgets, alert badge | shell |
+| **transaksi** | 2666–2789 | scan mode, draft, lookup, preview, `submitTransaksi`, batch cart 2362–2418 | F4.4 (outbox/API) |
+| **riwayat / history** | 2790–2854, 2925–2996 | step load, per-hari, feed, CSV export, detail kartu | shell |
+| **rak** | 2855–2924 | grouping, label rak, `buildRakLabelHTML` | F4.3 (cetak) |
+| **cetak / label** | 2997–3261 | `generateOutput`, `buildLabelHTML`, `kartu`, `ex` dup, cetak picker, multi-copy | **F4.3 → `js/cetak.js`** |
+| **scanner kamera** | 3262–3315 | `scanFrame` ×4 (transaksi/hist/rak/master) via jsQR | F4.4 / shell |
+| **master item form** | 3321–3344 | tambah/edit item sheet | shell |
+| **modul aset** | 3353–4181 | aset dashboard, unit, aksi, CP, kontrol asah, vendor | shell (domain tersendiri) |
+| **outbox** | (inline di submitTransaksi / sw) | PENDING→SYNCED (L1 `sim_outbox`) | **F4.4 → `js/outbox.js`** |
+
+**Temuan:**
+- `qrImgSrc` didefinisikan **2×** (≈2884 dan ≈3009) — duplikat; F4.2 konsolidasi ke 1 util.
+- `ex`/`xe` di util; `kartu`/`buildLabelHTML` bergantung padanya → urutan F4.2 sebelum F4.3.
+- IIFE global (bukan ESM) — ekstrak = pindah ke file `<script defer>` + pertahankan global contract (L1 suites cek via `index.html` string → perlu update suite setelah split, atau concat-scan).
+
+**Gate F4.1:** review peta ini; lanjut F4.2 hanya setelah peta disetujui.
 
 ---
 
@@ -348,7 +375,9 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [ ] Pipeline §5.2  
 
 ### F4 / F5
-- [ ] Split bertahap  
+- [x] F4.1 Peta modul → §4.3 (2026-09-24)  
+- [ ] F4.2 Ekstrak util → `js/util.js`  
+- [ ] F4.3 Ekstrak cetak/label  
 - [ ] Exit E1–E6  
 
 ---
@@ -371,6 +400,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | T2.7 CI L1 workflow in-repo | user: LAKUKAN SEMUA SESUAI URUTAN | `886cc49` |
 | 2026-09-24 | LBL-02 QR lokal: qrcode.min.js + qrImgSrc, v15.8, sw v16 | offline/privasi; user: LAKUKAN SEMUA SESUAI URUTAN | PLAN.md v1.3 |
 | 2026-09-24 | LBL-02 gate: L1 229/0 + L2 81/0 (32+49) | QR lokal verified | `tests/results/*_latest.json` |
+| 2026-09-24 | MONO-01 F4.1 peta modul ditulis | review gate sebelum F4.2 | PLAN.md §4.3 |
 | _isian sesi_ | | | |
 
 ---
@@ -418,5 +448,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.1 | 2026-09-24 | F2 wave-1 done; VER-01 fixed; L1 **211 PASS / 0 FAIL**; §1.2, §1.4, §4.1, §10, §11 |
 | 1.2 | 2026-09-24 | T2/T3 batch: L2 in-repo, F-01 multi-copy, label_pagemath, dynamic SW assert; L1 229/0 + L2 80/0 |
 | 1.3 | 2026-09-24 | T2.7 CI + LBL-02 QR lokal v15.8 / sw `rdi-stok-v16`; L1 229/0 + L2 81/0; §1.2, §1.4, §4.1, §5.1, §10, §11 |
+| 1.4 | 2026-09-24 | F4.1 peta modul `index.html` §4.3; HEAD `c76d10b` LBL-02 pushed; §10, §11 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
