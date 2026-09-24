@@ -768,6 +768,10 @@ function checkViewerCredentials(username, password) {
       if (!aktif) return { ok:false, message:'Akun ini sudah dinonaktifkan. Hubungi admin.' };
 
       var storedPw = String(rows[i][COL_VIEWER_ACC.PASSWORD]||'');
+      // FIX F3-01: fingerprint PV harus dihitung dari nilai yang AKAN tersimpan di sheet
+      // (hash baru setelah migrasi), bukan plaintext lama — kalau tidak, token dari
+      // login migrasi langsung ditolak verifyViewerToken (passwordVersion mismatch).
+      var pwForPv = storedPw;
       // FIX SEDANG: tolak password default GANTI-PASSWORD-INI (hash maupun plaintext)
       if (storedPw === 'GANTI-PASSWORD-INI' ||
           (isPasswordHashFormat_(storedPw) && verifyPasswordHash_('GANTI-PASSWORD-INI', storedPw))) {
@@ -778,7 +782,13 @@ function checkViewerCredentials(username, password) {
       } else {
         // Akun lama, password masih plaintext -- cek apa adanya, lalu migrasi diam-diam ke hash.
         if (!constantTimeEquals_(storedPw, String(password||''))) return { ok:false, message:'Username atau password salah.' };
-        try { sh.getRange(i+2, COL_VIEWER_ACC.PASSWORD+1).setValue(makeSaltedPasswordHash_(String(password||''))); } catch(e) { /* login tetap lanjut walau migrasi hash gagal ditulis */ }
+        var migratedHash = makeSaltedPasswordHash_(String(password||''));
+        try {
+          sh.getRange(i+2, COL_VIEWER_ACC.PASSWORD+1).setValue(migratedHash);
+          pwForPv = migratedHash;
+        } catch(e) { /* login tetap lanjut; kalau tulis gagal sheet masih plaintext → PV dari plaintext */
+          pwForPv = storedPw;
+        }
       }
       // baca kolom ke-5 passwordVersion (jika sheet sudah ditambah kolomnya);
       // fallback ke fingerprint hash password agar ganti password selalu mematikan sesi.
@@ -791,7 +801,7 @@ function checkViewerCredentials(username, password) {
         }
       } catch(ePv) {}
       if (passwordVersion == null || passwordVersion === '') {
-        passwordVersion = passwordPv_(storedPw);
+        passwordVersion = passwordPv_(pwForPv);
       }
       return { ok:true, username:u, nama: String(rows[i][COL_VIEWER_ACC.NAMA]||'') || u, passwordVersion: passwordVersion };
     }
