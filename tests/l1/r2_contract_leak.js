@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const outbox = fs.existsSync(path.join(ROOT, 'js', 'outbox.js')) ? fs.readFileSync(path.join(ROOT, 'js', 'outbox.js'), 'utf8') : '';
+const src = html + '\n' + outbox;
 const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const scanner = fs.readFileSync(path.join(ROOT, 'scanner.html'), 'utf8');
@@ -28,11 +30,11 @@ const feStatus = {
   needLogin: /needLogin/,
   network: /Network error/,
 };
-t('Contract: FE expects status=ok', feStatus.success.test(html), 'gasGet/gasPost handlers');
-t('Contract: FE handles status=partial', feStatus.partial.test(html), 'submit + batch');
-t('Contract: FE handles status=error', feStatus.error.test(html), 'all paths');
-t('Contract: FE handles needLogin', feStatus.needLogin.test(html), 'forceReLogin');
-t('Contract: FE handles Network error prefix', feStatus.network.test(html), 'outbox path');
+t('Contract: FE expects status=ok', feStatus.success.test(src), 'gasGet/gasPost handlers (html+outbox)');
+t('Contract: FE handles status=partial', feStatus.partial.test(src), 'submit + batch');
+t('Contract: FE handles status=error', feStatus.error.test(src), 'all paths');
+t('Contract: FE handles needLogin', feStatus.needLogin.test(src), 'forceReLogin');
+t('Contract: FE handles Network error prefix', feStatus.network.test(src), 'outbox path');
 
 // Backend emits status fields
 t('Contract: BE returns status field', /status\s*:\s*'ok'|status\s*:\s*\"ok\"|status:'ok'/.test(gs), 'corsOutput payloads');
@@ -225,7 +227,7 @@ t('SEC: postTransaksi lock', /lockKey|cache\.put\(lockKey/.test(gs), 'LockServic
 t('SEC: requestId dedup', /trx_req_/.test(gs), 'cache key');
 
 // ========== Frontend bypass negative (static) ==========
-t('NEG: VIEWER_MODE blocks gasPost', /if\(VIEWER_MODE\)\{return Promise\.resolve\(\{status:'error'/.test(html) || html.includes('Mode lihat-saja'), 'gasPost guard');
+t('NEG: VIEWER_MODE blocks gasPost', /if\(VIEWER_MODE\)\{return Promise\.resolve\(\{status:'error'/.test(src) || src.includes('Mode lihat-saja'), 'gasPost guard in js/outbox.js');
 t('NEG: export requires editor server-side', /Export hanya untuk editor/.test(gs), 'doGet/doPost getExportData');
 t('NEG: write path not skippable via action list', gs.includes('checkEditorKey(body)') && !/READ_ACTIONS\[\s*action\s*\]\s*&&\s*write/.test(gs), 'writes after READ_ACTIONS branch');
 

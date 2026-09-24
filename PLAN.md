@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.6 |
+| Version | 1.7 |
 | Date | 2026-09-24 |
-| Repo HEAD | `f14e0ac` (F4.2) — working tree dirty (F4.3 ready to commit) |
-| App version | `v15.10` / SW `rdi-stok-v18` / GAS deployment `@41` |
+| Repo HEAD | `7e55054` (F4.3) — working tree dirty (F4.4 ready to commit) |
+| App version | `v15.11` / SW `rdi-stok-v19` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,12 +45,12 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `f14e0ac` (F4.2) — working tree dirty (F4.3 ready) | — |
-| Working tree | dirty (F4.3 ready to commit) | — |
-| `APP_VERSION` | `v15.10` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| Git HEAD | `7e55054` (F4.3) — working tree dirty (F4.4 ready) | — |
+| Working tree | dirty (F4.4 ready to commit) | — |
+| `APP_VERSION` | `v15.11` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v18` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` | L1+L2 |
-| `index.html` lines | ~4211 (F4.3: builders → `js/cetak.js`) | L1 |
+| SW `CACHE` | `rdi-stok-v19` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` | L1+L2 |
+| `index.html` lines | ~4190 (F4.4: gasGet/outbox → `js/outbox.js`) | L1 |
 | Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
@@ -188,7 +188,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | F4.1 | Peta modul (auth, data, cetak, scanner, outbox, UI) — dokumen saja | **DONE** §4.3 |
 | F4.2 | Ekstrak util murni (`ex`/`xe`, format, QR payload) → `js/util.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
 | F4.3 | Ekstrak cetak/label → `js/cetak.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
-| F4.4 | Ekstrak outbox/API client | sim_outbox + L2 |
+| F4.4 | Ekstrak outbox/API client → `js/outbox.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
 | F4.5 | Sisa shell (opsional; stop bila ROI jelek) | full L1+L2 |
 
 **Strategi:** refactor bertahap + test gate (strangler), **bukan** rewrite big-bang.  
@@ -212,13 +212,14 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | **scanner kamera** | 3262–3315 | `scanFrame` ×4 (transaksi/hist/rak/master) via jsQR | F4.4 / shell |
 | **master item form** | 3321–3344 | tambah/edit item sheet | shell |
 | **modul aset** | 3353–4181 | aset dashboard, unit, aksi, CP, kontrol asah, vendor | shell (domain tersendiri) |
-| **outbox** | (inline di submitTransaksi / sw) | PENDING→SYNCED (L1 `sim_outbox`) | **F4.4 → `js/outbox.js`** |
+| **outbox** | (inline di submitTransaksi / sw) | PENDING→SYNCED (L1 `sim_outbox`) | **DONE** F4.4 → `js/outbox.js` |
 
 **Temuan:**
 - `qrImgSrc` didefinisikan **2×** (≈2884 dan ≈3009) — duplikat; F4.2 DONE: terkonsolidasi ke `js/util.js` (v15.9).
 - `ex`/`xe` di util; `kartu`/`buildLabelHTML` bergantung padanya → urutan F4.2 sebelum F4.3.
 - IIFE global (bukan ESM) — ekstrak = pindah ke file `<script defer>` + pertahankan global contract (L1 suites cek via `index.html` string → perlu update suite setelah split, atau concat-scan).
 - F4.3 DONE: `buildRakLabelHTML`/`buildLabelHTML`/`buildPrintHTML` pindah ke `js/cetak.js` (global, tanpa defer, setelah util.js); marker `// buildLabelHTML/buildPrintHTML moved → js/cetak.js (F4.3)`; suites concat-scan `index.html + js/cetak.js` (label_pagemath, kartu_contract, r2_contract_leak, r2_label_suite, r2_browser_suite).
+- F4.4 DONE: `gasGet`/`gasPost`/`checkUrl`/`genRequestId` + outbox queue (`readOutbox`/`writeOutbox`/`pushOutbox`/`removeOutboxByRequestId`/`scheduleOutboxRetry`/`flushOutbox`) pindah ke `js/outbox.js` (global, tanpa defer, setelah cetak.js); config bridge `window.__rdiConfig` (dipilih untuk hindari collision dengan fungsi `__rdiCfg()` — lesson: jangan pakai nama sama untuk objek dan fungsi); marker `// gasGet/gasPost/checkUrl/genRequestId moved → js/outbox.js (F4.4)` + `/* outbox queue/flush moved → js/outbox.js (F4.4) */`; orchestration (`forceReLogin`/`showStatus`/`submitTransaksi`/`checkTransaksiDraft`) tetap di IIFE; suites concat-scan `index.html + js/outbox.js` (r2_contract_leak, dup_check); browser suite assets += `./js/outbox.js`.
 
 **Gate F4.1:** review peta ini; lanjut F4.2 hanya setelah peta disetujui.
 
@@ -379,6 +380,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] F4.1 Peta modul → §4.3 (2026-09-24)  
 - [x] F4.2 Ekstrak util → `js/util.js` (2026-09-24; v15.9, sw v17; L1 229/0 + L2 32/0 + label 49/0)  
 - [x] F4.3 Ekstrak cetak/label → `js/cetak.js` (2026-09-24; v15.10, sw v18; L1 229/0 + L2 32/0 + label 49/0)  
+- [x] F4.4 Ekstrak outbox/API client → `js/outbox.js` (2026-09-24; v15.11, sw v19; L1 229/0 + L2 32/0 + label 49/0)  
 - [ ] Exit E1–E6  
 
 ---
@@ -404,6 +406,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | MONO-01 F4.1 peta modul ditulis | review gate sebelum F4.2 | PLAN.md §4.3 |
 | 2026-09-24 | F4.2 util → `js/util.js`, v15.9, sw `rdi-stok-v17` | escape/QR util terpusat; script tanpa `defer` (hindari `xe` ReferenceError saat boot); gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.5 |
 | 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (global, tanpa defer), v15.10, sw `rdi-stok-v18` | strangler F4.2 lanjutan; `buildRakLabelHTML`/`buildLabelHTML`/`buildPrintHTML` keluar dari IIFE; marker `// buildLabelHTML/buildPrintHTML moved`; suites concat-scan `index.html + js/cetak.js`; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.6 |
+| 2026-09-24 | F4.4 gasGet/outbox → `js/outbox.js` (global, tanpa defer), v15.11, sw `rdi-stok-v19` | strangler F4.3 lanjutan; API client + outbox queue keluar dari IIFE; config bridge `window.__rdiConfig` (hindari collision `__rdiCfg`); orchestration tetap di IIFE; suites concat-scan `index.html + js/outbox.js` (r2_contract_leak, dup_check) + browser assets += outbox; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.7 |
 | _isian sesi_ | | | |
 
 ---
@@ -454,5 +457,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.4 | 2026-09-24 | F4.1 peta modul `index.html` §4.3; HEAD `c76d10b` LBL-02 pushed; §10, §11 |
 | 1.5 | 2026-09-24 | F4.2 util → `js/util.js` (v15.9, sw v17); suites update; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §10, §11 |
 | 1.6 | 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (v15.10, sw `rdi-stok-v18`); suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
+| 1.7 | 2026-09-24 | F4.4 gasGet/outbox → `js/outbox.js` (v15.11, sw `rdi-stok-v19`); config bridge `__rdiConfig`; suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
