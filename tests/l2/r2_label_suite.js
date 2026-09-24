@@ -109,10 +109,13 @@ function l1(src) {
   rec('L1: label kode/nama escaped via ex()', escFields ? 'PASS' : 'FAIL', escFields);
 
   const qrExternal = /api\.qrserver\.com/.test(src);
-  rec('L1: QR via api.qrserver.com (external)', qrExternal ? 'PASS' : 'FAIL', 'external QR API present=' + qrExternal);
+  rec('L1: QR local (no api.qrserver.com)', qrExternal ? 'FAIL' : 'PASS', 'external QR API present=' + qrExternal);
 
-  const qrEnc = /encodeURIComponent\(qrID\+'\\|'\+item\.nama\+'\\|'\+\(item\.rak\|\|''\)\)/.test(src) || /encodeURIComponent\(qrID\+'\|'\+item\.nama\+'\|'\+\(item\.rak\|\|''\)\)/.test(src);
-  rec('L1: QR payload encodeURIComponent + rak fallback', qrEnc ? 'PASS' : 'FAIL', qrEnc);
+  const qrLocal = /qrImgSrc\(|typeof qrcode==='function'/.test(src) && /\.\/qrcode\.min\.js/.test(src);
+  rec('L1: QR local via qrcode.min.js + qrImgSrc', qrLocal ? 'PASS' : 'FAIL', qrLocal);
+
+  const qrPayload = src.includes("var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'')");
+  rec('L1: QR payload id|nama|rak fallback', qrPayload ? 'PASS' : 'FAIL', qrPayload);
 
   const hidePs = /\(mode==='label'\)\?'none':''/.test(src) || /mode==='label'\)\?'none':''/.test(src);
   rec('L1: paper-size hidden in label mode', hidePs ? 'PASS' : 'FAIL', hidePs);
@@ -163,10 +166,10 @@ function l1(src) {
       // QR assertion must use a clean item with known ID (not evil-item HTML)
       const clean = [{ id: 'ID0', nama: 'N', spec: '', rak: 'R1' }];
       const cleanHtml = fn(clean, 'print');
-      const mData = (cleanHtml.match(/data=([^"&]+)/) || ['', ''])[1] || '';
-      const decoded = decodeURIComponent(mData);
-      const qrOk = cleanHtml.includes('api.qrserver.com') && decoded.indexOf('ID0|N|R1') === 0;
-      rec('L1: QR data param uses encoded id', qrOk ? 'PASS' : 'FAIL', { decoded: decoded.slice(0, 80) });
+      const qrAttr = (cleanHtml.match(/data-qr="([^"]*)"/) || ['', ''])[1];
+      const qrDecoded = qrAttr.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      const qrOk = cleanHtml.includes('data:image/') && qrDecoded.indexOf('ID0|N|R1') === 0;
+      rec('L1: local QR data-qr payload uses id|nama|rak', qrOk ? 'PASS' : 'FAIL', { decoded: qrDecoded.slice(0, 80), hasImg: cleanHtml.includes('data:image/') });
 
       const dl = fn(evil, 'download');
       rec('L1: download mode embeds html2pdf', dl.includes('html2pdf') ? 'PASS' : 'FAIL', dl.includes('html2pdf'));
@@ -399,7 +402,7 @@ async function main() {
         hasLabel: h.indexOf('Label Barang')>=0,
         hasPrint: h.indexOf('window.print()')>=0,
         labels: (h.match(/class="lbl2"/g)||[]).length,
-        hasQr: h.indexOf('api.qrserver.com')>=0,
+        hasQr: h.indexOf('data:image/')>=0 || h.indexOf('data-qr=')>=0,
         hasCompany: h.indexOf('PT RAYARD DELI INDONESIA')>=0,
         pageA4: h.indexOf('@page{size:A4 portrait')>=0
       };

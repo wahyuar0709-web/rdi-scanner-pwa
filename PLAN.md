@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.2 |
+| Version | 1.3 |
 | Date | 2026-09-24 |
-| Repo HEAD | `27e805b` (pre T2/T3 batch) |
-| App version | `v15.7` / SW `rdi-stok-v15` / GAS deployment `@41` |
+| Repo HEAD | `886cc49` (T2.7 CI; pre LBL-02 batch) |
+| App version | `v15.8` / SW `rdi-stok-v16` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,17 +45,17 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `27e805b` (pre T2/T3 batch) | — |
-| Working tree | dirty (T2/T3 in progress) | — |
-| `APP_VERSION` | `v15.7` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| Git HEAD | `886cc49` (pre LBL-02 batch) | — |
+| Working tree | dirty (LBL-02 in progress) | — |
+| `APP_VERSION` | `v15.8` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v15` (`sw.js:1`) | L1+L2 |
+| SW `CACHE` | `rdi-stok-v16` (`sw.js:1`) | L1+L2 |
 | `index.html` lines | ~4363 | L1 |
 | Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
-| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 80/0** (2026-09-24) |
+| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
-| Suite terakhir label | 48 PASS / 0 FAIL | **L2 PASS** |
+| Suite terakhir label | 49 PASS / 0 FAIL | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
 | L4 device | belum dijalankan | **NOT TESTED** / DEVICE-DEPENDENT |
 | L5 operational | belum | **NOT TESTED** |
@@ -74,7 +74,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |----|-----|-----------|---------------|
 | LBL-01 | MEDIUM | QR payload `rak undefined` | **DONE** `2696ebb` |
 | VER-01 | MEDIUM | Label versi statis title/apple/css/js/topbar `v15.5` vs `APP_VERSION=v15.6` | **DONE** (sesi PLAN F2; L1 13/13) |
-| LBL-02 | LOW–MED | QR via external `api.qrserver.com` (offline/privasi) | T1 keputusan |
+| LBL-02 | LOW–MED | QR via external `api.qrserver.com` (offline/privasi) | **DONE** v15.8 lokal `qrcode.min.js` |
 | LBL-03 | INFO | Page math 25 label NOT TESTED (IIFE harness) | **DONE** `label_pagemath.js` L1 18/0 |
 | LBL-04 | INFO | Print/PDF device-dependent | T1 L4 |
 | MONO-01 | INFO | Monolit `index.html` ±4k baris; IIFE sulit test | T2 F4 |
@@ -114,7 +114,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | ID | Item | Level | Default status | Aksi |
 |----|------|-------|----------------|------|
 | T1.A | Refresh inventory temuan open | L1 | perlu | Klasifikasi blocker vs nice |
-| T1.B | LBL-02 QR external | L1–L2 | OPEN | **Keputusan** §3.3 |
+| T1.B | LBL-02 QR external | L1–L2 | **DONE** v15.8 | QR lokal `qrcode.min.js` |
 | T1.C | LBL-03 label 25 | L1 | NOT TESTED | Build harness / fix jika daily |
 | T1.D | LBL-04 print device | L4 | DEVICE-DEPENDENT | masuk D8 |
 | T1.E | Regression L1+L2 | L1–L2 | last green | `/regression` sequential |
@@ -126,7 +126,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | # | Keputusan | Opsi | Default rencana (ubah jika Anda beda) |
 |---|-----------|------|--------------------------------------|
-| 1 | QR offline (LBL-02) | (a) accept limitation (b) QR lokal | **(a) ACCEPTED LIMITATION dulu** → promote ke P0 hanya jika operasi gudang butuh cetak offline penuh |
+| 1 | QR offline (LBL-02) | (a) accept limitation (b) QR lokal | **(b) diambil** → QR lokal v15.8 `qrcode.min.js` |
 | 2 | Label 25 page (LBL-03) | (a) accept (b) fix + harness | **(b) masuk T2/T1** karena cetak = alur kerja |
 | 3 | Device scope | n device × OS | **min. 1 Android** operator gudang; iOS jika ada |
 
@@ -176,7 +176,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | T2.5 | `TESTING.md` level + cara run | `TESTING.md` | **DONE** |
 | T2.6 | Suite L2 di repo | `tests/l2/` (2 suite) | **DONE** F2 wave-2 |
 | T2.6b | Runner L2 sequential + npm script | `tests/run-l2.js`, `package.json` | **DONE** `test:l2` |
-| T2.7 | CI GitHub L1 only (opsional) | `.github/workflows/` | deferred |
+| T2.7 | CI GitHub L1 only (opsional) | `.github/workflows/l1.yml` | **DONE** `886cc49` |
 | T2.8 | Re-run harness-audit setelah F2 | chat | metrics |
 
 **Aturan F2:** tidak npm-install library baru tanpa alasan; Node bawaan + Chrome CDP yang sudah dipakai.
@@ -202,7 +202,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Prio | ID | Fitur | Impact | Urgency | Syarat masuk |
 |------|-----|-------|--------|---------|--------------|
-| P0 | F-00 | QR lokal (jika keputusan §3.3 #1 = b) | H | H (offline) | keputusan |
+| P0 | F-00 | QR lokal (jika keputusan §3.3 #1 = b) | H | H (offline) | **DONE** v15.8 `qrcode.min.js` + `qrImgSrc` |
 | P0 | F-00b | Fix label 25 (LBL-03) | H | H | **DONE** `label_pagemath.js` |
 | P1 | F-01 | Multi-copy cetak (n label/item) | H | M | **DONE** v15.7 `cetak-copies` input + expand |
 | P1 | F-02 | Template label (4×6 vs lain) | M | M | setelah F-01 |
@@ -325,10 +325,20 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] L2 suite SW assert → dynamic read dari `sw.js` (tidak hardcode)  
 - [x] **L1 run:** `PASS | suites=14 | assertPass=229 | assertFail=0`  
 - [x] **L2 run:** `PASS | suites=2 | assertPass=80 | assertFail=0`  
-- [ ] Commit T2/T3 batch (butuh approval terpisah)  
+- [x] Commit T2/T3 batch → `8c00d15`  
+- [x] T2.7 CI `.github/workflows/l1.yml` + portable ROOT → `886cc49`  
+
+### LBL-02 — QR lokal (2026-09-24)
+- [x] Vendored `qrcode.min.js` (qrcode-generator@1.4.4)  
+- [x] index.html: helper `qrImgSrc`/`qrSrc`, 3 img `api.qrserver` → lokal + `data-qr`, script tag, version bump `v15.8`  
+- [x] sw.js: `rdi-stok-v16` + precache `./qrcode.min.js`  
+- [x] package.json: `15.8.0`  
+- [x] L1 `kartu_contract` assert QR lokal → **L1 PASS 229/0**  
+- [x] L2 label suite asersi QR lokal → **L2 PASS 49/0** (label) + 32/0 (browser)  
+- [ ] Commit LBL-02 batch  
 
 ### F1 — T1 (butuh Anda untuk L4)
-- [ ] Keputusan §3.3 (default: accept QR; fix label 25; 1 Android)  
+- [x] Keputusan §3.3 (QR lokal DONE; label 25 DONE; device 1 Android)  
 - [ ] Distribusi checklist D1–D12  
 - [ ] Jalankan L4 → laporkan  
 - [ ] L5 checklist  
@@ -351,12 +361,16 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | Empat tujuan T1–T4 + fase F0–F5 | arah pengembangan terdocument | PLAN.md v1.0 |
 | 2026-09-24 | LBL-01 fixed | QR rak undefined | `2696ebb` |
 | 2026-09-24 | Default LBL-02 = ACCEPTED LIMITATION | friction rendah; promote P0 jika offline cetak wajib | §3.3 |
+| 2026-09-24 | LBL-02 promote ke opsi (b) QR lokal | user: LAKUKAN SEMUA SESUAI URUTAN; offline gudang | §3.3 rev |
 | 2026-09-24 | LBL-03 masuk track T1/T2 | cetak = daily driver gudang | §3.3 |
 | 2026-09-24 | F2 wave-1 dieksekusi | user: plan → execute → test → revise | §10 |
 | 2026-09-24 | VER-01: sinkron label versi statis ke v15.6 | L1 `version_consistency` 5 FAIL | run #1→#2 |
 | 2026-09-24 | L1 hijau 211/0 di-repo | gate C2 terpenuhi | `tests/results/l1_latest.json` |
 | 2026-09-24 | T2/T3 batch: L2 ke repo, LBL-03 test, F-01 multi-copy, v15.7 | user: LANJUTKAN SEMUA | PLAN.md v1.2 |
 | 2026-09-24 | L1 229/0 + L2 80/0 hijau | F2 wave-2 + F3 gate | `tests/results/*_latest.json` |
+| 2026-09-24 | T2.7 CI L1 workflow in-repo | user: LAKUKAN SEMUA SESUAI URUTAN | `886cc49` |
+| 2026-09-24 | LBL-02 QR lokal: qrcode.min.js + qrImgSrc, v15.8, sw v16 | offline/privasi; user: LAKUKAN SEMUA SESUAI URUTAN | PLAN.md v1.3 |
+| 2026-09-24 | LBL-02 gate: L1 229/0 + L2 81/0 (32+49) | QR lokal verified | `tests/results/*_latest.json` |
 | _isian sesi_ | | | |
 
 ---
@@ -402,5 +416,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 |-------|---------|-----------|
 | 1.0 | 2026-09-24 | Initial: T1–T4, F0–F5, checklist, referensi riset |
 | 1.1 | 2026-09-24 | F2 wave-1 done; VER-01 fixed; L1 **211 PASS / 0 FAIL**; §1.2, §1.4, §4.1, §10, §11 |
+| 1.2 | 2026-09-24 | T2/T3 batch: L2 in-repo, F-01 multi-copy, label_pagemath, dynamic SW assert; L1 229/0 + L2 80/0 |
+| 1.3 | 2026-09-24 | T2.7 CI + LBL-02 QR lokal v15.8 / sw `rdi-stok-v16`; L1 229/0 + L2 81/0; §1.2, §1.4, §4.1, §5.1, §10, §11 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.

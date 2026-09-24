@@ -71,8 +71,10 @@ const concatDangerous = (body.match(/['"]>\s*'\s*\+\s*(?:item|r)\.(?:nama|rak)/g
 t('No raw item field concat into HTML without escape (string-literal pass)', dangerous.length === 0, 'dangerous=' + dangerous.length + ' sample=' + (dangerous[0] || 'none').slice(0, 120));
 t('No raw item field concat into HTML without escape (concat pass)', concatDangerous.length === 0, 'count=' + concatDangerous.length);
 
-// Externally important fields use encodeURIComponent for QR data (not HTML injection surface)
-t('QR data uses encodeURIComponent', /encodeURIComponent\(/.test(body), 'qrData build present');
+// Local QR payload id|nama|rak (LBL-02: no external qrserver; data-qr + qrSrc)
+const hasQrPayload = /var qrPayload=qrID\+'[^']+'\+item\.nama\+'[^']+'\+\(item\.rak\|\|''\)/.test(body);
+const hasLocalQr = /typeof qrcode==='function'/.test(body) && /data-qr=/.test(body);
+t('QR local payload id|nama|rak + data-qr', hasQrPayload && hasLocalQr, 'payload=' + hasQrPayload + ' local=' + hasLocalQr);
 
 // Caller shape: c.map(function(item,i){return kartu(item,i);})
 const callerMap = /c\.map\(function\s*\(\s*item\s*,\s*i\s*\)\s*\{\s*return\s+kartu\(item\s*,\s*i\)/.test(html)
