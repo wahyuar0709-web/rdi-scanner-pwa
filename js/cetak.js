@@ -28,9 +28,19 @@ var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div cla
 +ph
 +'</body></html>';}
 
-function buildLabelHTML(items,mode){var now=new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';
+/* F-02 label templates — pure, no DOM. Default '4x6' = legacy 4×6=24. */
+var LABEL_TPL={
+  '4x6':{cols:4,rows:6,qrMm:15},
+  '3x8':{cols:3,rows:8,qrMm:13},
+  '2x7':{cols:2,rows:7,qrMm:20}
+};
+function getLabelTpl(id){return LABEL_TPL[id]||LABEL_TPL['4x6'];}
+function labelPerPage(id){var t=getLabelTpl(id);return t.cols*t.rows;}
 
-var cols=4,rows=6,perPage=cols*rows;
+function buildLabelHTML(items,mode,tplId){var now=new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';
+
+var tpl=getLabelTpl(tplId);
+var cols=tpl.cols,rows=tpl.rows,perPage=cols*rows,qrMm=tpl.qrMm;
 var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
 +'<img class="lbl2-qr" data-qr="'+ex(qrPayload)+'" src="'+qrImgSrc(qrPayload,120)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'">'
@@ -49,10 +59,10 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);grid-auto-rows:1fr;align-content:start;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
 +'.lbl2{border:1px dashed #99a3b8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5mm 1mm;gap:.5mm;overflow:hidden;break-inside:avoid}'
 +'.lbl2-co{font-size:3pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
-+'.lbl2-qr{width:15mm;height:15mm;flex-shrink:0}'
++'.lbl2-qr{width:'+qrMm+'mm;height:'+qrMm+'mm;flex-shrink:0}'
 +'.lbl2-kode{font-family:"Courier New",monospace;font-size:6pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
-+'.lbl2-nama{font-size:5.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
-+'.lbl2-spec{font-size:4.5pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-nama{font-size:5.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-spec{font-size:4.5pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'@media print{.lbl2{border:1px dashed #99a3b8!important}}'
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 

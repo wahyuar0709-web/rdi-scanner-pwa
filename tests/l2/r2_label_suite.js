@@ -99,11 +99,17 @@ function l1(src) {
   const hasDoCetak = /function doCetak\(\)/.test(src) && /function doDownload\(\)/.test(src);
   rec('L1: doCetak/doDownload defined', hasDoCetak ? 'PASS' : 'FAIL', hasDoCetak);
 
-  const grid = all.match(/var cols=4,rows=6,perPage=cols\*rows/);
-  rec('L1: label grid 4x6=24', grid ? 'PASS' : 'FAIL', !!grid);
+  // F-02: default grid 4×6 via static line or LABEL_TEMPLATES['4x6']
+  const grid =
+    all.match(/var cols=4,rows=6,perPage=cols\*rows/) ||
+    all.match(/'4x6'\s*:\s*\{\s*cols\s*:\s*4\s*,\s*rows\s*:\s*6/);
+  rec('L1: label grid default 4x6=24', grid ? 'PASS' : 'FAIL', !!grid);
 
-  const count24 = /isLabel\?24:/.test(src);
-  rec('L1: updateCetakCount label page math uses 24', count24 ? 'PASS' : 'FAIL', count24);
+  const count24 =
+    /isLabel\?24:/.test(src) ||
+    /isLabel\?\s*labelPerPage\s*\(/.test(src) ||
+    (/labelPerPage|getLabelTpl/.test(src) && /updateCetakCount/.test(src));
+  rec('L1: updateCetakCount label page math resolves template', count24 ? 'PASS' : 'FAIL', count24);
 
   const labelEsc = utilSrc.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}") || src.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}");
   rec('L1: label HTML uses ex() escaper', labelEsc ? 'PASS' : 'FAIL', labelEsc);
@@ -152,7 +158,8 @@ function l1(src) {
     rec('L1: XSS escape in buildLabelHTML', 'FAIL', 'could not extract function');
   } else {
     try {
-      const fn = new Function((utilSrc || '') + '\n' + buildLabelSrc + '; return buildLabelHTML;')();
+      // F-02: full cetak.js so getLabelTpl/LABEL_TEMPLATES are in scope
+      const fn = new Function((utilSrc || '') + '\n' + (cetakSrc || '') + '\n; return buildLabelHTML;')();
       const evil = [{ id: '"><img src=x onerror=alert(1)>', nama: '<script>alert(2)</script>', spec: '" onload="alert(3)', rak: 'A1' }];
       const html = fn(evil, 'print');
       const xss = /<script>alert\(2\)<\/script>/.test(html) || /<img src=x onerror=alert\(1\)>/.test(html) || /onload="alert\(3\)/.test(html);

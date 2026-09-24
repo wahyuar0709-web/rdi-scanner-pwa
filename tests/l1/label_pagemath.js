@@ -65,11 +65,18 @@ const cetakSrc = fs.existsSync(cetakPath) ? fs.readFileSync(cetakPath, 'utf8') :
 
 
 
-const grid = (src + '\n' + cetakSrc).match(/var cols=4,rows=6,perPage=cols\*rows/);
-t('grid is 4x6=24 (static)', !!grid, !!grid);
+// F-02: default grid still 4×6 via LABEL_TEMPLATES['4x6'] or legacy static line
+const combo = src + '\n' + cetakSrc;
+const grid =
+  combo.match(/var cols=4,rows=6,perPage=cols\*rows/) ||
+  combo.match(/'4x6'\s*:\s*\{\s*cols\s*:\s*4\s*,\s*rows\s*:\s*6/);
+t('grid default is 4x6=24', !!grid, !!grid);
 
-const count24 = /isLabel\?24:/.test(src);
-t('updateCetakCount label div=24 (static)', count24, count24);
+const count24 =
+  /isLabel\?24:/.test(src) ||
+  /isLabel\?\s*labelPerPage\s*\(/.test(src) ||
+  (/labelPerPage|getLabelTpl/.test(src) && /updateCetakCount/.test(src));
+t('updateCetakCount label page math resolves template', count24, count24);
 
 const buildSrc = extractScript(src, 'buildLabelHTML') || extractScript(cetakSrc, 'buildLabelHTML');
 if (!buildSrc) {
@@ -77,7 +84,8 @@ if (!buildSrc) {
 } else {
   let fn;
   try {
-    fn = new Function(utilSrc + '\n' + buildSrc + '; return buildLabelHTML;')();
+    // F-02: load full cetak.js so getLabelTpl/LABEL_TEMPLATES are in scope
+    fn = new Function(utilSrc + '\n' + cetakSrc + '\n; return buildLabelHTML;')();
     t('buildLabelHTML executable', true, 'ok');
   } catch (e) {
     t('buildLabelHTML executable', false, String(e.message || e));

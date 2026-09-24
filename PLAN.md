@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.8 |
+| Version | 1.9 |
 | Date | 2026-09-24 |
-| Repo HEAD | `1f469ca` (F4.4) — working tree dirty (F4.5 ready to commit) |
-| App version | `v15.12` / SW `rdi-stok-v20` / GAS deployment `@41` |
+| Repo HEAD | `be717f5` (F4.5) — F-02 ready to commit |
+| App version | `v15.13` / SW `rdi-stok-v21` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,17 +45,17 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `1f469ca` (F4.4) — working tree dirty (F4.5 ready to commit) | — |
-| Working tree | dirty (F4.5 ready to commit) | — |
-| `APP_VERSION` | `v15.12` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| Git HEAD | `be717f5` (F4.5) — F-02 dirty | — |
+| Working tree | dirty (F-02 ready to commit) | — |
+| `APP_VERSION` | `v15.13` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v20` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4184 (F4.5: pure format/token/CSV helpers → `js/format.js`) | L1 |
-| Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
+| SW `CACHE` | `rdi-stok-v21` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
+| `index.html` lines | ~4190 (F-02: label-tpl UI + tplId wiring) | L1 |
+| Suite L1 in-repo | `tests/l1/` **15** suite · `npm run test:l1` | **L1 PASS 258/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
-| Suite terakhir label | 49 PASS / 0 FAIL | **L2 PASS** |
+| Suite terakhir label | 49 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
 | L4 device | belum dijalankan | **NOT TESTED** / DEVICE-DEPENDENT |
 | L5 operational | belum | **NOT TESTED** |
@@ -80,6 +80,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | MONO-01 | INFO | Monolit `index.html` ±4k baris; IIFE sulit test | T2 F4 |
 | TEST-01 | MED | Suite di Temp, bukan `tests/` repo | **DONE** F2 wave-1 |
 | F-01 | MED | Multi-copy cetak (n label/item) | **DONE** v15.7 `cetak-copies` |
+| F-02 | MED | Template label (4×6 vs lain) | **DONE** v15.13 `label-tpl` |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -236,11 +237,22 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | P0 | F-00 | QR lokal (jika keputusan §3.3 #1 = b) | H | H (offline) | **DONE** v15.8 `qrcode.min.js` + `qrImgSrc` |
 | P0 | F-00b | Fix label 25 (LBL-03) | H | H | **DONE** `label_pagemath.js` |
 | P1 | F-01 | Multi-copy cetak (n label/item) | H | M | **DONE** v15.7 `cetak-copies` input + expand |
-| P1 | F-02 | Template label (4×6 vs lain) | M | M | setelah F-01 |
+| P1 | F-02 | Template label (4×6 vs lain) | M | M | **DONE** v15.13 `label-tpl` (spesi §5.1.1) |
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | render test |
 | P2 | F-04 | Alert low stock (min_stock) | M | L | dashboard |
 | P2 | F-05 | Export QR massal | M | L | — |
 | P3 | F-06+ | ide lain | — | — | antrian |
+
+### 5.1.1 Spesi F-02 — Template label (4×6 vs lain)
+
+| Field | Isi |
+|-------|-----|
+| **User** | Operator gudang cetak label barang A4 |
+| **Pain** | Grid label terkunci 4×6 (24/hal). Butuh label lebih besar (2×7) untuk material nama panjang / lokasi outdoor, atau 3×8 (lebih lebar) untuk kolom sempit. |
+| **Scope in** | Select template di tab **Label Barang**: **4×6** (default), **3×8** (24/hal), **2×7** (14/hal). Page math + grid CSS + QR size ikut template. Paper-size tetap tersembunyi di label mode. Kartu stok tidak berubah. |
+| **Scope out** | F-03 filter cetak; template custom user; non-A4; dry-run print (L4 D8). |
+| **Done = ?** | UI `#label-tpl-wrap` + `#label-tpl`; `buildLabelHTML(items,mode,tplId)` default **4×6 identik output lama**; `updateCetakCount` + `generateOutput` baca template; L1 `label_template.js` GREEN; regression L1+L2 hijau; bump shell. |
+| **Acceptance** | 25 item @4×6 → 2 hal; 15 item @2×7 → 2 hal; 24 item @3×8 → 1 hal; unknown tpl → fallback 4×6; kartu mode: wrap label tersembunyi; label mode: wrap tampil, paper-size `display:none`. |
 
 ### 5.2 Pipeline per fitur (DoD fitur)
 
@@ -375,8 +387,11 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [ ] L5 checklist  
 
 ### F3 — T3 (setelah C1/C2)
-- [ ] Pilih P0/P1 pertama  
-- [ ] Pipeline §5.2  
+- [x] Pilih P0/P1 pertama → F-02 (P1; P0 semua DONE)  
+- [x] Pipeline §5.2 → F-02 spesi §5.1.1 · RED 15F · implement `LABEL_TPL`/`label-tpl`/`tplId` · GREEN · gate L1 258/0 + L2 32/0 + label 49/0 · v15.13 / sw v21  
+- [ ] F-03 Filter cetak per rak/kategori (P1 berikutnya)  
+- [ ] F-04 Alert low stock (P2)  
+- [ ] F-05 Export QR massal (P2)  
 
 ### F4 / F5
 - [x] F4.1 Peta modul → §4.3 (2026-09-24)  
@@ -412,6 +427,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (global, tanpa defer), v15.10, sw `rdi-stok-v18` | strangler F4.2 lanjutan; `buildRakLabelHTML`/`buildLabelHTML`/`buildPrintHTML` keluar dari IIFE; marker `// buildLabelHTML/buildPrintHTML moved`; suites concat-scan `index.html + js/cetak.js`; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.6 |
 | 2026-09-24 | F4.4 gasGet/outbox → `js/outbox.js` (global, tanpa defer), v15.11, sw `rdi-stok-v19` | strangler F4.3 lanjutan; API client + outbox queue keluar dari IIFE; config bridge `window.__rdiConfig` (hindari collision `__rdiCfg`); orchestration tetap di IIFE; suites concat-scan `index.html + js/outbox.js` (r2_contract_leak, dup_check) + browser assets += outbox; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.7 |
 | 2026-09-24 | F4.5 pure helpers → `js/format.js` (global, tanpa defer), v15.12, sw `rdi-stok-v20` | strangler F4.4 lanjutan; 23 pure helpers (date/CSV/fuzzy/token/pad2) keluar dari IIFE; F45-01 fix `_fmtTglSingkat`/`_formatHistoryTime` cross-IIFE; patch script ekstrak dinamis CRLF (lesson: jangan hardcode `\n`); suites concat-scan + browser assets += format; sisa shell di-defer → **stop F4 split**; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.8 |
+| 2026-09-24 | F-02 Template label: `LABEL_TPL` 4x6/3x8/2x7 di `js/cetak.js`, UI `#label-tpl`, `buildLabelHTML(...,tplId)`, `labelPerPage()` page math, v15.13, sw `rdi-stok-v21` | fitur product P1 pertama F3; pipeline §5.2 spesi §5.1.1 → RED `label_template.js` 15F → GREEN 29/0 → gate L1 258/0 + L2 browser 32/0 + label 49/0; asersi lama di-relax ke fallback default 4x6 | PLAN.md v1.9 |
 | _isian sesi_ | | | |
 
 ---
@@ -464,5 +480,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.6 | 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (v15.10, sw `rdi-stok-v18`); suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
 | 1.7 | 2026-09-24 | F4.4 gasGet/outbox → `js/outbox.js` (v15.11, sw `rdi-stok-v19`); config bridge `__rdiConfig`; suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
 | 1.8 | 2026-09-24 | F4.5 pure format/token/CSV helpers → `js/format.js` (v15.12, sw `rdi-stok-v20`); F45-01 fix; sisa shell di-defer (stop F4); suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
+| 1.9 | 2026-09-24 | F-02 Template label `LABEL_TPL`/`label-tpl`/`tplId` (v15.13, sw `rdi-stok-v21`); spesi §5.1.1; L1 suite baru `label_template.js` (15 suite, 258/0); gate L1 258/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
