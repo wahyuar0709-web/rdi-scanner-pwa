@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.11 |
+| Version | 1.12 |
 | Date | 2026-09-24 |
-| Repo HEAD | `2db9fef` (F-04) |
-| App version | `v15.14` / SW `rdi-stok-v22` / GAS deployment `@41` |
+| Repo HEAD | `209ba0f` (F-05 terpush — diperbarui setelah commit) |
+| App version | `v15.15` / SW `rdi-stok-v23` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,13 +45,13 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `2db9fef` (F-04) | — |
+| Git HEAD | `209ba0f` (F-04) → `pending F-05` | — |
 | Working tree | clean | — |
-| `APP_VERSION` | `v15.14` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.15` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v22` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4200 (F-03: rak-filter-bar + `_activeRak` di 3 jalur) | L1 |
-| Suite L1 in-repo | `tests/l1/` **17** suite · `npm run test:l1` | **L1 PASS 330/0** (2026-09-24) |
+| SW `CACHE` | `rdi-stok-v23` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
+| `index.html` lines | ~4290 (F-05: export QR modal + `doExportQR`) | L1 |
+| Suite L1 in-repo | `tests/l1/` **18** suite · `npm run test:l1` | **L1 PASS 357/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
@@ -83,6 +83,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | F-02 | MED | Template label (4×6 vs lain) | **DONE** v15.13 `label-tpl` |
 | F-03 | MED | Filter cetak per rak/kategori | **DONE** v15.14 `_activeRak` |
 | F-04 | MED | Alert low stock (min_stock) | **DONE** pre-existing; locked `alert_lowstock.js` |
+| F-05 | LOW | Export QR massal | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -242,7 +243,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | P1 | F-02 | Template label (4×6 vs lain) | M | M | **DONE** v15.13 `label-tpl` (spesi §5.1.1) |
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | **DONE** v15.14 `_activeRak` (spesi §5.1.2) |
 | P2 | F-04 | Alert low stock (min_stock) | M | L | **DONE** (pre-existing; locked `alert_lowstock.js` 53/0) |
-| P2 | F-05 | Export QR massal | M | L | — |
+| P2 | F-05 | Export QR massal | M | L | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
 | P3 | F-06+ | ide lain | — | — | antrian |
 
 ### 5.1.1 Spesi F-02 — Template label (4×6 vs lain)
@@ -266,6 +267,17 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | **Scope out** | Filter multi-rak (OR); rak multi per item di UI cetak baru; ubah skema data; dry-run print (L4). |
 | **Done = ?** | UI `#rak-filter-bar`; `renderRakFilter`/`setRakFilter`; `_activeRak` di 3 jalur filter + reset + badge; L1 `cetak_filter.js` GREEN; regression L1+L2 hijau; bump shell. |
 | **Acceptance** | `Cari A1` (substring) ≠ filter rak: `_activeRak='A1'` hanya tampilkan rak exact `A1` (bukan `A10`); kombinasi kategori+rak+dari-sampai tetap AND; `cetakSelectAll` hanya select baris lolos filter; Reset → semua baris; badge naik 1 saat rak aktif. |
+
+### 5.1.3 Spesi F-05 — Export QR massal
+
+| Field | Isi |
+|-------|-----|
+| **User** | Admin gundang butuh file QR semua/terpilih item untuk print mandiri atau import sistem lain |
+| **Pain** | QR hanya muncul di dalam label/kartu cetak — tidak ada cara unduh kumpulan QR sebagai file terpisah tanpa print per halaman A4 |
+| **Scope in** | Tombol **Export QR Massal** di More drawer. Modal pilih **scope** (Semua / Hasil filter / Item terpilih) + **format** (`html` sheet print-ready default, `png` unduh per item via canvas). Payload QR = `buildQrPayload(id,nama,rak)` → `id\|nama\|rak` (identik label). Filename `QR-RDI_YYYY-MM-DD.*`. Escape `xe`/`ex`. Empty guard. |
+| **Scope out** | ZIP (tanpa dep baru); QR rak; edit payload; GAS-side generate; dry-run print (L4). |
+| **Done = ?** | `#btn-export-qr` + `#modal-export-qr` + `exportQRMassal()`/`doExportQR()`; L1 `export_qr.js` GREEN; regression L1+L2 hijau; bump shell. |
+| **Acceptance** | Scope kosong → alert; html → popup sheet berisi N QR payload benar + ID/nama; png → trigger download per item (id-based filename); xe/ex escape; `buildQrPayload` dipakai ulang; L1 static + sim payload. |
 
 ### 5.2 Pipeline per fitur (DoD fitur)
 
@@ -404,7 +416,8 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-02 spesi §5.1.1 · RED 15F · implement `LABEL_TPL`/`label-tpl`/`tplId` · GREEN · gate L1 258/0 + L2 32/0 + label 49/0 · v15.13 / sw v21  
 - [x] Pipeline §5.2 → F-03 spesi §5.1.2 · RED 13F · implement `_activeRak`/`rak-filter-bar` · GREEN 19/0 · gate L1 277/0 + L2 32/0 + label 49/0 · v15.14 / sw v22  
 - [x] Pipeline §5.2 → F-04: feature pre-existing (`loadAlert`/`section-alert`/`badge`/`dash-widget`/`saveMinStock`); locked by `alert_lowstock.js` 53/0 · L1 330/0 (17 suite) · tanpa shell change / tanpa bump  
-- [ ] F-05 Export QR massal (P2)  
+- [x] Pipeline §5.2 → F-05 spesi §5.1.3 · RED `export_qr.js` 10F · implement `exportQRMassal`/`doExportQR`/`#modal-export-qr` · GREEN 27/0 · gate L1 357/0 (18 suite) + L2 32/0 + label 49/0 · v15.15 / sw v23  
+- [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
 - [x] F4.1 Peta modul → §4.3 (2026-09-24)  
@@ -443,6 +456,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | F-02 Template label: `LABEL_TPL` 4x6/3x8/2x7 di `js/cetak.js`, UI `#label-tpl`, `buildLabelHTML(...,tplId)`, `labelPerPage()` page math, v15.13, sw `rdi-stok-v21` | fitur product P1 pertama F3; pipeline §5.2 spesi §5.1.1 → RED `label_template.js` 15F → GREEN 29/0 → gate L1 258/0 + L2 browser 32/0 + label 49/0; asersi lama di-relax ke fallback default 4x6 | PLAN.md v1.9 |
 | 2026-09-24 | F-03 Filter rak: `_activeRak` + `#rak-filter-bar` + `renderRakFilter`/`setRakFilter`, exact match di `renderCetakList`/`cetakSelectAll`/`_doFilter`, badge/chip/reset, v15.14, sw `rdi-stok-v22` | fitur product P1 kedua F3; spesi §5.1.2 → RED `cetak_filter.js` 13F → GREEN 19/0 → gate L1 277/0 (16 suite) + L2 browser 32/0 + label 49/0; kategori `_activeCat` tetap | PLAN.md v1.10 |
 | 2026-09-24 | F-04 Alert low stock: feature pre-existing (`loadAlert`, `section-alert`, `updateAlertBadge`, `renderDashAlertWidget`, `saveMinStock`, HABIS/RENDAH); locked by new L1 `alert_lowstock.js` 53/0 | no shell change, no bump; L1 330/0 (17 suite); sim: min=0 never alerts, boundary qty==min alerts, HABIS only when saldo==0 | PLAN.md v1.11 |
+| 2026-09-24 | F-05 Export QR massal: `exportQRMassal`/`doExportQR` + `#modal-export-qr` + More drawer button; scope all/filtered/selected + format html/png; payload `buildQrPayload(id,nama,rak)`; v15.15, sw `rdi-stok-v23` | fitur product P2 pertama F3; spesi §5.1.3 → RED `export_qr.js` 10F → GREEN 27/0 → gate L1 357/0 (18 suite) + L2 browser 32/0 + label 49/0 | PLAN.md v1.12 |
 | _isian sesi_ | | | |
 
 ---
@@ -498,5 +512,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.9 | 2026-09-24 | F-02 Template label `LABEL_TPL`/`label-tpl`/`tplId` (v15.13, sw `rdi-stok-v21`); spesi §5.1.1; L1 suite baru `label_template.js` (15 suite, 258/0); gate L1 258/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.10 | 2026-09-24 | F-03 Filter rak `_activeRak`/`rak-filter-bar` (v15.14, sw `rdi-stok-v22`); spesi §5.1.2; L1 suite baru `cetak_filter.js` (16 suite, 277/0); gate L1 277/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.11 | 2026-09-24 | F-04 Alert low stock pre-existing locked by `alert_lowstock.js` (17 suite, L1 330/0); no shell change / no bump; §5.1, §10, §11, §13 |
+| 1.12 | 2026-09-24 | F-05 Export QR massal `exportQRMassal`/`doExportQR` (v15.15, sw `rdi-stok-v23`); spesi §5.1.3; L1 suite baru `export_qr.js` (18 suite, 357/0); gate L1 357/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
