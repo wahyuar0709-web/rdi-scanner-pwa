@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.4 |
+| Version | 1.5 |
 | Date | 2026-09-24 |
-| Repo HEAD | `c76d10b` (LBL-02 batch pushed) |
-| App version | `v15.8` / SW `rdi-stok-v16` / GAS deployment `@41` |
+| Repo HEAD | `85805dc` (MONO-01 F4.1) — working tree dirty (F4.2 ready to commit) |
+| App version | `v15.9` / SW `rdi-stok-v17` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -47,9 +47,9 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-------|--------------|
 | Git HEAD | `886cc49` (pre LBL-02 batch) | — |
 | Working tree | dirty (LBL-02 in progress) | — |
-| `APP_VERSION` | `v15.8` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.9` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v16` (`sw.js:1`) | L1+L2 |
+| SW `CACHE` | `rdi-stok-v17` (`sw.js:1`) + precache `./js/util.js` | L1+L2 |
 | `index.html` lines | ~4363 | L1 |
 | Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
@@ -186,7 +186,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | Fase | Isi | Gate |
 |------|-----|------|
 | F4.1 | Peta modul (auth, data, cetak, scanner, outbox, UI) — dokumen saja | **DONE** §4.3 |
-| F4.2 | Ekstrak util murni (`ex`/`xe`, format, QR payload) → `js/util.js` | L1 contract + L2 smoke |
+| F4.2 | Ekstrak util murni (`ex`/`xe`, format, QR payload) → `js/util.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
 | F4.3 | Ekstrak cetak/label | `r2_label_suite` hijau |
 | F4.4 | Ekstrak outbox/API client | sim_outbox + L2 |
 | F4.5 | Sisa shell (opsional; stop bila ROI jelek) | full L1+L2 |
@@ -200,7 +200,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 
 | Modul | Baris JS (approx) | Isi | Target F4 |
 |-------|-------------------|-----|-----------|
-| **util / escape** | 2340–2361, 3008, 3037, 2884+3009 | `gasGet/Post`, `xe`/`ex`/`xeJs`, `qrImgSrc` (dup), escapers | **F4.2 → `js/util.js`** |
+| **util / escape** | 2340–2361, 3008, 3037, 2884+3009 | `gasGet/Post`, `xe`/`ex`/`xeJs`, `qrImgSrc` (dup), escapers | **DONE** F4.2 → `js/util.js` |
 | **auth / session** | 2231–2248 | login viewer/editor, session | F4.4 (bersama API client) |
 | **UI chrome** | 2214–2301, 2419–2453, 3316–3320 | tooltip, theme, sort/filter, master lists, config modal, status bar, tab nav, boot splash | shell / F4.5 |
 | **data load** | 2454–2470 | `loadData`, pagination `allRows` | F4.4 |
@@ -215,7 +215,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | **outbox** | (inline di submitTransaksi / sw) | PENDING→SYNCED (L1 `sim_outbox`) | **F4.4 → `js/outbox.js`** |
 
 **Temuan:**
-- `qrImgSrc` didefinisikan **2×** (≈2884 dan ≈3009) — duplikat; F4.2 konsolidasi ke 1 util.
+- `qrImgSrc` didefinisikan **2×** (≈2884 dan ≈3009) — duplikat; F4.2 DONE: terkonsolidasi ke `js/util.js` (v15.9).
 - `ex`/`xe` di util; `kartu`/`buildLabelHTML` bergantung padanya → urutan F4.2 sebelum F4.3.
 - IIFE global (bukan ESM) — ekstrak = pindah ke file `<script defer>` + pertahankan global contract (L1 suites cek via `index.html` string → perlu update suite setelah split, atau concat-scan).
 
@@ -376,7 +376,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 
 ### F4 / F5
 - [x] F4.1 Peta modul → §4.3 (2026-09-24)  
-- [ ] F4.2 Ekstrak util → `js/util.js`  
+- [x] F4.2 Ekstrak util → `js/util.js` (2026-09-24; v15.9, sw v17; L1 229/0 + L2 32/0 + label 49/0)  
 - [ ] F4.3 Ekstrak cetak/label  
 - [ ] Exit E1–E6  
 
@@ -401,6 +401,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | LBL-02 QR lokal: qrcode.min.js + qrImgSrc, v15.8, sw v16 | offline/privasi; user: LAKUKAN SEMUA SESUAI URUTAN | PLAN.md v1.3 |
 | 2026-09-24 | LBL-02 gate: L1 229/0 + L2 81/0 (32+49) | QR lokal verified | `tests/results/*_latest.json` |
 | 2026-09-24 | MONO-01 F4.1 peta modul ditulis | review gate sebelum F4.2 | PLAN.md §4.3 |
+| 2026-09-24 | F4.2 util → `js/util.js`, v15.9, sw `rdi-stok-v17` | escape/QR util terpusat; script tanpa `defer` (hindari `xe` ReferenceError saat boot); gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.5 |
 | _isian sesi_ | | | |
 
 ---
@@ -449,5 +450,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.2 | 2026-09-24 | T2/T3 batch: L2 in-repo, F-01 multi-copy, label_pagemath, dynamic SW assert; L1 229/0 + L2 80/0 |
 | 1.3 | 2026-09-24 | T2.7 CI + LBL-02 QR lokal v15.8 / sw `rdi-stok-v16`; L1 229/0 + L2 81/0; §1.2, §1.4, §4.1, §5.1, §10, §11 |
 | 1.4 | 2026-09-24 | F4.1 peta modul `index.html` §4.3; HEAD `c76d10b` LBL-02 pushed; §10, §11 |
+| 1.5 | 2026-09-24 | F4.2 util → `js/util.js` (v15.9, sw v17); suites update; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §10, §11 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.

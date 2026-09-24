@@ -53,6 +53,15 @@ function extractScript(src, fnName) {
 }
 
 const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const utilPath = path.join(ROOT, 'js/util.js');
+const utilSrc = fs.existsSync(utilPath) ? fs.readFileSync(utilPath, 'utf8') : '';
+
+
+
+
+
+
+
 
 const grid = src.match(/var cols=4,rows=6,perPage=cols\*rows/);
 t('grid is 4x6=24 (static)', !!grid, !!grid);
@@ -66,7 +75,7 @@ if (!buildSrc) {
 } else {
   let fn;
   try {
-    fn = new Function(buildSrc + '; return buildLabelHTML;')();
+    fn = new Function(utilSrc + '\n' + buildSrc + '; return buildLabelHTML;')();
     t('buildLabelHTML executable', true, 'ok');
   } catch (e) {
     t('buildLabelHTML executable', false, String(e.message || e));

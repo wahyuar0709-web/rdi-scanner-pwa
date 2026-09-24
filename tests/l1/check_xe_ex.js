@@ -1,5 +1,9 @@
 const fs = require('fs');
-const h = fs.readFileSync(require('path').join(process.env.RDI_TEST_ROOT || require('path').resolve(__dirname, '../..'), 'index.html'), 'utf8');
+const ROOT = process.env.RDI_TEST_ROOT || require('path').resolve(__dirname, '../..');
+const fsx = require('fs');
+const utilPath = require('path').join(ROOT, 'js/util.js');
+const util = fsx.existsSync(utilPath) ? fsx.readFileSync(utilPath, 'utf8') : '';
+const h = fs.readFileSync(require('path').join(ROOT, 'index.html'), 'utf8') + '\n' + util;
 function ext(src, name) {
   const d = new RegExp('function\\s+' + name + '\\s*\\(');
   const m = src.match(d);

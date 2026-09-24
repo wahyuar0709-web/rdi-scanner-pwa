@@ -37,9 +37,10 @@ console.log((/new Date\(\)/.test(s)?'PASS':'FAIL')+': uses new Date() for trx ti
 
 // frontend xe / xeJs
 const html = fs.readFileSync(path.join(ROOT, 'index.html'),'utf8');
+const utilHtml = fs.existsSync(path.join(ROOT, 'js/util.js')) ? fs.readFileSync(path.join(ROOT, 'js/util.js'),'utf8') : '';
 console.log('\n=== XSS ESCAPE HELPERS ===');
-console.log((/function xe\(/.test(html)?'PASS':'FAIL')+': xe defined');
-console.log((/function xeJs\(/.test(html)?'PASS':'FAIL')+': xeJs defined');
+console.log((/function xe\(/.test(html)||/function xe\(/.test(utilHtml)?'PASS':'FAIL')+': xe defined (index or util)');
+console.log((/function xeJs\(/.test(html)||/function xeJs\(/.test(utilHtml)?'PASS':'FAIL')+': xeJs defined (index or util)');
 console.log((/onclick="[^"]*xe\(/.test(html)?'FAIL: raw xe in onclick':'PASS: no raw xe in onclick attr'));
 const xeJsOnclick = (html.match(/onclick="[^"]*xeJs\(/g)||[]).length;
 console.log('onclick with xeJs count:', xeJsOnclick);

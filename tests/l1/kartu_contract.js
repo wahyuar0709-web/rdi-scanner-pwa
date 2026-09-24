@@ -10,6 +10,16 @@ function t(name, ok, ev) {
 }
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const utilPath = path.join(ROOT, 'js/util.js');
+const util = fs.existsSync(utilPath) ? fs.readFileSync(utilPath, 'utf8') : '';
+const htmlOrUtil = html + '\n' + util;
+
+
+
+
+
+
+
 
 function extractFnBody(src, name) {
   const declRe = new RegExp('function\\s+' + name + '\\s*\\(');
@@ -47,12 +57,12 @@ const hasEx = /\bex\s*\(/.test(body);
 t('kartu() HTML-escapes user data', hasXe || hasEx, 'xe=' + hasXe + ' ex=' + hasEx);
 
 // Escape helpers must exist somewhere in index.html
-t('escape helper defined (xe or ex)', /function\s+xe\s*\(/.test(html) || /function\s+ex\s*\(/.test(html),
-  'function xe=' + /function\s+xe\s*\(/.test(html) + ' function ex=' + /function\s+ex\s*\(/.test(html));
+t('escape helper defined (xe or ex)', /function\s+xe\s*\(/.test(htmlOrUtil) || /function\s+ex\s*\(/.test(htmlOrUtil),
+  'function xe=' + /function\s+xe\s*\(/.test(htmlOrUtil) + ' function ex=' + /function\s+ex\s*\(/.test(htmlOrUtil));
 
 // xe and ex (when both exist) should be equivalent escape maps (ignore function name)
-const xeBody = extractFnBody(html, 'xe');
-const exBody = extractFnBody(html, 'ex');
+const xeBody = extractFnBody(htmlOrUtil, 'xe');
+const exBody = extractFnBody(htmlOrUtil, 'ex');
 if (xeBody && exBody) {
   // extractFnBody starts at name index — strip optional `function` + name for compare
   const stripName = s => s.replace(/^(?:function\s*)?[A-Za-z_$][\w$]*/, 'fn').replace(/\s+/g, '');

@@ -87,6 +87,7 @@ function mockRows(n) {
 }
 
 function l1(src) {
+  const utilSrc = (function(){ try { return fs.readFileSync(path.join(ROOT, 'js/util.js'), 'utf8'); } catch (e) { return ''; } })();
   const hasLabelBtn = /data-mode="label"/.test(src) && /Label Barang/.test(src);
   rec('L1: tab Label Barang exists', hasLabelBtn ? 'PASS' : 'FAIL', hasLabelBtn);
 
@@ -102,7 +103,7 @@ function l1(src) {
   const count24 = /isLabel\?24:/.test(src);
   rec('L1: updateCetakCount label page math uses 24', count24 ? 'PASS' : 'FAIL', count24);
 
-  const labelEsc = src.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}");
+  const labelEsc = utilSrc.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}") || src.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}");
   rec('L1: label HTML uses ex() escaper', labelEsc ? 'PASS' : 'FAIL', labelEsc);
 
   const escFields = src.includes("'+ex(qrID)+'") && src.includes("'+ex(item.nama)+'");
@@ -111,7 +112,7 @@ function l1(src) {
   const qrExternal = /api\.qrserver\.com/.test(src);
   rec('L1: QR local (no api.qrserver.com)', qrExternal ? 'FAIL' : 'PASS', 'external QR API present=' + qrExternal);
 
-  const qrLocal = /qrImgSrc\(|typeof qrcode==='function'/.test(src) && /\.\/qrcode\.min\.js/.test(src);
+  const qrLocal = (/qrImgSrc\(|typeof qrcode==='function'/.test(src) || /function qrImgSrc\(/.test(utilSrc || '')) && /\.\/qrcode\.min\.js/.test(src) && /js\/util\.js/.test(src);
   rec('L1: QR local via qrcode.min.js + qrImgSrc', qrLocal ? 'PASS' : 'FAIL', qrLocal);
 
   const qrPayload = src.includes("var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'')");
@@ -149,7 +150,7 @@ function l1(src) {
     rec('L1: XSS escape in buildLabelHTML', 'FAIL', 'could not extract function');
   } else {
     try {
-      const fn = new Function(buildLabelSrc + '; return buildLabelHTML;')();
+      const fn = new Function((utilSrc || '') + '\n' + buildLabelSrc + '; return buildLabelHTML;')();
       const evil = [{ id: '"><img src=x onerror=alert(1)>', nama: '<script>alert(2)</script>', spec: '" onload="alert(3)', rak: 'A1' }];
       const html = fn(evil, 'print');
       const xss = /<script>alert\(2\)<\/script>/.test(html) || /<img src=x onerror=alert\(1\)>/.test(html) || /onload="alert\(3\)/.test(html);
