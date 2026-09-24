@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.10 |
+| Version | 1.11 |
 | Date | 2026-09-24 |
 | Repo HEAD | `934ace3` (F-03) |
 | App version | `v15.14` / SW `rdi-stok-v22` / GAS deployment `@41` |
@@ -51,7 +51,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
 | SW `CACHE` | `rdi-stok-v22` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
 | `index.html` lines | ~4200 (F-03: rak-filter-bar + `_activeRak` di 3 jalur) | L1 |
-| Suite L1 in-repo | `tests/l1/` **16** suite · `npm run test:l1` | **L1 PASS 277/0** (2026-09-24) |
+| Suite L1 in-repo | `tests/l1/` **17** suite · `npm run test:l1` | **L1 PASS 330/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
@@ -82,6 +82,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | F-01 | MED | Multi-copy cetak (n label/item) | **DONE** v15.7 `cetak-copies` |
 | F-02 | MED | Template label (4×6 vs lain) | **DONE** v15.13 `label-tpl` |
 | F-03 | MED | Filter cetak per rak/kategori | **DONE** v15.14 `_activeRak` |
+| F-04 | MED | Alert low stock (min_stock) | **DONE** pre-existing; locked `alert_lowstock.js` |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -240,7 +241,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | P1 | F-01 | Multi-copy cetak (n label/item) | H | M | **DONE** v15.7 `cetak-copies` input + expand |
 | P1 | F-02 | Template label (4×6 vs lain) | M | M | **DONE** v15.13 `label-tpl` (spesi §5.1.1) |
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | **DONE** v15.14 `_activeRak` (spesi §5.1.2) |
-| P2 | F-04 | Alert low stock (min_stock) | M | L | dashboard |
+| P2 | F-04 | Alert low stock (min_stock) | M | L | **DONE** (pre-existing; locked `alert_lowstock.js` 53/0) |
 | P2 | F-05 | Export QR massal | M | L | — |
 | P3 | F-06+ | ide lain | — | — | antrian |
 
@@ -402,7 +403,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pilih P0/P1 pertama → F-02 (P1; P0 semua DONE)  
 - [x] Pipeline §5.2 → F-02 spesi §5.1.1 · RED 15F · implement `LABEL_TPL`/`label-tpl`/`tplId` · GREEN · gate L1 258/0 + L2 32/0 + label 49/0 · v15.13 / sw v21  
 - [x] Pipeline §5.2 → F-03 spesi §5.1.2 · RED 13F · implement `_activeRak`/`rak-filter-bar` · GREEN 19/0 · gate L1 277/0 + L2 32/0 + label 49/0 · v15.14 / sw v22  
-- [ ] F-04 Alert low stock (min_stock) (P2)  
+- [x] Pipeline §5.2 → F-04: feature pre-existing (`loadAlert`/`section-alert`/`badge`/`dash-widget`/`saveMinStock`); locked by `alert_lowstock.js` 53/0 · L1 330/0 (17 suite) · tanpa shell change / tanpa bump  
 - [ ] F-05 Export QR massal (P2)  
 
 ### F4 / F5
@@ -441,6 +442,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | F4.5 pure helpers → `js/format.js` (global, tanpa defer), v15.12, sw `rdi-stok-v20` | strangler F4.4 lanjutan; 23 pure helpers (date/CSV/fuzzy/token/pad2) keluar dari IIFE; F45-01 fix `_fmtTglSingkat`/`_formatHistoryTime` cross-IIFE; patch script ekstrak dinamis CRLF (lesson: jangan hardcode `\n`); suites concat-scan + browser assets += format; sisa shell di-defer → **stop F4 split**; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.8 |
 | 2026-09-24 | F-02 Template label: `LABEL_TPL` 4x6/3x8/2x7 di `js/cetak.js`, UI `#label-tpl`, `buildLabelHTML(...,tplId)`, `labelPerPage()` page math, v15.13, sw `rdi-stok-v21` | fitur product P1 pertama F3; pipeline §5.2 spesi §5.1.1 → RED `label_template.js` 15F → GREEN 29/0 → gate L1 258/0 + L2 browser 32/0 + label 49/0; asersi lama di-relax ke fallback default 4x6 | PLAN.md v1.9 |
 | 2026-09-24 | F-03 Filter rak: `_activeRak` + `#rak-filter-bar` + `renderRakFilter`/`setRakFilter`, exact match di `renderCetakList`/`cetakSelectAll`/`_doFilter`, badge/chip/reset, v15.14, sw `rdi-stok-v22` | fitur product P1 kedua F3; spesi §5.1.2 → RED `cetak_filter.js` 13F → GREEN 19/0 → gate L1 277/0 (16 suite) + L2 browser 32/0 + label 49/0; kategori `_activeCat` tetap | PLAN.md v1.10 |
+| 2026-09-24 | F-04 Alert low stock: feature pre-existing (`loadAlert`, `section-alert`, `updateAlertBadge`, `renderDashAlertWidget`, `saveMinStock`, HABIS/RENDAH); locked by new L1 `alert_lowstock.js` 53/0 | no shell change, no bump; L1 330/0 (17 suite); sim: min=0 never alerts, boundary qty==min alerts, HABIS only when saldo==0 | PLAN.md v1.11 |
 | _isian sesi_ | | | |
 
 ---
@@ -495,5 +497,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.8 | 2026-09-24 | F4.5 pure format/token/CSV helpers → `js/format.js` (v15.12, sw `rdi-stok-v20`); F45-01 fix; sisa shell di-defer (stop F4); suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
 | 1.9 | 2026-09-24 | F-02 Template label `LABEL_TPL`/`label-tpl`/`tplId` (v15.13, sw `rdi-stok-v21`); spesi §5.1.1; L1 suite baru `label_template.js` (15 suite, 258/0); gate L1 258/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.10 | 2026-09-24 | F-03 Filter rak `_activeRak`/`rak-filter-bar` (v15.14, sw `rdi-stok-v22`); spesi §5.1.2; L1 suite baru `cetak_filter.js` (16 suite, 277/0); gate L1 277/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
+| 1.11 | 2026-09-24 | F-04 Alert low stock pre-existing locked by `alert_lowstock.js` (17 suite, L1 330/0); no shell change / no bump; §5.1, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
