@@ -88,16 +88,18 @@ function mockRows(n) {
 
 function l1(src) {
   const utilSrc = (function(){ try { return fs.readFileSync(path.join(ROOT, 'js/util.js'), 'utf8'); } catch (e) { return ''; } })();
+  const cetakSrc = (function(){ try { return fs.readFileSync(path.join(ROOT, 'js/cetak.js'), 'utf8'); } catch (e) { return ''; } })();
+  const all = src + '\n' + cetakSrc;
   const hasLabelBtn = /data-mode="label"/.test(src) && /Label Barang/.test(src);
   rec('L1: tab Label Barang exists', hasLabelBtn ? 'PASS' : 'FAIL', hasLabelBtn);
 
-  const hasBuildLabel = /function buildLabelHTML/.test(src);
+  const hasBuildLabel = /function buildLabelHTML/.test(all);
   rec('L1: buildLabelHTML defined', hasBuildLabel ? 'PASS' : 'FAIL', hasBuildLabel);
 
   const hasDoCetak = /function doCetak\(\)/.test(src) && /function doDownload\(\)/.test(src);
   rec('L1: doCetak/doDownload defined', hasDoCetak ? 'PASS' : 'FAIL', hasDoCetak);
 
-  const grid = src.match(/var cols=4,rows=6,perPage=cols\*rows/);
+  const grid = all.match(/var cols=4,rows=6,perPage=cols\*rows/);
   rec('L1: label grid 4x6=24', grid ? 'PASS' : 'FAIL', !!grid);
 
   const count24 = /isLabel\?24:/.test(src);
@@ -106,7 +108,7 @@ function l1(src) {
   const labelEsc = utilSrc.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}") || src.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}");
   rec('L1: label HTML uses ex() escaper', labelEsc ? 'PASS' : 'FAIL', labelEsc);
 
-  const escFields = src.includes("'+ex(qrID)+'") && src.includes("'+ex(item.nama)+'");
+  const escFields = all.includes("'+ex(qrID)+'") && all.includes("'+ex(item.nama)+'");
   rec('L1: label kode/nama escaped via ex()', escFields ? 'PASS' : 'FAIL', escFields);
 
   const qrExternal = /api\.qrserver\.com/.test(src);
@@ -115,7 +117,7 @@ function l1(src) {
   const qrLocal = (/qrImgSrc\(|typeof qrcode==='function'/.test(src) || /function qrImgSrc\(/.test(utilSrc || '')) && /\.\/qrcode\.min\.js/.test(src) && /js\/util\.js/.test(src);
   rec('L1: QR local via qrcode.min.js + qrImgSrc', qrLocal ? 'PASS' : 'FAIL', qrLocal);
 
-  const qrPayload = src.includes("var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'')");
+  const qrPayload = all.includes("var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'')");
   rec('L1: QR payload id|nama|rak fallback', qrPayload ? 'PASS' : 'FAIL', qrPayload);
 
   const hidePs = /\(mode==='label'\)\?'none':''/.test(src) || /mode==='label'\)\?'none':''/.test(src);
@@ -127,13 +129,13 @@ function l1(src) {
   const popupGuard = /Popup diblokir browser/.test(src);
   rec('L1: popup blocked guard', popupGuard ? 'PASS' : 'FAIL', popupGuard);
 
-  const printMode = /window\.onload=function\(\)\{window\.print\(\);\}/.test(src);
+  const printMode = /window\.onload=function\(\)\{window\.print\(\);\}/.test(all);
   rec('L1: print mode auto window.print', printMode ? 'PASS' : 'FAIL', printMode);
 
-  const pdfMode = /html2pdf\.js/.test(src) && /mode==='download'/.test(src);
+  const pdfMode = /html2pdf\.js/.test(all) && /mode==='download'/.test(all);
   rec('L1: download mode uses html2pdf', pdfMode ? 'PASS' : 'FAIL', pdfMode);
 
-  const fname = /label-barang\./.test(src);
+  const fname = /label-barang\./.test(all);
   rec('L1: PDF filename label-barang.YYYY.MM.DD', fname ? 'PASS' : 'FAIL', fname);
 
   const selSet = /var cetakSelectedIds=new Set\(\)/.test(src);
@@ -145,7 +147,7 @@ function l1(src) {
   const sticky = /onclick="doCetak\(\)"/.test(src) && /onclick="doDownload\(\)"/.test(src);
   rec('L1: sticky bar Cetak+PDF wired', sticky ? 'PASS' : 'FAIL', sticky);
 
-  const buildLabelSrc = extractScript(src, 'buildLabelHTML');
+  const buildLabelSrc = extractScript(all, 'buildLabelHTML');
   if (!buildLabelSrc) {
     rec('L1: XSS escape in buildLabelHTML', 'FAIL', 'could not extract function');
   } else {

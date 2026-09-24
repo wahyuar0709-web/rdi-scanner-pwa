@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.5 |
+| Version | 1.6 |
 | Date | 2026-09-24 |
-| Repo HEAD | `85805dc` (MONO-01 F4.1) — working tree dirty (F4.2 ready to commit) |
-| App version | `v15.9` / SW `rdi-stok-v17` / GAS deployment `@41` |
+| Repo HEAD | `f14e0ac` (F4.2) — working tree dirty (F4.3 ready to commit) |
+| App version | `v15.10` / SW `rdi-stok-v18` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,12 +45,12 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `886cc49` (pre LBL-02 batch) | — |
-| Working tree | dirty (LBL-02 in progress) | — |
-| `APP_VERSION` | `v15.9` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| Git HEAD | `f14e0ac` (F4.2) — working tree dirty (F4.3 ready) | — |
+| Working tree | dirty (F4.3 ready to commit) | — |
+| `APP_VERSION` | `v15.10` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v17` (`sw.js:1`) + precache `./js/util.js` | L1+L2 |
-| `index.html` lines | ~4363 | L1 |
+| SW `CACHE` | `rdi-stok-v18` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` | L1+L2 |
+| `index.html` lines | ~4211 (F4.3: builders → `js/cetak.js`) | L1 |
 | Suite L1 in-repo | `tests/l1/` **14** suite · `npm run test:l1` | **L1 PASS 229/0** (2026-09-24) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
@@ -187,7 +187,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-----|------|
 | F4.1 | Peta modul (auth, data, cetak, scanner, outbox, UI) — dokumen saja | **DONE** §4.3 |
 | F4.2 | Ekstrak util murni (`ex`/`xe`, format, QR payload) → `js/util.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
-| F4.3 | Ekstrak cetak/label | `r2_label_suite` hijau |
+| F4.3 | Ekstrak cetak/label → `js/cetak.js` | **DONE** L1 229/0 + L2 browser 32/0 + label 49/0 |
 | F4.4 | Ekstrak outbox/API client | sim_outbox + L2 |
 | F4.5 | Sisa shell (opsional; stop bila ROI jelek) | full L1+L2 |
 
@@ -207,8 +207,8 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | **inventory table** | 2471–2665 | tabel, min stock, dashboard widgets, alert badge | shell |
 | **transaksi** | 2666–2789 | scan mode, draft, lookup, preview, `submitTransaksi`, batch cart 2362–2418 | F4.4 (outbox/API) |
 | **riwayat / history** | 2790–2854, 2925–2996 | step load, per-hari, feed, CSV export, detail kartu | shell |
-| **rak** | 2855–2924 | grouping, label rak, `buildRakLabelHTML` | F4.3 (cetak) |
-| **cetak / label** | 2997–3261 | `generateOutput`, `buildLabelHTML`, `kartu`, `ex` dup, cetak picker, multi-copy | **F4.3 → `js/cetak.js`** |
+| **rak** | 2855–2924 | grouping, label rak, `buildRakLabelHTML` | **DONE** F4.3 → `js/cetak.js` |
+| **cetak / label** | 2997–3261 | `generateOutput`, `buildLabelHTML`, `kartu`, `ex` dup, cetak picker, multi-copy | **DONE** F4.3 → `js/cetak.js` (builders global; orchestration tetap di IIFE) |
 | **scanner kamera** | 3262–3315 | `scanFrame` ×4 (transaksi/hist/rak/master) via jsQR | F4.4 / shell |
 | **master item form** | 3321–3344 | tambah/edit item sheet | shell |
 | **modul aset** | 3353–4181 | aset dashboard, unit, aksi, CP, kontrol asah, vendor | shell (domain tersendiri) |
@@ -218,6 +218,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 - `qrImgSrc` didefinisikan **2×** (≈2884 dan ≈3009) — duplikat; F4.2 DONE: terkonsolidasi ke `js/util.js` (v15.9).
 - `ex`/`xe` di util; `kartu`/`buildLabelHTML` bergantung padanya → urutan F4.2 sebelum F4.3.
 - IIFE global (bukan ESM) — ekstrak = pindah ke file `<script defer>` + pertahankan global contract (L1 suites cek via `index.html` string → perlu update suite setelah split, atau concat-scan).
+- F4.3 DONE: `buildRakLabelHTML`/`buildLabelHTML`/`buildPrintHTML` pindah ke `js/cetak.js` (global, tanpa defer, setelah util.js); marker `// buildLabelHTML/buildPrintHTML moved → js/cetak.js (F4.3)`; suites concat-scan `index.html + js/cetak.js` (label_pagemath, kartu_contract, r2_contract_leak, r2_label_suite, r2_browser_suite).
 
 **Gate F4.1:** review peta ini; lanjut F4.2 hanya setelah peta disetujui.
 
@@ -377,7 +378,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 ### F4 / F5
 - [x] F4.1 Peta modul → §4.3 (2026-09-24)  
 - [x] F4.2 Ekstrak util → `js/util.js` (2026-09-24; v15.9, sw v17; L1 229/0 + L2 32/0 + label 49/0)  
-- [ ] F4.3 Ekstrak cetak/label  
+- [x] F4.3 Ekstrak cetak/label → `js/cetak.js` (2026-09-24; v15.10, sw v18; L1 229/0 + L2 32/0 + label 49/0)  
 - [ ] Exit E1–E6  
 
 ---
@@ -402,6 +403,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | LBL-02 gate: L1 229/0 + L2 81/0 (32+49) | QR lokal verified | `tests/results/*_latest.json` |
 | 2026-09-24 | MONO-01 F4.1 peta modul ditulis | review gate sebelum F4.2 | PLAN.md §4.3 |
 | 2026-09-24 | F4.2 util → `js/util.js`, v15.9, sw `rdi-stok-v17` | escape/QR util terpusat; script tanpa `defer` (hindari `xe` ReferenceError saat boot); gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.5 |
+| 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (global, tanpa defer), v15.10, sw `rdi-stok-v18` | strangler F4.2 lanjutan; `buildRakLabelHTML`/`buildLabelHTML`/`buildPrintHTML` keluar dari IIFE; marker `// buildLabelHTML/buildPrintHTML moved`; suites concat-scan `index.html + js/cetak.js`; gate L1 229/0 + L2 browser 32/0 + label 49/0 | PLAN.md v1.6 |
 | _isian sesi_ | | | |
 
 ---
@@ -451,5 +453,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.3 | 2026-09-24 | T2.7 CI + LBL-02 QR lokal v15.8 / sw `rdi-stok-v16`; L1 229/0 + L2 81/0; §1.2, §1.4, §4.1, §5.1, §10, §11 |
 | 1.4 | 2026-09-24 | F4.1 peta modul `index.html` §4.3; HEAD `c76d10b` LBL-02 pushed; §10, §11 |
 | 1.5 | 2026-09-24 | F4.2 util → `js/util.js` (v15.9, sw v17); suites update; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §10, §11 |
+| 1.6 | 2026-09-24 | F4.3 builders cetak → `js/cetak.js` (v15.10, sw `rdi-stok-v18`); suites concat-scan; gate L1 229/0 + L2 browser 32/0 + label 49/0; §1.2, §4.2, §4.3, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.

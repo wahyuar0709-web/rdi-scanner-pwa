@@ -115,7 +115,9 @@ function extractFnBody(src, name) {
   if (end < 0) return null;
   return { text: src.slice(idx, end + 1), form: dm ? 'function-decl' : 'method-shorthand' };
 }
-const kartu = extractFnBody(html, 'kartu');
+const cetakPath2 = require('path').join(ROOT, 'js/cetak.js');
+const cetakSrc2 = fs.existsSync(cetakPath2) ? fs.readFileSync(cetakPath2, 'utf8') : '';
+const kartu = extractFnBody(html + '\n' + cetakSrc2, 'kartu');
 if (kartu) {
   const hasEscape = /xe\s*\(/.test(kartu.text) || /\bex\s*\(/.test(kartu.text);
   t('kartu() found', true, 'form=' + kartu.form + ' len=' + kartu.text.length);

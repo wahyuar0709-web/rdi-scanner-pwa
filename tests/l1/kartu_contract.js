@@ -12,7 +12,10 @@ function t(name, ok, ev) {
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const utilPath = path.join(ROOT, 'js/util.js');
 const util = fs.existsSync(utilPath) ? fs.readFileSync(utilPath, 'utf8') : '';
-const htmlOrUtil = html + '\n' + util;
+const cetakPath = path.join(ROOT, 'js/cetak.js');
+const cetak = fs.existsSync(cetakPath) ? fs.readFileSync(cetakPath, 'utf8') : '';
+const htmlOrUtil = html + '\n' + util + '\n' + cetak;
+const allSrc = html + '\n' + cetak;
 
 
 
@@ -44,7 +47,7 @@ function extractFnBody(src, name) {
   return { text: src.slice(idx, end + 1), start: idx, end: end + 1, form: dm ? 'function-decl' : 'method-shorthand' };
 }
 
-const kartu = extractFnBody(html, 'kartu');
+const kartu = extractFnBody(allSrc, 'kartu');
 t('kartu() found', !!kartu, kartu ? ('form=' + kartu.form + ' len=' + kartu.text.length) : 'neither declaration form matched');
 if (!kartu) {
   console.log('=== KARTU CONTRACT: ' + pass + ' PASS / ' + fail + ' FAIL ===');
@@ -87,12 +90,12 @@ const hasLocalQr = /typeof qrcode==='function'/.test(body) && /data-qr=/.test(bo
 t('QR local payload id|nama|rak + data-qr', hasQrPayload && hasLocalQr, 'payload=' + hasQrPayload + ' local=' + hasLocalQr);
 
 // Caller shape: c.map(function(item,i){return kartu(item,i);})
-const callerMap = /c\.map\(function\s*\(\s*item\s*,\s*i\s*\)\s*\{\s*return\s+kartu\(item\s*,\s*i\)/.test(html)
-  || /return\s+kartu\(item\s*,\s*i\)/.test(html);
+const callerMap = /c\.map\(function\s*\(\s*item\s*,\s*i\s*\)\s*\{\s*return\s+kartu\(item\s*,\s*i\)/.test(allSrc)
+  || /return\s+kartu\(item\s*,\s*i\)/.test(allSrc);
 t('kartu() called via map over collection', callerMap, 'map caller present=' + callerMap);
 
 // Exactly one definition (no shadowing duplicate)
-const defCount = (html.match(/function\s+kartu\s*\(/g) || []).length;
+const defCount = (allSrc.match(/function\s+kartu\s*\(/g) || []).length;
 t('Single function kartu definition', defCount === 1, 'defCount=' + defCount);
 
 // Body length sanity (regex window failure root cause was 3313 > 2500)

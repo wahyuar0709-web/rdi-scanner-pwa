@@ -55,6 +55,8 @@ function extractScript(src, fnName) {
 const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const utilPath = path.join(ROOT, 'js/util.js');
 const utilSrc = fs.existsSync(utilPath) ? fs.readFileSync(utilPath, 'utf8') : '';
+const cetakPath = path.join(ROOT, 'js/cetak.js');
+const cetakSrc = fs.existsSync(cetakPath) ? fs.readFileSync(cetakPath, 'utf8') : '';
 
 
 
@@ -63,13 +65,13 @@ const utilSrc = fs.existsSync(utilPath) ? fs.readFileSync(utilPath, 'utf8') : ''
 
 
 
-const grid = src.match(/var cols=4,rows=6,perPage=cols\*rows/);
+const grid = (src + '\n' + cetakSrc).match(/var cols=4,rows=6,perPage=cols\*rows/);
 t('grid is 4x6=24 (static)', !!grid, !!grid);
 
 const count24 = /isLabel\?24:/.test(src);
 t('updateCetakCount label div=24 (static)', count24, count24);
 
-const buildSrc = extractScript(src, 'buildLabelHTML');
+const buildSrc = extractScript(src, 'buildLabelHTML') || extractScript(cetakSrc, 'buildLabelHTML');
 if (!buildSrc) {
   t('extract buildLabelHTML', false, 'not found');
 } else {
