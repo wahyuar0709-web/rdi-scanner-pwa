@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.13 |
-| Date | 2026-09-24 |
+| Version | 1.14 |
+| Date | 2026-09-25 |
 | Repo HEAD | `0a7cbb8` (F-05) |
-| App version | `v15.15` / SW `rdi-stok-v23` / GAS deployment `@41` |
+| App version | `v15.16` / SW `rdi-stok-v24` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -47,12 +47,12 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-------|--------------|
 | Git HEAD | `0a7cbb8` (F-05) | — |
 | Working tree | clean | — |
-| `APP_VERSION` | `v15.15` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.16` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v23` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4290 (F-05: export QR modal + `doExportQR`) | L1 |
-| Suite L1 in-repo | `tests/l1/` **18** suite · `npm run test:l1` | **L1 PASS 357/0** (2026-09-24) |
-| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-24) |
+| SW `CACHE` | `rdi-stok-v24` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
+| `index.html` lines | ~4290 (F-06a: `modalFocusOpen`/`modalFocusClose` + 14 sbar aria) | L1 |
+| Suite L1 in-repo | `tests/l1/` **19** suite · `npm run test:l1` | **L1 PASS 383/0** (2026-09-25) |
+| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-25; browser perlu 1 retry) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
 | Suite terakhir label | 49 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
@@ -84,8 +84,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | F-03 | MED | Filter cetak per rak/kategori | **DONE** v15.14 `_activeRak` |
 | F-04 | MED | Alert low stock (min_stock) | **DONE** pre-existing; locked `alert_lowstock.js` |
 | F-05 | LOW | Export QR massal | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
-| UI-01 | HIGH | Fokus tak dipindahkan ke/dari modal (audit UI/UX) | F-06a (spesi §5.1.4) |
-| UI-02 | HIGH | 14/17 `.sbar` tanpa `aria-live`; `role="alert"` = 0 | F-06a (spesi §5.1.4) |
+| UI-01 | HIGH | Fokus modal → helper `modalFocusOpen`/`modalFocusClose` (4 pasang open/close) | **DONE** v15.16 `modalFocusOpen` (F-06a) |
+| UI-02 | HIGH | 17/17 `.sbar` `role`/`aria-live`; 4 `.s-err` `role="alert"` | **DONE** v15.16 (F-06a) |
 | UI-03 | HIGH | ≥28 input placeholder-only tanpa label/`aria-label` | F-06b (spesi §5.1.4) |
 | UI-04 | MED | Escape hanya 7/20 overlay; backdrop modal tak bisa diklik | F-06b (spesi §5.1.4) |
 | UI-05 | MED | 9 `<th th-sortable>` onclick tanpa role/tabindex (tak keyboard) | F-06c (spesi §5.1.4) |
@@ -258,7 +258,7 @@ Blok besar: HTML 1–218 · CSS 19–219 · MARKUP 220–2205 · **JS 2206–418
 | P1 | F-03 | Filter cetak per rak/kategori | M | M | **DONE** v15.14 `_activeRak` (spesi §5.1.2) |
 | P2 | F-04 | Alert low stock (min_stock) | M | L | **DONE** (pre-existing; locked `alert_lowstock.js` 53/0) |
 | P2 | F-05 | Export QR massal | M | L | **DONE** v15.15 `exportQRMassal`/`doExportQR` (spesi §5.1.3) |
-| P2 | F-06 | Paket perbaikan UI/UX aksesibilitas (14 temuan audit) | H | M | **spesi §5.1.4**; gelombang F-06a→f, maks 2 temuan/siklus |
+| P2 | F-06 | Paket perbaikan UI/UX aksesibilitas (14 temuan audit) | H | M | **spesi §5.1.4**; gelombang F-06a→f, maks 2 temuan/siklus — **F-06a DONE** v15.16 |
 | P3 | F-07+ | ide lain | — | — | antrian |
 
 ### 5.1.1 Spesi F-02 — Template label (4×6 vs lain)
@@ -465,7 +465,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-04: feature pre-existing (`loadAlert`/`section-alert`/`badge`/`dash-widget`/`saveMinStock`); locked by `alert_lowstock.js` 53/0 · L1 330/0 (17 suite) · tanpa shell change / tanpa bump  
 - [x] Pipeline §5.2 → F-05 spesi §5.1.3 · RED `export_qr.js` 10F · implement `exportQRMassal`/`doExportQR`/`#modal-export-qr` · GREEN 27/0 · gate L1 357/0 (18 suite) + L2 32/0 + label 49/0 · v15.15 / sw v23  
 - [x] Audit UI/UX detail keseluruhan (read-only, statis L1, skill `ui-ux-pro-max`) → 14 temuan UI-01…UI-14 → backlog §1.4 + spesi §5.1.4 (tanpa fix, report first)  
-- [ ] Pipeline §5.2 → F-06a (UI-01 fokus modal + UI-02 aria-live sbar)  
+- [x] Pipeline §5.2 → F-06a (UI-01 + UI-02) · RED `ui06a_focus_sbar.js` 15F · implement `modalFocusOpen`/`modalFocusClose` (4 pasang) + 14 sbar `role`/`aria-live` · GREEN 25/0 · gate L1 383/0 (19 suite) + L2 browser 32/0 (1 retry) + label 49/0 · v15.16 / sw v24  
 - [ ] Pipeline §5.2 → F-06b…F-06f (maks 2 temuan/siklus)  
 - [ ] F-06+ (P3 antrian)  
 
@@ -508,6 +508,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-24 | F-04 Alert low stock: feature pre-existing (`loadAlert`, `section-alert`, `updateAlertBadge`, `renderDashAlertWidget`, `saveMinStock`, HABIS/RENDAH); locked by new L1 `alert_lowstock.js` 53/0 | no shell change, no bump; L1 330/0 (17 suite); sim: min=0 never alerts, boundary qty==min alerts, HABIS only when saldo==0 | PLAN.md v1.11 |
 | 2026-09-24 | F-05 Export QR massal: `exportQRMassal`/`doExportQR` + `#modal-export-qr` + More drawer button; scope all/filtered/selected + format html/png; payload `buildQrPayload(id,nama,rak)`; v15.15, sw `rdi-stok-v23` | fitur product P2 pertama F3; spesi §5.1.3 → RED `export_qr.js` 10F → GREEN 27/0 → gate L1 357/0 (18 suite) + L2 browser 32/0 + label 49/0 | PLAN.md v1.12 |
 | 2026-09-24 | Audit UI/UX detail keseluruhan: 14 temuan UI-01…UI-14 (3 HIGH / 6 MEDIUM / 5 LOW) → backlog F-06 gelombang a–f, spesi §5.1.4; read-only tanpa fix (report first); tool: skill `ui-ux-pro-max` + audit script statis | user pilih opsi A (tulis ke backlog) | PLAN.md v1.13 |
+| 2026-09-25 | F-06a UI-01+UI-02: helper `modalFocusOpen`/`modalFocusClose` (stack + restore ke pemicu) di 4 pasang modal (export QR/Excel, user, config) + 14 `.sbar` dapat `role="status" aria-live`, 4 `.s-err` `role="alert"`; v15.16, sw `rdi-stok-v24` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui06a_focus_sbar.js` 15F → GREEN 25/0 → gate L1 383/0 (19 suite) + L2 browser 32/0 (retry 1, timeout flaky) + label 49/0 | PLAN.md v1.14 |
 | _isian sesi_ | | | |
 
 ---
@@ -565,5 +566,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.11 | 2026-09-24 | F-04 Alert low stock pre-existing locked by `alert_lowstock.js` (17 suite, L1 330/0); no shell change / no bump; §5.1, §10, §11, §13 |
 | 1.12 | 2026-09-24 | F-05 Export QR massal `exportQRMassal`/`doExportQR` (v15.15, sw `rdi-stok-v23`); spesi §5.1.3; L1 suite baru `export_qr.js` (18 suite, 357/0); gate L1 357/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.13 | 2026-09-24 | Audit UI/UX detail: 14 temuan UI-01…UI-14 (3 HIGH / 6 MED / 5 LOW) → backlog §1.4 + spesi F-06 §5.1.4 (gelombang F-06a…f); P2 baris F-06, antrian F-07+; §1.4, §5.1, §10, §11, §13 |
+| 1.14 | 2026-09-25 | F-06a DONE: UI-01 `modalFocusOpen`/`modalFocusClose` + UI-02 sbar aria (v15.16, sw `rdi-stok-v24`); L1 suite baru `ui06a_focus_sbar.js` (19 suite, 383/0); gate L1 383/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
