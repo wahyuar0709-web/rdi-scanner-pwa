@@ -14,8 +14,12 @@ function t(name, cond, detail) {
   else { fail++; console.log('FAIL  ' + name + (detail ? ' — ' + detail : '')); }
 }
 
-// --- UI-09: 4 occurrence 100vh harus punya pasangan fallback 100dvh ---
-t('UI-09: jumlah occurrence 100vh = 4 (baseline audit)', (src.match(/100vh/g) || []).length === 4,
+// --- UI-09: occurrence 100vh harus punya pasangan fallback 100dvh ---
+// Baseline 7 (sejak redesain cetak 2026-09-25): 4 pasangan lama (body min-height,
+// bottom-sheet 140px, sidebar, [inline list 320px dihapus — list kini flex shell])
+// + 4 pasangan baru shell cetak (base 56px, mobile 122px, tablet 104px, viewer 104px)
+// − 1 (inline list 320px hilang).
+t('UI-09: jumlah occurrence 100vh = 7 (baseline audit)', (src.match(/100vh/g) || []).length === 7,
   'dapat ' + (src.match(/100vh/g) || []).length);
 t('UI-09: body min-height fallback 100vh → 100dvh',
   /min-height:100vh;min-height:100dvh/.test(src));
@@ -23,8 +27,8 @@ t('UI-09: bottom-sheet max-height calc(100vh - 140px) → calc(100dvh - 140px)',
   /max-height:calc\(100vh - 140px\);\s*max-height:calc\(100dvh - 140px\)/.test(src));
 t('UI-09: sidebar height 100vh → 100dvh (rule bertingkat)',
   /height:100vh;\s*height:100dvh;/.test(src));
-t('UI-09: cetak-item-list inline calc(100vh - 320px) → calc(100dvh - 320px)',
-  /max-height:calc\(100vh - 320px\);\s*max-height:calc\(100dvh - 320px\)/.test(src));
+t('UI-09: shell cetak base calc(100vh - 56px) → calc(100dvh - 56px)',
+  /calc\(100vh - 56px\);\s*height:calc\(100dvh - 56px\)/.test(src));
 t('UI-09: tidak ada 100vh tanpa fallback dvh di dekatnya',
   (() => {
     const re = /100vh/g; let m, n = 0;
