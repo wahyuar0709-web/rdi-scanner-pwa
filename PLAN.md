@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.22 |
+| Version | 1.23 |
 | Date | 2026-09-25 |
 | Repo HEAD | `61d4b15` (Revisi Cetak) |
 | App version | `v15.24` / SW `rdi-stok-v32` / GAS deployment `@41` |
@@ -51,12 +51,13 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
 | SW `CACHE` | `rdi-stok-v32` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
 | `index.html` lines | ~4307 (Revisi Cetak: shell flex `#section-cetak` + bar in-flow + style block sebelum `</head>`; F-06f: h1 login + ::after 44px + hash deep link + prefers-color-scheme; F-06e: 4 fallback `100dvh` + `role="dialog"` ×2; BUG-01: +8 export) | L1 |
-| Suite L1 in-repo | `tests/l1/` **27** suite · `npm run test:l1` | **L1 PASS 512/0** (2026-09-25) |
-| Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-25) |
+| Suite L1 in-repo | `tests/l1/` **28** suite · `npm run test:l1` | **L1 PASS 519/0** (2026-09-25) |
+| Suite L2 in-repo | `tests/l2/` 3 suite · `npm run test:l2` | **L2 PASS 118/0** (2026-09-25) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
 | Suite terakhir label | 49 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
+| Suite terakhir smoke | 37 PASS / 0 FAIL (0 page error) | **L2 PASS** |
 | L4 device | belum dijalankan | **NOT TESTED** / DEVICE-DEPENDENT |
 | L5 operational | belum | **NOT TESTED** |
 
@@ -477,6 +478,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-06e (UI-09 + UI-10) · RED `ui09_evh_role_dialog.js` 3P/11F · implement: 4 fallback `100dvh` (body `min-height`, bottom-sheet `calc(100vh - 140px)`, sidebar `height`, cetak-list inline `calc(100vh - 320px)`; deklarasi vh dulu → dvh, browser lama tetap jalan) + `#modal-filter`/`#modal-sort` `role="dialog" aria-modal="true" aria-label` (2-satunya overlay tanpa role; 11 overlay lain sudah) · GREEN 14/0 · gate L1 471/0 (25 suite) + L2 81/0 · v15.22 / sw v30  
 - [x] Pipeline §5.2 → F-06f (UI-11 + UI-12 + UI-13 + UI-14) · RED `ui11_f06f_bundle.js` 3P/16F (2 bug regex test dikoreksi: helper `rule()` dobel-`\{`, `[^)]*` terpotong `function()`) · implement 8 edit: UI-11 `<h1>Masuk</h1>` + `.login-card h1`, UI-12 `::after` 44px hit area (visual 30px), UI-13 `_tabHashNames`+`_applyHashTab`+`replaceState`+`hashchange`+apply boot/login, UI-14 `_themeSaved===null` → `matchMedia('(prefers-color-scheme: light)')` · GREEN 19/0 · probe CDP deep-link 3/3 (`#alert` boot active, switchTab→`#master`, hashchange→`#history`; gate-visible identik di worktree `3d11de7` = pre-existing, bukan regresi) · gate L1 490/0 (26 suite) + L2 81/0 · v15.23 / sw v31 · **gelombang F-06 selesai (UI-01…UI-14 semua DONE)**  
 - [x] Pipeline §5.2 → **Revisi menu Cetak (user 2026-09-25)**: redesain viewport-split `#section-cetak` (flex shell, height = 100dvh − chrome 56/104/122) + `#cetak-action-bar` fixed-overlay → footer in-flow dalam container (tak pernah menimpa list) · RED `cetak_bar_layout.js` 5P/15F → GREEN 22/0 (3 fix runtime: viewer-mode desktop sticky-tab −104, override `.search-wrap{flex:0 0 100%}` di panel-body, selector `#search-wrap` → class) · probe CDP 11/11 (desktop 1366×768 + mobile 430×932: overlap=0, list-in-section, bar dalam viewport; screenshot `cetak_desktop.png`/`cetak_mobile.png`) · baseline `ui09` 4→7 occurrence `100vh` (inline max-height list dihapus by design) · gate L1 **512/0 (27 suite)** + L2 81/0 · v15.24 / sw `rdi-stok-v32`  
+- [x] **Audit menyeluruh tombol/fitur (user 2026-09-25)**: statis L1 baru `handler_coverage.js` (353 inline handler → 172 callee global lintas index+`js/*`; 236 `<button>` 0 dead/missing; baseline per-attr) 7/0 · runtime L2 baru `r2_feature_smoke.js` 37/0 (boot editor + 4 rows mock, 8 tab section + more-drawer, 6 modal Escape-close via `_overlayCloseMap`, openAddSheet/closeAddSheet, master search **4→1 row** + sort, cetak mode/select, alert/rak/history/aset/scanner/dashboard render, **0 page error + 0 console error**) · gate L1 **519/0 (28 suite)** + L2 **118/0 (3 suite)** · tanpa perubahan shell (tanpa bump) · sisa NOT TESTED: kamera device (L4), print dialog browser, login form live, submit GAS live (L3)  
 - [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
@@ -528,6 +530,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-25 | F-06e UI-09+UI-10: 4 fallback `100dvh` (`min-height` body, `calc(100vh-140px)` bottom-sheet, sidebar `height`, inline `calc(100vh-320px)`; urutan vh→dvh progressive) + `#modal-filter`/`#modal-sort` `role="dialog" aria-modal="true" aria-label` ("Filter"/"Urutkan"); v15.22, sw `rdi-stok-v30` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui09_evh_role_dialog.js` 3P/11F → GREEN 14/0; gate L1 471/0 (25 suite) + L2 81/0 | PLAN.md v1.20 |
 | 2026-09-25 | F-06f UI-11+12+13+14: h1 login + `.login-card h1`; `::after` 44px hit-area (visual 30px); deep link `replaceState`+`hashchange`+apply boot/login; tema first-visit `prefers-color-scheme` (user pilihan menang); v15.23, sw `rdi-stok-v31` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui11_f06f_bundle.js` 3P/16F → GREEN 19/0; probe CDP deep-link 3/3 (regresi-gate dibanding worktree `3d11de7`: pre-existing); gate L1 490/0 (26 suite) + L2 81/0; **gelombang F-06 selesai** | PLAN.md v1.21 |
 | 2026-09-25 | Revisi menu Cetak (user): redesain `#section-cetak` app-shell flex viewport-split + `#cetak-action-bar` dari fixed-overlay → footer in-flow (bar & list tak pernah overlap di desktop & HP) · 3 temuan runtime diperbaiki (viewer-mode desktop sticky tab 104px, `.search-wrap{flex:0 0 100%}` menelan panel-body, selector `#search-wrap` salah — elemen class) · suite `cetak_bar_layout.js` 22/0 · probe CDP 11/11 | bukti rect overlap=0 desktop+mobile; L1 512/0 + L2 81/0 | PLAN.md v1.22 |
+| 2026-09-25 | Audit menyeluruh tombol/fitur (user: pastikan semua berjalan sempurna): 353 handler + 236 tombol terpetakan penuh (0 dead/missing; 6 awal "missing" = false-positive method + `xeJs` ada di `js/util.js`) · smoke runtime 37/0 · 2x koreksi selector pada suite (bukan bug app: `#master-table`→`#table-body`, `.tab`→tambah `.tab-fab`) · boot-wait diperkuat (anti race) | bukti: `handler_coverage` 7/0, `r2_feature_smoke` 37/0, L1 519/0 + L2 118/0 | PLAN.md v1.23 |
 | _isian sesi_ | | | |
 
 ---
@@ -595,5 +598,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.21 | 2026-09-25 | F-06f DONE (gelombang F-06 selesai — UI-01…14 semua DONE): UI-11 h1 login, UI-12 ::after 44px, UI-13 deep link hash, UI-14 prefers-color-scheme (v15.23, sw `rdi-stok-v31`); suite baru `ui11_f06f_bundle.js` (26 suite, 490/0) + probe CDP 3/3; gate L1 490/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
 
 | 1.22 | 2026-09-25 | Revisi menu Cetak (user): redesain viewport-split section cetak + action bar in-flow (overlap=0 desktop & HP terverifikasi probe); suite baru `cetak_bar_layout.js` (27 suite, 512/0); baseline ui09 4→7; v15.24 / sw `rdi-stok-v32`; §1.2, §10, §11, §13 |
+
+| 1.23 | 2026-09-25 | Audit menyeluruh tombol/fitur: suite baru `handler_coverage.js` (L1 28 suite, 519/0) + `r2_feature_smoke.js` (L2 3 suite, 118/0); tanpa shell change / tanpa bump; §1.2, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
