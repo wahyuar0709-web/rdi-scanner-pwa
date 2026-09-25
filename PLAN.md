@@ -453,7 +453,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] package.json: `15.8.0`  
 - [x] L1 `kartu_contract` assert QR lokal → **L1 PASS 229/0**  
 - [x] L2 label suite asersi QR lokal → **L2 PASS 49/0** (label) + 32/0 (browser)  
-- [ ] Commit LBL-02 batch  
+- [x] Commit LBL-02 batch (`c76d10b`, v15.8) — diverifikasi via `git log --grep=LBL-02` (baris ini sebelumnya stale)  
 
 ### F1 — T1 (butuh Anda untuk L4)
 - [x] Keputusan §3.3 (QR lokal DONE; label 25 DONE; device 1 Android)  
