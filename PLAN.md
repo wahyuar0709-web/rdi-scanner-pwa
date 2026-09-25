@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.19 |
+| Version | 1.20 |
 | Date | 2026-09-25 |
 | Repo HEAD | `bc74118` (BUG-01) |
-| App version | `v15.21` / SW `rdi-stok-v29` / GAS deployment `@41` |
+| App version | `v15.22` / SW `rdi-stok-v30` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -47,11 +47,11 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-------|--------------|
 | Git HEAD | `bc74118` (BUG-01) | — |
 | Working tree | clean | — |
-| `APP_VERSION` | `v15.21` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.22` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v29` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4293 (BUG-01 fix: +8 `window.*=*` export di daftar L3218 untuk handler inline; F-06d: 12 selector `font-size:12px` + `--text3` `#66635f` ×2) | L1 |
-| Suite L1 in-repo | `tests/l1/` **24** suite · `npm run test:l1` | **L1 PASS 457/0** (2026-09-25) |
+| SW `CACHE` | `rdi-stok-v30` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
+| `index.html` lines | ~4293 (F-06e: 4 fallback `100dvh` + `role="dialog" aria-modal aria-label` di modal-filter/sort; BUG-01: +8 export) | L1 |
+| Suite L1 in-repo | `tests/l1/` **25** suite · `npm run test:l1` | **L1 PASS 471/0** (2026-09-25) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-25) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
@@ -94,8 +94,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | UI-06 | MED | Tombol ikon `&times;`/`▾`/`↻`/`✕`/🔦 tanpa accessible name | **DONE** v15.19 (F-06c) — 7 aria-label index + torch scanner.html |
 | UI-07 | MED | 43 rule font <12px (min 8px) di label esensial | **DONE** v15.20 (F-06d) — 12 selector esensial 8/9/10px → `font-size:12px` |
 | UI-08 | MED | `--text3` 4.18:1 di atas `--bg` (gagal AA); hex amber hardcoded | **DONE** v15.20 (F-06d) — `--text3` `#78716c`→`#66635f` (4.18/4.26 → 5.21/5.31); **koreksi audit:** `#f59e0b` hanya bg/border, bukan teks |
-| UI-09 | MED | `100vh` ×4 tanpa fallback `100dvh` (index.html) | F-06e (spesi §5.1.4) |
-| UI-10 | LOW | `modal-filter`/`modal-sort` tanpa `role="dialog"`/`aria-modal` | F-06e (spesi §5.1.4) |
+| UI-09 | MED | `100vh` ×4 tanpa fallback `100dvh` (index.html) | **DONE** v15.22 (F-06e) — 4 pasang deklarasi vh→dvh (body/min, bottom-sheet calc, sidebar, cetak list inline) |
+| UI-10 | LOW | `modal-filter`/`modal-sort` tanpa `role="dialog"`/`aria-modal` | **DONE** v15.22 (F-06e) — + `role="dialog" aria-modal="true" aria-label` (konsisten 11 overlay lain) |
 | UI-11 | LOW | `<h2>Masuk</h2>` L263 sebelum `<h1>` L412 (urutan heading) | F-06f (spesi §5.1.4) |
 | UI-12 | LOW | `.sheet-close`/`.ilc3-fab` 30px < 44px target sentuh | F-06f (spesi §5.1.4) |
 | UI-13 | LOW | Deep linking tak ada (tab tak tercermin di URL/hash) | F-06f (spesi §5.1.4) |
@@ -474,7 +474,8 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-06c (UI-05 + UI-06) · RED `ui06c_sort_btn_icon.js` 3P/4F · implement: 8 `th-sortable` → `<button type="button" onclick>` (onclick pindah dari th, hindari dobel bubbling) + CSS `.th-sortable>button` reset + 7 `aria-label` tombol ikon (index 5 + export modal ×2) + `scanner.html` torch · GREEN 7/0 · bukti CDP: `b.click()` label Terbaru→ID Item A-Z, **Enter (text `\r`) 1x panggil sort** + indicator ▲, Space ✓, tanpa page error; header visual tak berubah · gate L1 421/0 (22 suite) + L2 81/0 · v15.19 / sw v27  
 - [x] Pipeline §5.2 → F-06d (UI-07 + UI-08) · RED `ui06d_font_contrast.js` 3P/15F (awalnya false-positive kena `border-color:` → lookbehind `(?<![-\w])color:`) · implement: 12 selector info esensial → `font-size:12px` (L32: `.ilc2-low` 8px; 6 selector 9px; 5 selector 10px) + `--text3` `#78716c`→`#66635f` ×2 (L28 `:root` + L32 `body.light`) · **koreksi audit:** `#f59e0b` hanya dipakai bg (viewer-badge) & border (ilc-id), BUKAN teks (kontras teksnya 6.3–8.1) · GREEN 18/0 · kontras `--text3` 4.18/4.26 → **5.21/5.31/5.83** (vs `--bg`/`--surface2`/`--surface`) · screenshot CDP dash/detail/mobile/tablet verified terbaca tanpa overflow · temuan BUG-01 (autocomplete `acShowDebounced` tak ter-eksport → ReferenceError) tercatat §1.4 · gate L1 439/0 (23 suite) + L2 81/0 · v15.20 / sw v28  
 - [x] Fix **BUG-01** (temuan siklus F-06d; approval berbasis bukti) · RED `bug01_inline_exports.js` 10P/8F · implement: +8 `window.*=*` export di daftar L3218 (`acShowDebounced`, `acShow`, `acHide`, `collapseCameraOnType`, `updateSaldoPreview`, `checkTransactionAnomaly`, `markRakChipSelection`, `setRakFilter`) · GREEN 18/0 · verifikasi runtime CDP post-fix: 17/17 kandidat `function`, `__err=[]` saat ketik qty & scan-id, **autocomplete `#ac-scan` muncul** (kartu `ilc2` + `acPick`) · gate L1 457/0 (24 suite) + L2 81/0 · v15.21 / sw v29  
-- [ ] Pipeline §5.2 → F-06e…F-06f (maks 2 temuan/siklus)  
+- [x] Pipeline §5.2 → F-06e (UI-09 + UI-10) · RED `ui09_evh_role_dialog.js` 3P/11F · implement: 4 fallback `100dvh` (body `min-height`, bottom-sheet `calc(100vh - 140px)`, sidebar `height`, cetak-list inline `calc(100vh - 320px)`; deklarasi vh dulu → dvh, browser lama tetap jalan) + `#modal-filter`/`#modal-sort` `role="dialog" aria-modal="true" aria-label` (2-satunya overlay tanpa role; 11 overlay lain sudah) · GREEN 14/0 · gate L1 471/0 (25 suite) + L2 81/0 · v15.22 / sw v30  
+- [ ] Pipeline §5.2 → F-06f (maks 2 temuan/siklus)  
 - [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
@@ -523,6 +524,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-25 | F-06d UI-07+UI-08: 12 selector label esensial `font-size` 8/9/10px → `12px` (L32) + `--text3` `#78716c` → `#66635f` ×2 (L28 `:root` + L32 `body.light`); koreksi audit UI-08: `#f59e0b` hanya bg/border (bukan teks); v15.20, sw `rdi-stok-v28` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui06d_font_contrast.js` 3P/15F → GREEN 18/0; kontras 4.18/4.26 → 5.21/5.31/5.83; screenshot dash/detail/mobile/tablet; gate L1 439/0 (23 suite) + L2 81/0 | PLAN.md v1.18 |
 | 2026-09-25 | Temuan **BUG-01** (di luar gelombang F-06; belum di-fix): inline `oninput` scan/riwayat → `ReferenceError: acShowDebounced is not defined` — autocomplete ID/Nama tak pernah muncul; daftar ekspor `window.*=*` (L3218) tak sinkron dengan handler inline (`acShow`/`acHide`/`collapseCameraOnType` juga tak diekspor) | bukti runtime CDP (`acprobe.js`: `window.__err` + `typeof window.acShowDebounced===undefined`); search-box utama terverifikasi jalan (rows 4→1, tanpa error); kandidat lain terdampak tercatat §1.4 | PLAN §1.4 BUG-01 |
 | 2026-09-25 | Fix BUG-01: +8 `window.*=*` export ke daftar L3218 (`acShowDebounced`/`acShow`/`acHide`/`collapseCameraOnType`/`updateSaldoPreview`/`checkTransactionAnomaly`/`markRakChipSelection`/`setRakFilter`); v15.21, sw `rdi-stok-v29` | approval berbasis bukti; audit statis inline-handler ∩ no-export = 8 nama index.html (scanner.html `closeScanner`/`toggleTorch` lokal aman; `renderCatFilter`/`renderRakFilter` internal-only aman); RED `bug01_inline_exports.js` 10P/8F → GREEN 18/0; runtime CDP post-fix: 17/17 `function`, error `[]`, autocomplete hidup; gate L1 457/0 (24 suite) + L2 81/0 | PLAN.md v1.19 |
+| 2026-09-25 | F-06e UI-09+UI-10: 4 fallback `100dvh` (`min-height` body, `calc(100vh-140px)` bottom-sheet, sidebar `height`, inline `calc(100vh-320px)`; urutan vh→dvh progressive) + `#modal-filter`/`#modal-sort` `role="dialog" aria-modal="true" aria-label` ("Filter"/"Urutkan"); v15.22, sw `rdi-stok-v30` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui09_evh_role_dialog.js` 3P/11F → GREEN 14/0; gate L1 471/0 (25 suite) + L2 81/0 | PLAN.md v1.20 |
 | _isian sesi_ | | | |
 
 ---
@@ -586,5 +588,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.17 | 2026-09-25 | F-06c DONE: UI-05 8 th-sortable → `<button>` + CSS reset (sort keyboard, CDP Enter 1x); UI-06 7 aria-label tombol ikon + scanner torch (v15.19, sw `rdi-stok-v27`); suite baru `ui06c_sort_btn_icon.js` (22 suite, 421/0); gate L1 421/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
 | 1.18 | 2026-09-25 | F-06d DONE: UI-07 12 selector info esensial → `font-size:12px` + UI-08 `--text3` `#66635f` (kontras 4.18/4.26 → 5.21/5.31/5.83; koreksi audit `#f59e0b` = bg/border saja) (v15.20, sw `rdi-stok-v28`); suite baru `ui06d_font_contrast.js` (23 suite, 439/0); gate L1 439/0 + L2 81/0; temuan **BUG-01** (autocomplete `acShowDebounced` tak ter-eksport) → §1.4; §1.2, §1.4, §10, §11, §13 |
 | 1.19 | 2026-09-25 | Fix BUG-01 DONE: +8 `window.*=*` export (autocomplete + qty-input + chip rak hidup kembali; runtime CDP post-fix error `[]`) (v15.21, sw `rdi-stok-v29`); suite baru `bug01_inline_exports.js` (24 suite, 457/0); gate L1 457/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
+| 1.20 | 2026-09-25 | F-06e DONE: UI-09 4 fallback `100dvh` + UI-10 `role="dialog" aria-modal aria-label` modal-filter/sort (v15.22, sw `rdi-stok-v30`); suite baru `ui09_evh_role_dialog.js` (25 suite, 471/0); gate L1 471/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
