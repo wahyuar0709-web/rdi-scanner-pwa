@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.16 |
+| Version | 1.17 |
 | Date | 2026-09-25 |
 | Repo HEAD | `7898aba` (bugfix MIN+AKSI) |
-| App version | `v15.18` / SW `rdi-stok-v26` / GAS deployment `@41` |
+| App version | `v15.19` / SW `rdi-stok-v27` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -47,11 +47,11 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-------|--------------|
 | Git HEAD | `7898aba` (bugfix MIN+AKSI) | — |
 | Working tree | clean | — |
-| `APP_VERSION` | `v15.18` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.19` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-24` | L1 |
-| SW `CACHE` | `rdi-stok-v26` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4290 (bug revisi: kolom MIN Inventori dihapus, AKSI td→span wrap) | L1 |
-| Suite L1 in-repo | `tests/l1/` **21** suite · `npm run test:l1` | **L1 PASS 414/0** (2026-09-25) |
+| SW `CACHE` | `rdi-stok-v27` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
+| `index.html` lines | ~4293 (F-06c: 8 `th-sortable` → `<button>` + CSS reset + 7 `aria-label` tombol ikon) | L1 |
+| Suite L1 in-repo | `tests/l1/` **22** suite · `npm run test:l1` | **L1 PASS 421/0** (2026-09-25) |
 | Suite L2 in-repo | `tests/l2/` 2 suite · `npm run test:l2` | **L2 PASS 81/0** (2026-09-25) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
@@ -90,8 +90,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | UI-04 | MED | Escape hanya 7/20 overlay; backdrop modal tak bisa diklik | **DONE** v15.17 (F-06b) |
 | UI-15 | MED | Kolom MIN tabel Inventori: input kosong, edit ganda (bug revisi user 2026-09-25) | **DONE** v15.18 — kolom dihapus, atur via Detail Barang |
 | UI-16 | MED | Garis antar baris di bawah tombol AKSI terpotong: `td` `display:flex` → `borderDiff` −4…−19,5px vs sel tabel | **DONE** v15.18 — bungkus `<span class="u-flex-cc-g5">`, CDP `borderDiff=0` |
-| UI-05 | MED | 9 `<th th-sortable>` onclick tanpa role/tabindex (tak keyboard) | F-06c (spesi §5.1.4) |
-| UI-06 | MED | Tombol ikon `&times;`/`▾`/`↻`/`✕`/🔦 tanpa accessible name | F-06c (spesi §5.1.4) |
+| UI-05 | MED | 9 `<th th-sortable>` onclick tanpa role/tabindex (tak keyboard) | **DONE** v15.19 (F-06c) — 8 th → `<button type="button">` + CSS reset; CDP Enter 1x panggil sort |
+| UI-06 | MED | Tombol ikon `&times;`/`▾`/`↻`/`✕`/🔦 tanpa accessible name | **DONE** v15.19 (F-06c) — 7 aria-label index + torch scanner.html |
 | UI-07 | MED | 43 rule font <12px (min 8px) di label esensial | F-06d (spesi §5.1.4) |
 | UI-08 | MED | `--text3` 4.18:1 di atas `--bg` (gagal AA); hex amber hardcoded | F-06d (spesi §5.1.4) |
 | UI-09 | MED | `100vh` ×4 tanpa fallback `100dvh` (index.html) | F-06e (spesi §5.1.4) |
@@ -470,7 +470,8 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] Pipeline §5.2 → F-06a (UI-01 + UI-02) · RED `ui06a_focus_sbar.js` 15F · implement `modalFocusOpen`/`modalFocusClose` (4 pasang) + 14 sbar `role`/`aria-live` · GREEN 25/0 · gate L1 383/0 (19 suite) + L2 browser 32/0 (1 retry) + label 49/0 · v15.16 / sw v24  
 - [x] Pipeline §5.2 → F-06b (UI-03 + UI-04) · RED `ui06b_label_escape.js` 5P/14F (31 input miss) · implement 26 `aria-label` + `for` exp-date ×2 + template min-stock/cetak-cb + `_overlayCloseMap` (13 overlay) + `closeTopOverlay()` (z-index tertinggi) + delegate klik backdrop + Escape → `closeTopOverlay()` · GREEN 19/0 · gate L1 402/0 (20 suite) + L2 81/0 · v15.17 / sw v25  
 - [x] Revisi bug user 2026-09-25 (di luar gelombang F-06; approval langsung): hapus kolom MIN tabel Inventori (edit via Detail Barang) + selakan garis antar baris di bawah tombol AKSI (td `display:flex` → `<span class="u-flex-cc-g5">` wrap, CDP `borderDiff` −4…−19,5px → 0) · RED `ui07_master_min_aksi.js` 3P/9F → GREEN 12/0 · gate L1 414/0 (21 suite) + L2 81/0 · v15.18 / sw v26  
-- [ ] Pipeline §5.2 → F-06c…F-06f (maks 2 temuan/siklus)  
+- [x] Pipeline §5.2 → F-06c (UI-05 + UI-06) · RED `ui06c_sort_btn_icon.js` 3P/4F · implement: 8 `th-sortable` → `<button type="button" onclick>` (onclick pindah dari th, hindari dobel bubbling) + CSS `.th-sortable>button` reset + 7 `aria-label` tombol ikon (index 5 + export modal ×2) + `scanner.html` torch · GREEN 7/0 · bukti CDP: `b.click()` label Terbaru→ID Item A-Z, **Enter (text `\r`) 1x panggil sort** + indicator ▲, Space ✓, tanpa page error; header visual tak berubah · gate L1 421/0 (22 suite) + L2 81/0 · v15.19 / sw v27  
+- [ ] Pipeline §5.2 → F-06d…F-06f (maks 2 temuan/siklus)  
 - [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
@@ -515,6 +516,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-25 | F-06a UI-01+UI-02: helper `modalFocusOpen`/`modalFocusClose` (stack + restore ke pemicu) di 4 pasang modal (export QR/Excel, user, config) + 14 `.sbar` dapat `role="status" aria-live`, 4 `.s-err` `role="alert"`; v15.16, sw `rdi-stok-v24` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui06a_focus_sbar.js` 15F → GREEN 25/0 → gate L1 383/0 (19 suite) + L2 browser 32/0 (retry 1, timeout flaky) + label 49/0 | PLAN.md v1.14 |
 | 2026-09-25 | F-06b UI-03+UI-04: 26 input statis `aria-label` + `for` label exp-date ×2 + template `min-stock-input`/`cetak-item-cb` dinamis; `_overlayCloseMap` (13 `.modal-overlay` → close fn exported) + `closeTopOverlay()` dipanggil handler Escape & delegate klik backdrop; v15.17, sw `rdi-stok-v25` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui06b_label_escape.js` 14F → GREEN 19/0 → gate L1 402/0 (20 suite) + L2 81/0 (browser 32/0 tanpa retry) | PLAN.md v1.15 |
 | 2026-09-25 | Revisi bug (user): UI-15 hapus kolom MIN tabel Inventori (atur di Detail Barang; `var minCell`/td/th min + `sortByColumn('minStock')` + colspan 11→10 ×2); UI-16 garis antar baris di bawah tombol AKSI tak sejajar — td `class="c u-flex-cc-g5"` (`display:flex` keluar table-cell box) → td `c` + `<span class="u-flex-cc-g5">` wrap; v15.18, sw `rdi-stok-v26` | approval langsung user (revisi bug); bukti CDP `meas_aksi.js` borderDiff −4…−19,5px → 0 + screenshot `shot_inv.js`; RED `ui07_master_min_aksi.js` 3P/9F → GREEN 12/0 → gate L1 414/0 (21 suite) + L2 81/0 | PLAN.md v1.16 |
+| 2026-09-25 | F-06c UI-05+UI-06: 8 `th-sortable` → `<button type="button" onclick="sortByColumn(...)">` + CSS reset `.th-sortable>button` (onclick tak lagi di th → tanpa dobel bubbling); 7 `aria-label` tombol ikon index (batchcart/refresh/clear-hist/opprod/rackov/export×2) + `scanner.html` torch; v15.19, sw `rdi-stok-v27` | approval menyeluruh user (berbasis bukti/audit); spesi §5.1.4 → RED `ui06c_sort_btn_icon.js` 3P/4F → GREEN 7/0; CDP: klik programatis + Enter `text:'\r'` 1x panggil sort (CDP Enter tanpa `text` tak men-sintesis click — bukan bug app) + Space ✓; gate L1 421/0 (22 suite) + L2 81/0 | PLAN.md v1.17 |
 | _isian sesi_ | | | |
 
 ---
@@ -575,5 +577,6 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.14 | 2026-09-25 | F-06a DONE: UI-01 `modalFocusOpen`/`modalFocusClose` + UI-02 sbar aria (v15.16, sw `rdi-stok-v24`); L1 suite baru `ui06a_focus_sbar.js` (19 suite, 383/0); gate L1 383/0 + L2 browser 32/0 + label 49/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.15 | 2026-09-25 | F-06b DONE: UI-03 26 aria-label + for exp-date + template dinamis; UI-04 `_overlayCloseMap`/`closeTopOverlay`/Escape+backdrop delegate (v15.17, sw `rdi-stok-v25`); suite baru `ui06b_label_escape.js` (20 suite, 402/0); gate L1 402/0 + L2 81/0; §1.2, §1.4, §5.1, §10, §11, §13 |
 | 1.16 | 2026-09-25 | Revisi bug user: UI-15 hapus kolom MIN Inventori + UI-16 garis baris AKSI sejajar (td flex→span wrap, CDP borderDiff → 0) (v15.18, sw `rdi-stok-v26`); suite baru `ui07_master_min_aksi.js` (21 suite, 414/0); gate L1 414/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
+| 1.17 | 2026-09-25 | F-06c DONE: UI-05 8 th-sortable → `<button>` + CSS reset (sort keyboard, CDP Enter 1x); UI-06 7 aria-label tombol ikon + scanner torch (v15.19, sw `rdi-stok-v27`); suite baru `ui06c_sort_btn_icon.js` (22 suite, 421/0); gate L1 421/0 + L2 81/0; §1.2, §1.4, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
