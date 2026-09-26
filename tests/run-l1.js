@@ -28,6 +28,8 @@ function listSuites() {
 function countStatuses(output) {
   const counts = { PASS: 0, FAIL: 0, OTHER: 0 };
   for (const line of output.split(/\r?\n/)) {
+    // abaikan baris ringkasan suite (mis. "PASS | ui06a_focus_sbar | pass=25 fail=0")
+    if (/^PASS \| [^|]+ \| pass=\d+ fail=\d+/.test(line)) continue;
     if (/^PASS\b/.test(line)) counts.PASS++;
     else if (/^FAIL\b/.test(line)) counts.FAIL++;
     else if (/^(NOT TESTED|ENVIRONMENT-DEPENDENT|DEVICE-DEPENDENT|UNVERIFIED|ACCEPTED LIMITATION)\b/.test(line))
@@ -48,11 +50,18 @@ function runSuite(file) {
   const stdout = res.stdout || '';
   const stderr = res.stderr || '';
   const output = stdout + (stderr ? '\n' + stderr : '');
-  const counts = countStatuses(stdout);
-  const ok = res.status === 0 && counts.FAIL === 0;
+  // hitung dari stdout+stderr: assertion yang tercetak ke stderr (crash async) ikut dihitung
+  const counts = countStatuses(output);
+  // ASSERTION FLOOR: suite yang tidak menjalankan satu pun assertion = TIDAK boleh hijau.
+  // Env RDI_ALLOW_ZERO_ASSERT=1 hanya untuk skrip diagnostik yang sengaja tanpa assert.
+  const allowZero = process.env.RDI_ALLOW_ZERO_ASSERT === '1';
+  const noAssert = counts.PASS === 0;
+  const ok = res.status === 0 && counts.FAIL === 0 && (counts.PASS > 0 || allowZero);
   return {
     suite: name,
     ok,
+    noAssert: noAssert && !allowZero,
+    timedOut: !!(res.error && res.error.code === 'ETIMEDOUT'),
     exitCode: res.status,
     counts,
     durationMs: Date.now() - started,
@@ -84,7 +93,9 @@ function main() {
     totalFail += r.counts.FAIL;
     if (!r.ok) {
       suitesFailed++;
-      console.log('FAIL (' + r.counts.PASS + 'P/' + r.counts.FAIL + 'F, exit=' + r.exitCode + ')');
+      if (r.noAssert) console.log('FAIL (NO ASSERTIONS EXECUTED, exit=' + r.exitCode + ')');
+      else if (r.timedOut) console.log('FAIL (TIMEOUT, exit=' + r.exitCode + ')');
+      else console.log('FAIL (' + r.counts.PASS + 'P/' + r.counts.FAIL + 'F, exit=' + r.exitCode + ')');
       for (const line of r.tail) console.log('       ' + line);
     } else {
       console.log('ok (' + r.counts.PASS + 'P/' + r.counts.FAIL + 'F, ' + r.durationMs + 'ms)');

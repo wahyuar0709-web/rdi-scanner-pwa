@@ -13,6 +13,29 @@ const RESULTS_DIR = path.join(__dirname, 'results');
 const ROOT = path.resolve(__dirname, '..');
 const SUITE_TIMEOUT_MS = 300000; // browser suite butuh ~210-240s (SW/offline/camera waits); cap 180s membunuh suite sebelum selesai
 
+// CDP/HTTP port yang dipakai suite L2. WAJIB di-update setiap menambah/mengganti port suite
+// (sumber: tiap file tests/l2/*.js). Dipakai untuk membersihkan sisa proses test SAJA —
+// TIDAK boleh memakai "Get-Process chrome" global karena akan menutup Chrome milik user.
+const TEST_CDP_PORTS = [8781, 8782, 9337, 9338, 9371, 9372, 9373, 9374, 9375, 9376, 9423, 9424, 9425, 9426, 9430, 9431, 9432, 9433];
+
+function killTestChrome() {
+  // Hanya chrome yang punya --remote-debugging-port milik test L2.
+  try {
+    spawnSync(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `$ports = @(${TEST_CDP_PORTS.join(',')})` +
+          `; $procs = Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue` +
+          `; foreach ($p in $procs) { $cl = $p.CommandLine; if (-not $cl) { continue }` +
+          `  foreach ($port in $ports) { if ($cl -match "--remote-debugging-port=$port") { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue; break } } }`,
+      ],
+      { timeout: 15000, stdio: 'ignore' }
+    );
+  } catch (_) {}
+}
+
 function ensureResults() {
   fs.mkdirSync(RESULTS_DIR, { recursive: true });
 }
@@ -63,6 +86,7 @@ function runSuite(file) {
   const name = path.basename(file);
   const started = Date.now();
   killL2Ports();
+  killTestChrome();
   const res = spawnSync(process.execPath, [file], {
     cwd: ROOT,
     encoding: 'utf8',
@@ -72,12 +96,19 @@ function runSuite(file) {
   const stdout = res.stdout || '';
   const stderr = res.stderr || '';
   const output = stdout + (stderr ? '\n' + stderr : '');
-  const counts = countStatuses(stdout);
-  const ok = res.status === 0 && counts.FAIL === 0;
+  // hitung dari stdout+stderr: assertion yang tercetak ke stderr ikut dihitung
+  const counts = countStatuses(output);
+  // ASSERTION FLOOR: suite tanpa assertion (mis. Chrome/CDP gagal start) = TIDAK boleh hijau
+  const allowZero = process.env.RDI_ALLOW_ZERO_ASSERT === '1';
+  const noAssert = counts.PASS === 0;
+  const ok = res.status === 0 && counts.FAIL === 0 && (counts.PASS > 0 || allowZero);
   killL2Ports();
+  killTestChrome();
   return {
     suite: name,
     ok,
+    noAssert: noAssert && !allowZero,
+    timedOut: !!(res.error && res.error.code === 'ETIMEDOUT'),
     exitCode: res.status,
     counts,
     durationMs: Date.now() - started,
@@ -110,7 +141,9 @@ function main() {
     totalFail += r.counts.FAIL;
     if (!r.ok) {
       suitesFailed++;
-      console.log(
+      if (r.noAssert) console.log('FAIL (NO ASSERTIONS EXECUTED, exit=' + r.exitCode + ')');
+      else if (r.timedOut) console.log('FAIL (TIMEOUT, exit=' + r.exitCode + ')');
+      else console.log(
         'FAIL (' + r.counts.PASS + 'P/' + r.counts.FAIL + 'F, exit=' + r.exitCode + ')'
       );
       for (const line of r.tail) console.log('       ' + line);

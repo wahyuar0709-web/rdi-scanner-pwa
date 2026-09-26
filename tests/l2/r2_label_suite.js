@@ -111,8 +111,13 @@ function l1(src) {
     (/labelPerPage|getLabelTpl/.test(src) && /updateCetakCount/.test(src));
   rec('L1: updateCetakCount label page math resolves template', count24 ? 'PASS' : 'FAIL', count24);
 
-  const labelEsc = utilSrc.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}") || src.includes("function ex(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}");
-  rec('L1: label HTML uses ex() escaper', labelEsc ? 'PASS' : 'FAIL', labelEsc);
+  // FIX 2026-09-27: assertion lama mencocokkan TEKS PERSIS body ex(). Rapuh: perubahan
+  // kecil yang sah (mis.semantik null-handling "s||''" → "s==null?'':s" pada 2026-09-27)
+  // bikin suite merah palsu. Sekarang cukup buktikan esensinya: escape 4 karakter HTML.
+  const exSrc = (utilSrc + '\n' + src);
+  const exDef = (exSrc.match(/function\s+ex\s*\([^)]*\)\s*\{[\s\S]{0,400}?\}/) || [''])[0];
+  const labelEsc = /&amp;/.test(exDef) && /&lt;/.test(exDef) && /&gt;/.test(exDef) && /&quot;/.test(exDef);
+  rec('L1: label HTML uses ex() escaper', labelEsc ? 'PASS' : 'FAIL', labelEsc ? 'escape & < > " di js/util.js' : 'ex() tidak lengkap: ' + exDef.slice(0, 120));
 
   const escFields = all.includes("'+ex(qrID)+'") && all.includes("'+ex(item.nama)+'");
   rec('L1: label kode/nama escaped via ex()', escFields ? 'PASS' : 'FAIL', escFields);
@@ -248,8 +253,9 @@ async function main() {
 
   try {
     const { execSync } = require('child_process');
+    // FIX 2026-09-27 (TEST-AUD-18): versi lama menjalankan "Get-Process chrome | Stop-Process"
+    // yang bisa MENUTUP browser milik user. Sekarang hanya proses yang listen di CDP_PORT suite ini.
     execSync('powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ' + CDP_PORT + ' -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"', { timeout: 5000, stdio: 'ignore' });
-    execSync('powershell -NoProfile -Command "Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.Path -like \"*chrome*\" } | Stop-Process -Force -ErrorAction SilentlyContinue"', { timeout: 5000, stdio: 'ignore' });
   } catch (e) {}
   try { fs.unlinkSync('C:\\Users\\lenov\\AppData\\Local\\Temp\\opencode\\r2_label_results.json'); } catch (e) {}
 
@@ -519,6 +525,11 @@ function writeResults() {
   const summary = { pass, fail, other, results, at: new Date().toISOString() };
   fs.writeFileSync('C:\\Users\\lenov\\AppData\\Local\\Temp\\opencode\\r2_label_results.json', JSON.stringify(summary, null, 2));
   console.log('=== LABEL SUITE: ' + pass + ' PASS / ' + fail + ' FAIL / ' + other + ' OTHER ===');
+  // FIX 2026-09-27 (TEST-AUD-04): suite ini TIDAK pernah set exit code untuk status FAIL
+  // (hanya FATAL catch yang exit 1). Gate "hijau" padahal ada FAIL. Sekarang exitCode = fail ? 1 : 0.
+  if (fail > 0) process.exitCode = 1;
+  // dan kalau tidak ada assertion PASS sama sekali (mis. CDP gagal di tengah jalan) → jangan hijau
+  else if (pass === 0) process.exitCode = 2;
 }
 main().catch(e => {
   rec('FATAL', 'FAIL', String(e.message || e));

@@ -81,7 +81,27 @@ for (const [label, , action, opts, exp] of M) {
 t('Code.gs verifyViewerToken checks denylist', /token_deny_|denylist|cache\.get\(['"]token_deny_/.test(gs));
 t('Code.gs verifyViewerToken checks passwordVersion/pv', /passwordVersion|passwordPv_|expectedHashPv|tokenPv/.test(gs));
 t('Code.gs verifyViewerToken checks expired', /exp|expiry|Date\.now\(\)/.test(gs));
-t('frontend export message escaped (xe)', fs.readFileSync(path.join(ROOT, 'index.html'),'utf8').includes('res.sheets') || true);
+// FIX 2026-09-27 (TEST-AUD-11): assertion ini tadinya "… || true" → SELALU PASS
+// (vakum permanen, tidak bisa gagal). Sekarang benar-benar menguji: setiap call site
+// showStatus() yang memakai pesan server harus ter-escape (dicek di xss_audit juga, ini
+// redundancy低成本 di level matriks authz).
+(function () {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const calls = [];
+  let i = 0, first = true;
+  while ((i = html.indexOf('showStatus(', i + 1)) >= 0) {
+    if (html.slice(Math.max(0, i - 9), i).endsWith('function ')) { i += 11; continue; }
+    const start = html.indexOf('(', i);
+    let d = 0, k = start;
+    for (; k < html.length; k++) { if (html[k] === '(') d++; else if (html[k] === ')') { d--; if (d === 0) break; } }
+    const arg = html.slice(start + 1, k);
+    if (/\.message\b/.test(arg)) calls.push(arg);
+    i = k;
+  }
+  const escaped = calls.filter(a => /xe\(|xeJs\(|ex\(/.test(a)).length;
+  t('frontend showStatus() pesan server selalu ter-escape (bukan "|| true")', calls.length > 0 && escaped === calls.length,
+    escaped + '/' + calls.length + ' call site pesan server ter-escape');
+})();
 
 console.log('---');
 console.log(pass + ' PASS / ' + fail + ' FAIL');

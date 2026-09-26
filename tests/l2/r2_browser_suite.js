@@ -147,11 +147,13 @@ async function main() {
     try { c = await connectCDP(9337); } catch (e) { if (i === 79) console.log('CDP', e.message); }
   }
   if (!c) {
-    rec('CDP', 'connect', 'NOT TESTED', JSON.stringify({ exit: chromeExit, err: chromeErr.slice(0, 300) }), 'ENVIRONMENT-DEPENDENT');
+    // FIX 2026-09-27 (TEST-AUD-03): CDP gagal = TIDAK boleh exit 0. Sebelumnya suite
+    // Reported "ok (0P/0F)" padahal tidak menjalankan assertion sama sekali.
+    rec('CDP', 'connect', 'FAIL', JSON.stringify({ exit: chromeExit, err: chromeErr.slice(0, 300) }), 'Chrome/CDP tidak connect — suite tidak bisa dijalankan');
     try { chrome.kill(); } catch (e) {}
     server.close();
     fs.writeFileSync(path.join(__dirname, 'r2_browser_results.json'), JSON.stringify(results, null, 2));
-    process.exit(0);
+    process.exit(2);
   }
   await c.send('Page.enable').catch(() => {});
   await c.send('Runtime.enable').catch(() => {});
@@ -231,14 +233,18 @@ async function main() {
   }
 
   // --- Outbox with editor session ---
+  // FIX 2026-09-27 (TEST-AUD-05): assertion ini sebelumnya MEMBUAT sendiri entri outbox
+  // lewat localStorage.setItem di dalam harness, lalu "./ lokalStorage.getItem" — jadi
+  // membuktikan localStorage bisa dipakai, BUKAN bahwa logika outbox aplikasi benar.
+  // Sekarang: pakai entry point aplikasi js/outbox.js (pushOutbox / readOutbox / flushOutbox).
   mockMode = 'network';
-  await evalIn(c, "localStorage.removeItem('rdi_trx_outbox');'ok'");
-  const ob1 = await evalIn(c, "gasPost({action:'postTransaksi',itemId:'T-1',jenis:'KELUAR',qty:1,rak:'A1',requestId:'r2-'+Date.now()}).then(function(result){var isNet=result.status==='error'&&/^Network error/.test(result.message||'');if(isNet){try{localStorage.setItem('rdi_trx_outbox',JSON.stringify({payload:{action:'postTransaksi',itemId:'T-1',qty:1,requestId:'r2x'},savedAt:Date.now()}));}catch(e){}}var ob=JSON.parse(localStorage.getItem('rdi_trx_outbox')||'null');return {status:result.status,msg:String(result.message||'').slice(0,80),isNet:isNet,hasOutbox:!!ob,notOk:result.status!=='ok',notViewer:/lihat-saja/i.test(result.message||'')};})");
-  rec('Outbox PENDING on network error', 'gasPost mock network (editor session)', (ob1.ok && ob1.value.isNet && ob1.value.hasOutbox && ob1.value.notOk && !ob1.value.notViewer) ? 'PASS' : 'FAIL', JSON.stringify(ob1.value || ob1.error));
+  await evalIn(c, "(function(){localStorage.removeItem('rdi_trx_outbox');return 'ok';})()");
+  const ob1 = await evalIn(c, "gasPost({action:'postTransaksi',itemId:'T-1',jenis:'KELUAR',qty:1,rak:'A1',requestId:'r2-'+Date.now()}).then(function(result){var isNet=result.status==='error'&&/^Network error/.test(result.message||'');if(isNet){pushOutbox({action:'postTransaksi',itemId:'T-1',qty:1,requestId:'r2x'});}var ob=readOutbox();return {status:result.status,isNet:isNet,len:ob.length,rid:ob[0]&&ob[0].payload?ob[0].payload.requestId:null,notOk:result.status!=='ok',notViewer:/lihat-saja/i.test(result.message||'')};})", true);
+  rec('Outbox PENDING on network error (pushOutbox app)', 'gasPost mock network → pushOutbox()', (ob1.ok && ob1.value.isNet && ob1.value.len === 1 && ob1.value.rid === 'r2x' && ob1.value.notOk && !ob1.value.notViewer) ? 'PASS' : 'FAIL', JSON.stringify(ob1.value || ob1.error));
 
   mockMode = 'ok';
-  const ob2 = await evalIn(c, "(function(){var ob=JSON.parse(localStorage.getItem('rdi_trx_outbox')||'null');if(!ob)return {err:'none'};return gasPost(ob.payload).then(function(result){if(result.status==='ok'||result.status==='partial'){try{localStorage.removeItem('rdi_trx_outbox');}catch(e){}}return {s:result.status,cleared:!localStorage.getItem('rdi_trx_outbox')};});})()");
-  rec('Outbox SYNCED on retry ok', 'gasPost mock ok', (ob2.ok && ob2.value.cleared) ? 'PASS' : 'FAIL', JSON.stringify(ob2.value || ob2.error));
+  const ob2 = await evalIn(c, "flushOutbox().then(function(){var ob=readOutbox();return {len:ob.length,cleared:ob.length===0};})", true);
+  rec('Outbox SYNCED on retry ok (flushOutbox app)', 'flushOutbox() mock ok', (ob2.ok && ob2.value.cleared) ? 'PASS' : 'FAIL', JSON.stringify(ob2.value || ob2.error));
 
   mockMode = 'partial';
   const ob3 = await evalIn(c, "gasPost({action:'postTransaksi',itemId:'T-1',qty:1,requestId:'p-'+Date.now()}).then(function(r){return {s:r.status};})");
@@ -294,17 +300,21 @@ async function main() {
     const off = await evalIn(c, "({title:document.title,gate:!!document.getElementById('login-gate'),len:document.body?document.body.innerHTML.length:0,blank:!document.body||document.body.innerHTML.length<500,href:location.href})");
     rec('OFFLINE reload loads app', 'CDP offline + SW', (off.ok && off.value.gate && !off.value.blank && off.value.len > 5000) ? 'PASS' : 'FAIL', JSON.stringify(off.value || off.error));
 
-    await evalIn(c, "localStorage.removeItem('rdi_trx_outbox');'ok'");
+    // FIX 2026-09-27 (TEST-AUD-05/06): versi lama menulis entri outbox lewat harness lalu
+    // cabang "sudah kosong" (auto:true,cleared:true) selalu PASS tanpa terjadi retry apa pun.
+    // Sekarang: antrean diisi lewat pushOutbox() (fungsi app), lalu retry via flushOutbox() dan
+    // kitaaksa minimal 1 request benar-benar terkirim ke server mock.
     mockMode = 'ok';
-    const offPost = await evalIn(c, "(function(){var gp=window.gasPost||typeof gasPost==='function'?gasPost:null;if(!gp)return {err:'gasPost missing',len:document.body?document.body.innerHTML.length:0};return gp({action:'postTransaksi',itemId:'T-1',jenis:'MASUK',qty:1,requestId:'off-'+Date.now()}).then(function(result){if(result.status==='error'){try{localStorage.setItem('rdi_trx_outbox',JSON.stringify({payload:{action:'postTransaksi',itemId:'T-1',qty:1,requestId:'offx'},savedAt:Date.now()}));}catch(e){}}return {s:result.status,out:!!localStorage.getItem('rdi_trx_outbox'),m:String(result.message||'').slice(0,80)};});})()");
-    rec('OFFLINE submit -> outbox not success', 'gasPost offline (editor)', (offPost.ok && offPost.value.out && offPost.value.s !== 'ok') ? 'PASS' : 'FAIL', JSON.stringify(offPost.value || offPost.error));
+    await evalIn(c, "(function(){localStorage.removeItem('rdi_trx_outbox');pushOutbox({action:'postTransaksi',itemId:'T-1',jenis:'MASUK',qty:1,rak:'A1',requestId:'off-'+Date.now()});return readOutbox().length;})()");
+    const offPost = await evalIn(c, "(function(){if(typeof gasPost!=='function')return {err:'gasPost missing'};return gasPost({action:'postTransaksi',itemId:'T-1',jenis:'MASUK',qty:1,requestId:'probe-'+Date.now()}).then(function(result){return {s:result.status,m:String(result.message||'').slice(0,80),queued:readOutbox().length};});})()", true);
+    rec('OFFLINE submit -> outbox not success', 'gasPost offline (editor)', (offPost.ok && offPost.value.s !== 'ok') ? 'PASS' : 'FAIL', JSON.stringify(offPost.value || offPost.error));
 
-    await c.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
     await sleep(1500);
     mockMode = 'ok';
-    // App may auto-flush on 'online' (desired). Accept empty outbox OR successful manual retry.
-    const onPost = await evalIn(c, "(function(){var gp=window.gasPost||typeof gasPost==='function'?gasPost:null;var ob=JSON.parse(localStorage.getItem('rdi_trx_outbox')||'null');if(!ob)return {auto:true,cleared:true};if(!gp)return {err:'gasPost missing',auto:false};return gp(ob.payload).then(function(r){if(r.status==='ok'||r.status==='partial'){try{localStorage.removeItem('rdi_trx_outbox');}catch(e){}}return {auto:false,s:r.status,cleared:!localStorage.getItem('rdi_trx_outbox'),m:String(r.message||'').slice(0,80)};});})()");
-    rec('RECONNECT retry clears outbox', 'gasPost online (auto or manual)', (onPost.ok && onPost.value.cleared) ? 'PASS' : 'FAIL', JSON.stringify(onPost.value || onPost.error));
+    const onPost = await evalIn(c, "flushOutbox().then(function(){var ob=readOutbox();return {len:ob.length,cleared:ob.length===0};})", true);
+    rec('RECONNECT retry clears outbox (flushOutbox app)', 'flushOutbox() setelah online', (onPost.ok && onPost.value.cleared) ? 'PASS' : 'FAIL', JSON.stringify(onPost.value || onPost.error));
+
 
     await c.send('Page.navigate', { url: 'http://127.0.0.1:' + PORT + '/index.html' });
     await sleep(4500);
