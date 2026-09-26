@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.25 |
+| Version | 1.26 |
 | Date | 2026-09-26 |
-| Repo HEAD | `4149e35` (Audit tampilan menu) |
-| App version | `v15.25` / SW `rdi-stok-v33` / GAS deployment `@41` |
+| Repo HEAD | `9da3958` (Fix 3 bug cetak label + bump v15.26) |
+| App version | `v15.26` / SW `rdi-stok-v34` / GAS deployment `@41` |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -45,19 +45,20 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 
 | Item | Nilai | Status verif |
 |------|-------|--------------|
-| Git HEAD | `4149e35` (Audit tampilan menu) | — |
+| Git HEAD | `9da3958` (Fix 3 bug cetak label + bump v15.26) | — |
 | Working tree | clean | — |
-| `APP_VERSION` | `v15.25` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_VERSION` | `v15.26` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
 | `APP_BUILD_DATE` | `2026-09-26` | L1 |
-| SW `CACHE` | `rdi-stok-v33` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` | L1+L2 |
-| `index.html` lines | ~4307 (Revisi Cetak: shell flex `#section-cetak` + bar in-flow; audit-tampilan: CSS alert scoped `@media 640` + `#modal-filter`/`#modal-sort` pindah body-level; F-06f: h1 login + ::after 44px + hash deep link + prefers-color-scheme; F-06e: 4 fallback `100dvh` + `role="dialog"` ×2; BUG-01: +8 export) | L1 |
-| Suite L1 in-repo | `tests/l1/` **28** suite · `npm run test:l1` | **L1 PASS 519/0** (2026-09-26) |
-| Suite L2 in-repo | `tests/l2/` 5 suite · `npm run test:l2` | **L2 PASS 228/0** (2026-09-26) |
+| SW `CACHE` | `rdi-stok-v34` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` | L1+L2 |
+| `index.html` lines | ~4316 (Revisi Cetak: shell flex `#section-cetak` + bar in-flow; audit-tampilan: CSS alert scoped `@media 640` + `#modal-filter`/`#modal-sort` pindah body-level; F-06f: h1 login + ::after 44px + hash deep link + prefers-color-scheme; F-06e: 4 fallback `100dvh` + `role="dialog"` ×2; BUG-01: +8 export; fix-3-bug cetak: `#section-cetak .subpage-bar` in-flow + `<script jspdf.min.js>` + `generateOutput` label-download tanpa popup) | L1 |
+| Suite L1 in-repo | `tests/l1/` **29** suite · `npm run test:l1` | **L1 PASS 540/0** (2026-09-26) |
+| Suite L2 in-repo | `tests/l2/` 5 suite · `npm run test:l2` | **L2 PASS 230/0** (2026-09-26) |
 | GAS deployment | `@41` (prod exec URL) | L3 historical / UNVERIFIED if not re-probed |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
-| Suite terakhir label | 49 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
+| Suite terakhir label | 51 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
 | Suite terakhir smoke | 37 PASS / 0 FAIL (0 page error) | **L2 PASS** |
+| Suite terakhir fix-cetak | 21 PASS / 0 FAIL (L1 `bug_cetak_label3`) | **L1 PASS** |
 | Suite terakhir viewport/mode | 19 PASS / 0 FAIL (4 kombinasi) | **L2 PASS** |
 | Suite terakhir menu visual | 91 PASS / 0 FAIL (8 menu × viewer/editor × HP/desktop) | **L2 PASS** |
 | L4 device | belum dijalankan | **NOT TESTED** / DEVICE-DEPENDENT |
@@ -104,6 +105,9 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | UI-13 | LOW | Deep linking tak ada (tab tak tercermin di URL/hash) | **DONE** v15.23 (F-06f) — `replaceState` di switchTab + `hashchange` + apply saat boot/login; probe CDP 3/3 |
 | UI-14 | LOW | `prefers-color-scheme` tak dipakai (tema manual `rdi_theme`) | **DONE** v15.23 (F-06f) — first-visit ikut sistem, pilihan user menang |
 | BUG-01 | HIGH | Inline handler panggil fungsi **tak ter-eksport** `window.*` (daftar ekspor `index.html` L3218 tak sinkron): autocomplete ID/Nama scan & riwayat **mati total** — `ReferenceError: acShowDebounced is not defined` saat ketik (`acShow`/`acHide`/`collapseCameraOnType` juga tak diekspor); kemungkinan terdampak: `setCatFilter`/`setRakFilter`/`markRakChipSelection`/`updateSaldoPreview`/`checkTransactionAnomaly` | **DONE** v15.21 — 8 export ditambahkan; runtime CDP post-fix: 17/17 `function`, error `[]`, autocomplete muncul |
+| CETAK-01 | MED | Layar menu cetak terpotong di atas: `.subpage-bar` sticky `top:56/104` di dalam `#section-cetak` menimpa judul "Pilih Item untuk Dicetak" (bug user 2026-09-26) | **DONE** v15.26 — `#section-cetak .subpage-bar{position:relative;top:auto}` (specificity id menang; z-index 90 dipertahankan); probe overlap `false` PHONE/DESK + screenshot `fix1_PHONE/DESK_cetak_label.png` |
+| CETAK-02 | MED | Download PDF label lambat: popup `window.open` + render html2pdf via CDN (async) + QR px 120 ≈ 49s/QR (akar kedua, benchmark Node; `qrcode.createDataURL` = O(px²)) (bug user 2026-09-26) | **DONE** v15.26 — `generateOutput` label+download → `downloadLabelPDF()` tanpa popup; jsPDF 2.5.1 vector lokal (`js/jspdf.min.js`); QR px 120→10; bukti: `buildLabelPDFDoc` 1 item 243–330ms, 4 item ~500ms, magic `%PDF-` |
+| CETAK-03 | LOW–MED | QR/nama/spec label terlalu kecil (bug user 2026-09-26) | **DONE** v15.26 — `LABEL_TPL.qrMm` 15/13/20 → 27/17/22mm; font co/kode/nama/spec 3/6/5.5/4.5pt → 4/8/7.5/6pt; screenshot 3 template (hash unik) + qrw 102/64/83px = 27/17/22mm |
 | HARNESS-01 | INFO | Score 3/39; expect `.claude/` vs `.opencode` rdi | documented |
 
 ---
@@ -483,6 +487,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 - [x] **Audit menyeluruh tombol/fitur (user 2026-09-25)**: statis L1 baru `handler_coverage.js` (353 inline handler → 172 callee global lintas index+`js/*`; 236 `<button>` 0 dead/missing; baseline per-attr) 7/0 · runtime L2 baru `r2_feature_smoke.js` 37/0 (boot editor + 4 rows mock, 8 tab section + more-drawer, 6 modal Escape-close via `_overlayCloseMap`, openAddSheet/closeAddSheet, master search **4→1 row** + sort, cetak mode/select, alert/rak/history/aset/scanner/dashboard render, **0 page error + 0 console error**) · gate L1 **519/0 (28 suite)** + L2 **118/0 (3 suite)** · tanpa perubahan shell (tanpa bump) · sisa NOT TESTED: kamera device (L4), print dialog browser, login form live, submit GAS live (L3)  
 - [x] **Tes 4 kombinasi tampilan HP/Desktop × Viewer/Editor (user 2026-09-25)**: suite baru `r2_viewport_mode_suite.js` **19/0** — Viewer Desktop: nav sticky `top56 h48`, pad 0, cetak `vh-104` (664/768) · Viewer HP: nav fixed-bottom `h66`, cetak `vh-122` (810/932) · Editor Desktop: sidebar `w80 fixed full-height`, `pad-left 80px`, cetak `vh-56` (712/768) · Editor HP: sidebar OFF, nav bottom, cetak `vh-122` · semua kombinasi: overlap bar/list **0**, `barInSec` ✓, 4 items, switchTab jalan, **0 page+console error** · 1 FAIL awal = bug test (deteksi phone pakai `vh<=700`, kini `vw<=700`) · 1 flaky boot-swap = diperkuat context-ready guard · gate L1 **519/0 (28 suite)** + L2 **137/0 (4 suite)** · tanpa shell change (tanpa bump) · sisa NOT TESTED: kamera device, print dialog, login form live, submit GAS live (L3/L4)  
 - [x] **Audit tampilan semua menu (user 2026-09-26)**: suite baru `r2_menu_visual_suite.js` **91/0** (8 menu master/cetak/alert/rak/history/aset/scanner/dashboard × HP/desktop × viewer/editor: elemen kunci ada & visible, 6 modal open/Escape-close, per-phase leak guard, screenshot ke Temp `menu-shots/`) · **2 temuan app di-fix**: (1) tabel Peringatan Stok tersembunyi di HP — CSS global `#section-master .table-wrap{display:none}` di media 640 ikut menelan `.table-wrap` di `#section-alert` → di-scope + `overflow-x:auto` (alert phone h 330→874, keyVisible ✓); (2) **MEDIUM** `#modal-filter`/`#modal-sort` berada di dalam `#section-master` → dibuka dari tab lain (jalur user `btn-open-filter-cetak` L1512) `w=0` tak terlihat → dipindah body-level (pure move, len identik 595103, 29/29 div; verifikasi 8 tab PASS + klik DOM cetak PASS) · **akar 1 bug test**: ekspresi Escape suite `(stmt;stmt)` = SyntaxError → leak modal-config palsu (`esc_diag_probe`: `__escSeen:0`, tanpa kurung `:1`) — BUKAN bug app · robustness suite: waitReady wajib `readyState==='complete'` (flake nav top=90 saat `interactive`), boot splash `!b` guard, `run-l2` timeout 180s→300s · gate L1 **519/0 (28 suite)** + L2 **228/0 (5 suite, 2× hijau pre/post-bump)** · v15.25 / sw `rdi-stok-v33` · sisa NOT TESTED: kamera device, print dialog, login form live, submit GAS live (L3/L4)  
+- [x] **Fix 3 bug menu cetak (user 2026-09-26, approval eksplisit "PERBAIKI BUG INI")**: (1) **CETAK-01** layar terpotong — akar: `.subpage-bar` sticky `top:56/104` menimpa header di `#section-cetak` → sisip CSS `#section-cetak .subpage-bar{position:relative;top:auto}` (specificity 1,1,0 vs 0,1,0 & 0,2,1) · probe geo PHONE/DESK `overlap=false`, screenshot `fix1_*` judul+tombol terlihat; (2) **CETAK-02** PDF lambat — 2 akar: popup `window.open`+html2pdf CDN async & QR px 120 ≈ 49s/QR (benchmark Node `qr_px_measure.js`, `qrcode.createDataURL` = O(px²)) → `generateOutput` branch `label+download` → `downloadLabelPDF()` langsung tanpa popup; vendor jsPDF 2.5.1 (`js/jspdf.min.js`, `<script>` antara util & cetak, sw ASSETS +=), fungsi baru `labelPdfFilename`/`buildLabelPDFDoc` (vector A4 mm, dashed border, clamp nama≤2/spec≤1)/`downloadLabelPDF`; `scriptAction` label print-only (html2pdf cabang label dihapus; kartu tetap html2pdf = non-regression); QR px 120→10 · bukti 1 item 243–330ms / 4 item ~500ms, magic `%PDF-` · (3) **CETAK-03** QR/nama/spec kecil → `LABEL_TPL.qrMm` 15/13/20→27/17/22 + font 3/6/5.5/4.5→4/8/7.5/6pt · screenshot data-URL 3 template (`fix3_*`, hash unik, qrw 102/64/83px = 27/17/22mm; `document.write` frame basi → pindah `Page.navigate` data URL) · RED `bug_cetak_label3.js` 18F → GREEN **21/0**; `r2_label_suite.js` +2 rec (kartu html2pdf, label jsPDF vector tanpa popup, jsPDF loaded) 49→51P · gate L1 **540/0 (29 suite)** + L2 **230/0 (5 suite, pre & post-bump)** · v15.26 / sw `rdi-stok-v34` / pkg 15.26.0 · sisa NOT TESTED: unduhan PDF end-to-end via klik tombol (browser download), kamera device, print dialog, login form live, submit GAS live (L3/L4)  
 - [ ] F-06+ (P3 antrian)  
 
 ### F4 / F5
@@ -537,6 +542,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-25 | Audit menyeluruh tombol/fitur (user: pastikan semua berjalan sempurna): 353 handler + 236 tombol terpetakan penuh (0 dead/missing; 6 awal "missing" = false-positive method + `xeJs` ada di `js/util.js`) · smoke runtime 37/0 · 2x koreksi selector pada suite (bukan bug app: `#master-table`→`#table-body`, `.tab`→tambah `.tab-fab`) · boot-wait diperkuat (anti race) | bukti: `handler_coverage` 7/0, `r2_feature_smoke` 37/0, L1 519/0 + L2 118/0 | PLAN.md v1.23 |
 | 2026-09-25 | Tes 4 kombinasi tampilan (user: hp/desktop × viewer/editor semua beda): semua perbedaan layout terbukti dari CSS→DOM (sidebar editor ≥1024, sticky viewer ≥641, bottom-nav mobile) + tinggi cetak per-kombinasi + overlap bar 0 · 2 temuan = bug suite test sendiri (deteksi phone & flaky boot), 0 bug aplikasi | bukti: `r2_viewport_mode_suite` 19/0 (2x), L1 519/0 + L2 137/0 | PLAN.md v1.24 |
 | 2026-09-26 | Audit tampilan semua menu (user: cek semua tampilan semua menu): 2 temuan app = BUG alert mobile (CSS global `#section-master .table-wrap` menelan alert di HP → scoped media 640 + overflow-x) + BUG filter/sort invisible lintas tab (modal di dalam `#section-master`, `w=0` dari tab cetak → dipindah body-level); sisanya 3 temuan = bug test (ekspresi Escape SyntaxError → leak modal-config palsu; boot splash race; runner timeout 180s) | bukti: `r2_menu_visual_suite` 91/0, `loc_probe` 8-tab PASS, `esc_diag_probe` SyntaxError→`__escSeen:1`, L1 519/0 + L2 228/0 (2x); bump v15.25 / sw `rdi-stok-v33` | PLAN.md v1.25 |
+| 2026-09-26 | Fix 3 bug menu cetak (user: PERBAIKI BUG INI): (1) subpage-bar sticky menimpa header → `position:relative` in-flow; (2) PDF lambat → tanpa popup + jsPDF vector lokal + QR px 120→10 (akar: O(px²) 49s/QR); (3) QR/nama/spec kecil → qrMm 27/17/22 + font 4/8/7.5/6pt; kartu stok download tetap html2pdf (di luar scope) | bukti: RED→GREEN `bug_cetak_label3` 18F→21/0, `r2_label_suite` 51/0, probe PDF 243–330ms/item, screenshot `fix1_*`+`fix3_*` (hash unik), L1 540/0 + L2 230/0 (2x pre/post-bump); bump v15.26 / sw `rdi-stok-v34` | PLAN.md v1.26 |
 | _isian sesi_ | | | |
 
 ---
@@ -610,5 +616,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.24 | 2026-09-25 | Tes 4 kombinasi tampilan HP/Desktop × Viewer/Editor: suite baru `r2_viewport_mode_suite.js` (L2 4 suite, 137/0); tanpa shell change / tanpa bump; §1.2, §10, §11, §13 |
 
 | 1.25 | 2026-09-26 | Audit tampilan semua menu: suite baru `r2_menu_visual_suite.js` (L2 5 suite, 228/0) + 2 fix app (alert mobile scoped CSS, modal filter/sort pindah body-level) + 3 fix test (Escape SyntaxError, boot `readyState` guard, runner timeout); v15.25 / sw `rdi-stok-v33`; §1.2, §10, §11, §13 |
+
+| 1.26 | 2026-09-26 | Fix 3 bug menu cetak (CETAK-01 subpage-bar in-flow, CETAK-02 download PDF tanpa popup via jsPDF vector + QR px 10, CETAK-03 qrMm 27/17/22 + font label); suite baru `bug_cetak_label3.js` (L1 29 suite, 540/0) + `r2_label_suite` 49→51P; gate L2 230/0 (2x); v15.26 / sw `rdi-stok-v34` / pkg 15.26.0; §1.2, §1.4, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
