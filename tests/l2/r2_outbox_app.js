@@ -136,9 +136,44 @@ async function main() {
     const after = POSTS.filter(p => p.action === 'postTransaksi').length;
     rec('RETRY: flushOutbox() kirim antrean & kosongkan', fl && !fl.error && fl.len === 0 && after > before, 'len=' + (fl && fl.len) + ' posts+' + (after - before));
 
-    // ---- 3. Cap 20 entri (transaksi offline tertua hilang — dokumentasi behaviours) ----
-    const cap = await ev("(function(){localStorage.removeItem('rdi_trx_outbox');for(var i=1;i<=25;i++){pushOutbox({action:'postTransaksi',itemId:'X'+i,requestId:'cap-'+i,qty:1});}var ids=readOutbox().map(function(e){return e.payload.requestId;});return {len:ids.length,first:ids[0],has1:ids.indexOf('cap-1')>=0,has5:ids.indexOf('cap-5')>=0,has6:ids.indexOf('cap-6')>=0};})()");
-    rec('CAP: outbox maksimum 20 (cap-1..cap-5 hilang — perilaku terkonfirmasi)', cap && cap.len === 20 && cap.has1 === false && cap.has5 === false && cap.has6 === true, JSON.stringify(cap));
+    // ---- 3. Kapasitas outbox: TIDAK boleh ada kehilangan diam-diam ----
+    // RED (2026-09-27, OFF-01): versi lama memakai slice(-20) → 5 transaksi offline
+    // terlama HILANG tanpa jejak. Perilaku baru: kapasitas dinaikkan, dan ketika penuh
+    // aplikasi mencoba flush dulu + memberi PERINGATAN eksplisit ke user.
+    const cap = await ev(`(function(){
+      localStorage.removeItem('rdi_trx_outbox');
+      window.__obFullWarn = 0;
+      var cfg = window.__rdiConfig || {};
+      var origWarn = cfg.onOutboxFull;
+      cfg.onOutboxFull = function (info) { window.__obFullWarn++; window.__lastOutboxInfo = info; };
+      var n = (typeof OUTBOX_MAX !== 'undefined' ? OUTBOX_MAX : 20);
+      for (var i = 1; i <= n + 25; i++) { pushOutbox({ action:'postTransaksi', itemId:'X'+i, requestId:'cap-'+i, qty:1 }); }
+      var ids = readOutbox().map(function(e){ return e.payload.requestId; });
+      cfg.onOutboxFull = origWarn;
+      return { max:n, len:ids.length, has1:ids.indexOf('cap-1')>=0, hasN:ids.indexOf('cap-'+n)>=0,
+               last:ids[ids.length-1], warn:window.__obFullWarn, info:window.__lastOutboxInfo || null };
+    })()`);
+    rec('CAP: kapasitas outbox dinaikkan ke 100 (dulu 20 = 5 transaksi hilang diam-diam)', cap && cap.max === 100, JSON.stringify(cap).slice(0, 120));
+    rec('CAP: entri terbaru selalu tersimpan (yang dipotong hanya yang terlama)', cap && cap.hasN === true && cap.last === 'cap-' + (cap.max + 25), JSON.stringify(cap).slice(0, 140));
+    rec('CAP: pemotongan di atas kapasitas SELALU accompanied peringatan (tidak diam)', cap && cap.warn > 0 && cap.info && /trimmed|near-full|storage/.test(cap.info.note || ''),
+      cap ? ('warning ' + cap.warn + '× info=' + JSON.stringify(cap.info)) : 'tidak ada');
+
+    // ---- 3b. Saat penuh → warning eksplisit (bukan diam) ----
+    const warn = await ev(`(function(){
+      localStorage.removeItem('rdi_trx_outbox');
+      var cfg = window.__rdiConfig || {};
+      var fired = 0;
+      var orig = cfg.onOutboxFull;
+      cfg.onOutboxFull = function (info) { fired++; window.__lastOutboxInfo = info; };
+      var n = (typeof OUTBOX_MAX !== 'undefined' ? OUTBOX_MAX : 20);
+      for (var i = 1; i <= n + 5; i++) { pushOutbox({ action:'postTransaksi', itemId:'Y'+i, requestId:'warn-'+i, qty:1 }); }
+      var after = readOutbox().length;
+      cfg.onOutboxFull = orig;
+      return { fired:fired, after:after, max:n, info:window.__lastOutboxInfo || null };
+    })()`);
+    rec('CAP-FULL: aplikasi memberi peringatan eksplisit saat antrean penuh', warn && warn.fired > 0,
+      warn ? ('warning dipanggil ' + warn.fired + '×, antrean=' + warn.after + '/' + warn.max + ' info=' + JSON.stringify(warn.info)) : 'tidak ada');
+    await ev("(function(){localStorage.removeItem('rdi_trx_outbox');return 1;})()");
 
     // ---- 4. Dedup by requestId ----
     const dd = await ev("(function(){localStorage.removeItem('rdi_trx_outbox');pushOutbox({action:'postTransaksi',requestId:'d-1',qty:1});pushOutbox({action:'postTransaksi',requestId:'d-1',qty:2});var l=readOutbox();return {len:l.length,qty:l[0].payload.qty};})()");

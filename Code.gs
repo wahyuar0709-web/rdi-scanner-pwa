@@ -435,6 +435,19 @@ function genericError_(fnName) {
 //  tulis DITOLAK (fail-closed) -- supaya tidak keliru mengira sudah aman
 //  padahal belum sempat disetup.
 // ============================================================
+/* --- rate limit percobaan editor key (BE-02) --- */
+function editorKeyRateKey_(editorKey) { try { return 'editor_fail_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(editorKey||''))).substring(0, 20); } catch (e) { return 'editor_fail_len' + String(editorKey||'').length; } }
+/* Penghitung GLOBAL: rate limit per-key saja tidak menghentikan brute force dengan kunci ACAK
+   (setiap tebakan dapat penghitung sendiri). Total 30 kegagalan/10 menit → semua percobaan
+   editor ditolak sementara, apa pun kuncinya. Sukses → reset. */
+var EDITOR_RATE_GLOBAL_MAX = 30;
+function editorKeyRateFail_(editorKey) { try { var c = CacheService.getScriptCache(); var k = editorKeyRateKey_(editorKey); var n = parseInt(c.get(k)||'0',10)+1; c.put(k, String(n), 600); var g = 'editor_fail_global'; var gn = parseInt(c.get(g)||'0',10)+1; c.put(g, String(gn), 600); return n; } catch (e) { return 0; } }
+function editorKeyRateBlocked_(editorKey) { try { var c = CacheService.getScriptCache(); if (parseInt(c.get('editor_fail_global')||'0',10) >= EDITOR_RATE_GLOBAL_MAX) return true; return parseInt(c.get(editorKeyRateKey_(editorKey))||'0',10) >= 10; } catch (e) { return false; } }
+function editorKeyRateReset_(editorKey) { try { var c = CacheService.getScriptCache(); c.remove(editorKeyRateKey_(editorKey)); c.remove('editor_fail_global'); } catch (e) {} }
+/* --- akhir rate limit editor key --- */
+/* BE-04: potong baris sisa tanpa pernah mengosongkan sheet */
+function truncateSheetRows_(sh, lastRowNeeded) { try { var extra = sh.getLastRow() - lastRowNeeded; if (extra > 0) { if (typeof sh.deleteRows === 'function') { sh.deleteRows(lastRowNeeded, extra); } else { sh.getRange(lastRowNeeded, 1, extra, sh.getLastColumn()).clearContent(); } } } catch (e) { /* truncate non-kritis: angka tetap benar, hanya baris sisa */ } }
+/* --- akhir BE-04 --- */
 function getEditorKey() {
   return PropertiesService.getScriptProperties().getProperty('EDITOR_KEY') || '';
 }
@@ -454,6 +467,8 @@ var SHEET_EDITOR_ACCOUNTS = 'Editor_Accounts'; // Nama | EditorKey | Aktif
 // FIX TINGGI: cache Editor_Accounts (60 dtk) — kurangi read sheet per request
 function checkEditorAccountKey_(editorKey) {
   try {
+    /* FIX BE-01 (2026-09-27, audit): tanpa guard ini, SETIAP request baca/anonim menjalankan verifyPasswordHash_ (100.000 iterasi SHA-256) untuk tiap akun editor — permintaan tanpa kredensial pun. Terukur: 8.932 panggilan hash untuk 1 request tanpa kredensial (2 akun). Kredensial kosong = tak ada yang bisa dicocokkan → keluar sebelum hashing. */
+    if (!String(editorKey||'').trim()) return { none:true };
     var cache = CacheService.getScriptCache();
     var cacheKey = 'editor_acc_rows';
     var rows = null;
@@ -518,6 +533,8 @@ function checkEditorAccountKey_(editorKey) {
 
 function checkEditorKey(body) {
   var editorKey = String(body.editorKey||'');
+  /* FIX BE-02 (2026-09-27): editor key = akses penuh (recalc/resync/resolveIdCollision) tapi TIDAK ada rate limit → brute force tanpa batas. Rate limit per hash-key: 10x gagal / 10 menit; kunci BENAR menghapus penghitung (tak mengunci admin legit). */
+  if (editorKey && editorKeyRateBlocked_(editorKey)) { return { ok:false, message:'Terlalu banyak percobaan akses editor. Tunggu 10 menit lalu coba lagi.' }; }
 
   // 1) Coba cocokkan ke akun editor per-orang dulu (kalau sheet-nya disetup).
   var acc = checkEditorAccountKey_(editorKey);
@@ -525,6 +542,7 @@ function checkEditorKey(body) {
     return { ok:false, message: acc.message || 'Akun editor ini sudah dinonaktifkan. Hubungi admin.' };
   }
   if (acc && acc.nama) {
+    editorKeyRateReset_(editorKey);
     return { ok:true, nama: acc.nama }; // nama TERVERIFIKASI, dipakai override field admin di transaksi
   }
 
@@ -535,8 +553,10 @@ function checkEditorKey(body) {
     return { ok:false, message:'EDITOR_KEY belum diset di Script Properties. Lihat komentar checkEditorKey() di Code.gs utk cara setup.' };
   }
   if (!constantTimeEquals_(editorKey, required)) {
+    editorKeyRateFail_(editorKey);
     return { ok:false, message:'Akses ditolak: perangkat ini dalam mode lihat-saja, tidak bisa menyimpan perubahan.' };
   }
+  editorKeyRateReset_(editorKey);
   return { ok:true }; // tanpa `nama` -- lihat catatan di doPost/postTransaksi
 }
 
@@ -855,8 +875,9 @@ function doGet(e) {
     // Frontend baru mengirim via header/body; query string tetap didukung utk kompatibilitas.
     try {
       var headers = (e && e.allHeaders) ? e.allHeaders : {};
-      if (!params.editorKey && headers['X-Editor-Key']) params.editorKey = headers['X-Editor-Key'];
-      if (!params.viewerToken && headers['X-Viewer-Token']) params.viewerToken = headers['X-Viewer-Token'];
+      /* FIX BE-07 (2026-09-27): Apps Script lowercase-kan NAMA header di e.allHeaders → lookup 'X-Editor-Key' selalu undefined sehingga jalur header mati. Cek dua bentuk. */
+      if (!params.editorKey) { params.editorKey = headers['x-editor-key'] || headers['X-Editor-Key'] || ''; }
+      if (!params.viewerToken) { params.viewerToken = headers['x-viewer-token'] || headers['X-Viewer-Token'] || ''; }
     } catch(hdrErr) {}
 
     var auth = checkAnyAccess(params);
@@ -2501,12 +2522,13 @@ function addAsetItem(body) {
       var newNo = last < 2 ? 1 : last;
       var rowData = [
         newNo, kodeAlat,
-        String(body.namaAlat || ''), String(body.brand || ''),
-        String(body.cuttingTool || ''), String(body.material || ''),
-        String(body.spesifikasi || ''), String(body.mesinDefault || ''),
-        String(body.kodeMesinDefault || ''), parseFloat(body.beratKg) || 0,
-        String(body.uom || 'Pcs'), String(body.rakPenyimpanan || ''),
-        String(body.vendorAsahDefault || ''), 0, 0, // Rata2_Pemakaian & Lead_Time_Asah dihitung nanti, bukan diinput manual
+        /* FIX BE-05 (2026-09-27): formula-injection guard — input user diawali = + - @ menjadi formula di Sheets. */
+        safeCell_(String(body.namaAlat || '')), safeCell_(String(body.brand || '')),
+        safeCell_(String(body.cuttingTool || '')), safeCell_(String(body.material || '')),
+        safeCell_(String(body.spesifikasi || '')), safeCell_(String(body.mesinDefault || '')),
+        safeCell_(String(body.kodeMesinDefault || '')), parseFloat(body.beratKg) || 0,
+        safeCell_(String(body.uom || 'Pcs')), safeCell_(String(body.rakPenyimpanan || '')),
+        safeCell_(String(body.vendorAsahDefault || '')), 0, 0, // Rata2_Pemakaian & Lead_Time_Asah dihitung nanti, bukan diinput manual
         parseFloat(body.safetyStock) || 0, parseFloat(body.reorderPoint) || 0,
         parseFloat(body.minStock) || 0
       ];
@@ -2556,7 +2578,7 @@ function addAsetUnit(body) {
     }
     if (!itemAda) return { status:'error', message:'Kode_Alat "' + kodeAlat + '" belum terdaftar di ' + SHEET_ASET_ITEM + '. Tambahkan lewat addAsetItem dulu.' };
 
-    var admin = body.verifiedAdmin || body.admin || 'Admin';
+    var admin = safeCell_(String(body.verifiedAdmin || body.admin || 'Admin')); /* FIX BE-05 */
     var tanggalMasuk = body.tanggalMasuk ? new Date(body.tanggalMasuk) : new Date();
     var now = new Date();
 
@@ -2663,7 +2685,7 @@ function recordAsetMovement(body) {
     var rule = ASET_TRANSITION_RULES[activity];
     if (!rule) return { status:'error', message:'Activity "' + activity + '" tidak dikenal. Activity yang sah: ' + Object.keys(ASET_TRANSITION_RULES).join(', ') };
 
-    var admin = body.verifiedAdmin || body.admin || 'Admin';
+    var admin = safeCell_(String(body.verifiedAdmin || body.admin || 'Admin')); /* FIX BE-05 */
 
     var lock = LockService.getScriptLock();
     try {
@@ -2726,8 +2748,8 @@ function recordAsetMovement(body) {
       var trxId = generateAsetLogTrxId_();
       shLog.appendRow([
         now, kodeAlat, unitId, trxId, activity, 1,
-        newCycleId, newCounter, String(body.kodeMesin || ''), String(body.vendor || ''),
-        admin, String(body.keterangan || '')
+        newCycleId, newCounter, /* FIX BE-05 (2026-09-27): formula guard utk kolom teks log */ safeCell_(String(body.kodeMesin || '')), safeCell_(String(body.vendor || '')),
+        admin, safeCell_(String(body.keterangan || ''))
       ]);
 
       SpreadsheetApp.flush();
@@ -3331,12 +3353,13 @@ function recalculateAllSaldoLocked_() {
     var t  = totals[id] || { masuk:0, keluar:0 };
     out.push([id, it.nama, it.unit, t.masuk, t.keluar, t.masuk - t.keluar]);
   });
-  saldo.clearContents();
+  /* FIX BE-04 (2026-09-27): dulu clearContents() lalu tulis ulang — pembaca konkuren bisa melihat Stok_Saldo KOSONG/PARSIAL di tengah rebuild. Sekarang: tulis nilai baru di ATAS nilai lama (satu setValues), lalu potong baris sisa (truncate) — tidak ada jendela kosong, dan jauh lebih cepat di Sheet. */
   saldo.getRange(1,1,1,6).setValues([[
     'ID_Item','Nama Material','Unit','Total_Masuk','Total_Keluar','Saldo_Akhir'
   ]]).setBackground('#1a7a4a').setFontColor('#ffffff').setFontWeight('bold');
   saldo.setFrozenRows(1);
   if (out.length) saldo.getRange(2,1,out.length,6).setValues(out);
+  truncateSheetRows_(saldo, out.length + 1);
 
   // Rebuild Stok_Per_Rak (per lokasi)
   var rakOut = [];
@@ -3344,11 +3367,11 @@ function recalculateAllSaldoLocked_() {
     var t = rakTotals[key];
     rakOut.push([t.id, t.rak, t.masuk - t.keluar]);
   });
-  rakSld.clearContents();
   rakSld.getRange(1,1,1,3).setValues([['ID_Item','RAK','Qty']])
     .setBackground('#7a5a1a').setFontColor('#ffffff').setFontWeight('bold');
   rakSld.setFrozenRows(1);
   if (rakOut.length) rakSld.getRange(2,1,rakOut.length,3).setValues(rakOut);
+  truncateSheetRows_(rakSld, rakOut.length + 1);
 
   SpreadsheetApp.flush();
   return { ok:true, itemCount: out.length, rakCount: rakOut.length };
@@ -3814,7 +3837,7 @@ function addMasterValue(body) {
       : [];
     if (existing.indexOf(val.toUpperCase()) !== -1) return { status:'ok', message:'Sudah ada', value:val };
 
-    sh.appendRow([val]);
+    sh.appendRow([safeCell_(val)]); /* FIX BE-05 */
     CacheService.getScriptCache().remove('masterLists_v1'); // invalidate cache biar getMasterLists lihat nilai baru
     return { status:'ok', message:'Ditambahkan', value:val };
   } catch(err) {

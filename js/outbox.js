@@ -25,8 +25,49 @@ return'rid-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);}
 // ===== SECTION: OUTBOX QUEUE (FE-01 multi-slot + flush) =====
 /* FIX FE-01: outbox multi-slot + flush on online/boot — dulu ditulis tapi tidak pernah dikirim ulang. */
 function readOutbox(){try{var raw=localStorage.getItem('rdi_trx_outbox');if(!raw)return[];var v=JSON.parse(raw);if(!v)return[];if(Array.isArray(v))return v;if(v&&v.payload)return[v];return[];}catch(e){return[];}}
-function writeOutbox(list){try{if(!list||!list.length){localStorage.removeItem('rdi_trx_outbox');return;}localStorage.setItem('rdi_trx_outbox',JSON.stringify(list.slice(-20)));}catch(e){}}
-function pushOutbox(payload){if(!payload)return;var rid=payload.requestId;var list=readOutbox().filter(function(e){return !(e.payload&&rid&&e.payload.requestId===rid);});list.push({payload:payload,savedAt:Date.now()});writeOutbox(list);}
+// FIX OFF-01 (2026-09-27, audit): dulu writeOutbox memakai slice(-20) → ketika antrean
+// melewati 20, transaksi offline TERLAMA hilang tanpa jejak (terbukti runtime: cap-1..cap-5
+// hilang, user tidak diberi tahu apa pun). Tiga perubahan:
+//   1) OUTBOX_MAX dinaikkan 20 → 100 (masih jauh di bawah kuota localStorage)
+//   2) saat hampir penuh: coba flush dulu, lalu beri PERINGATAN eksplisit ke user lewat
+//      bridge onOutboxFull (index.html menampilkan status bar) — tidak diam-diam lagi
+//   3) writeOutbox tidak lagi membuang entri diam-diam; ia potong hanya sebagai jaring
+//      pengaman terakhir dan MEMBUKTIKAN lewat peringatan yang sama
+var OUTBOX_MAX = 100;
+var OUTBOX_WARN_AT = 80; // mulai ingatkan_user di 80% kapasitas
+function __outboxFull(note) {
+  try {
+    var c = window.__rdiConfig || {};
+    if (typeof c.onOutboxFull === 'function') c.onOutboxFull({ count: readOutbox().length, max: OUTBOX_MAX, note: note || 'full' });
+  } catch (e) {}
+}
+function writeOutbox(list) {
+  try {
+    if (!list || !list.length) { localStorage.removeItem('rdi_trx_outbox'); return; }
+    if (list.length > OUTBOX_MAX) {
+      // jaring pengaman terakhir — TETAP diberi tahu, tidak pernah diam
+      __outboxFull('trimmed');
+      list = list.slice(list.length - OUTBOX_MAX);
+    }
+    localStorage.setItem('rdi_trx_outbox', JSON.stringify(list));
+  } catch (e) {
+    // kuota penuh / storage diblokir: beri tahu, jangan diam
+    __outboxFull('storage-error');
+  }
+}
+function pushOutbox(payload) {
+  if (!payload) return;
+  var rid = payload.requestId;
+  var list = readOutbox().filter(function (e) { return !(e.payload && rid && e.payload.requestId === rid); });
+  if (list.length >= OUTBOX_WARN_AT) {
+    // coba kirim dulu yang lama; kalau masih penuh →unning ke user
+    try { flushOutbox(); } catch (e) {}
+    list = readOutbox().filter(function (e) { return !(e.payload && rid && e.payload.requestId === rid); });
+    if (list.length >= OUTBOX_WARN_AT) __outboxFull('near-full');
+  }
+  list.push({ payload: payload, savedAt: Date.now() });
+  writeOutbox(list);
+}
 function removeOutboxByRequestId(rid){if(!rid){writeOutbox([]);return;}writeOutbox(readOutbox().filter(function(e){return !(e.payload&&e.payload.requestId===rid);}));}
 var _outboxFlushing=false;var _outboxRetryTimer=null;
 function scheduleOutboxRetry(){if(_outboxRetryTimer)return;_outboxRetryTimer=setTimeout(function(){_outboxRetryTimer=null;flushOutbox();},30000);}

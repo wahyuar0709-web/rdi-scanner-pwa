@@ -101,28 +101,38 @@ t('SEC-E10: sessionStorage jadi penyimpanan utama token (bukan localStorage-only
   /function readSecureStorage[\s\S]{0,160}sessionStorage\.getItem/.test(html));
 
 /* ---------- F. TEMUAN TERDAFTAR (belum ditutup) ---------- */
+// Status tiap temuan di bawah diturunkan dari KODE (bukan daftar manual), sehingga hilang
+// otomatis begitu fix-nya masuk. Yang tersisa setelah hardening 2026-09-27: BE-03, CL-01, CL-03.
 const asetNoSafe = ['addAsetItem', 'addAsetUnit', 'recordAsetMovement', 'addMasterValue']
   .filter(fn => !/safeCell_\(/.test(bodyOf(gs, fn, 6000)));
 if (asetNoSafe.length) limit('BE-05', 'formula-injection guard tidak ada di jalur tulis modul Aset + addMasterValue',
-  'fungsi=' + asetNoSafe.join(',') + ' · CELL ENTERPRISE/Sheet bisa meng-eksekusi formula dari input user');
-if (/headers\['X-Editor-Key'\]/.test(gs)) limit('BE-07', 'jalur kredensial via header mati (GAS lowercase-kan nama header)',
-  'sementara query string ?editorKey= masih diterima di Code.gs:849-851');
+  'fungsi=' + asetNoSafe.join(',') + ' · nilai dari input user bisa jadi formula di Sheets');
+// BE-07: jalur header mati bila HANYA meng.lookup huruf besar
+if (/headers\['X-Editor-Key'\]\s*\)\s*params\.editorKey/.test(gs) || !/headers\['x-editor-key'\]/.test(gs)) {
+  limit('BE-07', 'jalur kredensial via header mati (GAS lowercase-kan nama header)', 'lihat gs_hardening_exec BE-07');
+}
 if (!/Audit_Log|AUDIT_LOG/.test(gs)) limit('BE-03', 'tidak ada audit log mutasi/auth',
   'jejak aktor hanya kolom Transaksi_Log.Admin (bisa kosong/kosong dari client)');
-if (/checkAnyAccess[\s\S]{0,200}checkEditorKey/.test(gs) && /verifyPasswordHash_/.test(gs)) {
-  const shortCircuit = /if\s*\(\s*!\s*editorKey\s*\)\s*return\s*\{?\s*(ok:\s*false|none)/.test(bodyOf(gs, 'checkEditorAccountKey_', 2500))
-    || /if\s*\(\s*!editorKey\s*\)/.test(bodyOf(gs, 'checkEditorAccountKey_', 2500));
-  if (!shortCircuit) limit('BE-01', 'KDF 100k iterasi dijalankan untuk setiap request baca/anonim',
-    'belum ada short-circuit saat editorKey kosong → amplifier rate-limit');
+// BE-01: KDF hanya boleh jalan bila kredensial memang diberikan
+if (!/if\s*\(\s*!String\(\s*editorKey\s*\|\|\s*''\s*\)\s*\.\s*trim\(\)\s*\)\s*\)?\s*return\s*\{\s*none\s*:\s*true\s*\}/.test(gs)) {
+  limit('BE-01', 'KDF 100k iterasi dijalankan untuk setiap request baca/anonim', 'belum ada short-circuit saat editorKey kosong');
 }
-if (!/ALLOW_EDITOR_KEY_FALLBACK/.test(gs)) limit('BE-02', 'perlu rate limit untuk editor key', '');
-else t('SEC-F1: ada penanda ALLOW_EDITOR_KEY_FALLBACK (hardening Editor_Accounts)', true);
+// BE-02: rate limit percobaan editor key (per-kunci + global)
+if (!/editorKeyRateBlocked_/.test(gs) || !/editor_fail_global/.test(gs)) {
+  limit('BE-02', 'perlu rate limit untuk editor key (per-kunci + global)', '');
+}
+t('SEC-F2: rate limit editor key ada (per-kunci + global)', /editorKeyRateBlocked_/.test(gs) && /editor_fail_global/.test(gs),
+  'editorKeyRateBlocked_ + editor_fail_global');
+t('SEC-F3: kalkulasi saldo tidak pernah mengosongkan sheet (BE-04)', !/saldo\.clearContents\(\)/.test(gs) && /truncateSheetRows_\(saldo/.test(gs),
+  'rebuild = setValues di atas nilai lama + truncate');
 if (/cdn\.jsdelivr/.test(html)) limit('CL-03', '2 CDN tanpa SRI (xlsx, html2pdf)',
   'integrity= count=' + (html.match(/integrity=/g) || []).length);
 if (/localStorage\.setItem\('rdi_viewer_token'/.test(html)) limit('CL-01', 'token viewer juga di localStorage (resume copy)',
   'dibatasi idle 2 jam + TTL server 6 jam + denylist logout (resmi diperbaiki 2026-09-26)');
-if (/\.slice\(-20\)/.test(outbox)) limit('OFF-01', 'outbox dipotong 20 entri (transaksi offline tertua hilang diam-diam)',
-  'js/outbox.js:28 —verified runtime: cap-1..cap-5 hilang');
+if (!/OUTBOX_MAX\s*=\s*100/.test(outbox)) limit('OFF-01', 'outbox masih dipotong diam-diam (kapasitas < 100 tanpa peringatan)',
+  'js/outbox.js — harus ada OUTBOX_MAX + onOutboxFull');
+t('SEC-F4: outbox punya kapasitas + peringatan (OFF-01 closed)', /OUTBOX_MAX\s*=\s*100/.test(outbox) && /onOutboxFull/.test(outbox),
+  'OUTBOX_MAX=100 + callback onOutboxFull');
 
 console.log('---- sec_classify: ' + pass + ' PASS / ' + fail + ' FAIL / ' + limits.length + ' ACCEPTED LIMITATION ----');
 process.exit(fail ? 1 : 0);
