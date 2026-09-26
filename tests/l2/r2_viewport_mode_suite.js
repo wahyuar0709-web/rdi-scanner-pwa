@@ -116,8 +116,8 @@ async function main() {
     const waitReady = async (expectViewer, rows) => {
       let last = null;
       for (let i = 0; i < 70; i++) {
-        const r = await ev("(function(){var b=document.getElementById('boot-splash');var h=b?b.classList.contains('hide'):false;return {h:h,v:document.body.classList.contains('viewer-mode'),n:(window.allRows||[]).length,fn:typeof window.switchTab==='function'};})()");
-        if (r && !r.error && r.h === true && r.fn === true && r.v === expectViewer && r.n === rows) return r;
+        const r = await ev("(function(){var b=document.getElementById('boot-splash');var h=!b||b.classList.contains('hide');return {h:h,rs:document.readyState,v:document.body.classList.contains('viewer-mode'),n:(window.allRows||[]).length,fn:typeof window.switchTab==='function'};})()");
+        if (r && !r.error && r.h === true && r.rs === 'complete' && r.fn === true && r.v === expectViewer && r.n === rows) return r;
         last = r;
         await sleep(300);
       }

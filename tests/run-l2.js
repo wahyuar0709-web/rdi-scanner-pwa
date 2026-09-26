@@ -11,7 +11,7 @@ const { spawnSync } = require('child_process');
 const L2_DIR = path.join(__dirname, 'l2');
 const RESULTS_DIR = path.join(__dirname, 'results');
 const ROOT = path.resolve(__dirname, '..');
-const SUITE_TIMEOUT_MS = 180000;
+const SUITE_TIMEOUT_MS = 300000; // browser suite butuh ~210-240s (SW/offline/camera waits); cap 180s membunuh suite sebelum selesai
 
 function ensureResults() {
   fs.mkdirSync(RESULTS_DIR, { recursive: true });
