@@ -157,5 +157,34 @@ function countKdfCalls(ctx) {
   }
 })();
 
+/* ================= healthCheck (L3 deploy verification) ================= */
+(function () {
+  const gsSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'Code.gs'), 'utf8');
+  t('HC-1: API_VERSION dinaikkan & ada di source', /var API_VERSION\s*=\s*'v5\.\d+'/.test(gsSrc),
+    (gsSrc.match(/var API_VERSION\s*=\s*'([^']+)'/) || [])[1] || '-');
+  const postIdx = gsSrc.indexOf('function doPost');
+  const hcPost = gsSrc.indexOf("action === 'healthCheck'", postIdx);
+  const gateIdx = gsSrc.indexOf('checkAnyAccess', postIdx);
+  t('HC-2: healthCheck di doPost SEBELUM gate auth (verifikasi versi tanpa login)', hcPost > 0 && hcPost < gateIdx,
+    'idx healthCheck=' + hcPost + ' < idx gate=' + gateIdx);
+  t('HC-3: healthCheck juga tersedia via doGet (GET tanpa POST)', gsSrc.indexOf('function doGet') < gsSrc.indexOf("action === 'healthCheck'", gsSrc.indexOf('function doGet')));
+
+  // eksekusi nyata: tanpa kredensial, tanpa akses sheet
+  const kit = kitchen([]);
+  const ctx = ctxFor(kit);
+  let out = null, threw = null;
+  try { out = ctx.doPost({ postData: { contents: JSON.stringify({ action: 'healthCheck' }) } }); } catch (e) { threw = e.message; }
+  let parsed = null, raw = null;
+  try { raw = (out && typeof out.getContent === 'function') ? out.getContent() : (out && out._t) || ''; } catch (e) { raw = ''; }
+  try { parsed = JSON.parse(raw || '{}'); } catch (e) { parsed = null; }
+  t('HC-4: doPost healthCheck tanpa kredensial → 200 + versi (tidak 401/needLogin)', parsed && parsed.status === 'ok' && !!parsed.version,
+    parsed ? JSON.stringify(parsed) : ('error=' + (threw || 'raw=' + String(raw).slice(0, 120))));
+  t('HC-5: healthCheck tidak membocorkan data (tidak ada rows/items/saldo)', parsed && parsed.rows === undefined && parsed.items === undefined && parsed.data === undefined,
+    Object.keys(parsed || {}).join(','));
+  const before = kit.getSheetByName('Stok_Saldo').getLastRow();
+  try { ctx.doGet({ parameter: { action: 'healthCheck' }, allHeaders: {} }); } catch (e) {}
+  t('HC-6: healthCheck tidak mengubah sheet apa pun', kit.getSheetByName('Stok_Saldo').getLastRow() === before, 'lastRow=' + before);
+})();
+
 console.log('---- gs_hardening_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

@@ -290,6 +290,10 @@
 //
 // ============================================================
 
+/* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
+   ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
+var API_VERSION = 'v5.23';
+var API_BUILD   = '2026-09-27';
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -870,6 +874,9 @@ function doGet(e) {
     var action = params.action || '';
     var id     = params.id || '';
 
+    // healthCheck (lihat doPost) — juga di GET supaya bisa diperiksa tanpa POST.
+    if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
+
     // FIX KRITIS: dukung kredensial via header (X-Editor-Key / X-Viewer-Token)
     // supaya secret TIDAK wajib lewat query string (bisa masuk access log/history).
     // Frontend baru mengirim via header/body; query string tetap didukung utk kompatibilitas.
@@ -914,7 +921,7 @@ function doGet(e) {
     if (action === 'getAsetPerformaVendor') return corsOutput(getAsetPerformaVendor());
     if (action === 'getAsetEligibleUnits') return corsOutput(getAsetEligibleUnits(params.kodeAlat, params.activity));
 
-    return corsOutput({ status:'ok', message:'RDI Kartu Stok API v5.22' });
+    return corsOutput({ status:'ok', message:'RDI Kartu Stok API ' + API_VERSION });
   } catch(err) {
     // FIX TINGGI: jangan bocorkan err.message ke client
     console.error('doGet error: ' + (err && err.stack ? err.stack : err));
@@ -929,6 +936,11 @@ function doPost(e) {
   try {
     var body   = JSON.parse(e.postData.contents);
     var action = body.action || '';
+
+    // healthCheck (2026-09-27): verifikasi versi deploy TANPA kredensial & tanpa akses data.
+    // Hanya mengembalikan nama + versi + tanggal build. Dipakai tests/tools/l3_baseline_probe.js
+    // untuk membuktikan perubahan benar-benar sudah LIVE (atau belum) — bukan guess.
+    if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
 
     // viewerLogin JUSTRU endpoint utk MENDAPATKAN akses -- tidak boleh digate editorKey.
     if (action === 'viewerLogin') return corsOutput(apiViewerLogin(body));
