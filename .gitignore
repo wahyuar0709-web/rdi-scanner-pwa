@@ -6,6 +6,8 @@
 editor_creds.json
 viewer_creds.json
 .clasprc.json
+# binding project clasp: lokal saja (berisi scriptId project produksi, tidak di-share)
+.clasp.json
 
 # node
 node_modules/

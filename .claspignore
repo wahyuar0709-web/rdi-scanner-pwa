@@ -1,0 +1,13 @@
+# .claspignore — hanya Code.gs yang boleh masuk ke Apps Script project.
+#
+# MASALAH: tanpa file ini, `clasp push` akan meng-upload seluruh isi repo
+# (index.html, js/, tests/ 40+ file, node_modules) sebagai file .html/.js terpisah.
+# Apps Script hanya menerima .gs/.html dan punya batas jumlah file per project,
+# sehingga repo bisa rusak / upload gagal.
+#
+# CATATAN pull: karena semua file diabaikan, `clasp pull` juga hanya mengambil Code.gs.
+# Kalau nanti butuh file lain (mis. manifest), tambahkan baris pengecualian (leading "!") untuk file itu.
+**
+
+# satu-satunya file backend yang memang milik Apps Script project
+!Code.gs
