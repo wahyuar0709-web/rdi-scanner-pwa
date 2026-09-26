@@ -15,6 +15,7 @@
 <script src="./jsQR.min.js" defer></script>
 <script src="./qrcode.min.js" defer></script>
 <script src="./js/util.js"></script>
+<script src="./js/jspdf.min.js"></script>
 <script src="./js/cetak.js"></script>
 <script src="./js/outbox.js"></script>
 <script src="./js/format.js"></script>
@@ -227,6 +228,12 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
 @media(max-width:640px){#section-cetak.active{height:calc(100vh - 122px);height:calc(100dvh - 122px)}}
 @media(min-width:641px) and (max-width:1023px){#section-cetak.active{height:calc(100vh - 104px);height:calc(100dvh - 104px)}}
 @media(min-width:1024px){body.viewer-mode #section-cetak.active{height:calc(100vh - 104px);height:calc(100dvh - 104px)}}
+/* BUG FIX 2026-09-26: #section-cetak.active overflow:hidden membuat section jadi
+   scrollport — sticky top:52px/104px dihitung dari section (bukan viewport), bar
+   didorong turun sejauh cssTop → menimpa .panel-head (judul "Pilih Item untuk
+   Dicetak" + tombol terpotong). Section ini tak pernah scroll sendiri (yang scroll
+   #cetak-item-list) → sticky tidak diperlukan di sini. */
+#section-cetak .subpage-bar{position:relative;top:auto}
 #section-cetak .container{display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:var(--sp-12)}
 #section-cetak .panel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin-bottom:0}
 #section-cetak .panel-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
@@ -3040,8 +3047,10 @@ function doDownload(){generateOutput('download');}
 var _cetakMode='kartu';function setCetakMode(mode){_cetakMode=mode;var nav=document.getElementById('cetak-mode-nav');if(nav)Array.prototype.forEach.call(nav.querySelectorAll('.dash-subtab-btn'),function(b){b.classList.toggle('active',b.getAttribute('data-mode')===mode);});var psWrap=document.getElementById('paper-size-wrap');if(psWrap)psWrap.style.display=(mode==='label')?'none':'';var ltWrap=document.getElementById('label-tpl-wrap');if(ltWrap)ltWrap.style.display=(mode==='label')?'':'none';var title=document.getElementById('cetak-subpage-title');if(title)title.textContent=(mode==='label')?'Cetak Label Barang':'Cetak Kartu Stok';updateCetakCount();}
 function generateOutput(mode){var pSize=document.getElementById('paper-size').value;var items=allRows.filter(function(r){return cetakSelectedIds.has(r._idx);});if(!items.length){alert('Pilih minimal 1 item yang ingin dicetak!');return;}
 var copies=parseInt((document.getElementById('cetak-copies')||{value:'1'}).value,10)||1;if(copies<1)copies=1;if(copies>100)copies=100;var expanded=items;var out=[];for(var ci=0;ci<copies;ci++)out=out.concat(items);expanded=out;
+var tplId=(document.getElementById('label-tpl')||{value:'4x6'}).value;
+if(mode==='download'&&_cetakMode==='label'){downloadLabelPDF(expanded,tplId);return;}
 var w=window.open('','_blank');if(!w){alert('Popup diblokir browser.\nIzinkan popup untuk domain ini lalu coba lagi.');return;}
-var tplId=(document.getElementById('label-tpl')||{value:'4x6'}).value;var html=(_cetakMode==='label')?buildLabelHTML(expanded,mode,tplId):buildPrintHTML(expanded,mode,pSize);
+var html=(_cetakMode==='label')?buildLabelHTML(expanded,mode,tplId):buildPrintHTML(expanded,mode,pSize);
 w.document.write(html);w.document.close();}
 // buildLabelHTML/buildPrintHTML moved → js/cetak.js (F4.3)
 

@@ -8,6 +8,7 @@ const ASSETS = [
   './icon-512.png',
   './jsQR.min.js',
   './qrcode.min.js',
+  './js/jspdf.min.js',
   './js/util.js',
   './js/cetak.js',
   './js/outbox.js',

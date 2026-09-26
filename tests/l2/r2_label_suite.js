@@ -139,7 +139,9 @@ function l1(src) {
   rec('L1: print mode auto window.print', printMode ? 'PASS' : 'FAIL', printMode);
 
   const pdfMode = /html2pdf\.js/.test(all) && /mode==='download'/.test(all);
-  rec('L1: download mode uses html2pdf', pdfMode ? 'PASS' : 'FAIL', pdfMode);
+  rec('L1: kartu download still uses html2pdf', pdfMode ? 'PASS' : 'FAIL', pdfMode);
+  const vecDl = /function\s+downloadLabelPDF\s*\(/.test(cetakSrc) && /downloadLabelPDF\(expanded/.test(src);
+  rec('L1: label download uses jsPDF vector (no popup)', vecDl ? 'PASS' : 'FAIL', vecDl);
 
   const fname = /label-barang\./.test(all);
   rec('L1: PDF filename label-barang.YYYY.MM.DD', fname ? 'PASS' : 'FAIL', fname);
@@ -182,7 +184,7 @@ function l1(src) {
       rec('L1: local QR data-qr payload uses id|nama|rak', qrOk ? 'PASS' : 'FAIL', { decoded: qrDecoded.slice(0, 80), hasImg: cleanHtml.includes('data:image/') });
 
       const dl = fn(evil, 'download');
-      rec('L1: download mode embeds html2pdf', dl.includes('html2pdf') ? 'PASS' : 'FAIL', dl.includes('html2pdf'));
+      rec('L1: label builder print-only (html2pdf removed; PDF via jsPDF vector)', (!dl.includes('html2pdf') && dl.includes('window.print()')) ? 'PASS' : 'FAIL', { hasHtml2pdf: dl.includes('html2pdf'), hasPrint: dl.includes('window.print()') });
       rec('L1: print mode embeds window.print', html.includes('window.print()') ? 'PASS' : 'FAIL', html.includes('window.print()'));
       const noId = fn([{ id: '', nama: 'X', spec: '', rak: '' }], 'print');
       rec('L1: empty id => MAT001 fallback', noId.includes('MAT001') ? 'PASS' : 'FAIL', noId.includes('MAT001'));
@@ -445,26 +447,18 @@ async function main() {
     const xssAfter = await evalIn(`window.__xss === 1`);
     rec('L2: no XSS after generate', xssAfter === false ? 'PASS' : 'FAIL', xssAfter);
 
-    // download mode via doDownload + popup capture
+    // download mode: label -> downloadLabelPDF (jsPDF vector, window utama, tanpa popup)
     const dlCapture = await evalIn(`(function(){
-      var realOpen = window.open;
-      var captured = { opened:false, closed:false, html:null, err:null };
-      window.open = function(){
-        captured.opened = true;
-        var doc = { _h:'', write:function(s){ this._h += s; }, close:function(){ captured.closed=true; captured.html=this._h; } };
-        return { document: doc, close: function(){ captured.closed=true; } };
-      };
-      try { doDownload(); } catch(e){ captured.err = String(e); }
-      window.open = realOpen;
-      var h = captured.html || '';
-      return {
-        opened: captured.opened, closed: captured.closed, err: captured.err,
-        hasPdf: h.indexOf('html2pdf')>=0,
-        fname: (h.match(/label-barang\\.\\d{4}\\.\\d{2}\\.\\d{2}\\.pdf/)||[])[0]||null,
-        labels: (h.match(/class="lbl2"/g)||[]).length
-      };
+      var realOpen = window.open, opened = false;
+      window.open = function(){ opened = true; return { document: { write: function(){}, close: function(){} }, close: function(){} }; };
+      var realDLP = window.downloadLabelPDF, got = null, err = null;
+      window.downloadLabelPDF = function(items, tpl){ got = { n: (items||[]).length, tpl: tpl }; };
+      try { doDownload(); } catch(e){ err = String(e); }
+      window.open = realOpen; window.downloadLabelPDF = realDLP;
+      return { opened: opened, got: got, err: err, jsPDF: (typeof jspdf !== 'undefined' || typeof jsPDF !== 'undefined') };
     })()`);
-    rec('L2: doDownload html2pdf + filename', (dlCapture && dlCapture.opened && dlCapture.hasPdf && dlCapture.fname && dlCapture.labels === 1) ? 'PASS' : 'FAIL', dlCapture);
+    rec('L2: doDownload label -> downloadLabelPDF, no popup', (dlCapture && dlCapture.opened === false && dlCapture.got && dlCapture.got.n === 1 && dlCapture.got.tpl === '4x6' && dlCapture.err === null) ? 'PASS' : 'FAIL', dlCapture);
+    rec('L2: jsPDF library loaded in page', (dlCapture && dlCapture.jsPDF) ? 'PASS' : 'FAIL', dlCapture);
 
     // back to kartu
     await evalIn(`setCetakMode('kartu')`);

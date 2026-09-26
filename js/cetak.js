@@ -28,11 +28,13 @@ var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div cla
 +ph
 +'</body></html>';}
 
-/* F-02 label templates — pure, no DOM. Default '4x6' = legacy 4×6=24. */
+/* F-02 label templates — pure, no DOM. Default '4x6' = legacy 4×6=24.
+   BUG FIX 2026-09-26: qrMm dimaksimalkan (15/13/20 → 27/17/22) — cell A4
+   masih lega (sisa ≥0.4mm utk konten lain pada worst-case nama 2 baris + spec). */
 var LABEL_TPL={
-  '4x6':{cols:4,rows:6,qrMm:15},
-  '3x8':{cols:3,rows:8,qrMm:13},
-  '2x7':{cols:2,rows:7,qrMm:20}
+  '4x6':{cols:4,rows:6,qrMm:27},
+  '3x8':{cols:3,rows:8,qrMm:17},
+  '2x7':{cols:2,rows:7,qrMm:22}
 };
 function getLabelTpl(id){return LABEL_TPL[id]||LABEL_TPL['4x6'];}
 function labelPerPage(id){var t=getLabelTpl(id);return t.cols*t.rows;}
@@ -43,14 +45,14 @@ var tpl=getLabelTpl(tplId);
 var cols=tpl.cols,rows=tpl.rows,perPage=cols*rows,qrMm=tpl.qrMm;
 var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
-+'<img class="lbl2-qr" data-qr="'+ex(qrPayload)+'" src="'+qrImgSrc(qrPayload,120)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'">'
++'<img class="lbl2-qr" data-qr="'+ex(qrPayload)+'" src="'+qrImgSrc(qrPayload,10)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'">'
 +'<div class="lbl2-kode">'+ex(qrID)+'</div>'
 +'<div class="lbl2-nama">'+ex(item.nama)+'</div>'
 +(item.spec?'<div class="lbl2-spec">'+ex(item.spec)+'</div>':'')
 +'</div>';});
 var pages=[];for(var p=0;p<cards.length;p+=perPage)pages.push(cards.slice(p,p+perPage));
 var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';}).join('');
-var scriptAction=mode==='download'?'<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=function(){var pgs=document.querySelectorAll(".page");var pdf=html2pdf();var seq=Promise.resolve();pdf.set({margin:0,filename:"'+pdfFilename+'",image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(document.getElementById("pw")).save().then(function(){setTimeout(function(){window.close();},1500);});}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
+var scriptAction='<script>window.onload=function(){window.print();}<\/script>';
 return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label Barang</title><style>'
 +'@page{size:A4 portrait;margin:0mm}'
 +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0;background:#fff}.page{box-shadow:none!important;margin:0!important;page-break-after:always;page-break-inside:avoid}.page.last-page{page-break-after:avoid!important}}'
@@ -58,11 +60,11 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'body{background:#dde3ef;display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px}'
 +'.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);grid-auto-rows:1fr;align-content:start;gap:0;padding:5mm;box-shadow:0 2px 16px rgba(0,0,0,.15)}'
 +'.lbl2{border:1px dashed #99a3b8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5mm 1mm;gap:.5mm;overflow:hidden;break-inside:avoid}'
-+'.lbl2-co{font-size:3pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
++'.lbl2-co{font-size:4pt;font-weight:800;color:#5c7099;letter-spacing:.2px;white-space:nowrap}'
 +'.lbl2-qr{width:'+qrMm+'mm;height:'+qrMm+'mm;flex-shrink:0}'
-+'.lbl2-kode{font-family:"Courier New",monospace;font-size:6pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
-+'.lbl2-nama{font-size:5.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
-+'.lbl2-spec{font-size:4.5pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-kode{font-family:"Courier New",monospace;font-size:8pt;font-weight:900;color:#1a3a7a;letter-spacing:.2px;word-break:break-all;line-height:1.15}'
++'.lbl2-nama{font-size:7.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
++'.lbl2-spec{font-size:6pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'@media print{.lbl2{border:1px dashed #99a3b8!important}}'
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
 
@@ -169,3 +171,57 @@ var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div cla
 +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
 +'}'
 +'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
+
+/* BUG FIX 2026-09-26 (3 bug menu cetak label):
+   Download label dulu = window.open popup → html2pdf dari CDN → html2canvas
+   raster A4 scale:2 → jsPDF repack → user menunggu beberapa detik.
+   Kini: jsPDF vector langsung di window utama — teks vektor, QR addImage PNG
+   240px, klik tombol → file terunduh tanpa popup & tanpa jaringan. */
+function labelPdfFilename(now){now=now||new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');return 'label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';}
+
+function buildLabelPDFDoc(items,tplId){
+  var J=(typeof jsPDF!=='undefined')?jsPDF:(typeof jspdf!=='undefined'&&jspdf&&jspdf.jsPDF)?jspdf.jsPDF:null;
+  if(!J)throw new Error('jsPDF belum dimuat');
+  var tpl=getLabelTpl(tplId),cols=tpl.cols,rows=tpl.rows,perPage=cols*rows,qrMm=tpl.qrMm;
+  var doc=new J({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+  var pad=5,PW=210,PH=297,cw=(PW-pad*2)/cols,ch=(PH-pad*2)/rows;
+  var GAP=0.6,PT=0.3528;
+  function clampLines(lines,max){lines=lines||[];if(lines.length>max){var last=lines[max-1]||'';lines=lines.slice(0,max);lines[max-1]=(last.length>1?last.slice(0,-1):last)+'…';}return lines;}
+  for(var i=0;i<items.length;i++){
+    var item=items[i]||{};
+    if(i>0&&i%perPage===0)doc.addPage();
+    var p=i%perPage,x=pad+(p%cols)*cw,y=pad+Math.floor(p/cols)*ch;
+    var qrID=item.id&&String(item.id).trim()!==''?String(item.id).trim():('MAT'+String(i+1).padStart(3,'0'));
+    var payload=qrID+'|'+(item.nama||'')+'|'+(item.rak||'');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);
+    var namaLines=clampLines(doc.splitTextToSize(String(item.nama||''),cw-2),2);
+    doc.setFont('courier','bold');doc.setFontSize(8);
+    var kodeLines=clampLines(doc.splitTextToSize(qrID,cw-2),2);
+    var specLines=[];
+    if(item.spec){doc.setFont('helvetica','normal');doc.setFontSize(6);specLines=clampLines(doc.splitTextToSize(String(item.spec),cw-2),1);}
+    var hKode=kodeLines.length*8*PT*1.15,hNama=namaLines.length*7.5*PT*1.15,hSpec=specLines.length*6*PT*1.15;
+    var hCo=4*PT*1.35,nElem=4+(specLines.length?1:0);
+    var total=hCo+qrMm+hKode+hNama+hSpec+(nElem-1)*GAP;
+    var cx=x+cw/2,cy=y+Math.max(1.5,(ch-total)/2);
+    doc.setDrawColor(153,163,184);doc.setLineWidth(0.2);doc.setLineDashPattern([0.7,0.7],0);
+    doc.rect(x+0.3,y+0.3,cw-0.6,ch-0.6);
+    doc.setLineDashPattern([0,0],0);
+    doc.setFont('helvetica','bold');doc.setFontSize(4);doc.setTextColor(92,112,153);
+    doc.text('PT RAYARD DELI INDONESIA',cx,cy+4*PT*0.85,{align:'center'});cy+=hCo+GAP;
+    try{doc.addImage(qrImgSrc(payload,10),'PNG',cx-qrMm/2,cy,qrMm,qrMm);}catch(e){}
+    cy+=qrMm+GAP;
+    doc.setFont('courier','bold');doc.setFontSize(8);doc.setTextColor(26,58,122);
+    doc.text(kodeLines,cx,cy+8*PT*0.85,{align:'center'});cy+=hKode+GAP;
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(26,29,39);
+    doc.text(namaLines,cx,cy+7.5*PT*0.85,{align:'center'});cy+=hNama+(specLines.length?GAP:0);
+    if(specLines.length){doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(92,112,153);
+      doc.text(specLines,cx,cy+6*PT*0.85,{align:'center'});}
+  }
+  return {doc:doc,fname:labelPdfFilename()};
+}
+
+function downloadLabelPDF(items,tplId){
+  var r=buildLabelPDFDoc(items,tplId);
+  r.doc.save(r.fname);
+  return r.fname;
+}
