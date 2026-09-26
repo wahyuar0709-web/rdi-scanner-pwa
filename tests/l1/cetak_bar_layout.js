@@ -27,7 +27,7 @@ t('CSS: .search-wrap dalam panel-body tak flex:0 0 100% (rebut ruang list)',
 t('CSS: tablet 641-1023 = - 104 (56 + 48 sticky tab)',
   /@media\(min-width:641px\) and \(max-width:1023px\)\{#section-cetak\.active\{[^}]*calc\(100dvh - 104px\)/.test(src));
 t('CSS: container flex col min-height:0 + padding-bottom kecil',
-  /#section-cetak \.container\{display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:var\(--sp-12\)\}/.test(src));
+  /#section-cetak \.container\{width:100%;display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:var\(--sp-12\)\}/.test(src));
 t('CSS: panel flex col overflow:hidden (clip konten, bar tak tergusur)',
   /#section-cetak \.panel\{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;margin-bottom:0\}/.test(src));
 t('CSS: panel-body flex col min-height:0 overflow:hidden',
