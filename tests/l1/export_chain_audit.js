@@ -64,5 +64,30 @@ t('EXPORT-3: identifier yang hilang tercatat di dokumen (tidak diam-diam)',
   missing.length === 0 || /logout(Editor|Viewer)/.test(missing.join(',')),
   'hilang=' + (missing.join(',') || '(tidak ada)'));
 
+/* --- BUG-09 (Bagian 2): SETIAP handler inline harus punya fungsi yang bisa dipanggil.
+ * Ini kontrak yang benar-benar dirasakan user (tombolnya bisa diklik atau tidak),
+ * lebih penting daripada rapi-ness rantai export. Nama diambil dari atribut on*=
+ * di index.html, lalu dicek deklarasinya di seluruh file yang dimuat halaman. */
+const inlineRe = /\son[a-z]+\s*=\s*"([^"]*)"/g;
+const handlerNames = new Set();
+let hm;
+while ((hm = inlineRe.exec(index)) !== null) {
+  const body = hm[1];
+  // ambil identifier yang dipanggil (nama fungsi), abaikan this.x / event / argumen
+  const idRe = /(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*\(/g;
+  let im;
+  while ((im = idRe.exec(body)) !== null) handlerNames.add(im[1]);
+}
+/* Buatan JS & kata kunci BUKAN handler aplikasi — tidak boleh dihitung "tak terdefinisi". */
+const BUILTIN = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'function',
+  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'parseFloat', 'parseInt', 'alert',
+  'confirm', 'prompt', 'fetch', 'Number', 'String', 'Boolean', 'Array', 'Object', 'JSON',
+  'Math', 'Date', 'isNaN', 'encodeURIComponent', 'decodeURIComponent', 'requestAnimationFrame']);
+const appNames = [...handlerNames].filter(n => !BUILTIN.has(n));
+const undeclared = appNames.filter(n => !isDeclared(n));
+t('EXPORT-4: semua handler inline punya fungsi yang terdefinisi (tombol bisa diklik)',
+  undeclared.length === 0,
+  undeclared.length ? undeclared.length + ' handler tak terdefinisi: ' + undeclared.join(', ')
+    : appNames.length + ' handler aplikasi diperiksa (dari ' + handlerNames.size + ' nama), semua ada');
 console.log('---- export_chain_audit: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

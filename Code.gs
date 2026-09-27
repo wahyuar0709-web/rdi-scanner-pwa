@@ -817,6 +817,84 @@ function parseAktif_(v) {
   var s = String(v === null || v === undefined ? '' : v).trim().toUpperCase();
   return s === 'TRUE' || s === 'YA' || s === '1' || s === 'AKTIF';
 }
+/* ============================================================
+ *  BE-03 — AUDIT LOG
+ * ============================================================ */
+var SHEET_AUDIT_LOG = 'Audit_Log';
+var AUDIT_MAX_ROWS = 5000;   // batas baris; yang paling lama dipotong
+/* Kunci yang TIDAK BOLEH masuk audit log, apa pun nilainya. */
+var AUDIT_FORBIDDEN_KEYS = ['password','newpassword','pass','pin','editorkey','token','viewertoken','authtoken','secret','hash','passwordhash','x-editor-key','x-viewer-token'];
+function auditValue_(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'object') return null;   // jangan stringify objek (bisa besar/berbahaya)
+  var out = safeCell_(v);
+  var str = String(out === null || out === undefined ? '' : out).replace(/[\r\n\t]+/g, ' ').trim();
+  if (str.length > 120) str = str.slice(0, 120) + String.fromCharCode(8230);
+  return str;
+}
+/* Ringkasan per aksi: hanya field yang relevan, SELALU dipotong & di-escape. */
+function auditSummary_(action, body) {
+  body = body || {};
+  var parts = [];
+  function add(k, v) {
+    if (AUDIT_FORBIDDEN_KEYS.indexOf(String(k).toLowerCase()) >= 0) return;   // jangan pernah log rahasia
+    var val = auditValue_(v);
+    if (val === null || val === '') return;
+    parts.push(k + '=' + val);
+  }
+  if (action === 'postTransaksi') { add('itemId', body.itemId || body.id); add('jenis', body.jenis); add('qty', body.qty); add('rak', body.rak); add('vendor', body.vendor); add('requestId', body.requestId); }
+  else if (action === 'addItem' || action === 'updateItem' || action === 'archiveItem') { add('id', body.id); add('nama', body.nama); }
+  else if (action === 'addMasterValue') { add('field', body.field); add('value', body.value); }
+  else if (String(action).indexOf('addAset') === 0) { add('kode', body.kodeAlat || body.kode); add('nama', body.namaAlat || body.nama); }
+  else { add('id', body.id); }
+  return parts.length ? parts.join(' ') : '-';
+}
+function ensureAuditSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_AUDIT_LOG);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_AUDIT_LOG);
+    sh.getRange(1,1,1,7).setValues([['Timestamp','Username','Nama','Role','Aksi','Ringkasan','Hasil']])
+      .setBackground('#1a3a7a').setFontColor('#ffffff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.setColumnWidths(1,7,170);
+  }
+  return sh;
+}
+/* Potong baris paling lama supaya sheet tidak tumbuh tanpa batas. */
+function trimAuditSheet_(sh) {
+  try {
+    var last = sh.getLastRow();
+    var excess = last - AUDIT_MAX_ROWS;
+    if (excess > 0) {
+      if (typeof sh.deleteRows === 'function') sh.deleteRows(1, excess + 1);
+      else sh.getRange(1, 1, excess + 1, 7).clearContents();
+    }
+  } catch (e) {}
+}
+/* API audit. SELALU mengembalikan true/false, TIDAK PERNAH melempar exception:
+ * kegagalan menulis log tidak boleh jeopardize data bisnis. */
+function logAudit_(actor, action, body, hasil) {
+  try {
+    actor = actor || {};
+    var sh = ensureAuditSheet_();
+    var row = [
+      new Date(),
+      auditValue_(actor.username || actor.user || '-'),
+      auditValue_(actor.nama || '-'),
+      auditValue_(actor.role || '-'),
+      auditValue_(action || '-'),
+      auditSummary_(action, body),
+      auditValue_(hasil || 'ok')
+    ];
+    sh.getRange(sh.getLastRow() + 1, 1, 1, 7).setValues([row]);
+    trimAuditSheet_(sh);
+    return true;
+  } catch (e) {
+    try { console.error('logAudit_ gagal (diabaikan): ' + (e && e.message ? e.message : e)); } catch (e2) {}
+    return false;
+  }
+}
 function ensureAccountsSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_ACCOUNTS);
@@ -962,7 +1040,7 @@ function checkLegacySingleKey_(raw) {
     return { ok:false, message:'Akses ditolak.' };
   }
   editorKeyRateReset_(key);
-  return { ok:true, nama:'' };
+  return { ok:true, role:'editor', nama:'', username:'' };  // break-glass: identitas tidak diketahui
 }
 /* Satu-satunya gate untuk SEMUA action tulis. */
 function checkEditorSession_(params) {
@@ -970,7 +1048,7 @@ function checkEditorSession_(params) {
   var raw = String(params.editorKey || params.authToken || params.viewerToken || '');
   if (raw.indexOf('.') > 0) {   // bentuk token (bukan kunci mentah)
     var v = verifyAuthToken_(raw);
-    if (v.ok && v.role === 'editor') return { ok:true, nama: v.nama || '', username: v.username || '' };
+    if (v.ok && v.role === 'editor') return { ok:true, role:'editor', nama: v.nama || '', username: v.username || '' };
     if (v.ok) return { ok:false, message:'Akun ini tidak punya hak edit. Hubungi admin.' };
     return { ok:false, message:'Sesi edit tidak valid atau sudah habis. Silakan login ulang.' };
   }
@@ -1003,11 +1081,13 @@ function apiLogin(body) {
     }
     if (!ok || !acc || !acc.aktif) {
       recordViewerLoginFail_(uname);
+      logAudit_({ username: uname, nama: '-', role: '-' }, 'login', {}, 'gagal');
       return { status:'error', message: MSG_BAD_CREDENTIALS };
     }
     clearViewerLoginFail_(uname);
     var pv = (acc.pv != null && acc.pv !== '') ? acc.pv : passwordPv_(acc.hash);
     var t = makeAuthToken_(acc.username, acc.nama, pv, acc.role);
+    logAudit_(acc, 'login', {}, 'ok');
     return { status:'ok', token: t.token, role: acc.role, nama: acc.nama, username: acc.username, expiresAt: t.expiry };
   } catch(e) {
     return { status:'error', message:'Gagal memproses login (server sibuk). Coba lagi sebentar.' };
@@ -1015,6 +1095,7 @@ function apiLogin(body) {
 }
 function apiLogout(body) {
   try {
+    try { var _t0 = body && (body.token || body.viewerToken); if (_t0) logAudit_({ username: '-', nama: '-', role: '-' }, 'logout', {}, 'ok'); } catch (e) {}
     var token = String(body && (body.token || body.viewerToken) || '');
     if (!token) return { status:'ok' };
     var parts = token.split('.');
@@ -1298,6 +1379,10 @@ function doPost(e) {
     // break-glass bila ALLOW_LEGACY_SINGLE_KEY=TRUE. Default: kunci tunggal MATI.
     var auth = checkEditorSession_(body);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
+    // BE-03: catat SETIAP write yang lolos gate, terikat ke identitas orang (bukan "Admin").
+    // Dicatat di sini — satu titik, otomatis berlaku untuk semua action tulis. Penolakan tidak
+    // dicatat di sini agar tidak bisa dipakai membanjiri sheet oleh penyerang.
+    logAudit_(auth, action, body, 'ok');
     // FIX v5.13 (F-03): kalau editorKey ini cocok akun per-orang di Editor_Accounts, `auth.nama`
     // adalah identitas yang SUDAH diverifikasi server (bukan string bebas dari client) --
     // teruskan sbg verifiedAdmin, dipakai postTransaksi/addItem menggantikan body.admin biasa.

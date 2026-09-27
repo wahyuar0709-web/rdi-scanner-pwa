@@ -206,6 +206,14 @@ function makeSheet(name, initial) {
     },
     appendRow(row) { data.push((Array.isArray(row) ? row : [row]).slice()); return self; },
     setFrozenRows() { return self; },
+    /* deleteRows: dipakai pemotongan baris (mis. trim sheet audit). GAS menghapus baris
+     * dan menggeser sisanya ke atas; implementasi ini stratified sama. */
+    deleteRows(start, count) {
+      if (start < 1 || count < 1) return self;
+      data.splice(start - 1, count);
+      return self;
+    },
+    getFrozenRows() { return 0; },
     clearContents() { data.length = 0; return self; },
     autoResizeColumns() { return self; },
     setColumnWidth() { return self; }, setColumnWidths() { return self; },
@@ -222,6 +230,13 @@ function makeSpreadsheet(sheets) {
     getActiveSpreadsheet: () => ss,
     getSheets: () => sheets,
     getSheetByName: (n) => byName[n] || null,
+    /* insertSheet: dipanggil kode produksi saat sheet audit/akun dibuat otomatis. */
+    insertSheet(n) {
+      if (byName[n]) return byName[n];   // GAS: insertSheet dengan nama yang sudah dipakai ikut gagal; di sini diamkan
+      const sh = makeSheet(n, []);
+      sheets.push(sh); byName[n] = sh;
+      return sh;
+    },
     _addSheet(n, initial) { const s = makeSheet(n, initial); sheets.push(s); byName[n] = s; return s; },
     _byName: byName,
     flush: () => {},
