@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.34 |
+| Version | 1.35 |
 | Date | 2026-09-27 |
 | Repo HEAD | lihat §13 (Tahap 3 — 5 gap ditutup + BE-07 ter_koreksi no-op; backend **v5.23 LIVE** di `@42`) |
 | App version | `v15.29` / SW `rdi-stok-v37` / GAS deployment **`@42`** (exec URL tetap; backend v5.23 **LIVE**, L3 terbukti 2026-09-27) |
@@ -124,6 +124,8 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | BE-05 | MED | Formula-injection guard `safeCell_` tidak dipakai di jalur tulis modul Aset (`addAsetItem`/`addAsetUnit`/`recordAsetMovement`) dan `addMasterValue` | **DONE v15.29** — semua kolom teks input-user di `Aset_Item`/`Aset_Unit`/`Aset_Movement_Log`/`Master_*` dibungkus `safeCell_`; `gs_hardening_exec` BE-05/05b/05c |
 | BE-07 (**DIKOREKSI 2026-09-27 → NO-OP**) | MED | Jalur kredensial via header mati: `headers['X-Editor-Key']` sedangkan GAS `e.allHeaders` selalu lowercase → selalu `undefined` (query string tetap jadi satu-satunya jalur, dan itu bocor ke access log) | **DONE v15.29 (sebagian)** — lookup ganda `headers['x-editor-key'] || headers['X-Editor-Key']`; jalur query string tetap dipertahankan (backward compat) → lihat CL-04 untuk sisa risikonya |
 | SEC-05 | **HIGH** | `Code.gs` `checkEditorKey` (L538-565) + Script Properties | **Bukti L3 2026-09-27** (`tests/tools/l3_cred_probe.js`): `ALLOW_EDITOR_KEY_FALLBACK=TRUE` + `EDITOR_KEY` tunggal, dan respons `getData` **tidak memuat `nama`** → yang aktif adalah jalur *fallback*, bukan akun editor per-orang. `checkEditorKey` juga **tidak punya cek kekuatan kunci**. | Dampak: (1) field `admin` di setiap transaksi tidak terikat ke orang — tidak ada akuntabilitas siapa yang menulis; (2) akun editor yang di-`Aktif=FALSE` **tetap bisa masuk** dengan kunci tunggal, karena `fallback=TRUE` melewati pemblokiran; (3) kunci ber panjang pendek/entropy rendah mudah ditebak. | Rekomendasi (keputusan produk, tidak diubah sepihak): jalankan `setupEditorAccountsSheet()`, isi akun per orang, set `ALLOW_EDITOR_KEY_FALLBACK=FALSE`, ganti `EDITOR_KEY` dengan string acak ≥32 karakter, lalu **rotasi `VIEWER_TOKEN_SECRET`** (rotasi ini memaksa semua viewer login ulang). Logikanya sudah tercakup L1 `gs_auth_exec`. | **L1 PASS + L3 read-only PASS** |
+| BUG-09 | **HIGH (lokal, belum deploy)** | `index.html` — rantai `window.f=f;` di blok export global | **Bukti**: suite baru `export_chain_audit.js` + probe Chrome (`typeof window.loadData === "undefined"`, `ReferenceError: showConfig is not defined`, tombol Pengaturan tidak terbuka). Rantai export **tidak dibungkus try/catch** → satu identifier hilang mematikan seluruh export setelahnya. | Dampak: handler inline yang bergantung pada `window.*` bisa mati diam-diam. Di repo ini sendiri terpicu oleh **edit saya sendiri** (lihat §11 1.35) — artinya kelas bug ini nyata dan harus dijaga tesnya. | Rekomendasi: (1) suite `export_chain_audit`_gate (sudah), (2)bungkus rantai export dalam `try{}catch{}` + log agar satu nama tidak mematikan semua, (3) someday chrome probe "0 uncaught error" jadi gate L2. | **L1 PASS** (audit) + **L2/browser terverifikasi** |
+| F5-01 | INFO | `index.html` — modal Pengaturan | Field "Editor Key" **dihapus** (F5-AUTH): tidak ada lagi kunci yang ditempel per perangkat. | Dampak: satu langkah pengetikan berkurang; hak edit kini dari login. | — | **L1 + L2 PASS** |
 | SEC-06 | **MEDIUM** | `Code.gs` jalur kredensial vs realitas runtime | **Bukti L3 2026-09-27**: `X-Editor-Key` (huruf besar) **dan** `x-editor-key` (huruf kecil) **keduanya GAGAL**, sedangkan `editorKey` di body **PASS** (data terbaca). Apps Script web app tidak mengekspos custom request header ke `e.postData.headers`. | Dampak: jalur header = **dead code**; rekomendasi lama "pakai header supaya rahasia tidak lewat query string" tidak berlaku di runtime ini. Kabar baik: client (`js/outbox.js`) sudah body-only → rahasia tidak pernah berada di URL (aman dari history/referrer). | Rekomendasi: hapus pembaca header atau tandai eksplisit "tidak didukung Apps Script" supaya tidak ada rasa aman semu; jalur tunggal = body. | **L1 PASS + L3 read-only PASS (header GAGAL = bug terkonfirmasi)** |
 | OFF-01 | MED | Outbox dipotong `slice(-20)` → 5 transaksi offline terlama hilang **tanpa jejak** (terbukti runtime `cap-1..cap-5`) | **DONE v15.29** — `OUTBOX_MAX=100` + flush percobaan + **peringatan eksplisit** ke user (`onOutboxFull` → status bar) saat ≥80% & saat pemotongan; `r2_outbox_app` 7→10/0 |
 | ESC-01 | MED | `xe()`/`ex()`/`xeJs()` memakai `String(s||'')` → nilai numerik **0** (dan `false`) jadi string KOSONG; kalau suatu endpoint mengirim `qty` sebagai number, sel Stok di tabel master & kartu mobile tampil kosong untuk item berstok 0 (terbukti probe mock `qty:0` → sel stok = `" "`). Tidak ada bug produksi saat ini karena `getData`/`getHistory` mengirim String(), tapi `getLedger`/Aset mengirim number | **DONE v15.28** — `String(s==null?'':s)` di `js/util.js` (hanya null/undefined → kosong) + dikunci suite `check_xe_ex.js` (xe(0)="0", ex(0)="0", xeJs(0)="0") & `xss_audit` XSS-11 |
@@ -523,6 +525,9 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
     - Urutan yang terbukti berhasil: (1) `clasp clone <scriptId> --rootDir <temp>` → snapshot isi produksi, (2) staging = `appsscript.json` (dari clone, **dipertahankan utuh**) + `Code.js` = salinan `Code.gs` repo (nama `Code.js` = konvensi clasp; di server tetap `Code.gs`), (3) `clasp status` → hanya 2 file, (4) `clasp push` → `Pushed 2 files`, (5) `clasp update-deployment <id @41> -d "<deskripsi>"` → **`Redeployed … @42`**.
     - **URL tidak berubah**: id deployment `@41` identik dengan id di `DEFAULT_GAS_URL` (`index.html`), jadi `update-deployment` (bukan `create-deployment`) → PWA di HP user tidak perlu reinstall. `appsscript.json` produksi (`V8`, `Asia/Jakarta`, `webapp.access ANYONE_ANONYMOUS`, `executeAs USER_DEPLOYING`) **tidak diubah**.
     - [x] **Bukti L3 pasca-deploy**: `node tests/tools/l3_baseline_probe.js` → **PASS 3/0** — `L3-1` `{"status":"ok","api":"RDI Kartu Stok","version":"v5.23","builtAt":"2026-09-27"}` (versi live **terbukti**, bukan diasumsikan), `L3-2` `getData` tanpa kredensial → `needLogin` (gate auth tetap aktif, tidak ada data bocor), `L3-3` action tak dikenal ditolak.
+    - [x] **F5-AUTH §14 selesai di lokal (L1 940/0 37 suite, L2 333/0 9 suite)**: `RDI_Accounts` unified, `login`/`logout` tunggal, `role` di dalam token, `checkEditorSession_` sebagai satu-satunya gate tulis, `ALLOW_LEGACY_SINGLE_KEY` + aturan transisi self-arming, jalur header dihapus, field Editor Key di UI dihapus. Test baru: `gs_unified_auth_exec` (64/0), `r2_login_unified` (17/0), `export_chain_audit` (3/0). Suite lama diselaraskan tanpa melemahkan intent (`gs_auth_exec` 36/0, `sec_classify` 45/0 + 3 ACCEPTED LIMITATION).
+    - [ ] **F5-AUTH: deploy + L3** — setelah deploy, `apiLogin` otomatis memigrasi viewer lama, dan kunci tunggal **tidak** langsung mati (transisi: hidup selama belum ada akun editor). Langkah manual oleh user (sekali): jalankan `createAccount_("wahyu","Wahyu Susanto","<password kuat>","editor","operator warehouse")` dari Apps Script editor → **saat itu juga** kunci tunggal mati otomatis.
+    - [ ] **Rotasi `VIEWER_TOKEN_SECRET`** (memaksa semua viewer login ulang sekali) + ganti `EDITOR_KEY` lama dengan string acak ≥32 char atau hapus.
     - [ ] **L3 dengan kredensial — `NOT TESTED` (butuh password editor/viewer)**: rate-limit per-key & global pada request **tulis**, `X-Editor-Key` lowercase, denylist/nonaktifkan akun, idempotensi `saveTransaction`, `recalculateAllSaldo`, header CSV anti-formula. Sengaja tidak diuji live: memancing 30 kegagalan memang akan **mengunci editor sungguhan selama 10 menit** — persis perilaku yang diperbaiki BE-02b.
     - [x] **L3 baseline read-only sudah dijalankan sebelum deploy (2026-09-27)** → `PASS=2 FAIL=1`: `L3-2` gate auth aktif (`getData` tanpa kredensial → `needLogin`, tidak ada data bocor) & `L3-3` action tak dikenal ditolak; `L3-1` FAIL **sesuai harapan** karena `healthCheck` belum ada di produksi → bukti bahwa perubahan memang belum live.
     - Temuan teknis yang HARUS diketahui saat debug integrasi: flow Apps Script `/exec` = `POST /exec` → **HTTP 302** → `script.googleusercontent.com/macros/echo?user_content_key=…` → di sana **GET** (bukan POST; spec fetch mengubah POST→GET pada 302/303, endpoint echo menolak POST → **405**). Probe Node harus meniru aturan ini, kalau tidak respons kosong/`405` dan disalahartikan sebagai bug aplikasi. di produksi
@@ -589,6 +594,9 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-26 | Fix 2 bug user (approval eksplisit "perbaiki bug ini"): (1) HP-CETAK-01 `#section-cetak .container{width:100%}` (akar: auto cross-margin `margin:0 auto` mematikan stretch → max-content ~505px terpotong section overflow:hidden; probe3–7; desktop 1440 cont 655→1440 ikut teratasi); (2) SESI-01 sesi resume dual-write + auto-logout idle 2 jam `enforceSessionIdle()` sebelum migrasi (kritis: urutan sesudah migrasi = touch men-reset la → idle tak pernah terpicu) + visibilitychange + heartbeat 60s; tradeoff token di localStorage ≤2 jam dibatasi TTL server 6h + denylist | bukti: RED→GREEN `bug_hp_cetak_session` 19F→20/0, `r2_hp_cetak_fit` 64/0 (4 HP + desktop), `r2_session_idle` 14/0 (resume/30m/3h purge), `cetak_bar_layout` 22/0 (regex adaptasi), L1 560/0 + L2 308/0 (2x pre/post-bump); bump v15.27 / sw `rdi-stok-v35` | PLAN.md v1.27 |
 | 2026-09-27 | Tahap 1 integritas test (permintaan user: "pahami app secara detail dulu, baru ambil langkah sendiri"): assertion floor kedua runner + 4 suite 0-assert → suite nyata (check_xe_ex 36, dup_check 72, sec_classify 39+6 AL, xss_audit 16) + false-green L2 ditutup (exit code) + outbox L2 via API app + suite baru `r2_outbox_app.js` 7/0 + ESC-01 `xe(0)` fix; bump v15.28 / sw `rdi-stok-v36` | bukti: L1 560→**722/0** (30 suite), L2 308→**313/0** (8 suite), pre & post-bump; 6 ACCEPTED LIMITATION tercatat sebagai target Tahap 3 | PLAN.md v1.28 |
 | 2026-09-27 | Tahap 2 harness `Code.gs` eksekutabel: `tests/tools/gs_harness.js` (vm + fake GAS runtime; range live-view; `computeDigest` array-of-byte; alias `base64EncodeWebSafe`/`computeHmacSha256Signature`; blob dua arah; override KDF untuk kecepatan) + 4 suite `gs_*` (trx 30, auth 36, stok 21, aset 35) — **backend 0 → 122 assert eksekutabel**, L1 722→**844/0** (34 suite). Temuan harness (bukan bug app): `getAsetEligibleUnits(kodeAlat, activity)` POSITIONAL; `getAsetItemList`→`data[]`; `getSheetData` kirim `qty` String (kontrak ESC-01) | PLAN.md v1.29 |
+| 2026-09-27 | **Keputusan yang mengｈemat banyak sekali**: identitas per orang harus mendahului audit log. Dengan satu akun per manusia, kolom `admin` di transaksi dan audit log akhirnya berarti — kalau tidak, lognya hanya berisi "Admin" dan tidak berguna. Urutan: identitas → nonaktifkan akun benar-benar berlaku → baru audit log. |
+| 2026-09-27 | **Kesalahan proses saya sendiri (dicatat agar tidak diulang)**: saat mengganti `submitViewerLogin()` di `index.html`, saya pakai regex `/function X\(\)(\{[\s\S]*?\}\n/` pada file yang **minified** (banyak fungsi dalam satu baris) → **menelan ~33 fungsi lain** (`loadData`, `showConfig`, `logoutEditor`, ...). Tidak ketahuan dari jumlah karakter di diff saja; baru ketahuan karena (a) `function ` count assertion yang saya tambahkan, dan (b) probe browser. **Pelajaran**: untuk file minified, ganti fungsi dengan **brace-counting**, bukan regex; dan **lalu jalankan gate penuh + cek `function ` count sebelum commit**. Suite `export_chain_audit` dibuat justru agar kelas kerusakan ini tertangkap otomatis di masa depan. |
+  Dampak: tidak ada yang reaches produksi —WORK ter-push dan working tree dipulihkan ke HEAD sebelum lanjut. |
 | 2026-09-27 | **Deploy disetujui & dieksekusi** setelah user memberi `scriptId`. Yang membuatnya aman: (1) snapshot produksi via `clasp clone` sebelum disentuh, (2) `clasp status` membuktikan hanya `appsscript.json` + `Code.js` yang naik, (3) `appsscript.json` produksi dipertahankan utuh, (4) `update-deployment` bukan `create-deployment` → URL & akses tidak berubah, (5) verifikasi L3 otomatis lewat `healthCheck`, bukan klaim "sudah deploy". Pelajaran: **temuan paling berharga muncul di langkah verifikasi, bukan di langkah implementasi** — BE-02b hanya ketahuan karena call-site auth diperiksa sebelum push. |
 | 2026-09-27 | **Koreksi atas klaim sebelumnya**: saya sempat menyatakan "deploy tidak bisa dilakukan karena belum setup". Setelah dicek, auth clasp **sudah** ada sejak 2026-09-24; yang hilang hanya `.clasp.json` + scriptId, dan `clasp` bukan rusak melainkan `update-notifier` yang menunggu npm registry. Cara kerja yang benar di sesi berikutnya: set `NO_UPDATE_NOTIFIER=1` dulu. Pelajaran: klaim "tidak bisa" harus dibuktikan dengan percobaan, bukan READING absence satu file. |
 | 2026-09-27 | **Endpoint `healthCheck` disetujui** atas nama "semua tindakan asal berbasis bukti": tanpa endpoint ini, status deploy hanya bisa diasumsikan. Syarat yang dipenuhi: tidak menyentuh sheet (HC-6), tidak mengembalikan data (HC-5), tidak melewati gate/rate limit (HC-2: posisinya sebelum gate), method default 200 tanpa login. Risiko residual: string versi terekspos publik — dinilai immaterial (tidak berisi secret, tidak membuka jalur data). |
@@ -675,6 +683,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 
 | 1.29 | 2026-09-27 | Tahap 2 backend bisa diuji: harness `tests/tools/gs_harness.js` (Code.gs di `vm` + fake Spreadsheet/Cache/Lock/Utilities) + 4 suite `gs_trx_exec` 30 / `gs_auth_exec` 36 / `gs_stok_exec` 21 / `gs_aset_exec` 35 — **backend 0 → 122 assert eksekutabel** (sebelumnya hanya regex + simulasi model sendiri); L1 **844/0** (34 suite); §1.2, §10, §11, §13 |
 
+| 1.35 | 2026-09-27 | **F5-AUTH (§14) selesai di lokal** — satu identitas per orang. Sheet `RDI_Accounts` (Username/Nama/PasswordHash/Role/Aktif/PasswordVersion/Catatan) menggantikan Viewer_Accounts + kunci shared; `login` mengembalikan `role` yang dibawa di dalam token HMAC (5 field lama dipertahankan → token viewer yang sudah terbit tetap valid); `checkEditorSession_` jadi satu-satunya gate tulis; `ALLOW_LEGACY_SINGLE_KEY` (FALSE eksplisit) + **aturan transisi self-arming** (legacy hidup hanya selama belum ada akun editor → tidak ada lockout, lalu mati otomatis); `apiLogin` auto-migrasi viewer lama; jalur header **dihapus** (dead code terbukti L3); validasi kekuatan password (min 10 + 3 kelas karakter) agar kunci lemah tidak terulang. Test: `gs_unified_auth_exec` **64/0** (baru), `r2_login_unified` **17/0** (baru, browser), `export_chain_audit` **3/0** (baru). Suite lama diselaraskan: `gs_auth_exec` 36/0, `gs_hardening_exec` 23/0, `sec_classify` 45/0 + 3 ACCEPTED LIMITATION. Gate: **L1 940/0 (37 suite)**, **L2 333/0 (9 suite)**. **BUG-09** tercatat. |
 | 1.34 | 2026-09-27 | **L3 read-only berkredensial** (tool baru `tests/tools/l3_cred_probe.js`; rahasia dari env var `RDI_EDITOR_KEY`, tidak disimpan di repo) → jalur **body PASS**, **header GAGAL** (besar & kecil) → **BE-07 dikoreksi jadi NO-OP/dead code** (§1.4 SEC-06; client sudah body-only, jadi tidak ada kebocoran ke URL). **SEC-05 (HIGH)**: `ALLOW_EDITOR_KEY_FALLBACK=TRUE` + kunci tunggal + respons tanpa `nama` → fallback aktif → akuntabilitas per-orang & penonaktifan akun tidak berfungsi. **SEC-06 (MEDIUM)**. Mutasi tetap **NOT TESTED** (butuh item uji + jendela uji, atau spreadsheet uji + deployment uji). Rahasia produksi tidak disimpan di repo/dokumen. |
 | 1.33 | 2026-09-27 | **DEPLOY @42 DONE + L3 PASS 3/0** (`healthCheck` balas `v5.23` → versi live terbukti). **Bug BE-02b ketahuan saat pre-deploy check, lalu diperbaiki sebelum push**: `editorKeyRateFail_` menaikkan penghitung GLOBAL untuk semua kegagalan termasuk `editorKey` kosong, sementara `editorKeyRateBlocked_` hanya dicek saat key tidak kosong → **30 request viewer biasa (10 mnt) mengunci semua editor** = self-DoS. RED 18P/1F dengan pesan nyata "Terlalu banyak percobaan akses editor"; GREEN **21/0** (BE-02b-1…4: 40 request anonim tetap ditolak, `editor_fail_global` = **0**, editor sah tidak terkunci, tebakan acak tetap diblokir pada tebakan ke-30). Gate: **L1 867/0 (35 suite)**, **L2 316/0 (8 suite)**. Dicatat tanpa memblokir deploy: **BE-08** (2 `clearContents` tersisa — L3278 migrasi sekali-jalan, L3911 rebuild daftar dropdown; jendela "dropdown kosong sesaat", bukan saldo salah) & **SEC-04** (`webapp.access ANYONE_ANONYMOUS` → backend publik; barrier tunggal = gate auth aplikasi; keputusan produk, tidak diubah sepihak). |
 | 1.32 | 2026-09-27 | Investigasi deploy (bukan deploy): auth clasp **terbukti ada** (`~/.clasprc.json` 2026-09-24, akun `wahyu.susanto425@gmail.com`) — klaim sebelumnya dikoreksi. Penyebab `clasp --version` hang = `update-notifier` → `NO_UPDATE_NOTIFIER=1`. `.claspignore` dibuat (`**` + `!Code.gs`) + `.clasp.json` masuk `.gitignore`. Id `/exec` terbukti **bukan** scriptId (`Invalid script ID`; `clasp list` → `No script files found` → indikasi container-bound) → **satu info dari user (scriptId) adalah blocker terakhir**. Gate tetap: L1 863/0, L2 316/0. |
@@ -682,3 +691,88 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 1.30 | 2026-09-27 | Tahap 3: 6 gap ditutup dengan RED→GREEN (`gs_hardening_exec` 3P/7F→**11/0**; `r2_outbox_app` 3F→**10/0**): BE-01 KDF short-circuit, BE-02 rate limit editor key (per-kunci+global), BE-04 rebuild saldo tanpa `clearContents`, BE-05 formula guard Aset+Master, BE-07 header lowercase, OFF-01 outbox 100 + peringatan; `sec_classify` 41/0 (sisa 2 ACCEPTED LIMITATION: BE-03 audit log, CL-03 SRI); L1 **857/0 (35 suite)** + L2 **316/0 (8 suite)** pre & post-bump; v15.29 / sw `rdi-stok-v37` / pkg 15.29.0 — **`Code.gs` belum di-deploy**; §1.2, §1.4, §10, §11, §13 |
 
 **Aturan revisi:** setiap test run / keputusan besar → update §10 + §11; jangan hapus history log.
+
+## 14. F5 — Auth unified (satu identitas per orang)
+
+> Keputusan user 2026-09-27: (1) untuk sekarang **hanya 1 editor** (Wahyu Susanto, operator warehouse),
+> (2) mau **login unified username+password** untuk editor (bukan tempel kunci panjang),
+> (3) app masih mode pengembangan → pengujian kapan saja, termasuk mutasi.
+
+### 14.1 Masalah yang diselesaikan (berbasis bukti)
+
+`SEC-05` (L3): `ALLOW_EDITOR_KEY_FALLBACK=TRUE` + `EDITOR_KEY` tunggal → jalur *fallback* aktif,
+respons `getData` **tanpa `nama`** → tidak ada akuntabilitas (field `admin` tidak terikat orang),
+dan akun yang di-`Aktif=FALSE` masih bisa masuk lewat kunci tunggal.
+
+### 14.2 Prinsip
+
+1. **Satu orang = satu identitas** (username+password),_editor dan viewer memakai mekanisme yang sama.
+2. **Peran travels di dalam token** — bukan dari kode yang dihapus.modation Token sudah Signed HMAC,
+   jadi `role` aman dari pemalsuanKlien.
+3. **Fail-closed**: bila penyimpanan akun tidak bisa dibaca → tolak, jangan dispensingkan akses.
+4. **Kunci tunggal lama = break-glass saja**, default `FALSE`, dan tidak bisa hidup diam-diam
+   (`ALLOW_LEGACY_SINGLE_KEY` baru — karena `ALLOW_EDITOR_KEY_FALLBACK` hanya menjaga kasus
+   "key tidak cocok", sementara sheet kosong/hilang tetap memunculkan kunci tunggal).
+
+### 14.3 Data model — sheet `RDI_Accounts` (baru, unified)
+
+| Kolom | Nama | Keterangan |
+|---|---|---|
+| 1 | `Username` | unik, case-insensitive |
+| 2 | `Nama` | yang tampil di UI + yang tercatat di audit |
+| 3 | `PasswordHash` | `hashPasswordIterated_` (SHA-256 ×100.000 + salt) |
+| 4 | `Role` | `editor` \| `viewer` |
+| 5 | `Aktif` | `TRUE`/`FALSE` — `FALSE` = nonaktifkan (benar-benar berlaku) |
+| 6 | `PasswordVersion` | naik saat password diganti → token lama mati |
+| 7 | `Catatan` | bebas (mis. "operator warehouse") |
+
+Migrasi: `migrateToUnifiedAccounts_()` menyalin `Viewer_Accounts` → `RDI_Accounts` dengan
+`Role=viewer` (**hash disalin byte-identik** → password lama tetap berlaku tanpa reset),
+lalu membuat/refresh akun editor. Fungsinya **idempotent** (aman diulang).
+
+### 14.4 Kontrak API
+
+- `action:"login"` (**baru**) — `{username, password}` → `{status:"ok", token, role, nama}`.
+  Satu-satunya jalur login untuk kedua peran. Gagal → pesan generik (jangan bocokkan "user tidak ada").
+- `action:"viewerLogin"` tetap ada sebagai **alias** `login` (kompatibilitas klien lama) tetapi
+  sekarang ikut mengembalikan `role`.
+- `action:"logout"` (**baru**, alias `viewerLogout`) — cabut `jti` (denylist) seperti sekarang.
+- Token: payload `username|nama|expiry|jti|pv|role` (field baru di posisi 6, backward compatible —
+  token lama tanpa `role` tetap dibaca sebagai `viewer`).
+- **Write gate**: `checkEditorSession_()` menerima (a) token ber `role=editor`, atau (b) kunci
+  legacy **hanya** bila `ALLOW_LEGACY_SINGLE_KEY=TRUE`. `checkEditorKey` lama tetap ada untuk
+  jalur break-glass, bukan untuk dipakai harian.
+- **Client transport tidak berubah**: field `editorKey` pada request akan membawa **token**
+  (bukan kunci mentah) bila perannya editor — sehingga `js/outbox.js` & seluruh pemanggilan client
+  tidak perlu dibongkar. Backend mengenali token lewat tanda `{'.'}` pada nilainya.
+
+### 14.5 Definition of Done
+
+| # | Uji | Level |
+|---|---|---|
+| A | `login` editor benar → `role=editor`, `nama` terisi | L1 harness + L3 nyata |
+| B | `login` viewer benar → `role=viewer` | L1 + L3 (akun uji) |
+| C | password salah → ditolak **tanpa** membocorkan apakah user ada | L1 + L3 |
+| D | token `role=editor` → **write** berhasil & `admin` = nama orang | L1 + L3 (item uji) |
+| E | token `role=viewer` → write **ditolak** | L1 + L3 |
+| F | akun `Aktif=FALSE` → ditolak walau token masih valid | L1 + L3 |
+| G | ganti password → token lama mati | L1 |
+| H | `ALLOW_LEGACY_SINGLE_KEY` tidak di-set → kunci tunggal **ditolak** | L1 + L3 |
+| I | sheet akun kosong/hilang → **tolak semua** (fail-closed, bukan kunci tunggal) | L1 |
+| J | migration idempotent + jumlah baris viewer tercocokkan | L1 + L3 |
+| K | password lemah ditolak saat pembuatan akun (min. 10 char & 3 kelas karakter) | L1 |
+| L | rate limit login tetap berlaku (5 gagal/15 mnt per username) | L1 + L3 (hanya 1-2 percobaan) |
+| M | gate penuh L1 + L2 hijau, `sec_classify` tanpa regresi | L1/L2 |
+| N | satu viewer asli tetap bisa login setelah migrasi (dicek user) | L3 manual |
+
+### 14.6 Rotasi & kunci rahasia
+
+- `VIEWER_TOKEN_SECRET` **rotasi** setelah token jadi membawa `role` (memaksa login ulang semua).
+- `EDITOR_KEY` tidak lagi dipakai harian; disimpan sebagai **break-glass**, minimal 32 char acak.
+- Nilai rahasia tidak pernah ditulis ke repo/dokumen; setup lewat fungsi yang dipanggil sekali
+  dari Apps Script editor (argumen tidak masuk log Git).
+
+### 14.7 Rollback
+
+Semua perubahan bersifat **tambahan** (aksi baru + gate baru), tidak menghapus jalur lama:
+set `ALLOW_LEGACY_SINGLE_KEY=TRUE` → kunci tunggal hidup lagi. Plan sheet lama utuh (tidak dihapus).

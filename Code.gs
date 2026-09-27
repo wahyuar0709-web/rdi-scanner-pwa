@@ -336,6 +336,16 @@ var COL_SALDO  = { ID:0, NAMA:1, UNIT:2, TOTAL_MASUK:3, TOTAL_KELUAR:4, SALDO_AK
 var COL_RAK_SALDO   = { ID:0, RAK:1, QTY:2 }; // Stok_Per_Rak (3 kolom)
 var COL_EDITOR_ACC  = { NAMA:0, KEY:1, AKTIF:2 }; // Editor_Accounts (3 kolom)
 var COL_VIEWER_ACC  = { USERNAME:0, PASSWORD:1, NAMA:2, AKTIF:3 }; // Viewer_Accounts (4 kolom)
+/* ===== F5-AUTH (2026-09-27, PLAN §14) — unified accounts: satu identitas per orang =====
+ * Sheet RDI_Accountsmenggantikan Viewer_Accounts + Editor_Accounts: satu login (username+password)
+ * untuk editor DAN viewer, peran dibawa di dalam token yang ditandatangani HMAC.
+ * Alasan (bukti L3): jalur kunci tunggal_shared + ALLOW_EDITOR_KEY_FALLBACK=TRUE membuat
+ * field `admin` tidak terikat orang & akun nonaktif masih bisa masuk (SEC-05).
+ */
+var SHEET_ACCOUNTS = 'RDI_Accounts';
+var COL_ACC = { USERNAME:0, NAMA:1, PASSWORD:2, ROLE:3, AKTIF:4, PASSWORD_VERSION:5, CATATAN:6 };
+var AUTH_TOKEN_TTL_MS = 6*60*60*1000;   // 6 jam = batas maksimum CacheService (21600s)
+var MSG_BAD_CREDENTIALS = 'Username atau password salah.';
 
 // v5.20 — kolom modul Aset Sirkulasi
 var COL_ASET_ITEM = { NO:0, KODE_ALAT:1, NAMA_ALAT:2, BRAND:3, CUTTING_TOOL:4, MATERIAL:5,
@@ -723,12 +733,19 @@ function verifyViewerToken(token) {
   } catch(e) { return { ok:false }; }
 }
 // Cek akses utk doGet -- lolos kalau editorKey ATAU viewerToken valid.
+/* F5-AUTH: akses baca = token valid (editor ATAU viewer, peran dari token). Kunci tunggal
+ * hanya break-glass dan harus ALLOW_LEGACY_SINGLE_KEY=TRUE. Token editor sengaja boleh
+ * datang di field editorKey supaya transport klien tidak perlu dibongkar. */
 function checkAnyAccess(params) {
-  var editorAuth = checkEditorKey({ editorKey: String(params.editorKey||'') });
-  if (editorAuth.ok) return { ok:true, role:'editor', nama:editorAuth.nama||'' };
-  if (params.viewerToken) {
-    var v = verifyViewerToken(params.viewerToken);
-    if (v.ok) return { ok:true, role:'viewer', nama:v.nama||'' };
+  params = params || {};
+  var raw = String(params.editorKey || params.authToken || params.viewerToken || '');
+  if (raw.indexOf('.') > 0) {
+    var v = verifyAuthToken_(raw);
+    if (v.ok) return { ok:true, role: v.role, nama: v.nama || '', username: v.username || '' };
+  }
+  if (legacySingleKeyEnabled_()) {
+    var legacy = checkLegacySingleKey_(raw);
+    if (legacy.ok) return { ok:true, role:'editor', nama:'' };
   }
   return { ok:false, message:'Sesi belum login atau sudah habis. Silakan login ulang.' };
 }
@@ -792,6 +809,290 @@ function verifyPasswordHash_(password, stored) {
 // SEKALI TERAKHIR dgn password lama itu, dan begitu cocok langsung ditulis ulang ke
 // sheet dalam bentuk hash -- tidak perlu admin migrasi manual satu-satu.
 
+/* ============================================================
+ *  F5-AUTH — fungsi inti unified accounts
+ * ============================================================ */
+function parseAktif_(v) {
+  if (v === true) return true;
+  var s = String(v === null || v === undefined ? '' : v).trim().toUpperCase();
+  return s === 'TRUE' || s === 'YA' || s === '1' || s === 'AKTIF';
+}
+function ensureAccountsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_ACCOUNTS);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_ACCOUNTS);
+    sh.getRange(1,1,1,7).setValues([['Username','Nama','PasswordHash','Role','Aktif','PasswordVersion','Catatan']])
+      .setBackground('#1a3a7a').setFontColor('#ffffff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.setColumnWidths(1,7,150);
+  }
+  return sh;
+}
+/* FAIL-CLOSED: sheet hilang atau kosong = TIDAK ADA akun. Tidak pernah otomatis jatuh ke
+ * kunci tunggal legacy — itu hanya boleh hidup lewat ALLOW_LEGACY_SINGLE_KEY=TRUE. */
+function getAccountsSheet_() {
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ACCOUNTS);
+    return (sh && sh.getLastRow() >= 2) ? sh : null;
+  } catch(e) { return null; }
+}
+function findAccount_(username) {
+  var sh = getAccountsSheet_();
+  if (!sh) return null;
+  var want = String(username||'').trim().toLowerCase();
+  if (!want) return null;
+  var rows = sh.getRange(2,1,sh.getLastRow()-1,7).getValues();
+  for (var i=0;i<rows.length;i++) {
+    var u = String(rows[i][COL_ACC.USERNAME]||'').trim();
+    if (u.toLowerCase() !== want) continue;
+    var pvRaw = rows[i][COL_ACC.PASSWORD_VERSION];
+    var roleRaw = String(rows[i][COL_ACC.ROLE]||'viewer').trim().toLowerCase();
+    return {
+      username: u,
+      nama: String(rows[i][COL_ACC.NAMA]||'').trim() || u,
+      hash: String(rows[i][COL_ACC.PASSWORD]||''),
+      role: roleRaw === 'editor' ? 'editor' : 'viewer',
+      aktif: parseAktif_(rows[i][COL_ACC.AKTIF]),
+      pv: (pvRaw === '' || pvRaw === null || pvRaw === undefined) ? null : String(pvRaw)
+    };
+  }
+  return null;
+}
+/* Password policy: minimal 10 karakter + 3 kelas karakter. Blade ini ada supaya supaya kejadian
+ * "EDITOR_KEY = WH1234" (entropy rendah, mudah ditebak) tidak bisa terulang. */
+function validatePasswordStrength_(pw) {
+  var s = String(pw || '');
+  if (s.length < 10) return false;
+  var classes = 0;
+  if (/[a-z]/.test(s)) classes++;
+  if (/[A-Z]/.test(s)) classes++;
+  if (/[0-9]/.test(s)) classes++;
+  if (/[^A-Za-z0-9]/.test(s)) classes++;
+  if (classes < 3) return false;
+  if (/^(.)\1+$/.test(s)) return false;
+  if (/^(0123456789|123456789|abcdefghij|qwertyuiop|password)/i.test(s)) return false;
+  return true;
+}
+/* Hash dummy: supaya waktu respons login sama untuk "user tidak ada" dan "password salah",
+ * sehingga daftar username valid tidak bisa ditebak dari perbedaan kecepatan. */
+var DUMMY_HASH_CACHE_ = '';
+function dummyHash_() {
+  if (!DUMMY_HASH_CACHE_) DUMMY_HASH_CACHE_ = makeSaltedPasswordHash_('dummy-constant-time-padding');
+  return DUMMY_HASH_CACHE_;
+}
+/* Payload token: username|nama|expiry|jti|pv|role — 5 field pertama identik format lama
+ * sehingga token viewer yang sudah berlaku tetap bisa diverifikasi (backward compatible). */
+function makeAuthToken_(username, nama, pv, role) {
+  var expiry = Date.now() + AUTH_TOKEN_TTL_MS;
+  var jti = Utilities.getUuid();
+  var pvStr = (pv == null || pv === '') ? '' : String(pv);
+  var roleStr = (role === 'editor') ? 'editor' : 'viewer';
+  var payload = username + '|' + nama + '|' + expiry + '|' + jti + '|' + pvStr + '|' + roleStr;
+  var payloadB64 = Utilities.base64EncodeWebSafe(Utilities.newBlob(payload).getBytes());
+  var sigB64 = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payloadB64, getViewerSecret()));
+  return { token: payloadB64 + '.' + sigB64, jti: jti, expiry: expiry };
+}
+function verifyAuthToken_(token) {
+  try {
+    var parts = String(token||'').split('.');
+    if (parts.length !== 2) return { ok:false };
+    var expectedSig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], getViewerSecret()));
+    if (!constantTimeEquals_(parts[1], expectedSig)) return { ok:false };
+    var payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString();
+    var bits = payload.split('|');
+    var expiry = parseInt(bits[2], 10);
+    if (!expiry || Date.now() > expiry) return { ok:false, expired:true };
+    var username = bits[0];
+    var nama = bits[1];
+    var jti = bits[3] || '';
+    var role = (bits[5] === 'editor') ? 'editor' : 'viewer';  // token lama tanpa role -> viewer
+    if (jti) {
+      if (CacheService.getScriptCache().get('token_deny_' + jti)) return { ok:false, revoked:true };
+    }
+    var acc = findAccount_(username);
+    if (!acc) return { ok:false, revoked:true };        // akun hilang -> cabut
+    if (!acc.aktif) return { ok:false, revoked:true };   // Akif=FALSE benar-benar berlaku
+    if (role === 'editor' && acc.role !== 'editor') return { ok:false, revoked:true }; // jangan naik peran
+    var tokenPv = bits[4] || '';
+    var expectedPv = (acc.pv != null && acc.pv !== '') ? acc.pv : passwordPv_(acc.hash);
+    if (tokenPv && String(tokenPv) !== String(expectedPv)) return { ok:false, revoked:true };
+    if (!tokenPv && expectedPv) return { ok:false, revoked:true }; // token tanpa pv -> paksa login ulang
+    return { ok:true, username:username, nama: acc.nama || nama, role: role };
+  } catch(e) { return { ok:false }; }
+}
+/* Alias kompatibilitas: verifyViewerToken lama masih dipakai beberapa call site. */
+function verifyViewerToken(token) { return verifyAuthToken_(token); }
+/* --- gate kunci tunggal: BREAK-GLASS, default MATI --- */
+/* Apakah ada akun editor di RDI_Accounts? Dipakai untuk transisi (lihat catatan di
+ * legacySingleKeyEnabled_). Error saat membaca sheet -> dianggap ADA (fail-closed). */
+function hasEditorAccount_() {
+  try {
+    var sh = getAccountsSheet_();
+    if (!sh) return true;   // tidak bisa dipastikan -> perlakukan sebagai ada (fail-closed)
+    var rows = sh.getRange(2,1,sh.getLastRow()-1,5).getValues(); // s/d kolom Role(4) & Aktif(5)
+    for (var i=0;i<rows.length;i++) {
+      var role = String(rows[i][COL_ACC.ROLE]||'').trim().toLowerCase();
+      var aktif = parseAktif_(rows[i][COL_ACC.AKTIF]);
+      if (role === 'editor' && aktif) return true;
+    }
+    return false;
+  } catch(e) { return true; }
+}
+function legacySingleKeyEnabled_() {
+  try {
+    var p = String(PropertiesService.getScriptProperties().getProperty('ALLOW_LEGACY_SINGLE_KEY') || '').toUpperCase();
+    if (p === 'TRUE') return true;    // break-glass eksplisit (sadar risiko)
+    if (p === 'FALSE') return false;   // Doppler eksplisit
+    /* TRANSISI (F5-AUTH): belum ada akun editor -> kunci lama tetap dipakai supaya
+     * user tidak terkunci-lockout begitu kode baru dideploy. Begitu akun editor pertama
+     * dibuat, jalur ini MATI OTOMATIS (self-arming) tanpa perlu mengubah property.
+     * Tidak ada eksposur baru: sebelum deploy, kunci itu juga yang berlaku. */
+    return !hasEditorAccount_();
+  } catch(e) { return false; }   // fail-closed
+}
+function checkLegacySingleKey_(raw) {
+  var key = String(raw||'');
+  if (!key) return { ok:false, message:'Kunci editor tidak diberikan.' };
+  if (editorKeyRateBlocked_(key)) return { ok:false, message:'Terlalu banyak percobaan akses editor. Tunggu 10 menit lalu coba lagi.' };
+  var required = getEditorKey();
+  if (!required) return { ok:false, message:'EDITOR_KEY belum diset di Script Properties.' };
+  if (!constantTimeEquals_(key, required)) {
+    editorKeyRateFail_(key);
+    return { ok:false, message:'Akses ditolak.' };
+  }
+  editorKeyRateReset_(key);
+  return { ok:true, nama:'' };
+}
+/* Satu-satunya gate untuk SEMUA action tulis. */
+function checkEditorSession_(params) {
+  params = params || {};
+  var raw = String(params.editorKey || params.authToken || params.viewerToken || '');
+  if (raw.indexOf('.') > 0) {   // bentuk token (bukan kunci mentah)
+    var v = verifyAuthToken_(raw);
+    if (v.ok && v.role === 'editor') return { ok:true, nama: v.nama || '', username: v.username || '' };
+    if (v.ok) return { ok:false, message:'Akun ini tidak punya hak edit. Hubungi admin.' };
+    return { ok:false, message:'Sesi edit tidak valid atau sudah habis. Silakan login ulang.' };
+  }
+  if (!legacySingleKeyEnabled_()) return { ok:false, message:'Akses edit lewat kunci tunggal dinonaktifkan. Silakan login sebagai editor.' };
+  return checkLegacySingleKey_(raw);
+}
+/* --- API login / logout --- */
+function apiLogin(body) {
+  try {
+    var uname = String(body && body.username || '').trim();
+    var pw = String(body && body.password || '');
+    if (!uname || !pw) return { status:'error', message:'Username dan password wajib diisi.' };
+    var rl = rateLimitViewerLogin_(uname);
+    if (!rl.ok) return { status:'error', message: rl.message };
+    /* Auto-migrasi (F5-AUTH): kalau sheet unified belum pernah diisi, migrasikan viewer
+     * lama SEKALI di sini. Tanpa ini, deploy F5-AUTH akan langsung lockout semua viewer
+     * yang ada. Idempotent, dan hash disalin byte-identik -> password lama tetap berlaku. */
+    if (!getAccountsSheet_()) {
+      try { migrateToUnifiedAccounts_(); } catch(e) { /* gagal migrasi = login gagal di bawah */ }
+    }
+    var acc = findAccount_(uname);
+    var ok = false;
+    if (acc && acc.aktif && acc.hash) {
+      if (String(acc.hash) === 'GANTI-PASSWORD-INI' || (isPasswordHashFormat_(acc.hash) && verifyPasswordHash_('GANTI-PASSWORD-INI', acc.hash))) {
+        return { status:'error', message:'Password akun ini masih default. Hubungi admin untuk menggantinya.' };
+      }
+      ok = verifyPasswordHash_(pw, acc.hash);
+    } else {
+      verifyPasswordHash_(pw, dummyHash_());   // biaya konstan, jangan bocorkan username valid
+    }
+    if (!ok || !acc || !acc.aktif) {
+      recordViewerLoginFail_(uname);
+      return { status:'error', message: MSG_BAD_CREDENTIALS };
+    }
+    clearViewerLoginFail_(uname);
+    var pv = (acc.pv != null && acc.pv !== '') ? acc.pv : passwordPv_(acc.hash);
+    var t = makeAuthToken_(acc.username, acc.nama, pv, acc.role);
+    return { status:'ok', token: t.token, role: acc.role, nama: acc.nama, username: acc.username, expiresAt: t.expiry };
+  } catch(e) {
+    return { status:'error', message:'Gagal memproses login (server sibuk). Coba lagi sebentar.' };
+  }
+}
+function apiLogout(body) {
+  try {
+    var token = String(body && (body.token || body.viewerToken) || '');
+    if (!token) return { status:'ok' };
+    var parts = token.split('.');
+    if (parts.length !== 2) return { status:'ok' };
+    var expectedSig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], getViewerSecret()));
+    if (!constantTimeEquals_(parts[1], expectedSig)) return { status:'ok' };
+    var payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString();
+    var bits = payload.split('|');
+    var expiry = parseInt(bits[2], 10);
+    var jti = bits[3] || '';
+    if (!jti) return { status:'ok' };
+    var ttlSec = Math.max(1, Math.min(6*60*60, Math.floor((expiry - Date.now()) / 1000)));
+    try { CacheService.getScriptCache().put('token_deny_' + jti, '1', ttlSec); } catch(e) {}
+    return { status:'ok' };
+  } catch(e) { return { status:'ok' }; }
+}
+/* --- kelola akun (HANYA dari editor Apps Script, TIDAK pernah diekspos lewat doPost) --- */
+function createAccount_(username, nama, password, role, catatan) {
+  var u = String(username||'').trim();
+  var n = String(nama||'').trim() || u;
+  var r = (String(role||'viewer').trim().toLowerCase() === 'editor') ? 'editor' : 'viewer';
+  if (!u) throw new Error('Username wajib diisi.');
+  if (!validatePasswordStrength_(password)) throw new Error('Password terlalu lemah: minimal 10 karakter dan 3 jenis karakter (huruf besar/kecil/angka/simbol).');
+  var sh = ensureAccountsSheet_();
+  var hash = makeSaltedPasswordHash_(String(password));
+  var pv = String(Date.now());
+  var row = [u, n, hash, r, true, pv, String(catatan||'')];
+  var rows = sh.getRange(2,1,Math.max(0,sh.getLastRow()-1),1).getValues();
+  for (var i=0;i<rows.length;i++) {
+    if (String(rows[i][0]||'').trim().toLowerCase() === u.toLowerCase()) {
+      sh.getRange(i+2,1,1,7).setValues([row]);
+      return { ok:true, updated:true, username:u, role:r };
+    }
+  }
+  sh.getRange(sh.getLastRow()+1,1,1,7).setValues([row]);
+  return { ok:true, created:true, username:u, role:r };
+}
+/* Migrasi Viewer_Accounts -> RDI_Accounts. Hash disalin BYTE-IDENTIK supaya password lama
+ * tetap berlaku tanpa reset, dan token yang sudah terbit tetap valid. Idempotent. */
+function migrateToUnifiedAccounts_() {
+  var sh = ensureAccountsSheet_();
+  var out = { migrated:0, skipped:0, total:0, source:0 };
+  var src = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VIEWER_ACCOUNTS);
+  if (!src || src.getLastRow() < 2) {
+    out.total = Math.max(0, sh.getLastRow()-1);
+    return out;
+  }
+  var w = Math.min(5, Math.max(4, src.getLastColumn()));
+  var rows = src.getRange(2,1,src.getLastRow()-1,w).getValues();
+  out.source = rows.length;
+  for (var i=0;i<rows.length;i++) {
+    var u = String(rows[i][0]||'').trim();
+    if (!u) continue;
+    if (findAccount_(u)) { out.skipped++; continue; }
+    var pw = String(rows[i][1]||'');
+    var nama = String(rows[i][2]||'').trim() || u;
+    var aktif = parseAktif_(rows[i][3]);
+    var pvCell = rows[i][4];
+    var pv = (pvCell === '' || pvCell === null || pvCell === undefined) ? null : String(pvCell);
+    var hash = (pw && isPasswordHashFormat_(pw)) ? pw : makeSaltedPasswordHash_(pw);
+    sh.getRange(sh.getLastRow()+1,1,1,7).setValues([[u, nama, hash, 'viewer', aktif, pv==null?passwordPv_(hash):pv, 'migrasi dari Viewer_Accounts']]);
+    out.migrated++;
+  }
+  out.total = Math.max(0, sh.getLastRow()-1);
+  return out;
+}
+/* Run SEKALI dari editor Apps Script: buat sheet + migrasi viewer lama. */
+function setupUnifiedAuth() {
+  var sh = ensureAccountsSheet_();
+  var mig = migrateToUnifiedAccounts_();
+  var msg = "Sheet " + SHEET_ACCOUNTS + " siap.\n" +
+    'Migrasi: ' + mig.migrated + ' viewer baru, ' + mig.skipped + ' sudah ada. Total akun: ' + mig.total + '.\n\n' +
+    'LANJUT (pilih fungsi di dropdown lalu Run):\n' +
+    '  createAccount_("wahyu", "Wahyu Susanto", "PasswordKuatAnda123!", "editor", "operator warehouse")\n\n' +
+    'Lalu set Script Property ALLOW_LEGACY_SINGLE_KEY = FALSE (atau kosongkan).';
+  try { SpreadsheetApp.getUi().alert(msg); } catch(e) { Logger.log(msg); }
+  return mig;
+}
 function checkViewerCredentials(username, password) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -850,18 +1151,9 @@ function checkViewerCredentials(username, password) {
     return { ok:false, message:'Username atau password salah.' };
   } catch(e) { return { ok:false, message:'Username atau password salah.' }; }
 }
-function apiViewerLogin(body) {
-  var uname = String(body.username||'').trim();
-  var rl = rateLimitViewerLogin_(uname);
-  if (!rl.ok) return { status:'error', message: rl.message };
-  var r = checkViewerCredentials(uname, body.password);
-  if (!r.ok) {
-    recordViewerLoginFail_(uname);
-    return { status:'error', message: r.message };
-  }
-  clearViewerLoginFail_(uname);
-  return { status:'ok', token: makeViewerToken(r.username, r.nama, r.passwordVersion), nama: r.nama };
-}
+/* F5-AUTH: nama lama dipertahankan sebagai pembungkus, supaya tidak ada call site yang putus.
+ * Logika aslinya pindah ke apiLogin() (unified, mengembalikan `role`). */
+function apiViewerLogin(body) { return apiLogin(body); }
 // Jalankan SEKALI dari editor Apps Script (dropdown fungsi -> Run) utk bikin sheet akun viewer.
 function setupViewerAccountsSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -888,15 +1180,14 @@ function doGet(e) {
     // healthCheck (lihat doPost) — juga di GET supaya bisa diperiksa tanpa POST.
     if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
 
-    // FIX KRITIS: dukung kredensial via header (X-Editor-Key / X-Viewer-Token)
-    // supaya secret TIDAK wajib lewat query string (bisa masuk access log/history).
-    // Frontend baru mengirim via header/body; query string tetap didukung utk kompatibilitas.
-    try {
-      var headers = (e && e.allHeaders) ? e.allHeaders : {};
-      /* FIX BE-07 (2026-09-27): Apps Script lowercase-kan NAMA header di e.allHeaders → lookup 'X-Editor-Key' selalu undefined sehingga jalur header mati. Cek dua bentuk. */
-      if (!params.editorKey) { params.editorKey = headers['x-editor-key'] || headers['X-Editor-Key'] || ''; }
-      if (!params.viewerToken) { params.viewerToken = headers['x-viewer-token'] || headers['X-Viewer-Token'] || ''; }
-    } catch(hdrErr) {}
+    /* F5-AUTH (2026-09-27): jalur kredensial via HEADER DIHAPUS dengan bukti, bukan asumsi.
+     * L3 nyata (tests/tools/l3_cred_probe.js): `X-Editor-Key` (huruf besar) DAN
+     * `x-editor-key` (huruf kecil) keduanya ditolak produksi, sementara `editorKey` di body
+     * membaca data. Apps Script web app tidak mengekspos custom request header ke
+     * e.allHeaders — jadi blok lama ini DEAD CODE dan "perbaikannya" (BE-07) tidak pernah
+     * memberi perlindungan apa pun (SEC-06 di PLAN §1.4).
+     * Sekarang kredensial hanya datang di BODY POST (client js/outbox.js sudah begitu),
+     * sehingga rahasia tidak pernah berada di URL maupun header. */
 
     var auth = checkAnyAccess(params);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
@@ -953,10 +1244,12 @@ function doPost(e) {
     // untuk membuktikan perubahan benar-benar sudah LIVE (atau belum) — bukan guess.
     if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
 
-    // viewerLogin JUSTRU endpoint utk MENDAPATKAN akses -- tidak boleh digate editorKey.
-    if (action === 'viewerLogin') return corsOutput(apiViewerLogin(body));
-    // FIX HIGH: logout/revoke — jangan digate editorKey; cukup token yang mau dicabut.
-    if (action === 'viewerLogout') return corsOutput(apiViewerLogout(body));
+    // F5-AUTH: SATU endpoint login untuk editor & viewer (peran dibawa di token).
+    // Endpoint ini tentu tidak digate auth — justru ia yang memberi akses.
+    if (action === 'login') return corsOutput(apiLogin(body));
+    if (action === 'viewerLogin') return corsOutput(apiLogin(body));   // alias lama (kompatibilitas)
+    // FIX HIGH: logout/revoke — jangan digate auth; cukup token yang mau dicabut.
+    if (action === 'logout' || action === 'viewerLogout') return corsOutput(apiLogout(body));
 
     // FIX KRITIS: dukung aksi BACA via POST (gasGet baru mengirim kredensial di body,
     // bukan query string) — checkAnyAccess dengan editorKey/viewerToken dari body.
@@ -1000,8 +1293,10 @@ function doPost(e) {
       return corsOutput({ status:'error', message:'Unknown read action: ' + action });
     }
 
-    // Semua action tulis di sini MENGUBAH data -> wajib editorKey yg valid.
-    var auth = checkEditorKey(body);
+    // Semua action tulis MENGUBAH data -> wajib sesi dengan role=editor.
+    // F5-AUTH: token role=editor (bisa datang di field editorKey) ATAU kunci tunggal
+    // break-glass bila ALLOW_LEGACY_SINGLE_KEY=TRUE. Default: kunci tunggal MATI.
+    var auth = checkEditorSession_(body);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
     // FIX v5.13 (F-03): kalau editorKey ini cocok akun per-orang di Editor_Accounts, `auth.nama`
     // adalah identitas yang SUDAH diverifikasi server (bukan string bebas dari client) --

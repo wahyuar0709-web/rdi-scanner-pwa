@@ -33,14 +33,39 @@ const doPost = bodyOf(gs, 'doPost', 9000);
 t('SEC-A1: doGet mewajibkan auth (checkAnyAccess)', /checkAnyAccess\s*\(/.test(doGet));
 t('SEC-A2: doGet membalas needLogin:true saat auth gagal', /needLogin\s*:\s*true/.test(doGet));
 t('SEC-A3: doPost mewajibkan auth untuk baca (checkAnyAccess)', /checkAnyAccess\s*\(/.test(doPost));
-t('SEC-A4: doPost mewajibkan editorKey untuk tulis (checkEditorKey)', /checkEditorKey\s*\(/.test(doPost));
+/* F5-AUTH (2026-09-27): gate tulis pindah dari checkEditorKey ke checkEditorSession_
+ * (token role=editor, atau kunci tunggal break-glass yang default MATI). Yang diperiksa
+ * di sini tetap INTENT-nya: gate wajib ada, dan dijalankan SEBELUM dispatch. */
+t('SEC-A4: doPost mewajibkan gate tulis (checkEditorSession_)', /checkEditorSession_\s*\(/.test(doPost));
 t('SEC-A5: gate tulis dijalankan SEBELUM dispatch aksi tulis',
-  doPost.indexOf('checkEditorKey(body)') >= 0 && doPost.indexOf('checkEditorKey(body)') < doPost.indexOf("'postTransaksi'"),
-  'idx gate=' + doPost.indexOf('checkEditorKey(body)') + ' dispatch=' + doPost.indexOf("'postTransaksi'"));
+  doPost.indexOf('checkEditorSession_(body)') >= 0 && doPost.indexOf('checkEditorSession_(body)') < doPost.indexOf("'postTransaksi'"),
+  'idx gate=' + doPost.indexOf('checkEditorSession_(body)') + ' dispatch=' + doPost.indexOf("'postTransaksi'"));
+t('SEC-A4b: checkEditorSession_ menolak role!=editor (viewer tidak bisa tulis)',
+  /role === 'editor'/.test(bodyOf(gs, 'checkEditorSession_', 2000)),
+  'mencari syarat role === \'editor\' di checkEditorSession_()');
+/* F5-AUTH: aturan transisi (lihat PLAN §14) — kunci tunggal legacy:
+ *   - property=TRUE  -> hidup (break-glass eksplisit)
+ *   - property=FALSE -> mati (pilihan eksplisit)
+ *   - property kosong -> hidup HANYA selama belum ada akun editor di RDI_Accounts,
+ *     lalu MATI otomatis begitu akun editor pertama ada. Ini mencegah lockout saat deploy
+ *     tanpa menyisakan pintu terbuka lebih lama dari perlu.
+ * Yang wajib di sini: (1) exception -> fail-closed, (2) tidak ada jalur yang selalu true. */
+const legacyBody = bodyOf(gs, 'legacySingleKeyEnabled_', 1200);
+t('SEC-A4c: legacySingleKeyEnabled_(): exception -> fail-closed (return false)',
+  /catch\s*\(e\)\s*\{\s*return false;/.test(legacyBody),
+  'harus ada catch { return false; }');
+t('SEC-A4c2: legacy tidak hidup terus-menerus (transisiditutup saat akun editor ada)',
+  /if\s*\(p === 'TRUE'\)\s*return true/.test(legacyBody) &&
+  /if\s*\(p === 'FALSE'\)\s*return false/.test(legacyBody) &&
+  /return !hasEditorAccount_\(\)/.test(legacyBody) && /function hasEditorAccount_/.test(gs),
+  'harus benar: TRUE→hidup, FALSE→mati, kosong→!hasEditorAccount_()');
+t('SEC-A4c3: hasEditorAccount_() fail-closed saat sheet tidak bisa dibaca',
+  /function hasEditorAccount_/.test(gs) && /return true;/.test(bodyOf(gs, 'hasEditorAccount_', 800)),
+  'error/sheet kosong→ dianggap ada editor (legacy tetap mati)');
 t('SEC-A6: viewerLogin tetap dapat diakses tanpa auth (endpoint tiket)', /viewerLogin/.test(doPost) && !/checkEditorKey[\s\S]{0,200}viewerLogin/.test(doPost));
-t('SEC-A7: editor key fail-closed bila Script Property kosong',
-  /if\s*\(\s*!\s*required\s*\)\s*\{\s*return\s*\{\s*ok:\s*false/.test(bodyOf(gs, 'checkEditorKey', 2000)),
-  'cek "if (!required) return {ok:false}" di checkEditorKey()');
+t('SEC-A7: kunci legacy fail-closed bila Script Property kosong (checkLegacySingleKey_)',
+  /if\s*\(\s*!\s*required\s*\)\s*(?:\{\s*)?return\s*\{\s*ok:\s*false/.test(bodyOf(gs, 'checkLegacySingleKey_', 2000)),
+  'cek "if (!required) return {ok:false}" di checkLegacySingleKey_()');
 
 /* ---------- B. KREDENSIAL & KRIPTO ---------- */
 t('SEC-B1: perbandingan constant-time (constantTimeEquals_)', /function constantTimeEquals_/.test(gs));

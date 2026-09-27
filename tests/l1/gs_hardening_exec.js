@@ -6,7 +6,7 @@
  *   BE-02  tidak ada rate limit untuk editor key (brute force tanpa batas)
  *   BE-04  recalculateAllSaldo memakai clearContents → pembaca bisa lihat saldo kosong
  *   BE-05  formula-injection guard (safeCell_) tidak dipakai di jalur tulis modul Aset
- *   BE-07  jalur kredensial via header mati (GAS lowercase-kan nama header)
+ *   BE-07  jalur kredensial via header DIHAPUS (L3 membuktikan tak pernah sampai: SEC-06)
  *
  * Semua test menulis property yang SEHARUSNYA benar.Sebelum fix: FAIL (RED).
  * Level: L1 (offline deterministik, harness in-memory). */
@@ -64,7 +64,13 @@ function countKdfCalls(ctx) {
   const ctx2 = ctxFor(kitchen([['Admin', ctx0.makeSaltedPasswordHash_('editor-pass-1'), true]]));
   const c2 = countKdfCalls(ctx2);
   ctx2.checkAnyAccess({ editorKey: 'SALAH-SEKALI' });
-  t('BE-01b: dengan editorKey yang salah KDF tetap jalan (proteksi aktif)', c2() > 0, 'KDF dijalankan ' + c2() + '×');
+  /* F5-AUTH (2026-09-27): invarian ini BERUBAH secara sengaja. Kunci tunggal sekarang
+   * break-glass yang DEFAULT MATI, jadi kunci yang salah ditolak tanpa perlu hashing
+   * sama sekali (tidak ada kunci untuk dibandingkan). Yang harus dijaga: (a) jalur
+   * legacy tetap memakai perbandingan constant-time + rate limit, dan (b) token
+   * ditolak lewat HMAC, bukan perbandingan plaintext. */
+  t('BE-01b: kunci salah DITOLAK tanpa hashing (legacy mati by default)', c2() === 0,
+    'KDF ' + c2() + '× & hasil=' + JSON.stringify(ctx2.checkAnyAccess({ editorKey: 'SALAH-SEKALI' })).slice(0, 90));
 })();
 
 /* ================= BE-02: rate limit editor key ================= */
@@ -138,23 +144,26 @@ function countKdfCalls(ctx) {
   t('BE-05c: kodeMesin berawalan "=" di movement log dinetralkan', typeof kodeMesin === 'string' && kodeMesin.charAt(0) === "'", JSON.stringify(kodeMesin));
 })();
 
-/* ================= BE-07: kredensial via header (GAS lowercase) ================= */
+/* ================= BE-07 (DIPERBARUI 2026-09-27): jalur header DIHAPUS =================
+ * Bukti L3 (tests/tools/l3_cred_probe.js): `X-Editor-Key` (huruf besar) maupun
+ * `x-editor-key` (huruf kecil) KEDUA-DUANYA ditolak di produksi, sementara `editorKey` di
+ * body LIHAT DATA. Apps Script web app tidak mengekspos custom request header ke
+ * e.allHeaders/e.postData.headers, jadi pembaca header adalah DEAD CODE — yang pernah
+ * "diperbaiki" (BE-07) tidak pernah memberi perlindungan apa pun.
+ * Keputusan: hapus pembaca header supaya tidak ada rasa aman semu. Kredensial hanya lewat
+ * body POST (client sudah begitu) — bukan query string, bukan header. */
 (function () {
-  const ctx = ctxFor(kitchen([]));
-  let out;
-  try {
-    out = ctx.doGet({ parameter: { action: 'getMasterLists' }, allHeaders: { 'x-editor-key': EDITOR_KEY } });
-  } catch (e) {
-    t('BE-07: doGet menerima editor key lewat header (GAS lowercase-kan nama header)', false, 'error: ' + e.message);
-    out = null;
-  }
-  if (out) {
-    let parsed = null;
-    try { parsed = JSON.parse(out._t || out.getContent && out.getContent() || '{}'); } catch (e) { parsed = null; }
-    const needLogin = parsed && parsed.needLogin === true;
-    t('BE-07: doGet menerima editor key lewat header (GAS lowercase-kan nama header)', !needLogin,
-      'status=' + (parsed && parsed.status) + ' needLogin=' + needLogin);
-  }
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'Code.gs'), 'utf8');
+  // Yang diperiksa adalah kode EKSEKUTABEL (assignment dari header), bukan komentar dokumentasi.
+  const executable = src.split('\n').filter(l => !/^\s*(\*|\/\/|\/\*)/.test(l)).join('\n');
+  t('BE-07a: tidak ada lagi ASSIGNMENT kredensial dari header di Code.gs',
+    !/=\s*headers\s*\[/.test(executable) && !/allHeaders/.test(executable),
+    'sisa assignment header di kode: ' + ((executable.match(/headers\s*\[/g) || []).length));
+  t('BE-07b: kredensial TIDAK lagi ditulis ke query string di frontend',
+    !/[?&](editorKey|viewerToken|authToken)=/.test(fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8')),
+    'frontend tidak menyisipkan kredensial ke URL');
+  t('BE-07c: token tetap dibawa di body POST (satu-satunya jalur yang terbukti bekerja)',
+    /body\.editorKey|params\.editorKey/.test(fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'outbox.js'), 'utf8')));
 })();
 
 /* ================= healthCheck (L3 deploy verification) ================= */

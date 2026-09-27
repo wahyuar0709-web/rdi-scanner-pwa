@@ -2034,11 +2034,11 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
         <div class="field-hint">Dapatkan URL dari GAS → Deploy → Manage deployments → Web app URL</div>
       </div>
-      <div class="field-group" id="editor-key-field-group">
-        <label class="field-label" for="editor-key-input">Editor Key</label>
-        <input type="password" id="editor-key-input" placeholder="Isi kalau perangkat ini boleh menyimpan/mengubah data">
-        <div class="field-hint">Kosongkan kalau perangkat ini hanya untuk lihat data saja. Key ini diset di Apps Script → Project Settings → Script Properties (EDITOR_KEY). Tersimpan di perangkat ini selama 30 hari, setelah itu diminta isi ulang.</div>
-      </div>
+      <!-- F5-AUTH (2026-09-27): field "Editor Key" DIHAPUS. Tidak ada lagi kunci tunggal
+           yang ditempel per perangkat; hak edit datang dari login username+password
+           (peran ditentukan server). Lihat PLAN §14. -->
+      <div class="field-hint" style="margin-top:4px">Hak edit &amp; lihat data diatur lewat login di layar utama (username + password), bukan dengan menempelkan kunci.</div>
+
       <div id="sbar-config" class="sbar" role="status" aria-live="polite"></div>
     </div>
     <div class="modal-foot">
@@ -2277,10 +2277,40 @@ function showLoginGate(){document.getElementById('login-gate').classList.remove(
 function hideLoginGate(){document.getElementById('login-gate').classList.add('hide');}
 /* pure helpers moved → js/format.js (F4.5) */
 function forceReLogin(optMsg){var t=VIEWER_TOKEN||readSecureStorage('rdi_viewer_token');if(t&&GAS_URL){try{fetch(GAS_URL,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogout',viewerToken:t})}).catch(function(){});}catch(e){}}clearSecureStorage('rdi_viewer_token');VIEWER_TOKEN='';showLoginGate();var errEl=document.getElementById('login-error');if(errEl){errEl.textContent=normalizeNeedLoginMsg(optMsg);errEl.style.display='block';}}
-function submitViewerLogin(){var u=document.getElementById('login-username').value.trim();var p=document.getElementById('login-password').value;var btn=document.getElementById('login-submit-btn');var errEl=document.getElementById('login-error');errEl.style.display='none';if(!u||!p){errEl.textContent='Isi username dan password.';errEl.style.display='block';return;}
-if(!GAS_URL){errEl.textContent='GAS URL belum diset. Minta admin isi di Lainnya → Pengaturan, atau muat ulang bila memakai URL bawaan.';errEl.style.display='block';return;}
-btn.disabled=true;btn.textContent='Memeriksa…';fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogin',username:u,password:p})}).then(function(r){return r.json();}).then(function(res){btn.disabled=false;btn.textContent='Masuk';if(res.status==='ok'&&res.token&&parseViewerToken(res.token)){VIEWER_TOKEN=res.token;writeSecureStorage('rdi_viewer_token',res.token);VIEWER_MODE=true;if(res.nama){currentUser={name:res.nama,dept:currentUser.dept||''};localStorage.setItem('rdi_user',JSON.stringify(currentUser));var unameEl=document.getElementById('topbar-username');if(unameEl)unameEl.textContent=res.nama;}
-document.body.classList.add('viewer-mode');hideLoginGate();startAppAfterAuth().then(function(){_applyHashTab();});}else{errEl.textContent=res.message||'Login gagal.';errEl.style.display='block';}}).catch(function(err){btn.disabled=false;btn.textContent='Masuk';errEl.textContent='Gagal terhubung ke server: '+err.message;errEl.style.display='block';});}
+function submitViewerLogin(){
+  var u=document.getElementById('login-username').value.trim();
+  var p=document.getElementById('login-password').value;
+  var btn=document.getElementById('login-submit-btn');
+  var errEl=document.getElementById('login-error');
+  errEl.style.display='none';
+  if(!u||!p){errEl.textContent='Isi username dan password.';errEl.style.display='block';return;}
+  if(!GAS_URL){errEl.textContent='GAS URL belum diset. Minta admin isi di Lainnya → Pengaturan, atau muat ulang bila memakai URL bawaan.';errEl.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Memeriksa…';
+  fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'login',username:u,password:p})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      btn.disabled=false;btn.textContent='Masuk';
+      if(res.status!=='ok'||!res.token){errEl.textContent=res.message||'Login gagal.';errEl.style.display='block';return;}
+      var isEditor=res.role==='editor';
+      if(isEditor){
+        VIEWER_TOKEN='';clearSecureStorage('rdi_viewer_token');
+        EDITOR_KEY=res.token;writeSecureStorage('rdi_editor_key',res.token);
+        writeSecureStorage('rdi_editor_key_set_at',String(Date.now()));
+        VIEWER_MODE=false;
+        document.body.classList.remove('viewer-mode');
+      }else{
+        EDITOR_KEY='';clearSecureStorage('rdi_editor_key');clearSecureStorage('rdi_editor_key_set_at');
+        VIEWER_TOKEN=res.token;writeSecureStorage('rdi_viewer_token',res.token);
+        VIEWER_MODE=true;
+        document.body.classList.add('viewer-mode');
+      }
+      if(res.nama){currentUser={name:res.nama,dept:currentUser.dept||''};localStorage.setItem('rdi_user',JSON.stringify(currentUser));
+        var unameEl=document.getElementById('topbar-username');if(unameEl)unameEl.textContent=res.nama;}
+      hideLoginGate();
+      startAppAfterAuth().then(function(){_applyHashTab();});
+    })
+    .catch(function(err){btn.disabled=false;btn.textContent='Masuk';errEl.textContent='Gagal terhubung ke server: '+err.message;errEl.style.display='block';});
+}
 function logoutViewer(){var t=VIEWER_TOKEN||readSecureStorage('rdi_viewer_token');if(t&&GAS_URL){try{fetch(GAS_URL,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'viewerLogout',viewerToken:t})}).catch(function(){});}catch(e){}}clearSecureStorage('rdi_viewer_token');VIEWER_TOKEN='';location.reload();}
 function logoutEditor(){if(!confirm('Keluar dari mode Editor? Setelah ini kamu perlu login ulang (Editor Key atau akun lihat-saja) untuk masuk lagi.'))return;clearSecureStorage('rdi_editor_key');clearSecureStorage('rdi_editor_key_set_at');location.reload();}
 document.addEventListener('keydown',function(e){if(e.key==='Enter'){var gate=document.getElementById('login-gate');if(gate&&!gate.classList.contains('hide'))submitViewerLogin();}});var _themeSaved=localStorage.getItem('rdi_theme');var _isDark=_themeSaved===null?!window.matchMedia('(prefers-color-scheme: light)').matches:_themeSaved==='dark';function applyTheme(){document.body.classList.toggle('light',!_isDark);var icon=document.getElementById('theme-icon');if(icon)icon.innerHTML=_isDark?'<svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>':'<svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';}
@@ -2334,7 +2364,7 @@ function onStandaloneScannerMessage(e){if(!e||e.origin!==location.origin)return;
 if(d.caller==='hist'){stopInlineScannerHist();var h=document.getElementById('hist-id-input');if(h)h.value=id;setTimeout(function(){if(typeof loadHistory==='function')loadHistory();},200);}
 else{stopInlineScanner();var s=document.getElementById('scan-id-input');if(s)s.value=id;switchTab('scanner');setTimeout(function(){if(typeof lookupItem==='function')lookupItem();},200);}}
 window.addEventListener('message',onStandaloneScannerMessage);window.openStandaloneScanner=openStandaloneScanner;
-window.addEventListener('online',updateOnlineStatus);window.addEventListener('offline',updateOnlineStatus);updateOnlineStatus();/* AUDIT FIX F-13 (v14.90): sebelumnya tidak ada handler siklus-hidup halaman -- kalau app di-background (minimize/switch app) saat scanner aktif, stream kamera tetap menyala (boros baterai, lampu kamera tetap ON) sampai user kembali & pindah tab manual. Hentikan semua scanner begitu tab disembunyikan. */document.addEventListener('visibilitychange',function(){if(document.hidden){stopInlineScanner();stopInlineScannerHist();stopInlineScannerRak();stopInlineScannerMaster();}});var configAdminEntry=false;function showConfig(adminEntry){configAdminEntry=!!adminEntry;stopInlineScanner();stopInlineScannerHist();document.getElementById('gas-url-input').value=GAS_URL;var ekGroup=document.getElementById('editor-key-field-group');if(VIEWER_MODE&&!configAdminEntry){ekGroup.style.display='none';}else{ekGroup.style.display='';document.getElementById('editor-key-input').value=EDITOR_KEY;}
+window.addEventListener('online',updateOnlineStatus);window.addEventListener('offline',updateOnlineStatus);updateOnlineStatus();/* AUDIT FIX F-13 (v14.90): sebelumnya tidak ada handler siklus-hidup halaman -- kalau app di-background (minimize/switch app) saat scanner aktif, stream kamera tetap menyala (boros baterai, lampu kamera tetap ON) sampai user kembali & pindah tab manual. Hentikan semua scanner begitu tab disembunyikan. */document.addEventListener('visibilitychange',function(){if(document.hidden){stopInlineScanner();stopInlineScannerHist();stopInlineScannerRak();stopInlineScannerMaster();}});var configAdminEntry=false;function showConfig(adminEntry){configAdminEntry=!!adminEntry;stopInlineScanner();stopInlineScannerHist();document.getElementById('gas-url-input').value=GAS_URL;/* F5-AUTH: tidak ada lagi field Editor Key — hak akses diatur lewat login. */
 hideStatus('sbar-config');var m=document.getElementById('modal-config');m.classList.add('show');modalFocusOpen(m);}
 
 // ===== SECTION: CONFIG MODAL (GAS URL) =====
@@ -2347,9 +2377,9 @@ function saveConfig(){var url=document.getElementById('gas-url-input').value.tri
 if(!url.includes('script.google.com')){showStatus('sbar-config','s-warn',IC.info+' URL terlihat tidak valid. Pastikan dari GAS.');}
 /* FIX TINGGI: simpan key LAMA dulu — kalau verifikasi gagal, rollback supaya
    user tidak terkunci dengan key yang salah tanpa sadar. */
-var prevUrl=GAS_URL;var prevEditorKey=EDITOR_KEY;var prevViewerToken=VIEWER_TOKEN;GAS_URL=url;localStorage.setItem('rdi_gas_url',url);var justBecameEditor=false;var justBecameViewer=false;if(!VIEWER_MODE||configAdminEntry){EDITOR_KEY=document.getElementById('editor-key-input').value.trim();writeSecureStorage('rdi_editor_key',EDITOR_KEY);if(EDITOR_KEY)writeSecureStorage('rdi_editor_key_set_at',String(Date.now()));else clearSecureStorage('rdi_editor_key_set_at');if(EDITOR_KEY&&VIEWER_MODE)justBecameEditor=true;if(!EDITOR_KEY&&prevEditorKey)justBecameViewer=true;}
-showStatus('sbar-config','s-info',IC.load+' Mengecek koneksi ke GAS…');gasGet({action:'getData'}).then(function(r){if(r.status==='ok'){showStatus('sbar-config','s-ok',IC.ok+' Koneksi berhasil! '+r.total+' item ditemukan.');if(justBecameEditor){showStatus('sbar-config','s-ok',IC.ok+' Editor Key aktif. Memuat ulang halaman…');setTimeout(function(){location.reload();},900);}}else if(justBecameViewer){showStatus('sbar-config','s-ok',IC.ok+' Editor Key dihapus. Memuat ulang ke layar login…');setTimeout(function(){location.reload();},900);}else if(r.needLogin&&EDITOR_KEY){/* FIX TINGGI: key ditolak server → rollback ke key lama */
-GAS_URL=prevUrl;localStorage.setItem('rdi_gas_url',prevUrl);EDITOR_KEY=prevEditorKey;if(prevEditorKey)writeSecureStorage('rdi_editor_key',prevEditorKey);else clearSecureStorage('rdi_editor_key');showStatus('sbar-config','s-err',IC.err+' Editor Key ditolak — perubahan dibatalkan. '+xe(r.message||''));}else{showStatus('sbar-config','s-err',IC.err+' GAS error: '+xe(r.message||'unknown'));}}).catch(function(e){/* rollback network error juga */
+var prevUrl=GAS_URL;var prevEditorKey=EDITOR_KEY;var prevViewerToken=VIEWER_TOKEN;GAS_URL=url;localStorage.setItem('rdi_gas_url',url);var justBecameEditor=false;var justBecameViewer=false;/* F5-AUTH: tidak ada lagi penempelan kunci di Pengaturan — hak akses hanya dari login. */
+showStatus('sbar-config','s-info',IC.load+' Mengecek koneksi ke GAS…');gasGet({action:'getData'}).then(function(r){if(r.status==='ok'){showStatus('sbar-config','s-ok',IC.ok+' Koneksi berhasil! '+r.total+' item ditemukan.');if(justBecameEditor){showStatus('sbar-config','s-ok',IC.ok+' Editor Key aktif. Memuat ulang halaman…');setTimeout(function(){location.reload();},900);}}else if(justBecameViewer){showStatus('sbar-config','s-ok',IC.ok+' Editor Key dihapus. Memuat ulang ke layar login…');setTimeout(function(){location.reload();},900);}else if(r.needLogin&&(EDITOR_KEY||VIEWER_TOKEN)){/* FIX TINGGI: token ditolak server → rollback ke token lama */
+GAS_URL=prevUrl;localStorage.setItem('rdi_gas_url',prevUrl);EDITOR_KEY=prevEditorKey;if(prevEditorKey)writeSecureStorage('rdi_editor_key',prevEditorKey);else clearSecureStorage('rdi_editor_key');showStatus('sbar-config','s-err',IC.err+' Sesi ditolak server — perubahan dibatalkan. '+xe(r.message||''));}else{showStatus('sbar-config','s-err',IC.err+' GAS error: '+xe(r.message||'unknown'));}}).catch(function(e){/* rollback network error juga */
 if(justBecameEditor||justBecameViewer){GAS_URL=prevUrl;localStorage.setItem('rdi_gas_url',prevUrl);EDITOR_KEY=prevEditorKey;if(prevEditorKey)writeSecureStorage('rdi_editor_key',prevEditorKey);else clearSecureStorage('rdi_editor_key');}showStatus('sbar-config','s-err',IC.err+' Gagal konek: '+xe(e&&e.message?e.message:'network'));});}
 var ADMIN_TOOL_LABELS={migrateAddID:'Isi ID Kosong',recalculateAllSaldo:'Kalkulasi Ulang Stok',findOrphanItems:'Cari Item Yatim',findDuplicateItems:'Cari Baris Kembar',resyncMasterLists:'Resync Master List'};
 var ADMIN_TOOL_READONLY={findOrphanItems:true,findDuplicateItems:true,findIdCollisions:true};

@@ -23,7 +23,11 @@ function ctxWith(editorKey, rows) {
     makeSheet('Transaksi_Log', [['Timestamp', 'ID_Item', 'Nama_Item', 'Spesifikasi', 'Jenis', 'Qty', 'RAK', 'Vendor', 'No_Referensi', 'Saldo_Sebelum', 'Saldo_Sesudah', 'Keterangan', 'Admin']]),
     makeSheet('Stok_Saldo', [['ID_Item', 'Nama', 'Unit', 'Total_Masuk', 'Total_Keluar', 'Saldo_Akhir']]),
     makeSheet('Stok_Per_Rak', [['ID_Item', 'RAK', 'Qty']]),
-    makeSheet('Viewer_Accounts', [['Username', 'Password', 'Nama', 'Aktif', 'passwordVersion']].concat(rows || [])),
+    /* F5-AUTH: sheet akun unified. Kolom: Username | Nama | PasswordHash | Role | Aktif | PasswordVersion.
+     * `rows` di bawah memakai urutan LAMA (Username, Password, Nama, Aktif, pv) lalu dipetakan
+     * ke kolom unified — supaya test lama tetap menguji hal yang sama di dunia baru. */
+    makeSheet('RDI_Accounts', [['Username', 'Nama', 'PasswordHash', 'Role', 'Aktif', 'PasswordVersion', 'Catatan']]
+      .concat((rows || []).map(r => [r[0], r[2] || r[0], r[1], 'viewer', r[3], r[4], 'test']))),
   ]);
   return loadCodeGS({ spreadsheet: ss, kdfIterations: KDF_TEST, props: { EDITOR_KEY: editorKey, VIEWER_TOKEN_SECRET: SECRET } });
 }
@@ -106,15 +110,15 @@ function hashWith(ctx, plain) { return ctx.makeSaltedPasswordHash_(plain); }
   const ctx = ctxWith('EK', [['andi', pw, 'Andi', true, '']]);
   const login = ctx.apiViewerLogin({ username: 'andi', password: 'pwC' });
   t('token dari login (pv diturunkan) valid', ctx.verifyViewerToken(login.token).ok === true, JSON.stringify(ctx.verifyViewerToken(login.token)));
-  // Simulasi ADMIN mengubah password ⇒ kolom passwordVersion diganti
-  const sheet = ctx.__ss.getSheetByName('Viewer_Accounts');
-  sheet.getRange(2, 5, 1, 1).setValue('ffffffffffffffff');
-  // cache status 60 detik (by design, BE-09) → simulasikan jendela lewat: bersihkan cache
-  ctx.CacheService._store.delete('viewer_status_andi');
+  // Simulasi ADMIN mengubah password ⇒ kolom PasswordVersion diganti (F5-AUTH: kolom 6)
+  const sheet = ctx.__ss.getSheetByName('RDI_Accounts');
+  sheet.getRange(2, 6, 1, 1).setValue('ffffffffffffffff');
+  // F5-AUTH: verifyAuthToken_ membaca sheet LANGSUNG tiap verifikasi (tanpa cache status 60 dtk)
+  // → Dicatat di §14.5: manfaatnya penonaktifan/password-ganti berlaku INSTAN, tanpa jendela
+  // 60 detik seperti implementasi lama. Sheet kecil (1-2 akun) jadi tidak masalah.
   const after = ctx.verifyViewerToken(login.token);
   t('token LAMA revoked setelah passwordVersion berubah', after.ok === false, JSON.stringify(after));
   const login2 = ctx.apiViewerLogin({ username: 'andi', password: 'pwC' });
-  ctx.CacheService._store.delete('viewer_status_andi');
   t('token BARU (pv baru) valid setelah login ulang', ctx.verifyViewerToken(login2.token).ok === true, JSON.stringify(ctx.verifyViewerToken(login2.token)));
 })();
 
