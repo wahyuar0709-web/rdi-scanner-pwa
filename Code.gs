@@ -292,7 +292,7 @@
 
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.23';
+var API_VERSION = 'v5.24';   // F5-AUTH: unified login + role-based write gate
 var API_BUILD   = '2026-09-27';
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
