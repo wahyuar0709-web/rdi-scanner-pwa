@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.35 |
+| Version | 1.36 |
 | Date | 2026-09-27 |
 | Repo HEAD | lihat §13 (Tahap 3 — 5 gap ditutup + BE-07 ter_koreksi no-op; backend **v5.23 LIVE** di `@42`) |
-| App version | `v15.29` / SW `rdi-stok-v37` / GAS deployment **`@42`** (exec URL tetap; backend v5.23 **LIVE**, L3 terbukti 2026-09-27) |
+| `GAS deployment` | **`@44`** (deployment `@41` di-redeploy dua kali; **exec URL tetap sama**, `access`/`executeAs` tidak diubah; F5-AUTH live) | **L3 PASS 3/0** 2026-09-27 |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -54,7 +54,7 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | Suite L1 in-repo | `tests/l1/` **35** suite (30 FE + **5 backend eksekutabel `gs_*`**) · `npm run test:l1` · assertion floor aktif | **L1 PASS 867/0** (2026-09-27) |
 | Suite L2 in-repo | `tests/l2/` **8** suite · `npm run test:l2` · assertion floor + exit code ketat | **L2 PASS 316/0** (2026-09-27, pre & post-bump) |
 | GAS deployment | **`@42`** (deployment `@41` di-redeploy; **exec URL tetap sama**, `access`/`executeAs` tidak diubah) | **L3 PASS 3/0** 2026-09-27 |
-| Versi API backend | `Code.gs` `API_VERSION` = **v5.23** (`API_BUILD` 2026-09-27) | **LIVE** — `/exec` balas `version v5.23` (L3) |
+| Versi API backend | `Code.gs` `API_VERSION` = **v5.24** (F5-AUTH; `API_BUILD` 2026-09-27) | **LIVE** — `/exec` balas `version v5.24` (L3 @44) |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
 | Suite terakhir label | 51 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
@@ -683,6 +683,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 
 | 1.29 | 2026-09-27 | Tahap 2 backend bisa diuji: harness `tests/tools/gs_harness.js` (Code.gs di `vm` + fake Spreadsheet/Cache/Lock/Utilities) + 4 suite `gs_trx_exec` 30 / `gs_auth_exec` 36 / `gs_stok_exec` 21 / `gs_aset_exec` 35 — **backend 0 → 122 assert eksekutabel** (sebelumnya hanya regex + simulasi model sendiri); L1 **844/0** (34 suite); §1.2, §10, §11, §13 |
 
+| 1.36 | 2026-09-27 | **F5-AUTH DEPLOYED** → `@42` lalu `@44` (versi final; `API_VERSION` v5.23 → **v5.24** karena perilaku client berubah — healthCheck lama masih bala v5.23 sehingga kenaikan baru terbukti setelah redeploy; itulah gunanya endpoint tersebut). **L3 PASS 3/0**: `healthCheck` → `v5.24`, `getData` tanpa kredensial → `needLogin`, action tak dikenal → **ditolak dengan pesan "Akses edit lewat kunci tunggal dinonaktifkan"** = bukti nyata gate F5-AUTH sudah hidup di produksi. **Konsekuensi yang WAJIB diketahui user**: sampai `createAccount_` dijalankan, sheet `RDI_Accounts` belum ada → `hasEditorAccount_()` fail-closed → **kunci shared tidak lagi memberi akses tulis**. Jadi setelah deploy app **read-only** sampai akun editor dibuat (1 menit di Apps Script editor). Viewer tidak terpengaruh: `apiLogin` auto-migrasi `Viewer_Accounts` → `RDI_Accounts` saat login pertama, tanpa reset password. |
 | 1.35 | 2026-09-27 | **F5-AUTH (§14) selesai di lokal** — satu identitas per orang. Sheet `RDI_Accounts` (Username/Nama/PasswordHash/Role/Aktif/PasswordVersion/Catatan) menggantikan Viewer_Accounts + kunci shared; `login` mengembalikan `role` yang dibawa di dalam token HMAC (5 field lama dipertahankan → token viewer yang sudah terbit tetap valid); `checkEditorSession_` jadi satu-satunya gate tulis; `ALLOW_LEGACY_SINGLE_KEY` (FALSE eksplisit) + **aturan transisi self-arming** (legacy hidup hanya selama belum ada akun editor → tidak ada lockout, lalu mati otomatis); `apiLogin` auto-migrasi viewer lama; jalur header **dihapus** (dead code terbukti L3); validasi kekuatan password (min 10 + 3 kelas karakter) agar kunci lemah tidak terulang. Test: `gs_unified_auth_exec` **64/0** (baru), `r2_login_unified` **17/0** (baru, browser), `export_chain_audit` **3/0** (baru). Suite lama diselaraskan: `gs_auth_exec` 36/0, `gs_hardening_exec` 23/0, `sec_classify` 45/0 + 3 ACCEPTED LIMITATION. Gate: **L1 940/0 (37 suite)**, **L2 333/0 (9 suite)**. **BUG-09** tercatat. |
 | 1.34 | 2026-09-27 | **L3 read-only berkredensial** (tool baru `tests/tools/l3_cred_probe.js`; rahasia dari env var `RDI_EDITOR_KEY`, tidak disimpan di repo) → jalur **body PASS**, **header GAGAL** (besar & kecil) → **BE-07 dikoreksi jadi NO-OP/dead code** (§1.4 SEC-06; client sudah body-only, jadi tidak ada kebocoran ke URL). **SEC-05 (HIGH)**: `ALLOW_EDITOR_KEY_FALLBACK=TRUE` + kunci tunggal + respons tanpa `nama` → fallback aktif → akuntabilitas per-orang & penonaktifan akun tidak berfungsi. **SEC-06 (MEDIUM)**. Mutasi tetap **NOT TESTED** (butuh item uji + jendela uji, atau spreadsheet uji + deployment uji). Rahasia produksi tidak disimpan di repo/dokumen. |
 | 1.33 | 2026-09-27 | **DEPLOY @42 DONE + L3 PASS 3/0** (`healthCheck` balas `v5.23` → versi live terbukti). **Bug BE-02b ketahuan saat pre-deploy check, lalu diperbaiki sebelum push**: `editorKeyRateFail_` menaikkan penghitung GLOBAL untuk semua kegagalan termasuk `editorKey` kosong, sementara `editorKeyRateBlocked_` hanya dicek saat key tidak kosong → **30 request viewer biasa (10 mnt) mengunci semua editor** = self-DoS. RED 18P/1F dengan pesan nyata "Terlalu banyak percobaan akses editor"; GREEN **21/0** (BE-02b-1…4: 40 request anonim tetap ditolak, `editor_fail_global` = **0**, editor sah tidak terkunci, tebakan acak tetap diblokir pada tebakan ke-30). Gate: **L1 867/0 (35 suite)**, **L2 316/0 (8 suite)**. Dicatat tanpa memblokir deploy: **BE-08** (2 `clearContents` tersisa — L3278 migrasi sekali-jalan, L3911 rebuild daftar dropdown; jendela "dropdown kosong sesaat", bukan saldo salah) & **SEC-04** (`webapp.access ANYONE_ANONYMOUS` → backend publik; barrier tunggal = gate auth aplikasi; keputusan produk, tidak diubah sepihak). |
