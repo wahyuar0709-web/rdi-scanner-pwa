@@ -216,5 +216,46 @@ t('A3: semua properti dibersihkan setelah dipanggil',
   t('I-7: harness meniru error "numRows<1" (mbox ini essential)', !!threw && /at least 1/.test(threw), threw || 'TIDAK melempar - harness terlalu longgar');
 }
 
+/* ---------- J. hasil fungsi harus terlihat di Execution log ---------- */
+{
+  const ctx = ctxWith([], {});
+  run(ctx, { ACC_USERNAME: 'cek1', ACC_PASSWORD: PW, ACC_ROLE: 'editor', ACC_NAMA: 'Cek Satu' });
+  const logs = (ctx.__logs || []).join('\n');
+  t('J-1: setupAccount menulis baris ringkasan ke Logger', /HASIL setupAccount/.test(logs), logs.slice(0, 90));
+  t('J-2: ringkasan menyebut username yang benar', /username=cek1/.test(logs), 'username=cek1');
+  t('J-3: ringkasan menyebut role yang benar', /role=editor/.test(logs), 'role=editor');
+  t('J-4: ringkasan menyebut DIBUAT vs DIPERBARUI', /DIBUAT|DIPERBARUI/.test(logs), 'status terlihat');
+  t('J-5: hasil JSON lengkap juga dicatat', /\"ok\":true/.test(logs), 'JSON r dicetak');
+  t('J-6: password TIDAK bocor ke log', logs.indexOf(PW) < 0, 'bersih');
+}
+{
+  const ctx = ctxWith([['lama', 'Nama Lama', 'pbkdf2$x$y', 'viewer', true, '1', 'lama']], {});
+  run(ctx, { ACC_USERNAME: 'lama', ACC_PASSWORD: PW, ACC_ROLE: 'viewer' });
+  const logs = (ctx.__logs || []).join('\n');
+  t('J-7: reset reported as DIPERBARUI (bukan DIBUAT)', /role=viewer/.test(logs) && /DIPERBARUI/.test(logs), 'terlihat jelas');
+}
+{
+  // koreksi role yang salah: viewer -> editor harus terlihat bedanya di log
+  const ctx = ctxWith([['orang', 'Orang', 'pbkdf2$x$y', 'viewer', true, '1', 'lama']], {});
+  run(ctx, { ACC_USERNAME: 'orang', ACC_PASSWORD: PW, ACC_ROLE: 'editor' });
+  const logs = (ctx.__logs || []).join('\n');
+  t('J-8: koreksi role viewer->editor terlihat di log', /role=editor/.test(logs), 'role=editor tercatat');
+  t('J-9: baris di sheet benar-benar berubah jadi editor', String(accRow(ctx, 'orang')[3]) === 'editor', 'sheet = editor');
+}
+
+/* ---------- K. panduan CARA KELOLA AKUN harus ada & lengkap ---------- */
+{
+  t('K-1: blok panduan "CARA KELOLA AKUN" ada di Code.gs', /CARA KELOLA AKUN/.test(SRC), 'ada');
+  t('K-2: panduan menjelaskan urutan (setupUnifiedAuth dulu)', /LANGKAH 1/.test(SRC) && /setupUnifiedAuth/.test(SRC), 'ada');
+  t('K-3: panduan memperingatkan jangan jalankan setupAccount dulu', /jangan menjalankan setupAccount DULUAN/.test(SRC), 'ada');
+  t('K-4: panduan menyebut property yang wajib diisi', /ACC_USERNAME/.test(SRC) && /ACC_PASSWORD/.test(SRC) && /ACC_ROLE/.test(SRC), '3 wajib');
+  t('K-5: panduan menegaskan ACC_ROLE sering salah', /sering salah/.test(SRC), 'ada');
+  t('K-6: panduan menjelaskan hanya 2 role', /editor  = /.test(SRC) && /viewer  = /.test(SRC), 'editor & viewer');
+  t('K-7: panduan menjelaskan password tidak bisa dilihat', /TIDAK PERNAH disimpan/.test(SRC) && /DIATUR ULANG/.test(SRC), 'ada');
+  t('K-8: panduan menyebut syarat password', /minimal 10 karakter/.test(SRC) && /GudangRDI#2026/.test(SRC), 'ada + contoh');
+  t('K-9: panduan menyuruh cek Execution log, bukan hanya "completed"', /Execution completed/.test(SRC) && /tidak membuktikan/.test(SRC), 'ada');
+  t('K-10: panduan menyebut reset password (DIPERBARUI)', /DIPERBARUI/.test(SRC), 'ada');
+}
+
 console.log('---- gs_setup_account_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

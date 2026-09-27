@@ -254,6 +254,7 @@ function loadCodeGS(opts) {
   const o = opts || {};
   const src = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
   const clock = { now: () => (o.now === undefined ? Date.now() : o.now) };
+  const logs = []; // 2026-09-27: rekam Logger.log supaya hasil fungsi setup bisa di-assert
   const props = Object.assign({ EDITOR_KEY: 'TEST-EDITOR-KEY', VIEWER_TOKEN_SECRET: 'test-token-secret', ALLOW_EDITOR_KEY_FALLBACK: 'TRUE' }, o.props || {});
   const ss = o.spreadsheet || makeSpreadsheet([]);
   const util = attachUtilitiesAliases(makeUtilities());
@@ -265,12 +266,12 @@ function loadCodeGS(opts) {
     PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (props[k] === undefined ? null : String(props[k])), setProperty: (k, v) => { props[k] = String(v); }, deleteProperty: (k) => { delete props[k]; }, getProperties: () => props }) },
     ContentService: { createTextOutput: (t) => ({ _t: t, setMimeType: () => ({ getContent: () => t }) }), MimeType: util.MimeType },
     SessionService: { getActiveUser: () => ({ getEmail: () => 'tester@example.com' }) },
-    Logger: { log: () => {} },
+    Logger: { log: (...a) => { logs.push(a.map(x => (typeof x === 'string' ? x : String(x))).join(' ')); } },
     console: { log: () => {}, error: () => {}, warn: () => {} },
     Math: Math, JSON: JSON, Date: Date, String: String, Number: Number, Array: Array, Object: Object,
     parseInt: parseInt, parseFloat: parseFloat, isFinite: isFinite, isNaN: isNaN, RegExp: RegExp, Error: Error,
     encodeURIComponent: encodeURIComponent, decodeURIComponent: decodeURIComponent, btoa: (s) => Buffer.from(String(s), 'binary').toString('base64'), atob: (s) => Buffer.from(String(s), 'base64').toString('binary'),
-    __props: props, __ss: ss, __clock: clock, __util: util,
+    __props: props, __ss: ss, __clock: clock, __util: util, __logs: logs,
   };
   sandbox.globalThis = sandbox;
   const context = vm.createContext(sandbox);

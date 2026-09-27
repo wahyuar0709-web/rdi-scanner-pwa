@@ -1200,6 +1200,66 @@ function setupUnifiedAuth() {
  * tanpa menaruh password di source code, dan tidak bisa dipanggil tanpa Script
  * Property yang diisi manual oleh pemilik proyek.
  */
+/* ================================================================================
+ *  CARA KELOLA AKUN  -  baca ini sebelum menjalankan fungsi setup di bawah
+ * ================================================================================
+ *
+ * Semua akun ada di spreadsheet, tab "RDI_Accounts". Satu baris = satu orang:
+ *   Username | Nama | PasswordHash | Role | Aktif | PasswordVersion | Catatan
+ *
+ *  Role hanya punya 2 nilai:
+ *   editor  = boleh mengubah data (tambah stok, catat transaksi, edit master)
+ *   viewer  = HANYA boleh melihat. Tombol ubah tidak muncul, ada badge "LIHAT SAJA".
+ *
+ *  Password TIDAK PERNAH disimpan. Yang tersimpan hanya hash (salt$iterasi$hash,
+ *  satu arah) - jadi password yang lupa TIDAK bisa dilihat, hanya bisa DIATUR ULANG.
+ *
+ * --------------------------------------------------------------------------------
+ *  LANGKAH 1 - sekali saja, kalau tab RDI_Accounts belum pernah dibuat:
+ *    Pilih fungsi  setupUnifiedAuth  di dropdown, klik Run.
+ *    Fungsi ini membuat tab RDI_Accounts dan memindahkan akun viewer lama ke sana.
+ *    PENTING: jangan menjalankan setupAccount DULUAN. setupAccount membuat tab itu
+ *    terisi, sedangkan migrasi hanya jalan otomatis saat tab masih kosong. Kalau
+ *    urutannya dibalik, viewer lama tidak ikut termigrasi dan terkunci.
+ *
+ *  LANGKAH 2 - setiap kali mau buat akun baru atau reset password:
+ *    a) Project Settings > Script Properties, isi property di bawah
+ *    b) Pilih fungsi  setupAccount  di dropdown, klik Run
+ *    c) Buka tab "Execution log" - HARUS ADA baris:
+ *         HASIL setupAccount -> username=<...>  role=<editor|viewer>  DIBUAT/DIPERBARUI
+ *       Periksa nilai role di baris itu. Jangan dianggap selesai hanya karena
+ *       "Execution completed" - itu tidak membuktikan role-nya benar.
+ *
+ *    Property yang diisi (Project Settings > Script Properties > +):
+ *      ACC_USERNAME          WAJIB   username, contoh: gudang02
+ *      ACC_PASSWORD          WAJIB   password baru
+ *      ACC_ROLE              WAJIB   editor  atau  viewer   <- PERHATIKAN, ini yang
+ *                                         sering salah. Tulis persis, huruf kecil.
+ *      ACC_NAMA              opsional nama yang tampil di aplikasi. Kalau kosong,
+ *                                        nama yang sudah ada TIDAK ditimpa.
+ *      ACC_NOTE              opsional catatan di kolom Catatan
+ *      ACC_ALLOW_DOWNGRADE   opsional WAJIB hanya untuk MENURUNKAN editor -> viewer
+ *
+ *  LANGKAH 3 - kalau hanya ingin MENGGANTI PASSWORD orang yang sudah ada:
+ *    Isi ACC_USERNAME (username dia), ACC_PASSWORD (password baru), ACC_ROLE
+ *    (role yang sekarang), lalu Run. Hasilnya "DIPERBARUI", bukan "DIBUAT".
+ *
+ *  SYARAT PASSWORD (ditolak kalau tidak memenuhi):
+ *    - minimal 10 karakter
+ *    - minimal 3 dari 4 jenis: huruf kecil, huruf besar, angka, simbol
+ *    - tidak boleh semua karakter sama
+ *    - tidak boleh diawali: password, 123456789, qwerty, abcdefghij
+ *    Contoh yang lolos: GudangRDI#2026
+ *
+ *  CATATAN KEAMANAN:
+ *    - Semua property ACC_* otomatis terhapus setelah fungsi jalan, jadi tidak perlu
+ *      dibersihkan manual dan password tidak tertinggal di Script Properties.
+ *    - Fungsi-fungsi ini HANYA bisa dijalankan dari editor Apps Script. Tidak ada
+ *      action HTTP untuknya, jadi tidak bisa dipanggil dari internet.
+ *    - Setiap perubahan tercatat di tab "Audit_Log".
+ *    - Kunci EDITOR_KEY lama sudah tidak berlaku sejak F5-AUTH; jangan diubah ke TRUE.
+ * ================================================================================
+ */
 function aktifEditorExists_() {
   var sh = getAccountsSheet_();
   if (!sh) return false;
@@ -1223,6 +1283,8 @@ function setupEditorAccount() {
   }
   var r = createAccount_('wahyu', 'Wahyu Susanto', pw, 'editor', 'operator warehouse');
   logAudit_({ username: 'wahyu', nama: 'Wahyu Susanto', role: 'editor' }, 'setup', { via: 'setupEditorAccount', updated: !!r.updated }, 'ok');
+  Logger.log('HASIL setupEditorAccount -> username=' + r.username + '  role=' + r.role + '  ' + (r.created ? 'DIBUAT' : 'DIPERBARUI'));
+  Logger.log(JSON.stringify(r));
   return r;
 }
 /* ===== ATUR AKUN: buat baru atau reset password (editor & viewer) =====
@@ -1258,6 +1320,11 @@ function setupAccount() {
   var catatan = note || (existing ? 'reset password via setupAccount' : 'dibuat via setupAccount');
   var r = createAccount_(username, namaFinal, password, role, catatan);
   logAudit_({ username: username, nama: namaFinal, role: role }, r.updated ? 'setup-reset' : 'setup', { via: 'setupAccount', role: role }, 'ok');
+  // TAMPILKAN hasilnya: tanpa ini operator tidak bisa memverifikasi role/username
+  // yang benar-benar tersimpan (kejadian nyata: salah pilih role, tidak terlihat).
+  var ringkas = 'HASIL setupAccount -> username=' + r.username + '  role=' + r.role + '  ' + (r.created ? 'DIBUAT' : 'DIPERBARUI');
+  Logger.log(ringkas);
+  Logger.log(JSON.stringify(r));
   return r;
 }
 function checkViewerCredentials(username, password) {
