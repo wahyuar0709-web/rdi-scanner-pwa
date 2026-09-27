@@ -183,5 +183,38 @@ t('A3: semua properti dibersihkan setelah dipanggil',
   t('H3: reset tercatat sebagai "setup-reset" (bukan "setup")', !!row, row ? 'aksi=' + row[4] : 'tidak ada');
 }
 
+/* ---------- I. regression: sheet akun kosong / header-saja (bug produksi) ---------- */
+{
+  // I-1: sheet RDI_Accounts belum ada sama sekali -> ensureAccountsSheet_() bikin header saja
+  const ctx = ctxWith(null, { ACC_USERNAME: 'pertama', ACC_PASSWORD: PW, ACC_ROLE: 'editor' });
+  let r = null, err = null;
+  try { r = ctx.setupAccount(); } catch (e) { err = e.message; }
+  t('I-1: membuat akun PERTAMA di spreadsheet kosong tidak melempar', !err, err || JSON.stringify(r));
+  t('I-2: akun pertama benar-benar tercatat', !!(r && r.created) && !!accRow(ctx, 'pertama'), r ? 'created' : 'tidak');
+  t('I-3: sheet jadi punya header + 1 baris', ctx.getAccountsSheet_().getLastRow() === 2, 'lastRow=' + ctx.getAccountsSheet_().getLastRow());
+}
+{
+  // I-4: sheet SUDAH ADA tapi hanya berisi header (getLastRow()==1). ctxWith([]) = header saja.
+  //      Ini kondisi yang PERSIS memicu error produksi.
+  const ctx = ctxWith([], {});
+  // getAccountsSheet() sengaja null untuk sheet kosong (fail-closed), jadi sheet
+  // harus dibaca langsung untuk memeriksa jumlah baris fisiknya
+  const rawSh = ctx.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('RDI_Accounts');
+  t('I-4: sheet header-saja terdeteksi (getLastRow()==1)', rawSh && rawSh.getLastRow() === 1, 'lastRow=' + (rawSh ? rawSh.getLastRow() : 'null'));
+  t('I-4b: getAccountsSheet() fail-closed pada sheet kosong', ctx.getAccountsSheet_() === null, 'null seperti seharusnya');
+  const { r: r2, err: err2 } = run(ctx, { ACC_USERNAME: 'x', ACC_PASSWORD: PW, ACC_ROLE: 'viewer' });
+  t('I-5: sheet header-saja TIDAK melempar (regression)', !err2, err2 || 'aman');
+  t('I-6: akun tetap tertulis di sheet header-saja', !!(r2 && r2.created) && !!accRow(ctx, 'x'), r2 ? 'created' : 'tidak');
+}
+{
+  // I-7: harness WAJIB meniru validasi Apps Script, kalau tidak regression ini
+  //      akan hijau lagi padahal produksi tetap crash
+  const ctx = ctxWith([], {});
+  const sh = ctx.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('RDI_Accounts');
+  let threw = null;
+  try { sh.getRange(2, 1, 0, 1).getValues(); } catch (e) { threw = e.message; }
+  t('I-7: harness meniru error "numRows<1" (mbox ini essential)', !!threw && /at least 1/.test(threw), threw || 'TIDAK melempar - harness terlalu longgar');
+}
+
 console.log('---- gs_setup_account_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

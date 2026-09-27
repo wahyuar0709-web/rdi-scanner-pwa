@@ -193,6 +193,11 @@ function makeSheet(name, initial) {
         return makeRange(data, 0, 0, nr, nc);
       }
       const r0 = a - 1, c0 = b - 1, nr = c, nc = d === undefined ? 1 : d;
+      /* 2026-09-27: Apps Script asli melempar kalau jumlah baris/kolom < 1.
+       * Fake range diam-diam menelonjong, jadi bug production lolos L1. Meniru
+       * validasi ini BIAR L1 menangkap kelas bug yang sama di tempat lain. */
+      if (!(nr >= 1)) throw new Error('The number of rows in the range must be at least 1. (sheet: ' + (data.length) + ' baris, getRange(' + a + ',' + b + ',' + c + ',' + d + '))');
+      if (!(nc >= 1)) throw new Error('The number of columns in the range must be at least 1. (getRange(' + a + ',' + b + ',' + c + ',' + d + '))');
       return makeRange(data, r0, c0, nr, nc);
     },
     getRangeList(list) {

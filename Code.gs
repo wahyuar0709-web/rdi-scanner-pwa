@@ -1123,7 +1123,11 @@ function createAccount_(username, nama, password, role, catatan) {
   var hash = makeSaltedPasswordHash_(String(password));
   var pv = String(Date.now());
   var row = [u, n, hash, r, true, pv, String(catatan||'')];
-  var rows = sh.getRange(2,1,Math.max(0,sh.getLastRow()-1),1).getValues();
+  // FIX 2026-09-27: getLastRow()=1 (sheet baru, header saja) -> getLastRow()-1=0
+  // dan getRange(...0...) melempar di Apps Script asli. Math.max(0,..) justru
+  // menyebabkannya. Jadi: baca hanya kalau ada minimal 1 baris data.
+  var lastRowAcc = sh.getLastRow();
+  var rows = lastRowAcc >= 2 ? sh.getRange(2,1,lastRowAcc-1,1).getValues() : [];
   for (var i=0;i<rows.length;i++) {
     if (String(rows[i][0]||'').trim().toLowerCase() === u.toLowerCase()) {
       sh.getRange(i+2,1,1,7).setValues([row]);
