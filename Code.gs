@@ -292,8 +292,8 @@
 
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.25';   // + setupEditorAccount(): bootstrap akun editor tanpa password di kode
-var API_BUILD   = '2026-09-27.2';  // .2 = build setelah v5.24 (UI fix + setup editor)
+var API_VERSION = 'v5.26';   // + setupAccount(): buat/reset akun editor & viewer
+var API_BUILD   = '2026-09-27.3';  // .3 = build setelah v5.24 (UI fix, setup editor, setup akun)
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
