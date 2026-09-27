@@ -1221,6 +1221,41 @@ function setupEditorAccount() {
   logAudit_({ username: 'wahyu', nama: 'Wahyu Susanto', role: 'editor' }, 'setup', { via: 'setupEditorAccount', updated: !!r.updated }, 'ok');
   return r;
 }
+/* ===== ATUR AKUN: buat baru atau reset password (editor & viewer) =====
+ * Credential dibaca dari Script Property lalu langsung dihapus, jadi tidak pernah
+ * ada di source code dan tidak tertinggal property setelah fungsi jalan.
+ * Hanya bisa dipanggil dari editor Apps Script - tidak ada action HTTP untuk ini.
+ */
+function setupAccount() {
+  var props = PropertiesService.getScriptProperties();
+  var username = String(props.getProperty('ACC_USERNAME') || '').trim();
+  var password = String(props.getProperty('ACC_PASSWORD') || '');
+  var role = String(props.getProperty('ACC_ROLE') || '').trim().toLowerCase();
+  var props_nama_ = props.getProperty('ACC_NAMA');
+  var note = String(props.getProperty('ACC_NOTE') || '').trim();
+  var allowDown = String(props.getProperty('ACC_ALLOW_DOWNGRADE') || '').trim().toUpperCase() === 'TRUE';
+  // bersihkan property SEBELUM validasi, supaya password tidak tertinggal walau gagal
+  ['ACC_USERNAME', 'ACC_PASSWORD', 'ACC_ROLE', 'ACC_NAMA', 'ACC_NOTE', 'ACC_ALLOW_DOWNGRADE'].forEach(function(k) {
+    try { props.deleteProperty(k); } catch (e) {}
+  });
+  if (!username) throw new Error("Script Property ACC_USERNAME belum diisi.");
+  if (!password) throw new Error("Script Property ACC_PASSWORD belum diisi.");
+  if (role !== 'editor' && role !== 'viewer') {
+    throw new Error("Script Property ACC_ROLE harus 'editor' atau 'viewer', tidak '" + role + "'.");
+  }
+  // pengaman: jangan sampai editor aktif turun jadi viewer karena salah isi ACC_ROLE
+  var existing = findAccount_(username);
+  var namaFinal = String(props_nama_ || '').trim();
+  // reset password tidak boleh menimpa nama yang sudah ada
+  if (!namaFinal) namaFinal = (existing && existing.nama) ? existing.nama : username;
+  if (existing && existing.role === 'editor' && existing.aktif && role === 'viewer' && !allowDown) {
+    throw new Error('' + username + ' masih editor aktif. Menurunkannya ke viewer butuh Script Property ACC_ALLOW_DOWNGRADE = TRUE.');
+  }
+  var catatan = note || (existing ? 'reset password via setupAccount' : 'dibuat via setupAccount');
+  var r = createAccount_(username, namaFinal, password, role, catatan);
+  logAudit_({ username: username, nama: namaFinal, role: role }, r.updated ? 'setup-reset' : 'setup', { via: 'setupAccount', role: role }, 'ok');
+  return r;
+}
 function checkViewerCredentials(username, password) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();

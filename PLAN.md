@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.41 |
+| Version | 1.42 |
 | Date | 2026-09-27 |
 | Repo HEAD | lihat §13 (Tahap 3 — 5 gap ditutup + BE-07 ter_koreksi no-op; backend **v5.23 LIVE** di `@42`) |
 | `GAS deployment` | **`@44`** (deployment `@41` di-redeploy dua kali; **exec URL tetap sama**, `access`/`executeAs` tidak diubah; F5-AUTH live) | **L3 PASS 3/0** 2026-09-27 |
@@ -710,6 +710,18 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 **Test yang diperbaiki (bukan dilemahkan)** saat menjalankan gate: `ui06d_font_contrast` kini memasangkan token **dalam satu blok tema** dan memeriksa **kedua** tema (versi lama menyilangkan `--text3` terang vs `--bg` gelap = false positive 3.13:1); `bug_cetak_label3` kini menerima `defer` sambil tetap menjaga urutan muat + `defer`; `handler_coverage` tersandung literal `<button` di komentar JS (komentar dirapikan).
 
 **Insidental — disk C: penuh (0 GB free)** setelah 210 folder profil Chrome leftover (~4.2 GB) menumpuk di Temp karena Chrome dibunuh paksa saat suite gagal/timeout. Dibersihkan manual, dan `tests/run-l2.js` sekarang **otomatis menghapus profil Chrome stale di awal run** (`cleanupStaleChromeProfiles()`). |
+| 1.42 | 2026-09-27 | **BE-05 setupAccount() - alat buat/reset akun editor & viewer.** Kebutuhan nyata: viewer `warehouse` (hasil migrasi) memakai password lama yang tidak diketahui siapa pun, dan **tidak ada cara memulihkannya** - `PasswordHash` berformat `salt$iterasi$hash` (PBKDF2, satu arah). Yang tersimpan cuma `2fc564fc-…$100000$b3b5…`; tidak ada tombol "tampilkan password", dan memang tidak boleh ada. Jalan satu-satunya = **reset**, tapi `setupEditorAccount()` (BE-04) hardcoded ke wahyu/editor sehingga tidak bisa dipakai. `setupAccount()` membaca `ACC_USERNAME`, `ACC_PASSWORD`, `ACC_ROLE`, `ACC_NAMA`, `ACC_NOTE`, `ACC_ALLOW_DOWNGRADE` dari Script Property, menghapus keenamnya sebelum validasi apa pun, lalu memanggil `createAccount_` - jadi create (belum ada) maupun reset (sudah ada) lewat satu jalur. Tidak terekspos lewat HTTP.
+
+**Bug yang ditemukan & diperbaiki saat menulis test:** versi pertama menimpa kolom `Nama` jadi username saat reset password (`"Wahyu susanto"` tertimpa `"warehouse"` - kehilangan data). Sekarang bila `ACC_NAMA` tidak diisi, nama yang sudah ada dipertahankan; `ACC_NAMA` yang diisi tetap dapat menimpa secara sengaja.
+
+**Test `tests/l1/gs_setup_account_exec.js` - 37 PASS / 0 FAIL**, termasuk kasus nyata `warehouse`: reset hash hasil migrasi, hanya 1 baris (update in-place, tidak duplikat), password baru terverifikasi, nama lama tetap utuh. Plus: buat viewer/editor baru, guard penolakan turunkan editor ke viewer tanpa `ACC_ALLOW_DOWNGRADE=TRUE` (editor non-aktif boleh diturunkan), semua error path (tanpa username/tanpa password/role ngawur/password lemah) tetap membersihkan property, hak akses benar-benar berbeda (token viewer ditolak di gerbang tulis, token editor diterima), jejak audit `setup` vs `setup-reset`, dan tidak ada kredensial di source.
+
+**Koreksi atas komentar di kode:** `legacySingleKeyEnabled_()`  Sebaliknya yang terlihat di komentar transisi, jalur kunci legacy **tidak pernah hidup otomatis**. `hasEditorAccount_()` mengembalikan `true` (fail-closed) saat tab akun kosong atau hilang, sehingga legacy selalu OFF kecuali `ALLOW_LEGACY_SINGLE_KEY=TRUE` eksplisit. Test G1 meng-assert ini. Artinya kebocoran `EDITOR_KEY` lama sudah tertutup sejak F5-AUTH dideploy - bukan perlu menunggu akun editor dibuat.
+
+**Temuan sampingan:** tab `Editor_Accounts` (tab lama `Nama`/`EditorKey`/`Aktif`) **tidak lagi terjangkau** - `checkEditorKey()` tidak pernah dipanggil dari `doPost` atau `doGet`; satu-satunya gerbang tulis adalah `checkEditorSession_()`, dan `checkLegacySingleKey_()` hanya membandingkan dengan satu `EDITOR_KEY` Script Property tanpa menyentuh `Editor_Accounts`. Jadi kunci per-orang di tab itu adalah kode mati, bukan kredensial aktif. Bisa dihapus dari spreadsheet setelah konfirmasi.
+
+L1 **1050 PASS / 0 FAIL (40 suite)**. Belum dideploy.
+
 | 1.41 | 2026-09-27 | **BE-04 setupEditorAccount() - kunci bootstrap akun editor** (`Code.gs`, API `v5.24` -> **`v5.25`**, build `2026-09-27.2`). Konteks: F5-AUTH mematikan shared key, jadi produksi **read-only** sampai ada akun editor. `createAccount_` butuh 5 argumen sehingga tidak bisa dipanggil dari tombol Run Apps Script (selalu dipanggil tanpa argumen). Solusi: fungsi permanen `setupEditorAccount()` yang membaca password dari **Script Property `TEMP_EDITOR_PW`**, menghapusnya seketika, lalu memanggil `createAccount_(wahyu, Wahyu Susanto, pw, editor, operator warehouse)`.
 
 **Sifat keamanan yang jadi assert, bukan sekadar catatan:**
