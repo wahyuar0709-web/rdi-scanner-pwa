@@ -116,8 +116,47 @@ function runSuite(file) {
   };
 }
 
+function dirSize(dir) {
+  let total = 0;
+  let items = [];
+  try { items = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return 0; }
+  for (const it of items) {
+    const p = path.join(dir, it.name);
+    if (it.isDirectory()) total += dirSize(p);
+    else { try { total += fs.statSync(p).size; } catch (e) { /* sudah hilang */ } }
+  }
+  return total;
+}
+
+/* Pembersihan profil Chrome yang tertinggal dari run sebelumnya.
+ * 2026-09-27: disk C: habis (0 GB free) karena 210 folder profil Chrome (~4.2 GB)
+ * menumpuk di Temp — Chrome dibunuh paksa saat suite gagal/timeout sehingga folder
+ * profilnya tidak terhapus. Sekarang dibersihkan di awal tiap run.
+ * Hanya folder dengan awalan milik suite L2/CDP yang disentuh. */
+function cleanupStaleChromeProfiles() {
+  const os = require('os');
+  const tmp = os.tmpdir();
+  const patterns = [/^rdi-/, /^cdp-probe/, /^cdp-/];
+  let entries = [];
+  try { entries = fs.readdirSync(tmp, { withFileTypes: true }); } catch (e) { return; }
+  let removed = 0, freed = 0;
+  for (const e of entries) {
+    if (!e.isDirectory() || !patterns.some(p => p.test(e.name))) continue;
+    const full = path.join(tmp, e.name);
+    try {
+      freed += dirSize(full);
+      fs.rmSync(full, { recursive: true, force: true });
+      removed++;
+    } catch (err) { /* sedang dipakai suite lain? abaikan */ }
+  }
+  if (removed) {
+    console.log('CLEANUP | profil Chrome stale dihapus: ' + removed + ' folder, ' + (freed / 1024 / 1024).toFixed(1) + ' MB');
+  }
+}
+
 function main() {
   ensureResults();
+  cleanupStaleChromeProfiles();
   const suites = listSuites();
   if (suites.length === 0) {
     console.error('FAIL | no suites in tests/l2');

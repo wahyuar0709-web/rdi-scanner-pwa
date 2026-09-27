@@ -81,8 +81,17 @@ t('BUG3: PDF QR px in 8..32', qrPxPdf >= 8 && qrPxPdf <= 32, 'px=' + qrPxPdf);
 // ================= Bug 2: download instan via jsPDF vector =================
 const jsPdfExists = fs.existsSync(path.join(ROOT, 'js/jspdf.min.js'));
 t('BUG2: js/jspdf.min.js vendored', jsPdfExists, jsPdfExists);
-const jsPdfScript = /<script src="\.\/js\/jspdf\.min\.js"><\/script>/.test(src);
-t('BUG2: index.html loads jspdf before cetak.js', jsPdfScript, jsPdfScript);
+// 2026-09-27: jspdf diberi `defer` (UI-11: jangan memblokir render). Regex lama hanya
+// menerima bentuk tanpa atribut, jadi gagal. Yang tetap dijaga: jspdf HARUS dimuat
+// sebelum cetak.js (cetak.js memakainya), dan defer tidak mengubah urutan itu.
+const jsPdfScript = /<script src="\.\/js\/jspdf\.min\.js"[^>]*><\/script>/.test(src);
+t('BUG2: index.html loads jspdf (tag dengan/tanpa atribut)', jsPdfScript, jsPdfScript);
+const jspdfAt = src.indexOf('./js/jspdf.min.js');
+const cetakAt = src.indexOf('./js/cetak.js');
+t('BUG2: jspdf dimuat SEBELUM cetak.js (cetak.js bergantung padanya)',
+  jspdfAt > 0 && cetakAt > jspdfAt, 'jspdf@' + jspdfAt + ' cetak@' + cetakAt);
+const jspdfDefer = /<script src="\.\/js\/jspdf\.min\.js" defer><\/script>/.test(src);
+t('BUG2: jspdf tidak memblokir render (defer)', jspdfDefer, jspdfDefer);
 const hasDLP = /function\s+downloadLabelPDF\s*\(/.test(cetakSrc);
 t('BUG2: downloadLabelPDF defined in cetak.js', hasDLP, hasDLP);
 const genBranch = /generateOutput\(mode\)[\s\S]{0,1200}downloadLabelPDF\(expanded/.test(src);

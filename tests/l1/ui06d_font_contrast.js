@@ -44,22 +44,38 @@ for (const sel of SELS) {
 }
 
 // --- UI-08: kontras var tema ---
-function vars(name) {
-  const re = new RegExp('--' + name + ':\\s*([^;}]+)[;}]', 'g');
-  const out = []; let m;
-  while ((m = re.exec(src)) !== null) out.push(m[1].trim());
-  return [...new Set(out)];
+// PERBAIKAN 2026-09-27: versi lama mengumpulkan --text3/--bg dari SEMUA blok tema jadi satu
+// daftar lalu menyilangkannya -> setelah palet gelap ditambahkan, ia membandingkan
+// --text3 versi terang dengan --bg versi gelap (3.13:1) = FALSE POSITIVE. Sekarang token
+// dipasangkan DALAM satu blok tema, dan KEDUA tema ikut diperiksa (lebih ketat, bukan lebih longgar).
+function blockVars(selector) {
+  const at = src.indexOf(selector);
+  if (at < 0) return null;
+  const open = src.indexOf('{', at);
+  let d = 0, j = open;
+  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (d === 0) break; } }
+  const body = src.slice(open + 1, j);
+  const get = (name) => { const m = new RegExp('--' + name + ':\\s*([^;}]+)').exec(body); return m ? m[1].trim() : null; };
+  return { bg: get('bg'), surface: get('surface'), surface2: get('surface2'), text3: get('text3'), text2: get('text2'), text: get('text') };
 }
-const bgs = vars('bg'), t3s = vars('text3'), s2s = vars('surface2'), s1s = vars('surface');
-t('UI-08: --text3 terdefinisi', t3s.length >= 1, JSON.stringify(t3s));
-for (const t3 of t3s) {
-  for (const [label, arr] of [['bg', bgs], ['surface2', s2s], ['surface', s1s]]) {
-    for (const bg of arr) {
-      const c = contrast(t3, bg);
-      t('UI-08: kontras ' + t3 + ' vs --' + label + ' ' + bg + ' ≥4.5:1', c >= 4.5, c.toFixed(2) + ':1');
-    }
+const THEMES = [
+  ['terang (:root)', blockVars(':root')],
+  ['gelap (body:not(.light))', blockVars('body:not(.light)')],
+];
+let themeOk = 0;
+for (const [name, v] of THEMES) {
+  if (!v || !v.text3) { t('UI-08: token tema ' + name + ' lengkap', false, JSON.stringify(v)); continue; }
+  for (const key of ['bg', 'surface', 'surface2']) {
+    const c = contrast(v.text3, v[key]);
+    t('UI-08[' + name + ']: --text3 ' + v.text3 + ' vs --' + key + ' ' + v[key] + ' ≥4.5:1', c >= 4.5, c.toFixed(2) + ':1');
   }
+  const cText = contrast(v.text, v.surface);
+  t('UI-08[' + name + ']: --text ' + v.text + ' vs --surface ≥4.5:1', cText >= 4.5, cText.toFixed(2) + ':1');
+  const cText2 = contrast(v.text2, v.surface);
+  t('UI-08[' + name + ']: --text2 ' + v.text2 + ' vs --surface ≥4.5:1', cText2 >= 4.5, cText2.toFixed(2) + ':1');
+  themeOk++;
 }
+t('UI-08: kedua tema punya token yang diperiksa', themeOk === 2, themeOk + '/2 tema');
 t('UI-08: nilai lama #78716c tidak dipakai lagi', src.indexOf('#78716c') === -1, 'masih ada');
 t('UI-08: tidak ada #f59e0b sebagai warna teks (color:, bukan border-/background-color:)', !/(?<![-\w])color:\s*#f59e0b/i.test(src), 'ada color:#f59e0b');
 
