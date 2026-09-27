@@ -292,8 +292,8 @@
 
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.24';   // F5-AUTH: unified login + role-based write gate
-var API_BUILD   = '2026-09-27';
+var API_VERSION = 'v5.25';   // + setupEditorAccount(): bootstrap akun editor tanpa password di kode
+var API_BUILD   = '2026-09-27.2';  // .2 = build setelah v5.24 (UI fix + setup editor)
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -1168,11 +1168,58 @@ function setupUnifiedAuth() {
   var mig = migrateToUnifiedAccounts_();
   var msg = "Sheet " + SHEET_ACCOUNTS + " siap.\n" +
     'Migrasi: ' + mig.migrated + ' viewer baru, ' + mig.skipped + ' sudah ada. Total akun: ' + mig.total + '.\n\n' +
-    'LANJUT (pilih fungsi di dropdown lalu Run):\n' +
-    '  createAccount_("wahyu", "Wahyu Susanto", "PasswordKuatAnda123!", "editor", "operator warehouse")\n\n' +
+    'LANJUT - jangan panggil createAccount_ langsung (butuh 5 argumen, tidak bisa dari tombol Run):\n' +
+    '  1. Project Settings > Script Properties > tambah TEMP_EDITOR_PW = <password>\n' +
+    '  2. Pilih fungsi setupEditorAccount di dropdown, lalu Run.\n\n' +
+    'PENTING: jangan jalankan createAccount_ sebelum setupUnifiedAuth ini. createAccount_' +
+    'membuat dan mengisi sheet RDI_Accounts, sedangkan migrasi viewer lama hanya jalan' +
+    'otomatis saat sheet itu masih kosong. Kalau createAccount_ jalan lebih dulu, viewer' +
+    'lama di Viewer_Accounts tidak ikut termigrasi dan jadi terkunci.\n\n' +
     'Lalu set Script Property ALLOW_LEGACY_SINGLE_KEY = FALSE (atau kosongkan).';
   try { SpreadsheetApp.getUi().alert(msg); } catch(e) { Logger.log(msg); }
   return mig;
+}
+/* ===== SETUP AKUN EDITOR PERTAMA (27/09/2026) =====
+ * F5-AUTH mematikan shared key, jadi tanpa akun editor aplikasi produksi read-only.
+ * Fungsi ini adalah kunci bootstrap: dipanggil dari editor Apps Script untuk membuat
+ * akun editor Wahyu. Password TIDAK PERNAH ada di dalam kode ini.
+ *
+ * CARA PAKAI:
+ *   1. Project Settings > Script Properties > tambah TEMP_EDITOR_PW = <password>
+ *      (opsional: TEMP_EDITOR_FORCE=TRUE hanya bila memang ingin MENIMPA akun editor
+ *       yang sudah ada, mis. karena lupa password)
+ *   2. Pilih fungsi setupEditorAccount di dropdown, klik Run
+ *   3. Execution log harus berisi {"ok":true,"created":true,"username":"wahyu",...}
+ *   4. Tidak perlu menghapus property manual - fungsi ini sudah membersihkannya
+ *
+ * Catatan: jangan dihapus dari kode. Ini satu-satunya cara bootstrap akun editor
+ * tanpa menaruh password di source code, dan tidak bisa dipanggil tanpa Script
+ * Property yang diisi manual oleh pemilik proyek.
+ */
+function aktifEditorExists_() {
+  var sh = getAccountsSheet_();
+  if (!sh) return false;
+  var rows = sh.getRange(2, 1, Math.max(0, sh.getLastRow() - 1), 7).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][COL_ACC.ROLE] || '').trim().toLowerCase() !== 'editor') continue;
+    if (parseAktif_(rows[i][COL_ACC.AKTIF])) return true;
+  }
+  return false;
+}
+function setupEditorAccount() {
+  var props = PropertiesService.getScriptProperties();
+  var pw = String(props.getProperty('TEMP_EDITOR_PW') || '');
+  if (!pw) throw new Error('Script Property TEMP_EDITOR_PW belum diisi. Isi dulu di Project Settings > Script Properties.');
+  var force = String(props.getProperty('TEMP_EDITOR_FORCE') || '').trim().toUpperCase() === 'TRUE';
+  props.deleteProperty('TEMP_EDITOR_PW');
+  props.deleteProperty('TEMP_EDITOR_FORCE');
+  // hapus password SEBELUM apa pun yang bisa melempar, supaya tidak tertinggal
+  if (!force && aktifEditorExists_()) {
+    throw new Error('Sudah ada akun editor aktif, jadi dibatalkan agar akun produksi tidak tertimpa. Untuk reset password, isi juga Script Property TEMP_EDITOR_FORCE = TRUE lalu jalankan ulang.');
+  }
+  var r = createAccount_('wahyu', 'Wahyu Susanto', pw, 'editor', 'operator warehouse');
+  logAudit_({ username: 'wahyu', nama: 'Wahyu Susanto', role: 'editor' }, 'setup', { via: 'setupEditorAccount', updated: !!r.updated }, 'ok');
+  return r;
 }
 function checkViewerCredentials(username, password) {
   try {

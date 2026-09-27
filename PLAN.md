@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.40 |
+| Version | 1.41 |
 | Date | 2026-09-27 |
 | Repo HEAD | lihat §13 (Tahap 3 — 5 gap ditutup + BE-07 ter_koreksi no-op; backend **v5.23 LIVE** di `@42`) |
 | `GAS deployment` | **`@44`** (deployment `@41` di-redeploy dua kali; **exec URL tetap sama**, `access`/`executeAs` tidak diubah; F5-AUTH live) | **L3 PASS 3/0** 2026-09-27 |
@@ -710,6 +710,21 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 **Test yang diperbaiki (bukan dilemahkan)** saat menjalankan gate: `ui06d_font_contrast` kini memasangkan token **dalam satu blok tema** dan memeriksa **kedua** tema (versi lama menyilangkan `--text3` terang vs `--bg` gelap = false positive 3.13:1); `bug_cetak_label3` kini menerima `defer` sambil tetap menjaga urutan muat + `defer`; `handler_coverage` tersandung literal `<button` di komentar JS (komentar dirapikan).
 
 **Insidental — disk C: penuh (0 GB free)** setelah 210 folder profil Chrome leftover (~4.2 GB) menumpuk di Temp karena Chrome dibunuh paksa saat suite gagal/timeout. Dibersihkan manual, dan `tests/run-l2.js` sekarang **otomatis menghapus profil Chrome stale di awal run** (`cleanupStaleChromeProfiles()`). |
+| 1.41 | 2026-09-27 | **BE-04 setupEditorAccount() - kunci bootstrap akun editor** (`Code.gs`, API `v5.24` -> **`v5.25`**, build `2026-09-27.2`). Konteks: F5-AUTH mematikan shared key, jadi produksi **read-only** sampai ada akun editor. `createAccount_` butuh 5 argumen sehingga tidak bisa dipanggil dari tombol Run Apps Script (selalu dipanggil tanpa argumen). Solusi: fungsi permanen `setupEditorAccount()` yang membaca password dari **Script Property `TEMP_EDITOR_PW`**, menghapusnya seketika, lalu memanggil `createAccount_(wahyu, Wahyu Susanto, pw, editor, operator warehouse)`.
+
+**Sifat keamanan yang jadi assert, bukan sekadar catatan:**
+- Password **tidak pernah ada di source code** - hanya nama property yang muncul di repo.
+- Property dihapus **sebelum** validasi apa pun yang bisa melempar, jadi password lemah tidak tertinggal di Script Property.
+- `aktifEditorExists_()` menolak menimpa akun editor aktif secara default, sehingga tidak bisa menimpa akun produksi karena salah klik. Jalur reset password hanya aktif bila `TEMP_EDITOR_FORCE=TRUE` **persis** (nilai `ya`/`1` tidak dihitung).
+- Sheet `RDI_Accounts` **tidak** ikut dibuat kalau property kosong, jadi fungsi yang gagal tidak meninggalkan-jejak.
+- Hasil dicatat ke `Audit_Log` dengan aksi `setup`, dan test memastikan password tidak bocor ke baris audit.
+
+**Test baru `tests/l1/gs_setup_editor_exec.js` - 35 PASS / 0 FAIL**, mencakup: tidak ada literal password di source; happy path (baris akun, hash bukan plaintext, property terhapus); tanpa property; password lemah ditolak dan property tetap terhapus; editor aktif tidak tertimpa; `FORCE=TRUE` benar-benar mengganti password (hash lama tidak berlaku lagi); `FORCE=ya` **tidak** dihitung force; editor non-aktif tidak menghalangi; viewer lama tidak tersentuh; akun hasil setup benar-benar bisa `apiLogin` dan membawa role editor; jejak audit; dan 3x pemanggilan tanpa property semuanya ditolak.
+
+**Catatan urutan yang penting:** `createAccount_` tidak boleh dijalankan sebelum `setupUnifiedAuth()`. `createAccount_` memanggil `ensureAccountsSheet_()` yang membuat dan mengisi sheet, sedangkan auto-migrasi di `apiLogin` hanya jalan bila `!getAccountsSheet_()`. Kalau `createAccount_` jalan lebih dulu, sheet jadi terisi, auto-migrasi tidak pernah menyala, dan **semua viewer lama di `Viewer_Accounts` terkunci**.
+
+L1 **1013 PASS / 0 FAIL (39 suite)**. L2 tidak dijalankan ulang karena tidak ada file frontend yang berubah sejak L2 terakhir (**347 PASS / 0 FAIL, 10 suite**).
+
 | 1.40 | 2026-09-27 | **Ronde 2 UI - tool ukur diperbaiki, lalu 8 temuan NYATA lain muncul.** `ui_measure` v1 punya 3 cacat yang menghasilkan temuan palsu: (a) `effBg` hanya membaca `backgroundColor`, sehingga elemen berlatar GRADIENT - topbar brand dan btn-primary - dianggap transparan dan walker naik ke body, sehingga teks putih di topbar dilaporkan **1.15:1** padahal aslinya 8.86:1; (b) warna semi-transparan dipakai mentah sebagai kandidat background, sehingga chip putih 15% vs teks putih dilaporkan **1:1**; (c) elemen yang tidak terlihat ikut diukur - `.sr-only` ter-clip `rect(0px,0px,0px,0px)` berukuran 1x1px, dan label tab yang 0x0 di sidebar icon-only pada lebar >=641px - sehingga muncul **1.52:1** dan **1.43:1** palsu. Ketiganya diperbaiki: baca color stop gradien, komposit layer semi-transparan di atas tiap stop, dan tambahkan effectivelyHidden. **Ambang WCAG tidak dilonggarkan** - tetap 4.5:1 / 3:1 dan target tetap 24px.
 
 Setelah tool benar, ditemukan **8 masalah nyata yang sebelumnya luput** - semuanya sudah diperbaiki di app v15.30:
