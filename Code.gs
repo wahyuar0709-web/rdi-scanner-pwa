@@ -445,7 +445,18 @@ function editorKeyRateKey_(editorKey) { try { return 'editor_fail_' + Utilities.
    (setiap tebakan dapat penghitung sendiri). Total 30 kegagalan/10 menit → semua percobaan
    editor ditolak sementara, apa pun kuncinya. Sukses → reset. */
 var EDITOR_RATE_GLOBAL_MAX = 30;
-function editorKeyRateFail_(editorKey) { try { var c = CacheService.getScriptCache(); var k = editorKeyRateKey_(editorKey); var n = parseInt(c.get(k)||'0',10)+1; c.put(k, String(n), 600); var g = 'editor_fail_global'; var gn = parseInt(c.get(g)||'0',10)+1; c.put(g, String(gn), 600); return n; } catch (e) { return 0; } }
+/* FIX BE-02b (2026-09-27, ditemukan saat pre-deploy check): key KOSONG tidak dihitung.
+ * Penyebab: sebelumnya SETIAP kegagalan menaikkan penghitung global - termasuk request viewer
+ * biasa (editorKey = ''). Karena editorKeyRateBlocked_ hanya dicek saat key tidak kosong,
+ * hasilnya 30 request biasa dalam 10 menit -> semua editor terkunci 'Terlalu banyak percobaan
+ * akses editor': self-DoS yang bisa dipicu siapa pun yang cuma membuka/mereload app.
+ * Aman dikecualikan: key kosong mustahil dicocokkan dengan EDITOR_KEY (constantTimeEquals_
+ * dengan string kosong tidak pernah sama dengan key asli), jadi tidak ada nilai brute force
+ * yang hilang dengan tidak menghitungnya. */
+function editorKeyRateFail_(editorKey) {
+  if (!String(editorKey||'')) return 0;
+  try { var c = CacheService.getScriptCache(); var k = editorKeyRateKey_(editorKey); var n = parseInt(c.get(k)||'0',10)+1; c.put(k, String(n), 600); var g = 'editor_fail_global'; var gn = parseInt(c.get(g)||'0',10)+1; c.put(g, String(gn), 600); return n; } catch (e) { return 0; }
+}
 function editorKeyRateBlocked_(editorKey) { try { var c = CacheService.getScriptCache(); if (parseInt(c.get('editor_fail_global')||'0',10) >= EDITOR_RATE_GLOBAL_MAX) return true; return parseInt(c.get(editorKeyRateKey_(editorKey))||'0',10) >= 10; } catch (e) { return false; } }
 function editorKeyRateReset_(editorKey) { try { var c = CacheService.getScriptCache(); c.remove(editorKeyRateKey_(editorKey)); c.remove('editor_fail_global'); } catch (e) {} }
 /* --- akhir rate limit editor key --- */

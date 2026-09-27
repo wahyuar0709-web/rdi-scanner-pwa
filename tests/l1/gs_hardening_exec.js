@@ -186,5 +186,50 @@ function countKdfCalls(ctx) {
   t('HC-6: healthCheck tidak mengubah sheet apa pun', kit.getSheetByName('Stok_Saldo').getLastRow() === before, 'lastRow=' + before);
 })();
 
+/* ================= BE-02b: traffic viewer TIDAK boleh mengunci editor =================
+ * BUG DITEMUKAN SAAT PRE-DEPLOY CHECK (2026-09-27): `editorKeyRateFail_` menaikkan
+ * penghitung GLOBAL untuk SEMUA kegagalan, termasuk ketika editorKey kosong.
+ * Padahal `editorKeyRateBlocked_` hanya dipanggil kalau editorKey tidak kosong
+ * (baris 541: `if (editorKey && editorKeyRateBlocked_(editorKey))`).
+ * Akibatnya: 30 request viewer biasa (editorKey = '') dalam 10 menit -> global = 30
+ * -> SEMUA editor terkunci "Terlalu banyak percobaan akses editor" sampai window habis.
+ * Itu self-DoS: bisa dipicu siapa pun yang匿名 simplement membuka app, cukup reload.
+ * Perbaikan: kegagalan dengan key KOSONG tidak dihitung sama sekali.
+ * Keamanan tetap utuh: key kosong tidak mungkin dicocokkan dengan EDITOR_KEY
+ * (constantTimeEquals_ dengan string kosong ≠ key asli), jadi tidak ada nilai brute force
+ * yang hilang dengan tidak menghitungnya. */
+(function () {
+  const kit = kitchen([]);
+  const ctx = ctxFor(kit);
+  // panggil lewat API yang sama dengan produksi: checkEditorKey
+
+  // 40 request viewer/anonim: editorKey kosong
+  for (let i = 0; i < 40; i++) {
+    const r = ctx.checkEditorKey({ editorKey: '' });
+    if (r.ok) { t('BE-02b-0: editorKey kosong tidak pernah diterima', false, JSON.stringify(r)); return; }
+  }
+  t('BE-02b-1: 40 request anonim (editorKey kosong) semuanya ditolak', true);
+
+  // penghitung global harus tetap 0 - inilah invariant yang diawasi langsung
+  const gcache = ctx.CacheService.getScriptCache();
+  const gval = parseInt(gcache.get('editor_fail_global') || '0', 10);
+  t('BE-02b-2: penghitung GLOBAL tetap 0 setelah 40 request anonim', gval === 0, 'editor_fail_global=' + gval);
+
+  // editor sah mencoba -> tidak boleh dapat pesan rate limit
+  const okRes = ctx.checkEditorKey({ editorKey: 'RAHASIA-EDITOR-YANG-BENAR' });
+  const msg = okRes.message || '';
+  t('BE-02b-3: editor sah TIDAK dikunci rate limit oleh traffic anonim',
+    okRes.ok === false && !/Terlalu banyak percobaan akses editor/.test(msg),
+    'pesan=' + msg.slice(0, 90));
+
+  // dan tebakan acak dengan key NYATA tetap dihentikan (tidak melempar proteksi)
+  let blockedAt = -1;
+  for (let i = 1; i <= 40; i++) {
+    const r = ctx.checkEditorKey({ editorKey: 'tebakan-acak-' + i });
+    if (/Terlalu banyak percobaan/.test(r.message || '')) { blockedAt = i; break; }
+  }
+  t('BE-02b-4: tebasan acak dengan key terisi tetap dibatasi (proteksi tidak hilang)', blockedAt > 0, 'diblokir pada tebakan ke-' + blockedAt);
+})();
+
 console.log('---- gs_hardening_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);
