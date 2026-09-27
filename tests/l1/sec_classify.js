@@ -70,7 +70,7 @@ t('SEC-A7: kunci legacy fail-closed bila Script Property kosong (checkLegacySing
 /* ---------- B. KREDENSIAL & KRIPTO ---------- */
 t('SEC-B1: perbandingan constant-time (constantTimeEquals_)', /function constantTimeEquals_/.test(gs));
 t('SEC-B2: password di-hash (bukan plaintext) — verifyPasswordHash_', /function verifyPasswordHash_/.test(gs));
-t('SEC-B3: KDF iteratif 100.000 iterasi', /100000/.test(gs) && /hashPasswordIterated_/.test(gs));
+t('SEC-B3: KDF iteratif 5.000 iterasi (produksi)', /KDF_ITERATIONS_\s*=\s*5000/.test(gs) && /hashPasswordIterated_/.test(gs));
 t('SEC-B4: format hash salt$iterations$hash', /makeSaltedPasswordHash_/.test(gs) && /split\('\$'\)/.test(gs));
 t('SEC-B5: password default factory ditolak', /GANTI-PASSWORD-INI/.test(gs));
 t('SEC-B6: tidak ada enumerasi user (pesan generik)', /Username atau password salah/.test(gs));

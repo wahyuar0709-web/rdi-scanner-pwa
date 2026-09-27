@@ -4,7 +4,7 @@
  * sama, peran dibawa di dalam token (signed), dan kunci tunggal lama jadi break-glass saja.
  *
  * Semua test di bawah ini SEHARUSNYA GAGAL (RED) sebelum implementasi ada.
- * KDF produksi 100.000 dinaikkan? Tidak — diturunkan ke 1.000 lewat override harness supaya
+ * KDF produksi 5.000. Diturunkan ke 1.000 lewat override harness supaya
  * suite cepat; logika verifikasi identik (KDF produksi diverifikasi sebagai assert terpisah).
  */
 const { loadCodeGS, makeSpreadsheet, makeSheet } = require('../tools/gs_harness.js');

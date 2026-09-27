@@ -770,7 +770,15 @@ function clearViewerLoginFail_(username) {
   try { CacheService.getScriptCache().remove('login_fail_' + String(username||'').toLowerCase()); } catch(e) {}
 }
 // FIX TINGGI: KDF dengan iterasi (format salt$iterations$hash), backward-compat format lama salt$hash
-var KDF_ITERATIONS_ = 100000;
+/* PENTING - jangan menaikkan angka ini tanpa mengukur dulu.
+ * Utilities.computeDigest() dipanggil satu kali per iterasi dan itu JEMBATAN ke
+ * server Apps Script, jadi biaya terukur ~0,68 ms per iterasi di produksi
+ * (setupAccount 27/09/2026: 7:47:07 -> 7:48:15 = 68 detik untuk 1x hashing).
+ * 100.000 iterasi = ~68 detik per verifikasi password -> login tidak bisa dipakai.
+ * Yang dilindungi iterasi adalah offline cracking atas hash yang bocor, bukan
+ * serangan online (itu ditangani rate limiter). 5.000 masih 5.000x single-hash.
+ * Jumlah iterasi tersimpan di dalam hash, jadi hanya berlaku untuk hash baru. */
+var KDF_ITERATIONS_ = 5000;
 function hashPasswordHex_(password, salt) {
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + password);
   return bytes.map(function(b){ return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');

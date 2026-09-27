@@ -37,8 +37,23 @@ function hashWith(ctx, plain) { return ctx.makeSaltedPasswordHash_(plain); }
 /* ---------- 0. konstanta produksi & override kecepatan ---------- */
 (function () {
   const gsSrc = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'Code.gs'), 'utf8');
-  t('KDF produksi = 100.000 iterasi (terverifikasi di source Code.gs)', /KDF_ITERATIONS_\s*=\s*100000/.test(gsSrc), 'Code.gs KDF_ITERATIONS_ = 100000');
-  t('hash default memakai 100.000 iterasi', String(loadCodeGS({ props: { VIEWER_TOKEN_SECRET: 'S' } }).makeSaltedPasswordHash_('x').split('$')[1]) === '100000', 'default context');
+  t('KDF produksi = 5.000 iterasi (terverifikasi di source Code.gs)', /KDF_ITERATIONS_\s*=\s*5000/.test(gsSrc), 'Code.gs KDF_ITERATIONS_ = 5000');
+  t('hash default memakai 5.000 iterasi', String(loadCodeGS({ props: { VIEWER_TOKEN_SECRET: 'S' } }).makeSaltedPasswordHash_('x').split('$')[1]) === '5000', 'default context');
+  // Backward compatibility: hash lama yang tersimpan 100.000 iterasi HARUS tetap bisa
+  // diverifikasi, supaya lowering KDF tidak mengunci akun yang sudah ada.
+  // verifyPasswordHash_ memakai angka iterasi DARI DALAM hash, bukan KDF_ITERATIONS_,
+  // jadi akun lama tidak terpengaruh. Hash dihitung penuh 100.000 iterasi - di harness
+  // computeDigest = Node crypto, jadi cepat.
+  t('hash lama $100000$ tetap bisa diverifikasi (backward compatible)', (function () {
+    const c = loadCodeGS({ props: { VIEWER_TOKEN_SECRET: 'S' } });
+    const stored = 'salt-tetap$100000$' + c.hashPasswordIterated_('rahasia', 'salt-tetap', 100000);
+    return c.verifyPasswordHash_('rahasia', stored) === true;
+  })(), '100.000 iterasi masih dikenali');
+  t('password salah tetap ditolak untuk hash lama', (function () {
+    const c = loadCodeGS({ props: { VIEWER_TOKEN_SECRET: 'S' } });
+    const stored = 'salt-tetap$100000$' + c.hashPasswordIterated_('rahasia', 'salt-tetap', 100000);
+    return c.verifyPasswordHash_('salah-sekali', stored) === false;
+  })(), 'ditolak');
   t('override kdfIterations berlaku (harness speeding, logika sama)', String(ctxWith('EK').makeSaltedPasswordHash_('x').split('$')[1]) === String(KDF_TEST), 'override=' + KDF_TEST);
 })();
 

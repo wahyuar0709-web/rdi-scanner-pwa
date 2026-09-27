@@ -2,7 +2,7 @@
  * dicatat sebagai "ACCEPTED LIMITATION" di sec_classify.js. Suite ini MENGEKSEKUSI
  * Code.gs lewat harness dan membuktikan sifatnya, bukan grep.
  *
- *   BE-01  KDF 100.000 iterasi ikut jalan untuk request TANPA kredensial (DoS amplifier)
+ *   BE-01  KDF 5.000 iterasi ikut jalan untuk request TANPA kredensial (DoS amplifier)
  *   BE-02  tidak ada rate limit untuk editor key (brute force tanpa batas)
  *   BE-04  recalculateAllSaldo memakai clearContents → pembaca bisa lihat saldo kosong
  *   BE-05  formula-injection guard (safeCell_) tidak dipakai di jalur tulis modul Aset
