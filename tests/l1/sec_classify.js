@@ -33,7 +33,8 @@ const doPost = bodyOf(gs, 'doPost', 9000);
 t('SEC-A1: doGet mewajibkan auth (checkAnyAccess)', /checkAnyAccess\s*\(/.test(doGet));
 t('SEC-A2: doGet membalas needLogin:true saat auth gagal', /needLogin\s*:\s*true/.test(doGet));
 t('SEC-A3: doPost mewajibkan auth untuk baca (checkAnyAccess)', /checkAnyAccess\s*\(/.test(doPost));
-/* F5-AUTH (2026-09-27): gate tulis pindah dari checkEditorKey ke checkEditorSession_
+/* F5-AUTH (2026-09-27): gate tulis pindah dari checkEditorKey ke checkEditorSession_.
+ * checkEditorKey DIHAPUS 2026-09-28 (nol call site).
  * (token role=editor, atau kunci tunggal break-glass yang default MATI). Yang diperiksa
  * di sini tetap INTENT-nya: gate wajib ada, dan dijalankan SEBELUM dispatch. */
 t('SEC-A4: doPost mewajibkan gate tulis (checkEditorSession_)', /checkEditorSession_\s*\(/.test(doPost));
@@ -62,7 +63,17 @@ t('SEC-A4c2: legacy tidak hidup terus-menerus (transisiditutup saat akun editor 
 t('SEC-A4c3: hasEditorAccount_() fail-closed saat sheet tidak bisa dibaca',
   /function hasEditorAccount_/.test(gs) && /return true;/.test(bodyOf(gs, 'hasEditorAccount_', 800)),
   'error/sheet kosong→ dianggap ada editor (legacy tetap mati)');
-t('SEC-A6: viewerLogin tetap dapat diakses tanpa auth (endpoint tiket)', /viewerLogin/.test(doPost) && !/checkEditorKey[\s\S]{0,200}viewerLogin/.test(doPost));
+/* Dulu dicegah lewat /!checkEditorKey[\s\S]{0,200}viewerLogin/ — setelah
+ * checkEditorKey dihapus, itu otomatis benar tanpa ada artinya. Intent-nya
+ * diuji langsung: viewerLogin harus di-dispatch SEBELUM gate baca maupun tulis. */
+t('SEC-A6: viewerLogin tetap dapat diakses tanpa auth (endpoint tiket)',
+  (function () {
+    const v = doPost.indexOf('viewerLogin');
+    if (v < 0) return false;
+    const baca = doPost.indexOf('checkAnyAccess(');
+    const tulis = doPost.indexOf('checkEditorSession_(');
+    return baca < 0 || v < baca;
+  })());
 t('SEC-A7: kunci legacy fail-closed bila Script Property kosong (checkLegacySingleKey_)',
   /if\s*\(\s*!\s*required\s*\)\s*(?:\{\s*)?return\s*\{\s*ok:\s*false/.test(bodyOf(gs, 'checkLegacySingleKey_', 2000)),
   'cek "if (!required) return {ok:false}" di checkLegacySingleKey_()');

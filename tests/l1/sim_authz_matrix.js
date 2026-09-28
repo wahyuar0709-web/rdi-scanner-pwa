@@ -11,7 +11,10 @@ function t(name, ok, ev) {
 }
 // Structural gates present?
 t('READ via checkAnyAccess', /checkAnyAccess\s*\(/.test(gs));
-t('WRITE gated by checkEditorKey', /checkEditorKey\s*\(/.test(gs));
+/* Gate tulis(checkEditorSession_) adalah gerbang yang SEBENARNYA dipakai doPost.
+ * checkEditorKey sudah dihapus 2026-09-28; assertion lama tetap hijau karena
+ * regex-nya cocok ke "checkEditorKey()" di dalam komentar. */
+t('WRITE gated by checkEditorSession_', /checkEditorSession_\s*\(/.test(gs));
 t('export requires editor', /needLogin|editor/i.test(gs) && /export/i.test(gs));
 t('viewerLogout route not editor-gated', /viewerLogout/.test(gs));
 t('READ_ACTIONS or equivalent list', /READ_ACTIONS|isReadAction|viewerOnly/.test(gs) || /action===.getData.|action===.getMaster/.test(gs));

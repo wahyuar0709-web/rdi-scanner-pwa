@@ -68,15 +68,15 @@ const callers = [
   ['postTransaksi', /postTransaksi/],
   ['apiViewerLogin', /apiViewerLogin|viewerLogin/],
   ['apiViewerLogout', /apiViewerLogout|viewerLogout/],
-  ['checkEditorKey', /checkEditorKey/],
+  ['checkEditorSession_', /checkEditorSession_/],
   ['verifyViewerToken', /verifyViewerToken/],
   ['getExportData', /getExportData/],
 ];
 for (const [fn, re] of callers) {
   const defined = new RegExp(`function\\s+${fn}\\s*\\(`).test(gs) || gs.includes(fn);
   const wired = gs.includes(`action === '${fn === 'apiViewerLogin' ? 'viewerLogin' : fn === 'apiViewerLogout' ? 'viewerLogout' : fn === 'postTransaksi' ? 'postTransaksi' : fn === 'getExportData' ? 'getExportData' : fn}'`)
-    || gs.includes(fn) && (fn === 'checkEditorKey' || fn === 'verifyViewerToken' ? gs.includes(`var auth = ${fn}`) || gs.includes(`${fn}(`) : true);
-  t(`Flow wired: ${fn}`, defined && (wired || fn === 'checkEditorKey' || fn === 'verifyViewerToken' || fn === 'apiViewerLogin' || fn === 'apiViewerLogout' || fn === 'postTransaksi' || fn === 'getExportData'),
+    || gs.includes(fn) && (fn === 'checkEditorSession_' || fn === 'verifyViewerToken' ? gs.includes(`var auth = ${fn}`) || gs.includes(`${fn}(`) : true);
+  t(`Flow wired: ${fn}`, defined && (wired || fn === 'checkEditorSession_' || fn === 'verifyViewerToken' || fn === 'apiViewerLogin' || fn === 'apiViewerLogout' || fn === 'postTransaksi' || fn === 'getExportData'),
     `defined=${defined} wired=${wired}`);
 }
 
@@ -230,7 +230,13 @@ t('SEC: requestId dedup', /trx_req_/.test(gs), 'cache key');
 // ========== Frontend bypass negative (static) ==========
 t('NEG: VIEWER_MODE blocks gasPost', /if\(VIEWER_MODE\)\{return Promise\.resolve\(\{status:'error'/.test(src) || src.includes('Mode lihat-saja'), 'gasPost guard in js/outbox.js');
 t('NEG: export requires editor server-side', /Export hanya untuk editor/.test(gs), 'doGet/doPost getExportData');
-t('NEG: write path not skippable via action list', gs.includes('checkEditorKey(body)') && !/READ_ACTIONS\[\s*action\s*\]\s*&&\s*write/.test(gs), 'writes after READ_ACTIONS branch');
+/* Dulu: gs.includes('checkEditorKey(body)'). Assertion itu hanya cocok dengan
+   * PARAMETER definisi fungsi, bukan pemanggilan — jadi tidak pernah membuktikan apa
+   * pun tentang gerbang tulis, dan justru menghalangi penghapusan dead code.
+   * Sekarang dicek gerbang yang benar-benar dipakai: checkEditorSession_(body). */
+t('NEG: write path not skippable via action list',
+  /var auth = checkEditorSession_\(body\)/.test(gs) && !/READ_ACTIONS\[\s*action\s*\]\s*&&\s*write/.test(gs),
+  'write gate checkEditorSession_ ada dan tidak di-skip oleh READ_ACTIONS');
 
 // ========== Passbook scanner UI ==========
 t('Scanner UI exists', scanner.includes('id="cam"') && scanner.includes('initCamera'), 'scanner.html');

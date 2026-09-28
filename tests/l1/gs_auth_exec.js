@@ -149,13 +149,17 @@ function hashWith(ctx, plain) { return ctx.makeSaltedPasswordHash_(plain); }
   t('pesan rate limit menyebut 15 menit', /15 menit/i.test(sixth && sixth.message || ''), 'msg=' + String(sixth && sixth.message).slice(0, 60));
 })();
 
-/* ---------- 8. editor key gate ---------- */
+/* ---------- 8. gate editor ----------
+ * Dulu menguji checkEditorKey(), yang DIHAPUS 2026-09-28 karena nol call site.
+ * Cakupannya diteruskan ke checkLegacySingleKey_(): fungsi HIDUP yang dipanggil
+ * checkAnyAccess() sebagai break-glass, dan masih memegang seluruh rate limit. */
 (function () {
   const ctx = ctxWith('RAHASIA-EDITOR');
-  t('editor key benar diterima', ctx.checkEditorKey({ editorKey: 'RAHASIA-EDITOR' }).ok === true, JSON.stringify(ctx.checkEditorKey({ editorKey: 'RAHASIA-EDITOR' })));
-  t('editor key salah ditolak', ctx.checkEditorKey({ editorKey: 'x' }).ok === false, 'ditolak');
+  t('editor key benar diterima', ctx.checkLegacySingleKey_('RAHASIA-EDITOR').ok === true, JSON.stringify(ctx.checkLegacySingleKey_('RAHASIA-EDITOR')));
+  t('editor key salah ditolak', ctx.checkLegacySingleKey_('x').ok === false, 'ditolak');
+  t('editor key kosong tidak pernah diterima', ctx.checkLegacySingleKey_('').ok === false, 'kunci kosong ditolak');
   const ctxNoKey = ctxWith('');
-  t('EDITOR_KEY kosong (belum diset) → fail-closed', ctxNoKey.checkEditorKey({ editorKey: 'apa saja' }).ok === false, JSON.stringify(ctxNoKey.checkEditorKey({ editorKey: 'apa saja' })).slice(0, 80));
+  t('EDITOR_KEY kosong (belum diset) fail-closed', ctxNoKey.checkLegacySingleKey_('apa saja').ok === false, JSON.stringify(ctxNoKey.checkLegacySingleKey_('apa saja')).slice(0, 80));
 })();
 
 /* ---------- 9. constant-time compare benar ---------- */

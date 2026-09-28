@@ -53,7 +53,7 @@ Object.keys(ALLOWED_DUP).forEach(fn => {
 
 // 3. BOUNDARY FE/BE — fungsi server tidak boleh didefinisikan ulang di front-end
 const BE_ONLY = ['postTransaksi', 'recalculateAllSaldo', 'getAsetEligibleUnits', 'apiViewerLogin',
-  'getSheetData', 'checkEditorKey', 'verifyViewerToken', 'migrateToMultiRakSchema', 'setupSheets'];
+  'getSheetData', 'checkEditorSession_', 'verifyViewerToken', 'migrateToMultiRakSchema', 'setupSheets'];
 BE_ONLY.forEach(fn => {
   const n = defs(fn);
   t('boundary FE/BE: ' + fn + '() tidak ada di front-end', n === 0, 'def=' + n);
@@ -61,7 +61,7 @@ BE_ONLY.forEach(fn => {
 
 // 4. Server tetap punya implementasi (kalau area ini dihapus, GE쪽 rusak tanpa suite ini)
 const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
-['function postTransaksi', 'function checkEditorKey', 'function verifyViewerToken',
+['function postTransaksi', 'function checkEditorSession_', 'function verifyViewerToken',
  'function safeCell_', 'function recalculateAllSaldoLocked_', 'function acquirePerItemLock_',
  'function getAsetEligibleUnits', 'function recordAsetMovement'].forEach(pat => {
   t('Code.gs masih punya: ' + pat.replace('function ', ''), gs.indexOf(pat) >= 0);

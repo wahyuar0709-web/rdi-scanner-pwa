@@ -64,8 +64,23 @@ async function connectCDP(port) {
   ws.addEventListener('message', ev => {
     if (typeof ev.data !== 'string') return;
     let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
-    if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); }
-    else if (msg.method) events.push(msg);
+    if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
+    if (msg.method) {
+      events.push(msg);
+      /* Dialog JavaScript (alert/confirm/prompt) memblokir renderer DAN
+       * navigasi CDP. Aplikasi memanggil alert() di beberapa jalur; begitu
+       * muncul saat boot atau reload, Page.reload tidak pernah selesai dan
+       * suite timeout. Dijawab otomatis di sini. Tidak ada assertion suite ini
+       * yang menguji perilaku dialog, jadi tidak ada cakupan yang hilang. */
+      if (msg.method === 'Page.javascriptDialogOpening') {
+        const type = msg.params && msg.params.type;
+        try {
+          const j = ++id;
+          pending.set(j, () => { pending.delete(j); });
+          ws.send(JSON.stringify({ id: j, method: 'Page.handleJavaScriptDialog', params: { accept: false } }));
+        } catch (e) {}
+      }
+    }
   });
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
@@ -134,6 +149,14 @@ async function main() {
     '--window-size=390,844',
     'http://127.0.0.1:' + PORT + '/index.html'
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
+  /* Pembersih profil WAJIB dipasang di sini, bukan hanya di jalur normal.
+   * Tanpa process.on('exit'), setiap SUITE_ERROR/timeout meninggalkan profil
+   * 55-64 MB. Bukti: 231 folder cdp-r2d-* = 5,31 GB menumpuk di Temp. */
+  const bersihkanProfil = () => {
+    try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+    try { fs.rmSync(PROFILE, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
+  };
+  process.on('exit', bersihkanProfil);
   let chromeErr = '';
   let chromeExit = null;
   chrome.stderr.on('data', d => chromeErr += d);

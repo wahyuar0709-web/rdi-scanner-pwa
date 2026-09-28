@@ -80,7 +80,7 @@
 //   - Backend TIDAK PERNAH punya proteksi apapun sebelumnya -- siapa saja yang
 //     tahu Web App URL bisa POST postTransaksi/addItem/adminTool dll. Sekarang
 //     SEMUA aksi di doPost wajib kirim editorKey yang cocok dengan Script
-//     Property EDITOR_KEY (lihat checkEditorKey() di bawah utk cara setup).
+//     Property EDITOR_KEY (lihat checkLegacySingleKey_() di bawah utk cara setup).
 //   - doGet (getData, getItem, getDashboard, dst) TETAP terbuka tanpa key --
 //     itu memang bagian yang dibagikan ke viewer utk lihat/filter/cari stok.
 //   - Ditambah route generic 'adminTool' (dipanggil frontend lewat tombol Admin
@@ -166,13 +166,12 @@
 //   - F-02 (password Viewer_Accounts plaintext): sekarang disimpan "salt$hashSHA256".
 //     Akun lama otomatis dimigrasi ke hash begitu login sukses sekali (tidak perlu
 //     migrasi manual). setupViewerAccountsSheet() bikin akun contoh dengan hash.
-//   - F-03 (identitas admin transaksi tidak diverifikasi): sheet baru opsional
-//     Editor_Accounts (Nama | EditorKey | Aktif, lihat setupEditorAccountsSheet()).
-//     checkEditorKey() sekarang balikin `nama` terverifikasi kalau editorKey cocok
-//     salah satu akun di sana; doPost meneruskannya sbg verifiedAdmin, dipakai
-//     postTransaksi/addItem menggantikan field admin bebas dari client. Fallback
-//     non-breaking: kalau sheet belum disetup, tetap pakai EDITOR_KEY tunggal lama
-//     seperti sebelumnya (identitas admin belum terverifikasi di mode ini).
+//   - F-03 (identitas admin transaksi tidak diverifikasi): SUDAH SELESAI lewat
+//     F5-AUTH. Sheet opsional "Editor_Accounts" (Nama | EditorKey | Aktif) beserta
+//     setupEditorAccountsSheet() dan checkEditorKey() SUDAH DIHAPUS (2026-09-28):
+//     keduanya punya nol call site sejak gate tulis pindah ke
+//     checkEditorSession_(). Satu-satunya sumber akun editor sekarang sheet
+//     RDI_Accounts (username+password+role), dan auth.nama berasal dari sana.
 //   - G-02 (item yatim — punya transaksi/saldo tapi tidak ada di Master_Item):
 //     postTransaksi() SUDAH lama mewajibkan getItemById() sukses dulu (jalur normal
 //     app tidak bisa bikin item yatim baru). Ditambah adminTool baru findOrphanItems
@@ -211,7 +210,7 @@
 //     data dengan aman (fail-safe kalau ambigu) begitu keputusan itu dibuat.
 //
 //  CHANGELOG v5.15 (Fix MEDIUM — Audit Final F-06: magic number kolom):
-//   - Ditambah konstanta COL_MASTER/COL_TRX/COL_SALDO/COL_RAK_SALDO/COL_EDITOR_ACC/
+//   - Ditambah konstanta COL_MASTER/COL_TRX/COL_SALDO/COL_RAK_SALDO/COL_ACC/
 //     COL_VIEWER_ACC (0-based, lihat definisi di atas SHEET_*) -- menggantikan
 //     ~114 titik akses r[7], row[9], dst yang sebelumnya hardcoded tanpa nama.
 //   - SEMUA fungsi yang baca/tulis Master_Item, Transaksi_Log, Stok_Saldo,
@@ -221,7 +220,7 @@
 //     getHistory, getStockLedger, recalculateAllSaldoCore, updateSaldo,
 //     updateRakSaldo, findOrphanItemsCore, findDuplicateItemsCore,
 //     findIdCollisionsCore, resolveIdCollisionCore, setupMasterListSheetsCore,
-//     checkEditorAccountKey_, checkViewerCredentials, migrateAddIDCore,
+//     checkViewerCredentials, migrateAddIDCore,
 //     generateID, getAllRakBreakdown, getLastVendorRefMap, getItemUnitMap).
 //   - Beberapa getRange() yang dulu baca kolom sempit tidak dari kolom 1 (mis.
 //     trx.getRange(2,2,...,2) di findOrphanItemsCore/findIdCollisionsCore)
@@ -334,7 +333,6 @@ var COL_MASTER = { NO:0, ID:1, NAMA:2, SPEC:3, USER:4, BC:5, UNIT:6, KATEGORI:7,
 var COL_TRX    = { TIMESTAMP:0, ID:1, NAMA:2, SPEC:3, JENIS:4, QTY:5, RAK:6, VENDOR:7, NO_REF:8, SALDO_SEBELUM:9, SALDO_SESUDAH:10, KETERANGAN:11, ADMIN:12 }; // Transaksi_Log (13 kolom)
 var COL_SALDO  = { ID:0, NAMA:1, UNIT:2, TOTAL_MASUK:3, TOTAL_KELUAR:4, SALDO_AKHIR:5 }; // Stok_Saldo (6 kolom)
 var COL_RAK_SALDO   = { ID:0, RAK:1, QTY:2 }; // Stok_Per_Rak (3 kolom)
-var COL_EDITOR_ACC  = { NAMA:0, KEY:1, AKTIF:2 }; // Editor_Accounts (3 kolom)
 var COL_VIEWER_ACC  = { USERNAME:0, PASSWORD:1, NAMA:2, AKTIF:3 }; // Viewer_Accounts (4 kolom)
 /* ===== F5-AUTH (2026-09-27, PLAN §14) — unified accounts: satu identitas per orang =====
  * Sheet RDI_Accountsmenggantikan Viewer_Accounts + Editor_Accounts: satu login (username+password)
@@ -481,124 +479,6 @@ function getEditorKey() {
 // EDITOR_KEY yang dibagikan ke semua orang -- artinya field "admin" di setiap transaksi
 // (params.admin / body.admin) HANYA string bebas yang dikirim client apa adanya, TIDAK
 // pernah diverifikasi server. Siapa saja yang tahu EDITOR_KEY bisa mengaku jadi siapa saja.
-// Sekarang ditambah sheet opsional "Editor_Accounts" (Nama | EditorKey | Aktif) -- kalau
-// sheet ini ada & editorKey yang dikirim cocok salah satu barisnya, checkEditorKey()
-// balikin `nama` yang SUDAH TERVERIFIKASI dari lookup server, tidak bisa dipalsukan client.
-// Kalau sheet belum ada / tidak ada yang cocok, fallback ke EDITOR_KEY tunggal lama
-// (non-breaking) -- tapi tanpa `nama` terverifikasi, jadi identitas transaksi masih
-// mengandalkan string client seperti sebelumnya sampai akun per-orang disetup.
-var SHEET_EDITOR_ACCOUNTS = 'Editor_Accounts'; // Nama | EditorKey | Aktif
-
-// FIX TINGGI: cache Editor_Accounts (60 dtk) — kurangi read sheet per request
-function checkEditorAccountKey_(editorKey) {
-  try {
-    /* FIX BE-01 (2026-09-27, audit): tanpa guard ini, SETIAP request baca/anonim menjalankan verifyPasswordHash_ (100.000 iterasi SHA-256) untuk tiap akun editor — permintaan tanpa kredensial pun. Terukur: 8.932 panggilan hash untuk 1 request tanpa kredensial (2 akun). Kredensial kosong = tak ada yang bisa dicocokkan → keluar sebelum hashing. */
-    if (!String(editorKey||'').trim()) return { none:true };
-    var cache = CacheService.getScriptCache();
-    var cacheKey = 'editor_acc_rows';
-    var rows = null;
-    var cached = cache.get(cacheKey);
-    if (cached) {
-      try { rows = JSON.parse(cached); } catch(e) { rows = null; }
-    }
-    if (!rows) {
-      var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var sh = ss.getSheetByName(SHEET_EDITOR_ACCOUNTS);
-      if (!sh || sh.getLastRow() < 2) return { none:true }; // sheet belum disetup
-      rows = sh.getRange(2,1,sh.getLastRow()-1,3).getValues(); // Nama, EditorKey, Aktif
-      try { cache.put(cacheKey, JSON.stringify(rows), 60); } catch(e) {}
-    }
-    if (!rows || !rows.length) return { none:true };
-
-    var hasMatch = false;
-    for (var i=0; i<rows.length; i++) {
-      var storedKey = String(rows[i][COL_EDITOR_ACC.KEY]||'');
-      var matched = false;
-      if (storedKey && isPasswordHashFormat_(storedKey)) {
-        matched = verifyPasswordHash_(String(editorKey||''), storedKey);
-      } else if (storedKey) {
-        // legacy plaintext key
-        matched = constantTimeEquals_(storedKey, String(editorKey||''));
-        // upgrade diam-diam ke hash
-        if (matched && editorKey) {
-          try {
-            var sh2 = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_EDITOR_ACCOUNTS);
-            if (sh2) {
-              sh2.getRange(i+2, COL_EDITOR_ACC.KEY+1).setValue(makeSaltedPasswordHash_(String(editorKey)));
-              try { CacheService.getScriptCache().remove(cacheKey); } catch(e2) {}
-            }
-          } catch(e3) {}
-        }
-      }
-      if (!matched) continue;
-      hasMatch = true;
-      var aktifRaw = String(rows[i][COL_EDITOR_ACC.AKTIF]).toUpperCase();
-      var aktif = rows[i][COL_EDITOR_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
-      if (!aktif) return { blocked:true };
-      return { nama: String(rows[i][COL_EDITOR_ACC.NAMA]||'').trim() || 'Editor' };
-    }
-    // FIX TINGGI: kalau Editor_Accounts sudah ada isinya tapi key tidak cocok —
-    // JANGAN fallback ke EDITOR_KEY tunggal (kecuali explicitly diizinkan via properti).
-    // Ini menutup celah "akun diblokir tapi masih bisa pakai EDITOR_KEY lama".
-    var allowFallback = PropertiesService.getScriptProperties().getProperty('ALLOW_EDITOR_KEY_FALLBACK');
-    if (String(allowFallback||'').toUpperCase() !== 'TRUE') {
-      if (hasMatch === false && rows && rows.length) {
-        return { blocked:true, message:'Akses ditolak: gunakan akun editor yang terdaftar.' };
-      }
-    }
-    return { none:true }; // tidak cocok & fallback diizinkan
-  } catch(e) {
-    // FIX GS-01: exception saat baca Editor_Accounts/Cache = FAIL CLOSED.
-    // Dulu return {none:true} → lolos ke jalur EDITOR_KEY tunggal, sehingga
-    // akun Aktif=FALSE bisa bypass saat sheet/cache error sementara.
-    console.error('checkEditorAccountKey_ error: ' + (e && e.stack ? e.stack : e));
-    return { blocked:true, message:'Gagal memverifikasi akun editor (server sibuk). Coba lagi sebentar.' };
-  }
-}
-
-function checkEditorKey(body) {
-  var editorKey = String(body.editorKey||'');
-  /* FIX BE-02 (2026-09-27): editor key = akses penuh (recalc/resync/resolveIdCollision) tapi TIDAK ada rate limit → brute force tanpa batas. Rate limit per hash-key: 10x gagal / 10 menit; kunci BENAR menghapus penghitung (tak mengunci admin legit). */
-  if (editorKey && editorKeyRateBlocked_(editorKey)) { return { ok:false, message:'Terlalu banyak percobaan akses editor. Tunggu 10 menit lalu coba lagi.' }; }
-
-  // 1) Coba cocokkan ke akun editor per-orang dulu (kalau sheet-nya disetup).
-  var acc = checkEditorAccountKey_(editorKey);
-  if (acc && acc.blocked) {
-    return { ok:false, message: acc.message || 'Akun editor ini sudah dinonaktifkan. Hubungi admin.' };
-  }
-  if (acc && acc.nama) {
-    editorKeyRateReset_(editorKey);
-    return { ok:true, nama: acc.nama }; // nama TERVERIFIKASI, dipakai override field admin di transaksi
-  }
-
-  // 2) Fallback: EDITOR_KEY tunggal lama — hanya kalau sheet kosong/absen
-  //    ATAU ALLOW_EDITOR_KEY_FALLBACK=TRUE.
-  var required = getEditorKey();
-  if (!required) {
-    return { ok:false, message:'EDITOR_KEY belum diset di Script Properties. Lihat komentar checkEditorKey() di Code.gs utk cara setup.' };
-  }
-  if (!constantTimeEquals_(editorKey, required)) {
-    editorKeyRateFail_(editorKey);
-    return { ok:false, message:'Akses ditolak: perangkat ini dalam mode lihat-saja, tidak bisa menyimpan perubahan.' };
-  }
-  editorKeyRateReset_(editorKey);
-  return { ok:true }; // tanpa `nama` -- lihat catatan di doPost/postTransaksi
-}
-
-// Jalankan SEKALI dari editor Apps Script (dropdown fungsi -> Run) utk bikin sheet akun editor per-orang.
-// Opsional -- kalau tidak dijalankan, app tetap jalan pakai EDITOR_KEY tunggal lama seperti sebelumnya.
-function setupEditorAccountsSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SHEET_EDITOR_ACCOUNTS);
-  if (sh) { SpreadsheetApp.getUi().alert('Sheet "'+SHEET_EDITOR_ACCOUNTS+'" sudah ada. Kelola akun langsung di sana (tambah baris = tambah editor, Aktif=FALSE = nonaktifkan tanpa hapus).'); return; }
-  sh = ss.insertSheet(SHEET_EDITOR_ACCOUNTS);
-  sh.getRange(1,1,1,3).setValues([['Nama','EditorKey','Aktif']])
-    .setBackground('#1a3a7a').setFontColor('#ffffff').setFontWeight('bold');
-  sh.getRange(2,1,1,3).setValues([['Nama Orangnya', Utilities.getUuid(), true]]);
-  sh.setFrozenRows(1);
-  sh.setColumnWidths(1,3,180);
-  SpreadsheetApp.getUi().alert('✅ Sheet "'+SHEET_EDITOR_ACCOUNTS+'" dibuat.\nGanti Nama di baris 2, generate EditorKey unik per orang (boleh pakai Utilities.getUuid() dari editor ini), lalu isi Editor Key itu di Pengaturan aplikasi masing-masing orang.\nSelama seseorang belum punya baris di sini, dia tetap bisa pakai EDITOR_KEY tunggal lama (Script Properties) -- tapi identitas admin di transaksinya TIDAK terverifikasi.');
-}
 
 // ── Token sesi VIEWER (bukan JWT/OAuth Google -- HMAC token buatan sendiri) ──
 // Format: base64url(username|nama|expiryMillis) + '.' + base64url(HMAC-SHA256 dari bagian depan)
@@ -1544,7 +1424,7 @@ function doPost(e) {
     // Dicatat di sini — satu titik, otomatis berlaku untuk semua action tulis. Penolakan tidak
     // dicatat di sini agar tidak bisa dipakai membanjiri sheet oleh penyerang.
     logAudit_(auth, action, body, 'ok');
-    // FIX v5.13 (F-03): kalau editorKey ini cocok akun per-orang di Editor_Accounts, `auth.nama`
+    // FIX F5-AUTH: `auth.nama` berasal dari lookup RDI_Accounts (username+password)
     // adalah identitas yang SUDAH diverifikasi server (bukan string bebas dari client) --
     // teruskan sbg verifiedAdmin, dipakai postTransaksi/addItem menggantikan body.admin biasa.
     if (auth.nama) body.verifiedAdmin = auth.nama;
@@ -2219,7 +2099,7 @@ function postTransaksi(params) {
     var vendor      = String(params.vendor||'').trim();
     var noReferensi = String(params.noReferensi||'').trim();
     var keterangan  = String(params.keterangan||'');
-    // FIX v5.13 (F-03): kalau verifiedAdmin ada (identitas dari Editor_Accounts, lihat doPost),
+    // FIX F5-AUTH: kalau verifiedAdmin ada (identitas dari RDI_Accounts, lihat doPost),
     // itu yang dipakai -- TIDAK BISA dipalsukan client karena datang dari lookup server
     // berbasis editorKey yang sudah divalidasi. Kalau tidak ada (masih mode EDITOR_KEY tunggal
     // lama, belum setup akun per-orang), tetap terima string client apa adanya seperti

@@ -133,16 +133,45 @@ function dirSize(dir) {
  * menumpuk di Temp — Chrome dibunuh paksa saat suite gagal/timeout sehingga folder
  * profilnya tidak terhapus. Sekarang dibersihkan di awal tiap run.
  * Hanya folder dengan awalan milik suite L2/CDP yang disentuh. */
+/* Bunuh Chrome yang tertinggal dari suite sebelumnya. Tanpa ini, suite
+ * berikutnya gagal bind karena port --remote-debugging-port masih dipegang, dan
+ * ia akan timeout lalu meninggalkan Chrome lagi — rantai yang bikin L2 gagal
+ * 3 dari 4 run. Hanya menyentuh chrome.exe yang punya flag debug, jadi Chrome
+ * milik user tidak pernah ikut tertutup. */
+function killOrphanTestChrome() {
+  if (process.platform !== 'win32') return;
+  try {
+    const { execFileSync } = require('child_process');
+    const ps = 'Get-CimInstance Win32_Process -Filter "Name=\'chrome.exe\'"'
+      + ' | Where-Object { $_.CommandLine -like \'*remote-debugging-port*\' }'
+      + ' | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }';
+    execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps],
+      { stdio: 'ignore', timeout: 20000 });
+  } catch (e) { /* tidak fatal: kalau gagal, suite tetap jalan */ }
+}
+
 function cleanupStaleChromeProfiles(tag) {
   const os = require('os');
   const tmp = os.tmpdir();
   const patterns = [/^rdi-/, /^cdp-probe/, /^cdp-/];
   let entries = [];
   try { entries = fs.readdirSync(tmp, { withFileTypes: true }); } catch (e) { return; }
+    /* Sebagian tool menaruh profil Chrome di SUBDIREKTORI temp (mis. <temp>\opencode\),
+     * bukan di root temp. readdirSync + isDirectory() hanya melihat root, jadi
+     * 231 profil cdp-r2d-* (5,31 GB) pernah lolos dari sweeper ini. */
+    try {
+      for (const sub of ['opencode']) {
+        const subPath = path.join(tmp, sub);
+        if (!fs.existsSync(subPath)) continue;
+        for (const e2 of fs.readdirSync(subPath, { withFileTypes: true })) {
+          if (e2.isDirectory()) entries.push({ name: e2.name, _base: e2.name, _full: path.join(subPath, e2.name), isDirectory: () => true });
+        }
+      }
+    } catch (e) { /* abaikan */ }
   let removed = 0, freed = 0;
   for (const e of entries) {
-    if (!e.isDirectory() || !patterns.some(p => p.test(e.name))) continue;
-    const full = path.join(tmp, e.name);
+    if (!e.isDirectory() || !patterns.some(p => p.test(e._base || e.name))) continue;
+    const full = e._full || path.join(tmp, e.name);
     try {
       freed += dirSize(full);
       fs.rmSync(full, { recursive: true, force: true });
@@ -173,6 +202,7 @@ function main() {
   let suitesFailed = 0;
 
   for (const file of suites) {
+    killOrphanTestChrome();
     process.stdout.write('RUN  | ' + path.basename(file) + ' ... ');
     const r = runSuite(file);
     results.push(r);

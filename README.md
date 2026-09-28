@@ -55,7 +55,7 @@ Browser (PWA)  <──HTTP GET/POST──>  Google Apps Script (Web App)  <─�
 | `Stok_Saldo` | Saldo total per item (di-cache, direkalkulasi dari Transaksi_Log) |
 | `Stok_Per_Rak` | Breakdown saldo per lokasi rak |
 | `Master_Kategori` / `Master_UOM` / `Master_Vendor` / `Master_Rak` | Master data dropdown |
-| `Editor_Accounts` *(opsional)* | Akun editor per-orang (nama + key), untuk identitas transaksi yang terverifikasi |
+| `Editor_Accounts` *(legacy, tidak dipakai — kode dihapus 2026-09-28)* | Tab lama. Tidak lagi dibaca kode mana pun; akun editor kini ada di `RDI_Accounts`. Tabnya masih ada di spreadsheet sampai dihapus manual. |
 | `Viewer_Accounts` | Akun lihat-saja (username/password) |
 | `Sync_Errors` | Log kegagalan sinkronisasi saldo (jika ada) |
 

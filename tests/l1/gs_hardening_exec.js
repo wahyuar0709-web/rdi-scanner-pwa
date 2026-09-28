@@ -27,8 +27,9 @@ function kitchen(editorRows) {
     makeSheet('Transaksi_Log', [['Timestamp', 'ID_Item', 'Nama_Item', 'Spesifikasi', 'Jenis', 'Qty', 'RAK', 'Vendor', 'No_Referensi', 'Saldo_Sebelum', 'Saldo_Sesudah', 'Keterangan', 'Admin']]),
     makeSheet('Stok_Saldo', [['ID_Item', 'Nama', 'Unit', 'Total_Masuk', 'Total_Keluar', 'Saldo_Akhir']]),
     makeSheet('Stok_Per_Rak', [['ID_Item', 'RAK', 'Qty']]),
-    // Editor_Accounts: Nama | EditorKey | Aktif  (kolom tambahan utk uji)
-    makeSheet('Editor_Accounts', [['Nama', 'EditorKey', 'Aktif']].concat(editorRows || [])),
+    /* Sheet Editor_Accounts DIHAPUS 2026-09-28 (bersama checkEditorAccountKey_ dan
+       checkEditorKey). Tidak ada lagi kode yang membacanya, jadi tidak perlu lagi
+       dibuat di kitchen test ini. */
     makeSheet('Aset_Item', [['No', 'Kode_Alat', 'Nama_Alat', 'Brand', 'Cutting_Tool', 'Material', 'Spesifikasi', 'Mesin_Default', 'Kode_Mesin_Default', 'Berat_Kg', 'UOM', 'Rak_Penyimpanan', 'Vendor_Asah_Default', 'Rata2_Pemakaian_30Hari', 'Lead_Time_Asah_RatRata', 'Safety_Stock', 'Reorder_Point', 'Min_Stock']]),
     makeSheet('Aset_Unit', [['Unit_ID', 'Kode_Alat', 'Tanggal_Masuk', 'Regrind_Count', 'Status_Unit', 'Lokasi_Saat_Ini', 'Kode_Mesin_Saat_Ini', 'Last_Event', 'Last_Cycle_ID', 'Last_Update']]),
     makeSheet('Aset_Movement_Log', [['Timestamp', 'Kode_Alat', 'Unit_ID', 'ID_Transaksi', 'Activity', 'Qty', 'Cycle_ID', 'Counter', 'Kode_Mesin', 'Vendor', 'PIC', 'Keterangan']]),
@@ -79,7 +80,7 @@ function countKdfCalls(ctx) {
   const ctx = ctxFor(kitchen([])); // tanpa Editor_Accounts → jatuh ke EDITOR_KEY tunggal
   let rejectedAt = -1;
   for (let i = 1; i <= 20; i++) {
-    const r = ctx.checkEditorKey({ editorKey: 'TEBAKAN-SAMA' });
+    const r = ctx.checkLegacySingleKey_('TEBAKAN-SAMA');
     if (r && r.ok === false && /terlalu banyak|limit|banyak percobaan/i.test(r.message || '')) { rejectedAt = i; break; }
   }
   t('BE-02a: kunci salah yang diulang dihentikan (rate limit per-kunci)', rejectedAt > 0,
@@ -90,7 +91,7 @@ function countKdfCalls(ctx) {
   const ctx2 = ctxFor(kitchen([]));
   let rejectedAt2 = -1;
   for (let i = 1; i <= 60; i++) {
-    const r = ctx2.checkEditorKey({ editorKey: 'ACAK-' + i + '-' + Math.random() });
+    const r = ctx2.checkLegacySingleKey_('ACAK-' + i + '-' + Math.random());
     if (r && r.ok === false && /terlalu banyak|limit|banyak percobaan/i.test(r.message || '')) { rejectedAt2 = i; break; }
   }
   t('BE-02b: tebakan acak dihentikan (rate limit global)', rejectedAt2 > 0,
@@ -99,9 +100,9 @@ function countKdfCalls(ctx) {
 
 (function () {
   const ctx = ctxFor(kitchen([]));
-  for (let i = 0; i < 5; i++) ctx.checkEditorKey({ editorKey: 'SALAH-SEKALI' });
+  for (let i = 0; i < 5; i++) ctx.checkLegacySingleKey_('SALAH-SEKALI');
   t('BE-02c: editor key benar tetap bisa dipakai setelah ada percobaan salah',
-    ctx.checkEditorKey({ editorKey: EDITOR_KEY }).ok === true, 'kunci sah tetap valid');
+    ctx.checkLegacySingleKey_(EDITOR_KEY).ok === true, 'kunci sah tetap valid');
 })();
 
 /* ================= BE-04: recalc tidak boleh mengosongkan sheet ================= */
@@ -210,11 +211,12 @@ function countKdfCalls(ctx) {
 (function () {
   const kit = kitchen([]);
   const ctx = ctxFor(kit);
-  // panggil lewat API yang sama dengan produksi: checkEditorKey
+  // panggil lewat jalur HIDUP yang sama dengan produksi: checkLegacySingleKey_
+  // (dulu: checkEditorKey, yang sudah dihapus karena nol call site)
 
   // 40 request viewer/anonim: editorKey kosong
   for (let i = 0; i < 40; i++) {
-    const r = ctx.checkEditorKey({ editorKey: '' });
+    const r = ctx.checkLegacySingleKey_('');
     if (r.ok) { t('BE-02b-0: editorKey kosong tidak pernah diterima', false, JSON.stringify(r)); return; }
   }
   t('BE-02b-1: 40 request anonim (editorKey kosong) semuanya ditolak', true);
@@ -225,7 +227,7 @@ function countKdfCalls(ctx) {
   t('BE-02b-2: penghitung GLOBAL tetap 0 setelah 40 request anonim', gval === 0, 'editor_fail_global=' + gval);
 
   // editor sah mencoba -> tidak boleh dapat pesan rate limit
-  const okRes = ctx.checkEditorKey({ editorKey: 'RAHASIA-EDITOR-YANG-BENAR' });
+  const okRes = ctx.checkLegacySingleKey_('RAHASIA-EDITOR-YANG-BENAR');
   const msg = okRes.message || '';
   t('BE-02b-3: editor sah TIDAK dikunci rate limit oleh traffic anonim',
     okRes.ok === false && !/Terlalu banyak percobaan akses editor/.test(msg),
@@ -234,7 +236,7 @@ function countKdfCalls(ctx) {
   // dan tebakan acak dengan key NYATA tetap dihentikan (tidak melempar proteksi)
   let blockedAt = -1;
   for (let i = 1; i <= 40; i++) {
-    const r = ctx.checkEditorKey({ editorKey: 'tebakan-acak-' + i });
+    const r = ctx.checkLegacySingleKey_('tebakan-acak-' + i);
     if (/Terlalu banyak percobaan/.test(r.message || '')) { blockedAt = i; break; }
   }
   t('BE-02b-4: tebasan acak dengan key terisi tetap dibatasi (proteksi tidak hilang)', blockedAt > 0, 'diblokir pada tebakan ke-' + blockedAt);

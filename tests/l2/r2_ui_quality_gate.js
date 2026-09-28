@@ -89,7 +89,22 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
   for (const w of [320, 375, 768]) {
     await send('Emulation.setDeviceMetricsOverride', { width: w, height: 812, deviceScaleFactor: 1, mobile: w < 900 });
     await sleep(600);
-    const o = await ev('({sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, iw: innerWidth})');
+    /* Tunggu sampai scrollWidth stabil: baca berulang sampai dua pembacaan
+     * berturut-turut sama (jeda 250ms), atau sampai batas 4 detik.
+     * UQ-2 mengukur 600ms setelah viewport diganti, sementara PWA ini masih
+     * boot (register service worker, ambil data, render). Bacaannya kadang
+     * transien: scrollWidth terbaca 333 di viewport 320 lalu kembali 320.
+     * Overflow yang BENAR-BENAR ada nilainya konsisten, jadi tidak ada daya
+     * pemeriksaan yang hilang — ini hanya membuang bacaan transien. */
+    let o = null, stabil = 0;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 4000) {
+      const cur = await ev('({sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, iw: innerWidth})');
+      if (o && cur && cur.sw === o.sw && cur.cw === o.cw) { stabil++; if (stabil >= 2) { o = cur; break; } }
+      else { stabil = 0; }
+      o = cur;
+      await sleep(250);
+    }
     rec('UQ-2: tanpa scroll horizontal di ' + w + 'px', o.sw <= o.cw + 1, 'scrollW=' + o.sw + ' clientW=' + o.cw);
   }
 
