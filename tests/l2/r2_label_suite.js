@@ -32,6 +32,7 @@ async function connectCDP(port) {
   const ws = new globalThis.WebSocket(page.webSocketDebuggerUrl);
   let id = 0;
   const pending = new Map();
+  const eventHandlers = [];
   await new Promise((res, rej) => {
     ws.addEventListener('open', res, { once: true });
     ws.addEventListener('error', () => rej(new Error('ws')), { once: true });
@@ -39,7 +40,10 @@ async function connectCDP(port) {
   ws.addEventListener('message', ev => {
     if (typeof ev.data !== 'string') return;
     let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
-    if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); }
+    if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
+    // Event (msg.method tanpa msg.id) selama ini dibuang. Tanpa ini tidak ada
+    // cara menjawab dialog JavaScript yang memblokir renderer.
+    if (msg.method) eventHandlers.forEach(fn => { try { fn(msg); } catch (e) {} });
   });
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
@@ -49,7 +53,7 @@ async function connectCDP(port) {
       setTimeout(() => { if (pending.has(i)) { pending.delete(i); reject(new Error('timeout ' + method)); } }, 45000);
     });
   }
-  return { send, close: () => ws.close() };
+  return { send, close: () => ws.close(), onEvent: fn => eventHandlers.push(fn) };
 }
 function extractScript(src, fnName) {
   const re = new RegExp('function\\s+' + fnName + '\\s*\\(');
@@ -261,6 +265,7 @@ async function main() {
 
   const args = [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--disable-print-preview', '--kiosk-printing',
     '--remote-debugging-port=' + CDP_PORT, '--user-data-dir=' + PROFILE,
     '--window-size=1366,900', '--disable-dev-shm-usage', '--disable-extensions',
     '--disable-background-networking', '--allow-running-insecure-content',
@@ -296,9 +301,20 @@ async function main() {
     } catch (e) { return { err: String(e.message || e) }; }
   };
 
+  // STUB-PRINT: dipasang lewat addScriptToEvaluateOnNewDocument sehingga
+  // aktif SEBELUM skrip halaman apa pun dan bertahan lintas reload. Suite meng-stub
+  // window.open per-evalIn; begitu stub itu lepas, jalur print yang tidak
+  // terprediksi memblokir renderer dan semua evaluasi berikutnya timeout.
+  cdp.onEvent(m => {
+    if (m.method === 'Page.javascriptDialogOpening') {
+      cdp.send('Page.handleJavaScriptDialog', { accept: false }).catch(() => {});
+    }
+  });
+
   try {
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');
+    try { await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: "window.print=function(){window.__rdiPrintCalls=(window.__rdiPrintCalls||0)+1;};" }); } catch (e) {}
     await cdp.send('Page.navigate', { url: 'http://127.0.0.1:' + PORT + '/index.html' });
     await sleep(2000);
 
