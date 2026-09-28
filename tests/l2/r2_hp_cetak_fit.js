@@ -9,7 +9,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.json': 'application/json', '.png': 'image/png' };
@@ -177,7 +177,8 @@ async function main() {
     console.log('PASS / ' + fail + ' FAIL');
   } finally {
     try { ws && ws.close(); } catch (e) {}
-    try { chrome.kill(); } catch (e) {}
+    try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+    try { fs.rmSync(ud, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
     server.close();
   }
   process.exit(fail ? 1 : 0);

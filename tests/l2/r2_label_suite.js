@@ -1,6 +1,6 @@
 // L1 + L2 tests: menu CETAK LABEL BARANG
 // Scope-safe: only exported window APIs + DOM + popup capture (no IIFE internals).
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -278,7 +278,8 @@ async function main() {
   if (!cdp) {
     rec('L2: CDP connect', 'NOT TESTED', { chromeExit, chromeErr });
     writeResults();
-    try { chrome.kill(); } catch (e) {}
+    try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+  try { fs.rmSync(PROFILE, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
     server.close();
     return;
   }
@@ -514,7 +515,8 @@ async function main() {
   }
 
   try { cdp.close(); } catch (e) {}
-  try { chrome.kill(); } catch (e) {}
+  try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+  try { fs.rmSync(PROFILE, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
   server.close();
   writeResults();
 }

@@ -7,6 +7,25 @@
    getStockLedger/aset memang number — begitu satu path lupa String(), sel "Stok"
    di tabel master/kartu mobile tampil KOSONG untuk item berstok 0 (terbukti lewat
    probe mock qty:0 → sel stok = " "). Syarat benar: hanya null/undefined yang kosong. */
+/* A1: exception mentah tidak boleh bocor ke UI
+ * Pesan error dari server (field 'message' pada respons API) diteruskan apa
+ * adanya karena itu memang pesan yang dirancang untuk operator. Yang disembunyikan
+ * hanya error runtime JavaScript (TypeError, "is not a function", dan
+ * sejenisnya): tidak berguna bagi operator, dan membocorkan detail internal
+ * seperti nama field atau struktur data. Rincian penuh tetap ke console. */
+var _ERR_TEKNIKAL=/^(TypeError|ReferenceError|SyntaxError|RangeError|EvalError|URIError|Error)\b|Cannot read propert|is not a function|is not defined|of (undefined|null)\b|Assignment to constant|Permission denied|NetworkError\b|Load failed/i;
+function friendlyErr(e,fallback){
+  var msg='';
+  if(typeof e==='string')msg=e;
+  else if(e&&typeof e.message==='string')msg=e.message;
+  msg=String(msg).trim();
+  if(!msg)return fallback||'Terjadi kesalahan. Silakan coba lagi.';
+  if(_ERR_TEKNIKAL.test(msg)){
+    if(typeof console!=='undefined'&&console.error)console.error('[friendlyErr] disembunyikan dari UI:',e);
+    return fallback||'Terjadi kesalahan di aplikasi. Silakan muat ulang halaman.';
+  }
+  return msg;
+}
 function xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 /* FIX KRITIS (XSS): escape backslash DULU sebelum quote, lalu HTML entities —

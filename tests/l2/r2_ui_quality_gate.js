@@ -12,7 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const os = require('os');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -61,7 +61,8 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
   const chrome = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
     '--headless=new', '--remote-debugging-port=' + CDP_PORT, '--user-data-dir=' + ud,
     '--no-first-run', '--no-default-browser-check', '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
-  const done = () => { try { chrome.kill(); } catch (e) {} try { server.close(); } catch (e) {} };
+  const done = () => { try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+  try { fs.rmSync(ud, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {} try { server.close(); } catch (e) {} };
   process.on('exit', done);
   let target = null;
   for (let i = 0; i < 50; i++) { try { const l = await (await fetch('http://127.0.0.1:' + CDP_PORT + '/json/list')).json(); const p = l.find(t => t.type === 'page'); if (p) { target = p.webSocketDebuggerUrl; break; } } catch (e) {} await sleep(300); }

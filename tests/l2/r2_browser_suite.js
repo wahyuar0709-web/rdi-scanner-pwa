@@ -1,5 +1,5 @@
 // CDP browser suite v4 — closure-aware: use exported APIs + storage/reload boot path
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -150,7 +150,8 @@ async function main() {
     // FIX 2026-09-27 (TEST-AUD-03): CDP gagal = TIDAK boleh exit 0. Sebelumnya suite
     // Reported "ok (0P/0F)" padahal tidak menjalankan assertion sama sekali.
     rec('CDP', 'connect', 'FAIL', JSON.stringify({ exit: chromeExit, err: chromeErr.slice(0, 300) }), 'Chrome/CDP tidak connect — suite tidak bisa dijalankan');
-    try { chrome.kill(); } catch (e) {}
+    try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else chrome.kill(); } catch (e) {}
+  try { fs.rmSync(PROFILE, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
     server.close();
     fs.writeFileSync(path.join(__dirname, 'r2_browser_results.json'), JSON.stringify(results, null, 2));
     process.exit(2);

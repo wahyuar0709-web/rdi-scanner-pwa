@@ -54,7 +54,13 @@ if (badgeMatch) {
   t('F-04 badge counts min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
   t('F-04 badge caps at 9+', /9\+/.test(body), true);
   t('F-04 badge toggles .show', /classList\.(add|remove)\('show'\)/.test(body), true);
-  t('F-04 badge updates dash-alert', /dash-alert/.test(body), true);
+  // Review 2026-09: nilai dash-alert kini lewat setDashAlert() supaya kartu bisa
+  // menentukan warna status (0 = netral, bukan alarm). Dua bentuk ini sama-sama
+  // memenuhi niat test ini: "badge ini memperbarui tile Alert Stok di dashboard".
+  t('F-04 badge updates dash-alert', /dash-alert|setDashAlert\s*\(/.test(body), true);
+  // Pengaman: kalau bukan via setDashAlert, harus tetap langsung menyebut tile-nya.
+  t('F-04 badge selalu punya rute ke dash-alert',
+    /setDashAlert\s*\(/.test(body) || /getElementById\('dash-alert'\)/.test(body), true);
   t('F-04 badge updates more-alert-label', /more-alert-label/.test(body), true);
 }
 

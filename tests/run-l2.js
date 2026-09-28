@@ -133,7 +133,7 @@ function dirSize(dir) {
  * menumpuk di Temp — Chrome dibunuh paksa saat suite gagal/timeout sehingga folder
  * profilnya tidak terhapus. Sekarang dibersihkan di awal tiap run.
  * Hanya folder dengan awalan milik suite L2/CDP yang disentuh. */
-function cleanupStaleChromeProfiles() {
+function cleanupStaleChromeProfiles(tag) {
   const os = require('os');
   const tmp = os.tmpdir();
   const patterns = [/^rdi-/, /^cdp-probe/, /^cdp-/];
@@ -150,7 +150,7 @@ function cleanupStaleChromeProfiles() {
     } catch (err) { /* sedang dipakai suite lain? abaikan */ }
   }
   if (removed) {
-    console.log('CLEANUP | profil Chrome stale dihapus: ' + removed + ' folder, ' + (freed / 1024 / 1024).toFixed(1) + ' MB');
+    if (removed > 0) console.log('CLEANUP ' + (tag ? tag : 'awal') + ' | ' + removed + ' folder, ' + (freed / 1024 / 1024).toFixed(1) + ' MB dihapus');
   }
 }
 
@@ -191,6 +191,12 @@ function main() {
         'ok (' + r.counts.PASS + 'P/' + r.counts.FAIL + 'F, ' + r.durationMs + 'ms)'
       );
     }
+    // Bersihkan profil Chrome suite ini sekarang juga. Di dalam suite, rmSync
+    // sering gagal karena Chrome masih memegang profile-lock beberapa saat
+    // setelah process exit; di sini proses sudah benar-benar selesai, jadi
+    // hapusannya berhasil. Tanpa ini, tiap run meninggalkan 130-500 MB yang
+    // hanya dibersihkan di awal run berikutnya.
+    cleanupStaleChromeProfiles('setelah ' + path.basename(file));
   }
 
   const summary = {

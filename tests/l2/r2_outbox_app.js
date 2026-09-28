@@ -9,7 +9,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const os = require('os');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -189,7 +189,8 @@ async function main() {
     console.log('---- r2_outbox_app: ' + pass + ' PASS / ' + fail + ' FAIL ----');
   } finally {
     try { ws && ws.close(); } catch (e) {}
-    try { process.kill(chrome.pid); } catch (e) {}
+    try { if (process.platform === 'win32' && chrome.pid) spawnSync('taskkill', ['/pid', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(chrome.pid); } catch (e) {}
+    try { fs.rmSync(ud, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 }); } catch (e) {}
     server.close();
   }
   process.exit(fail ? 1 : 0);
