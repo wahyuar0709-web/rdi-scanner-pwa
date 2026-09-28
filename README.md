@@ -75,14 +75,141 @@ Browser (PWA)  <──HTTP GET/POST──>  Google Apps Script (Web App)  <─�
 ### 2. Frontend — PWA
 
 1. Buka `index.html` di browser, atau host lewat GitHub Pages
-2. Buka menu **Lainnya → Pengaturan**, isi:
-   - **Google Apps Script URL** = URL dari langkah 1.5
-   - **Editor Key** = nilai `EDITOR_KEY` dari Script Properties (khusus perangkat admin/editor)
-3. Untuk pengguna lihat-saja: jalankan `setupViewerAccountsSheet()` sekali dari Apps Script, isi akun di sheet `Viewer_Accounts`, lalu bagikan link app tanpa parameter apa pun
+2. Buka menu **Lainnya > Pengaturan**, isi **Google Apps Script URL** = URL dari langkah 1.5
+3. Tidak ada lagi kolom "Editor Key" di aplikasi. Hak akses sekarang datang dari **login** — lihat [Panduan Akun](#panduan-akun) di bawah untuk membuat atau mengganti password.
 
 ### 3. Install sebagai App (opsional)
 
 Buka `index.html` di Chrome/Safari mobile → menu browser → **Add to Home Screen** / **Install App**.
+
+## Panduan Akun
+
+Semua akun — editor maupun lihat-saja — disimpan di **satu sheet: `RDI_Accounts`**.
+Semua pembuatan dan penggantian password dilakukan lewat **satu fungsi: `setupAccount()`**.
+Tidak perlu mengedit sheet secara manual.
+
+Isi sheet `RDI_Accounts` (7 kolom, baris 1 = header):
+
+| Kolom | Isi | Catatan |
+|---|---|---|
+| A `Username` | nama untuk login | unik, tidak case-sensitive |
+| B `Nama` | nama orang, tampil di topbar | bebas |
+| C `PasswordHash` | `salt$5000$hash` | **jangan** diedit manual |
+| D `Role` | `editor` atau `viewer` | menentukan boleh tulis atau tidak |
+| E `Aktif` | `TRUE` / `FALSE` | `FALSE` = nonaktifkan tanpa menghapus |
+| F `PasswordVersion` | diisi otomatis | berubah tiap reset password |
+| G `Catatan` | bebas | diisi otomatis oleh `setupAccount()` |
+
+### A. Menambah akun baru
+
+1. Buka **Extensions > Apps Script**, lalu **Project Settings > Script Properties**
+2. Tambahkan property berikut (nilai persis, huruf besar):
+
+   | Nama property | Nilai | Wajib |
+   |---|---|---|
+   | `ACC_USERNAME` | mis. `budi` | ya |
+   | `ACC_PASSWORD` | mis. `GudangBudi#2026` | ya |
+   | `ACC_ROLE` | `editor` atau `viewer` | ya |
+   | `ACC_NAMA` | `Budi Santoso` | tidak (default: nama lama, atau username) |
+   | `ACC_NOTE` | mis. `staf gudang baru` | tidak |
+   | `ACC_ALLOW_DOWNGRADE` | `TRUE` | hanya bila menurunkan editor jadi viewer |
+
+   Hapus `ACC_NOTE` dan `ACC_ALLOW_DOWNGRADE` kalau tidak dipakai — nilai sisa dari
+   proses sebelumnya bisa membuat hasil tidak seperti yang diharapkan.
+
+3. Di editor, pilih fungsi **`setupAccount`** pada dropdown di atas `Code.gs`, tekan **Run**
+4. Saat diminta otorisasi, pilih akun Google pemilik spreadsheet, lalu **Allow**
+5. Buka tab **Executions** di kiri bawah, klik eksekusi terakhir, dan pastikan baris log:
+
+   ```
+   HASIL setupAccount -> username=budi  role=editor  DIBUAT
+   ```
+
+   `DIBUAT` = akun baru. `DIPERBARUI` = akun sudah ada dan datanya diperbarui.
+   **Selalu periksa nilai `role` di baris itu** — inilah yang sebenarnya tersimpan.
+
+6. Berikan `username` + `password` kepada pemilik akun. Minta ia logout lalu login ulang.
+
+> **Penting:** `setupAccount()` **menghapus semua property di atas sebelum memvalidasi**.
+> Tujuannya supaya password tidak tertinggal di Script Properties kalau proses gagal —
+> tapi artinya kalau gagal, Anda harus **mengisi ulang semua property dari awal**.
+
+### B. Mengganti / reset password
+
+Langkah sama persis dengan bagian A, hanya ada dua perbedaan:
+
+- `ACC_USERNAME` diisi **username yang sudah ada**
+- `ACC_ROLE` **wajib sama** dengan role sekarang (lihat bagian C kalau mau menurunkan role)
+- `ACC_NAMA` boleh **dikosongkan** — nama lama otomatis dipertahankan
+
+Baris log akan berbunyi `DIPERBARUI` (bukan `DIBUAT`).
+
+Mengganti password **langsung mematikan semua sesi lama** pemilik akun itu, lewat kolom
+`PasswordVersion`. Jadi ia perlu login ulang, dan token yang sempat dicuri ikut tidak berlaku.
+
+### C. Menurunkan editor jadi lihat-saja
+
+Isi `ACC_ALLOW_DOWNGRADE` = `TRUE` (tambahkan sebagai property), lalu jalankan `setupAccount()`
+seperti biasa. Tanpa property itu, proses **ditolak** dengan pesan:
+
+```
+budi masih editor aktif. Menurunkannya ke viewer butuh Script Property ACC_ALLOW_DOWNGRADE = TRUE.
+```
+
+Pengaman ini ada supaya role tidak berubah hanya karena salah isi.
+
+### D. Menonaktifkan akun tanpa menghapus
+
+Buka sheet `RDI_Accounts`, ubah kolom **E (`Aktif`)** jadi `FALSE` untuk baris tersebut.
+Riwayatnya tetap ada, dan akun bisa diaktifkan lagi dengan mengesetnya kembali ke `TRUE`.
+Menghapus baris langsung tidak disarankan.
+
+### E. Kalau belum ada akun editor sama sekali (bootstrap)
+
+Hanya untuk kondisi awal, sebelum ada editor aktif. Gunakan Script Property
+`TEMP_EDITOR_PW`, lalu jalankan fungsi **`setupEditorAccount`**.
+
+Perhatian: fungsi ini **membuat username `wahyu` dengan nama `Wahyu Susanto`** secara hardcode,
+dan **menolak jalan** kalau sudah ada editor aktif — kecuali diisi
+`TEMP_EDITOR_FORCE` = `TRUE`. Setelah akun pertama ada, pakai `setupAccount()` saja.
+
+### Aturan password
+
+Ditegakkan server, jadi tidak bisa dilewati:
+
+- **Minimal 10 karakter**
+- **Minimal 3 dari 4 jenis karakter**: huruf besar, huruf kecil, angka, simbol
+- Tidak boleh semua karakter sama (`aaaaaaaaaa`)
+- Tidak boleh urutan umum (`123456789`, `qwertyuiop`, `password`, `0123456789`, dll)
+
+Contoh **lolos**: `GudangBudi#2026`, `Rdi-Warehouse-01`
+Contoh **gagal**: `budi123` (terlalu pendek), `gudangbudi2026` (hanya 2 jenis),
+`aaaaaaaaaa`, `qwertyuiop`
+
+### Kalau ada masalah
+
+| Pesan / gejala | Arti dan cara overcoming |
+|---|---|
+| `Script Property ACC_USERNAME belum diisi.` | Property tidak tersimpan. Periksa nama property tepat `ACC_USERNAME` (huruf besar). |
+| `Script Property ACC_ROLE harus 'editor' atau 'viewer'` | Nilai role salah ketik. Gunakan huruf kecil semua. |
+| `Password terlalu lemah: minimal 10 karakter dan 3 jenis karakter` | Password tidak memenuhi aturan di atas. |
+| `<username> masih editor aktif. Menurunkannya ke viewer butuh ...` | Tambahkan `ACC_ALLOW_DOWNGRADE` = `TRUE`. |
+| Login **lambat sekali** (> 1 menit) | Password lama masih memakai hash 100.000 iterasi. Kode sekarang memakai 5.000. Jalankan ulang `setupAccount()` untuk akun itu agar hash-nya dihitung ulang. |
+| `Terlalu banyak percobaan login. Coba lagi dalam 15 menit.` | 5 kali salah berturut. Tunggu 15 menit. Ini pengaman anti brute-force, bukan kerusakan. |
+| Akun tidak masuk padahal password benar | Cek baris log `HASIL setupAccount` — bisa jadi `role` tersimpan berbeda dari yang Anda kira. |
+
+### Catatan penting
+
+- **Satu akun per orang.** Kolom `admin` pada setiap transaksi diisi dari identitas yang
+  diverifikasi server. Kalau banyak orang berbagi satu akun editor, semua transaksi
+  tercatat atas nama yang sama dan akuntabilitasnya hilang.
+- **Jangan pernah menulis password plaintext di sheet.** Kolom `PasswordHash` hanya boleh
+  berisi `salt$iterasi$hash`.
+- **Script Properties hanya bisa dilihat pemilik project.** Tetap begitulah, password
+  sebaiknya tidak disimpan lama di sana — dan `setupAccount()` membersihkannya setiap kali jalan.
+- **Rotasi `VIEWER_TOKEN_SECRET`** (di Script Properties) membuat **semua** token viewer
+  tidak berlaku, sehingga setiap pengguna lihat-saja harus login ulang. Lakukan hanya
+  bilakah secret pernah bocor.
 
 ## Deploy ke GitHub Pages
 
@@ -91,12 +218,13 @@ Buka `index.html` di Chrome/Safari mobile → menu browser → **Add to Home Scr
 
 ## Keamanan
 
-- Semua aksi tulis (`postTransaksi`, `addItem`, dll) wajib `editorKey` yang cocok dengan Script Property `EDITOR_KEY` (dibanding *constant-time*, disimpan ter-hash di server bila memungkinkan)
-- Password akun Viewer disimpan ter-hash (PBKDF2/SHA-256 + salt, banyak iterasi), bukan plaintext
-- Token sesi Viewer ditandatangani (HMAC), berlaku **6 jam**, dengan mekanisme **revocation / denylist jti** dan versi password (reset password / ganti hash mematikan sesi lama)
-- Login Viewer punya **rate limit** (mis. 5 gagal / 15 menit) untuk mencegah brute-force
-- Error ke user bersifat **umum** (tidak membocorkan detail internal stack/exception)
-- `doGet` pembacaan sensitif bisa divalidasi via header `X-Editor-Key` / `X-Viewer-Token`
+- Semua aksi tulis (`postTransaksi`, `addItem`, dll) melewati satu gerbang: `checkEditorSession_()`, yang diperoleh dari **token sesi** hasil login dengan role `editor`
+- Ada **break-glass**: Script Property `EDITOR_KEY` tunggal masih diterima, tapi hanya aktif bila `ALLOW_LEGACY_SINGLE_KEY=TRUE` atau belum ada satu pun akun editor aktif. Strings-nya dibandingkan *constant-time*, dengan rate limit 10 gagal per kunci dan 30 gagal global per 10 menit
+- Password akun disimpan ter-hash: SHA-256 iteratif dengan salt, **5.000 iterasi**, format `salt$iterasi$hash` — bukan plaintext
+- Token sesi ditandatangani (HMAC), berlaku **6 jam**, dengan mekanisme **revocation / denylist jti** dan versi password (reset password atau ganti hash membunuh sesi lama)
+- Login punya **rate limit** 5 gagal per username per 15 menit untuk mencegah brute-force
+- Error ke user bersifat **umum** — exception runtime tidak ditampilkan ke operator, hanya dicatat di console
+- **Kredensial hanya lewat body JSON, bukan header.** `X-Editor-Key` dan `X-Viewer-Token` terbukti **ditolak** di produksi, karena Apps Script web app tidak customized request header ke `e.postData.headers` (bukti L3, catatan di `Code.gs`). Jangan lullai diri dengan asumsi header sudah aman; satu-satunya jalur yang benar adalah body
 - Idempotensi: body-hash + `requestId` untuk cegah double-submit; mutex Script Lock pada tulis saldo
 - **Editor Key jangan dibagikan ke sembarang orang** — siapa pun yang memilikinya bisa mengubah data; di perangkat, key disimpan di storage lokal (sessionStorage/localStorage) — jangan pakai perangkat bersama tanpa logout
 
