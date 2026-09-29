@@ -561,6 +561,10 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #section-cetak .panel-head{gap:5px !important;padding:7px 10px !important}
   #section-cetak .panel-head h2{font-size:var(--fs-12) !important;line-height:1.25}
   #section-cetak .panel-head p{font-size:var(--fs-10) !important}
+  /* Judul dan jumlah pilihan digabung satu baris: keduanya singkat dan
+     masih terbaca, tapi dua baris memakan 14px yang lebih berguna untuk
+     daftar item. */
+  #section-cetak .panel-head > div:first-child{display:flex !important;align-items:baseline !important;gap:6px !important}
   /* 3. CARI + FILTER: 98 -> 74px */
   #cetak-mode-nav{margin-bottom:8px !important}
   #section-cetak .search-wrap{margin-bottom:6px !important}
