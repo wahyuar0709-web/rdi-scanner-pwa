@@ -385,6 +385,116 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
      yang penting; isinya baris tombol 48px yang Tingginya sudah jelas. */
   #master-panel-head{padding-top:8px!important;padding-bottom:8px!important}
 }
+/* ================================================================
+   MENU LAINNYA: dari jendela mengapung menjadi halaman
+   ---------------------------------------------------------------
+   Sebelum: bottom sheet 704px (83% layar), sudut 18px, bayangan
+   0 -6px 24px, gagang tarik, 10 tile @86px. Itu semua sinyal jendela.
+   Sesudah: tinggi layar penuh, tanpa sudut, tanpa bayangan, tanpa gagang,
+   kepala bergaya topbar. Tab bar tetap di atas (z 200 > 199) jadi
+   navigasi utama tidak tertutup dan pindah tab tetap bisa.
+   ================================================================ */
+#more-drawer{
+  top:0;
+  bottom:0;
+  height:auto;
+  /* .bottom-sheet punya max-height:calc(100dvh - 140px); itulah yang membuat
+     panel berhenti di 704px dan tetap terbaca sebagai panel. */
+  max-height:none;
+  border-radius:0;
+  box-shadow:none;
+  border-top:none;
+  /* Ruang untuk tab bar yang menutupi bagian bawah. */
+  padding-bottom:calc(66px + env(safe-area-inset-bottom,0px));
+}
+#more-drawer .sheet-handle{display:none}
+#more-drawer .sheet-header{
+  min-height:calc(46px + env(safe-area-inset-top,0px));
+  padding:calc(11px + env(safe-area-inset-top,0px)) 14px 11px 18px;
+  background:var(--grad-brand);
+  border-bottom:1px solid rgba(255,255,255,.16);
+  flex:none;
+}
+#more-drawer .sheet-title{color:#fff;font-size:var(--fs-15);font-weight:800}
+#more-drawer .sheet-close{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff}
+#more-drawer .sheet-close .ic{stroke:#fff}
+#more-drawer .sheet-menu{background:var(--bg2)}
+#more-drawer .sheet-group-label{color:var(--text2);margin:var(--sp-7) var(--sp-2) var(--space-1)}
+#more-drawer .sheet-footer{background:var(--bg2)}
+/* Tinggi tile 86px sebelumnya datang dari padding vertikal, bukan min-height,
+   jadi mengubah min-height saja tidak mengubah apa pun. Padding dikecilkan. */
+#more-drawer .more-menu-btn{min-height:56px;padding:var(--sp-7) var(--space-1);gap:var(--sp-5)}
+
+#more-drawer .sheet-header{
+  min-height:calc(46px + env(safe-area-inset-top,0px));
+  padding:calc(11px + env(safe-area-inset-top,0px)) 14px 11px 18px;
+  background:var(--grad-brand);
+  border-bottom:1px solid rgba(255,255,255,.16);
+  flex:none;
+}
+#more-drawer .sheet-title{color:#fff;font-size:var(--fs-15);font-weight:800}
+#more-drawer .sheet-close{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff}
+#more-drawer .sheet-close .ic{stroke:#fff}
+#more-drawer .sheet-menu{background:var(--bg2)}
+#more-drawer .sheet-group-label{color:var(--text2)}
+#more-drawer .sheet-footer{background:var(--bg2)}
+/* Tile 86px -> 58px. 10 tile jadi 580px, muat tanpa menggulir di HP. */
+/* Tinggi tile 86px sebelumnya datang dari padding vertikal, bukan min-height,
+   jadi min-height saja tidak mengubah apa pun. Padding dikecilkan. */
+#more-drawer .more-menu-btn{min-height:56px;padding:var(--sp-7) var(--space-1)}
+#more-drawer .more-menu-btn{gap:var(--sp-5)}
+#more-drawer .sheet-group-label{margin:var(--sp-7) var(--sp-2) var(--space-1)}
+/* ================================================================
+   CETAK + LABEL DI HP
+   ---------------------------------------------------------------
+   Kepala panel membungkus jadi 3 baris kontrol sehingga daftar
+   terpotong 58px sementara 135px ruang menganggur. Kontrol dijadikan
+   satu baris mendatar yang bisa digulir, dan kepala dirapatkan.
+   ================================================================ */
+@media (max-width:640px){
+  #section-cetak .panel-head{
+    flex-direction:column;
+    align-items:stretch;
+    gap:var(--sp-6);
+    padding:var(--sp-8) var(--sp-10);
+  }
+  #section-cetak .panel-head h2{font-size:var(--fs-13);margin:0}
+  #section-cetak .panel-head p{margin:1px 0 0}
+  /* flex-wrap:wrap ada di inline style, jadi harus !important. */
+  #section-cetak .panel-head > div:last-child{
+    flex-wrap:nowrap !important;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    padding-bottom:2px;
+    /* Anak flex punya min-width:auto sehingga menolak menyusut dan malah
+       melebarkan panel-head (terukur di 320px: scrollWidth 352 > clientWidth
+       295). min-width:0 memaksa ia menyusut lalu menggulir di dalamnya. */
+    min-width:0;
+    max-width:100%;
+  }
+  #section-cetak .panel-head > div:last-child > *{flex:none}
+  #section-cetak .panel-head > div:last-child::-webkit-scrollbar{display:none}
+  /* Kontrol (Semua, Hapus, ukuran kertas, jumlah copy) tidak muat dalam satu
+     baris di layar 390px. Kalau dipaksa jadi 2 baris, kepala panel kembali
+     jadi ~120px dan daftar terpotong lagi. Jadi baris ini digulir mendatar,
+     dengan gradien tepi kanan sebagai tanda masih ada isi di sebelah kanan. */
+  #section-cetak .panel-head > div:last-child{
+    -webkit-mask-image:linear-gradient(to right,#000 88%,transparent 100%);
+    mask-image:linear-gradient(to right,#000 88%,transparent 100%);
+  }
+  #section-cetak .panel-head > div:last-child:hover{
+    -webkit-mask-image:none;
+    mask-image:none;
+  }
+  #section-cetak .panel-head .btn-sm,#section-cetak .panel-head .sel{
+    flex:none;
+    min-height:40px;
+  }
+  #section-cetak .panel-head .sel{padding:var(--sp-5) var(--sp-8);font-size:var(--fs-11)}
+  #section-cetak .dash-subtab-nav{padding:3px;margin-bottom:var(--sp-6)}
+  #section-cetak .dash-subtab-btn{padding:var(--space-half) var(--sp-5);font-size:var(--fs-11)}
+}
 </style>
 
 </head>
