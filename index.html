@@ -592,6 +592,49 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #section-cetak .panel-head > div:last-child .btn-sm,#section-cetak .panel-head > div:last-child .sel{min-height:36px}
   #section-cetak .panel-head > div:last-child{padding-bottom:0}
 }
+/* ================================================================
+   TOMBOL AKSI DETAIL BARANG
+   ---------------------------------------------------------------
+   Sebelum: Transaksi dan Edit Item kembar (171x40, pil, 14px) lalu
+   Arsipkan sendirian melintang penuh (358x36, siku, 11px). Lebar tidak
+   sepadan dengan pentingnya.
+   Sesudah: Transaksi satu baris penuh sebagai aksi utama, Edit Item dan
+   Arsipkan berbagi baris sebagai pasangan sekunder yang seragam.
+   ================================================================ */
+/* Desktop: tombol arsip tetap melintang penuh seperti sebelumnya, dan
+   btn-lg tetap 52px seperti aslinya. Tidak ada perubahan di tablet/desktop.
+   WAJIB di dalam min-width - kalau dilepas ke luar, aturan ini ikut
+   berlaku di HP dan tombol arsip tetap melintang penuh di sana. */
+@media (min-width:641px){
+  .item-detail-actions #idd-btn-archive{grid-column:1/-1;margin-top:0}
+}
+@media (max-width:640px){
+  .item-detail-actions{gap:8px;grid-template-columns:1fr 1fr}
+  /* Aksi utama: melintang penuh, tinggi 44px - alasan layar ini dibuka. */
+  .item-detail-actions #idd-btn-trx{
+    grid-column:1/-1;
+    min-height:44px;
+    border-radius:var(--r);
+    font-size:var(--fs-13);
+  }
+  /* Dua aksi sekunder: bentuk, tinggi, dan font seragam supaya terbaca
+     sebagai pasangan, bukan dua hal yang tingkat berbeda. */
+  .item-detail-actions .btn:not(#idd-btn-trx){
+    min-height:40px;
+    padding:6px 8px;
+    border-radius:var(--r);
+    font-size:var(--fs-11);
+    font-weight:600;
+    gap:5px;
+  }
+  .item-detail-actions .btn:not(#idd-btn-trx) .ic,
+  .item-detail-actions .btn:not(#idd-btn-trx) svg{width:14px;height:14px;flex:none}
+  /* "Aktifkan Kembali" lebih panjang dari "Arsipkan Item" - perkecil
+     hurufnya sedikit supaya tidak membungkus dua baris di sel setengah. */
+  #idd-btn-archive{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Sbar status tetap di bawah, tanpa margin ganda. */
+  .item-detail-footer #sbar-idd-archive{margin-top:6px}
+}
 </style>
 
 </head>
@@ -2048,8 +2091,8 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit Item
       </button>
+    <button type="button" class="btn btn-sm" id="idd-btn-archive" onclick="toggleArchiveFromDetail()"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Arsipkan Item</button>
     </div>
-    <button type="button" class="btn btn-sm btn-block u-mt-8" id="idd-btn-archive" onclick="toggleArchiveFromDetail()"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Arsipkan Item</button>
     <div id="sbar-idd-archive" class="sbar u-mt-8" role="status" aria-live="polite"></div>
   </div>
 </div>
