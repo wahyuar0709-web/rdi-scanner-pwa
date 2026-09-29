@@ -592,65 +592,6 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #section-cetak .panel-head > div:last-child .btn-sm,#section-cetak .panel-head > div:last-child .sel{min-height:36px}
   #section-cetak .panel-head > div:last-child{padding-bottom:0}
 }
-/* ================================================================
-   DETAIL BARANG DI HP
-   ---------------------------------------------------------------
-   Sebelumnya .item-detail-* tidak punya aturan mobile sama sekali,
-   sehingga layout desktop dipamparkan ke 390px. Header disusun ulang
-   seperti label rak: identitas di kiri, lokasi + jumlah berpasangan di
-   kanan. Dua kotak (spesifikasi dan stok) dihapus karena keduanya
-   informasi, bukan kendali.
-   ================================================================ */
-@media (max-width:640px){
-  .item-detail-hero{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    grid-template-areas:
-      "nama   nama"
-      "spec   spec"
-      "kode   rak"
-      "stok   stok";
-    align-items:center;
-    column-gap:12px;
-    row-gap:3px;
-    padding:10px 44px 12px 14px;
-  }
-  /* Isi header bukan area seret, jadi kursor tidak ikut "grab". */
-  .item-detail-hero > *{cursor:default}
-  .item-detail-hero > .item-detail-nama{grid-area:nama;font-size:var(--fs-16);line-height:1.2;margin-top:0}
-  /* Spesifikasi: polos.buang kotak dan latar - nilai ini tidak pernah diedit di sini. */
-  .item-detail-hero > .item-detail-spec{grid-area:spec;background:none;border:0;padding:0;font-size:var(--fs-12);margin-top:1px}
-  .item-detail-hero > .item-detail-codeline{grid-area:kode;margin-top:0 !important;min-width:0}
-  /* Label "Kode Barang" uppercase + pil amber itu arang ceremony; kode ini
-     sudah jelas dari huruf monospace-nya, jadi labelnya dihapus di HP. */
-  .item-detail-hero > .item-detail-codeline > span:first-child{display:none}
-  .item-detail-hero > .item-detail-codeline .item-detail-id{font-size:12px;padding:1px 6px}
-  /* LOKASI: naik ke baris yang sama dengan ID, dan jadi sebesar yang
-     layak untuk jawaban utama. Warna biru tetap - itu kode yang sudah
-     dipakai .ilc3-rak di daftar barang, jadi tidak bermakna satu arti baru. */
-  .item-detail-hero > .item-detail-rak-hero{grid-area:rak;margin-top:0;font-family:var(--font-mono);font-size:20px;font-weight:800;line-height:1.1;white-space:nowrap;justify-self:end}
-  .item-detail-hero > .item-detail-rak-hero svg{width:15px;height:15px;opacity:.7}
-  /* Jumlah tetap paling besar - itu yang dicari saat menghitung - tapi
-     melintang penuh tanpa kotak, sejajar ke kiri dengan nama. */
-  .item-detail-hero > .item-detail-stok-hero{grid-area:stok;margin-top:8px;padding:0;background:none;border:0;gap:8px;align-items:baseline}
-  .item-detail-hero > .item-detail-stok-big{font-size:30px}
-  .item-detail-hero > .item-detail-stok-meta{flex-direction:row;align-items:baseline;gap:6px}
-  /* "Batas Min Stok": label di atas input. Selainserta hemat ruang, ini
-     membuat label terbaca satu baris - tadinya jadi 3 baris. */
-  .item-detail-min-row{flex-direction:column;align-items:stretch;gap:4px;padding:8px 10px}
-  .item-detail-min-lbl{flex:none;font-size:12px;line-height:1.3}
-  /* Grid info: tetap 2 kolom, tapi padding dipadatkan supaya terasa
-     seperti tabel data, bukan formulir. */
-  .item-detail-grid .item-detail-field{padding:7px 9px}
-  .item-detail-section-lbl{margin:11px 0 5px;min-height:0;font-size:10.5px}
-  /* Dua baris ini bisa disentuh (Riwayat Transaksi / Vendor History).
-     min-height:0 sebelumnya mengecilkannya jadi 19px, di bawah batas 24px
-     WCAG 2.2 - L2 menandainya sebagai UTANG (UQ-DEBT-3). Dipulihkan ke 44px.
-     Label seksi lain tidak disentuh; hanya yang punya class toggle. */
-  .item-detail-section-toggle{min-height:44px;display:flex;align-items:center;margin-top:6px}
-  .item-detail-footer{padding:8px 12px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
-  .item-detail-actions{gap:8px}
-}
 </style>
 
 </head>
@@ -2037,7 +1978,7 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   <div class="item-detail-hero" id="item-detail-hero">
     <div class="item-detail-nama" id="idd-nama" style="margin-top:0">—</div>
     <div class="item-detail-spec" id="idd-spec"></div>
-    <div class="item-detail-codeline" style="margin-top:6px;display:flex;align-items:center;gap:var(--sp-6)">
+    <div style="margin-top:6px;display:flex;align-items:center;gap:var(--sp-6)">
       <span style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Kode Barang</span>
       <div class="item-detail-id" id="idd-id" style="margin-top:0">—</div>
       <span id="idd-arsip-badge" class="u-hide" style="font-size:11px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--br-10);padding:var(--sp-2) var(--sp-7)"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> DIARSIPKAN</span>
