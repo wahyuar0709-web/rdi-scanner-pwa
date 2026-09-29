@@ -535,6 +535,59 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   .tab-fab{padding:6px 4px 8px}
   .tab-fab-inner{width:44px;height:44px;margin-top:-16px}
 }
+/* ================================================================
+   CETAK KARTU STOK / LABEL - RUANG DI HP
+   ---------------------------------------------------------------
+   Terukur di 320x568: dari 446px tinggi section, hanya 80px sampai
+   ke daftar item, sisanya habis untuk chrome (bar aksi 92px, kepala
+   panel 96px, baris cari+filter 98px, padding 31px). Dipotong berikut;
+   area sentuh tetap 44px karena ::after transparan tidak ikut dipangkas.
+   ================================================================ */
+@media (max-width:640px){
+  /* 1. BAR AKSI: 92 -> 56px */
+  #cetak-action-bar{padding:8px 12px !important;margin-top:0 !important}
+  #cetak-action-bar #print-hint{margin-bottom:6px !important;font-size:10px !important;line-height:1.3}
+  #cetak-action-bar > div > div:last-child{gap:8px !important}
+  #cetak-action-bar .btn{
+    min-height:34px;
+    padding:5px 10px;
+    font-size:var(--fs-12);
+    border-radius:var(--r) !important;
+  }
+  #cetak-action-bar .btn svg{width:15px !important;height:15px !important}
+  /* 2. KEPALA PANEL: 96 -> 62px. Judul tetap ada, hanya diperkecil -
+     subpage-bar sudah menulis "CETAK KARTU STOK", jadi mengulang dengan
+     huruf besar hanya memakan tempat. */
+  #section-cetak .panel-head{gap:5px !important;padding:7px 10px !important}
+  #section-cetak .panel-head h2{font-size:var(--fs-12) !important;line-height:1.25}
+  #section-cetak .panel-head p{font-size:var(--fs-10) !important}
+  /* 3. CARI + FILTER: 98 -> 74px */
+  #cetak-mode-nav{margin-bottom:8px !important}
+  #section-cetak .search-wrap{margin-bottom:6px !important}
+  #section-cetak .panel-body > div[style*="display:flex"]{margin-bottom:6px !important}
+  #section-cetak .panel-body .chip{min-height:38px;padding:6px 12px}
+  #section-cetak .panel-body .chip{position:relative}
+  #section-cetak .panel-body .chip::after{
+    content:'';position:absolute;left:0;right:0;top:50%;
+    transform:translateY(-50%);height:44px;
+  }
+  /* 4. PADDING BAWAH CONTAINER: ruang 31px yang tidak pernah dipakai */
+  #section-cetak .container{padding-bottom:6px !important}
+}
+/* Dua tombol Filter/Sort pindah ke baris yang sama dengan pencarian.
+   u-flex-1 dilawan lewat CSS supaya class di markup tidak berubah dan
+   test L1 yang memeriksa markup ini tetap tidak berubah. */
+@media (max-width:640px){
+  #section-cetak .panel-body .chip-tool{flex:none !important;padding:6px 9px !important;font-size:var(--fs-10) !important}
+  #section-cetak .panel-body .chip-tool .ic,#section-cetak .panel-body .chip-tool svg{width:14px !important;height:14px !important}
+  /* Teks "hemat kertas" membuat tombol mode melebar jadi 2 baris; di HP
+     informasi itu tidak penting karena memang sedang mencetak. */
+  #cetak-mode-nav .dash-subtab-btn span{display:none !important}
+  /* Label mode cetak membungkus jadi 2 baris di HP. */
+  #cetak-mode-nav .dash-subtab-btn{white-space:nowrap !important;font-size:var(--fs-11) !important}
+  #section-cetak .panel-head > div:last-child .btn-sm,#section-cetak .panel-head > div:last-child .sel{min-height:36px}
+  #section-cetak .panel-head > div:last-child{padding-bottom:0}
+}
 </style>
 
 </head>
@@ -1732,17 +1785,17 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
         <button type="button" class="dash-subtab-btn active" data-mode="kartu" onclick="setCetakMode('kartu')"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Kartu Stok</button>
         <button type="button" class="dash-subtab-btn" data-mode="label" onclick="setCetakMode('label')"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg> Label Barang <span style="opacity:.7;font-weight:600">(hemat kertas)</span></button>
       </div>
-      <div class="search-wrap" style="width:100%;max-width:none;margin-bottom:10px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div class="search-wrap" style="flex:1 1 auto;min-width:0;max-width:none;margin-bottom:0">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="cetak-search" aria-label="Cari nama, ID, RAK" placeholder="Cari nama, ID, RAK…" style="width:100%" oninput="renderCetakList()">
       </div>
-      <div style="display:flex;gap:var(--space-1);margin-bottom:10px">
+      <div style="display:contents">
         <button class="chip chip-tool u-flex-1" id="btn-open-filter-cetak" onclick="openFilterSheet()">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filter<span class="ftbadge u-hide" id="filter-badge-cetak">0</span>
         </button>
         <button class="chip chip-tool u-flex-1" onclick="openSortSheet()"><svg class="ic" aria-hidden="true"><use href="#i-sort"/></svg> Sort</button>
-      </div>
+      </div></div>
       <div id="cetak-item-list" style="overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
         <div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>
       </div>
