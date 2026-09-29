@@ -495,6 +495,46 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #section-cetak .dash-subtab-nav{padding:3px;margin-bottom:var(--sp-6)}
   #section-cetak .dash-subtab-btn{padding:var(--space-half) var(--sp-5);font-size:var(--fs-11)}
 }
+/* ================================================================
+   UKURAN TOMBOL DI HP
+   ---------------------------------------------------------------
+   Terukur di 390x844: .btn 48px, .btn-sm 48px, .btn-lg 52px,
+   .tab 65px, .qty-btn 58px. Di layar 5 inci itu 8-10% tinggi layar
+   untuk satu tombol.
+
+   Operator tidak memakai sarung tangan, jadi akurasi sentuh tinggi dan
+   tombol boleh lebih rapat. Yang dikecilkan hanya UKURAN TAMPIL.
+   Area sentuh - yang menentukan kemudahan mengetuk - tetap 44px memakai
+   pseudo-element transparan, jadi standar aksesibilitas tetap terpenuhi.
+
+   ::after sengaja hanya memanjang VERTIKAL. Kalau diperpanjang horizontal
+   juga, dua tombol bersebelahan akan saling menimpa area sentuhnya dan
+   satu tap bisa mengenai tombol yang salah.
+   ================================================================ */
+@media (max-width:640px){
+  .btn,.btn-sm,.btn-lg,.qty-btn{position:relative}
+  .btn::after,.btn-sm::after,.btn-lg::after,.qty-btn::after{
+    content:'';
+    position:absolute;
+    left:0;right:0;
+    top:50%;
+    transform:translateY(-50%);
+    height:44px;
+  }
+  .btn{min-height:40px;padding:6px 14px}
+  .btn-sm{min-height:36px;padding:4px 10px}
+  .btn-lg{min-height:40px;padding:8px 18px}
+  .qty-btn{height:48px}
+  /* Tab 65px bukan karena padding, tapi karena .tabnav memakai
+     align-items:stretch sehingga tab ikut setinggi bar 66px. Di HP bar
+     dibiarkan 66px supaya tidak perlu mengubah tinggi section yang
+     bergantung padanya, tapi tab diratakan tengah agar targetnya membesar?
+     tidak - targetnya justru mengecil mengikuti isinya. */
+  .tabnav{align-items:center}
+  .tab{padding:6px 4px 8px}
+  .tab-fab{padding:6px 4px 8px}
+  .tab-fab-inner{width:44px;height:44px;margin-top:-16px}
+}
 </style>
 
 </head>
