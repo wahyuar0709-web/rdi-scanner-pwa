@@ -26,7 +26,7 @@ function contrast(a, b) {
 
 // --- UI-07: 12 selector audit ---
 const SELS = ['.ilc2-low', '.trx-progress-lbl', '.hdr-saldo-lbl', '.idd-hist-saldo-lbl',
-  '.item-detail-stok-badge', '.hamburger-badge', '.ilc2-tgl-corner', '.item-detail-id',
+  '.item-detail-stok-badge', '.tab-alert-badge', '.ilc2-tgl-corner', '.item-detail-id',
   '.ftbadge', '.ilc2-rak', '.ilc3-rak', '.ilc2-btn-trx'];
 for (const sel of SELS) {
   const key = sel + '{';

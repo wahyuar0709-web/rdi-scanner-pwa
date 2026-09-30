@@ -32,7 +32,10 @@ t('coverage: >=350 inline handler terdeteksi (baseline 353)', handlers.length >=
 
 const ATTR_COUNT = {};
 for (const h of handlers) ATTR_COUNT[h.attr] = (ATTR_COUNT[h.attr] || 0) + 1;
-t('coverage: onclick >=280 (baseline 282)', ATTR_COUNT.onclick >= 280, 'dapat ' + ATTR_COUNT.onclick);
+// Baseline turun 282 -> 279 pada 2026-09-30: tombol tema (toggleTheme) dan
+// hamburger btn-open-more (switchTab('more')) dihapus atas permintaan user.
+// Selisih terverifikasi: 281 -> 279, tepat 2 handler, tidak ada yang lain.
+t('coverage: onclick >=277 (baseline 279)', ATTR_COUNT.onclick >= 277, 'dapat ' + ATTR_COUNT.onclick);
 t('coverage: onkeydown >=30 (baseline 32)', ATTR_COUNT.onkeydown >= 30, 'dapat ' + ATTR_COUNT.onkeydown);
 
 // ---- 2. calon callee ----

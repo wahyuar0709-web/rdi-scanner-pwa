@@ -55,13 +55,27 @@ t('UI-13: listener hashchange -> switchTab', /addEventListener\('hashchange'[^)]
 t('UI-13: apply hash setelah boot (hasValidSession guard)', /hasValidSession\(\)[^;]{0,80}_applyHashTab/.test(src.replace(/\r?\n/g, '')));
 t('UI-13: apply hash setelah login sukses', /startAppAfterAuth\(\)\.then\([\s\S]{0,60}_applyHashTab/.test(src));
 
-// --- UI-14 prefers-color-scheme ---
-t('UI-14: init tema cek localStorage rdi_theme (pilihan user menang)',
-  /_themeSaved\s*=\s*localStorage\.getItem\('rdi_theme'\)/.test(src));
-t('UI-14: first-visit ikut prefers-color-scheme via matchMedia',
-  /prefers-color-scheme: light/.test(src) && /matchMedia/.test(src));
-t('UI-14: _isDark ternary pilih sistem bila key null', /_themeSaved===null\s*\?/.test(src.replace(/\r?\n/g, '')));
-t('UI-14: toggleTheme tetap menyimpan rdi_theme', /function toggleTheme\(\)\{[^}]*localStorage\.setItem\('rdi_theme'/.test(src.replace(/\r?\n/g, '')));
+// --- UI-14 tema dikunci terang (perubahan 2026-09-30) ---
+// SEBELUMNYA suite ini menjamin bahwa aplikasi menghormati prefers-color-scheme
+// dan pilihan tema user lewat localStorage. Keduanya DIHAPUS atas permintaan
+// user: mode gelap dihapus, topbar di HP terlalu padat. Assertion lama
+// diganti assertion yang mengunci kebalikan, supaya regresi ke mode gelap
+// (atau returnnya tombol tema) tetap terdeteksi.
+const FLAT = src.replace(/\r?\n/g, '');
+t('UI-14: applyTheme memaksa body .light',
+  /function applyTheme\(\)\{[\s\S]{0,600}?classList\.add\('light'\)/.test(src));
+t('UI-14: preferensi rdi_theme lama dibersihkan, bukan dipatuhi',
+  /localStorage\.removeItem\('rdi_theme'\)/.test(FLAT));
+t('UI-14: tidak ada _isDark / _themeSaved (mode gelap tidak mungkin aktif)',
+  !/_isDark|_themeSaved/.test(src));
+t('UI-14: toggleTheme tidak ada lagi',
+  !/function toggleTheme/.test(src) && !/window\.toggleTheme/.test(src));
+t('UI-14: tidak ada tombol/handler tema di markup',
+  !/onclick="toggleTheme/.test(src) && !/id="btn-theme-toggle"/.test(src) && !/id="theme-icon"/.test(src));
+t('UI-14: CSS .theme-toggle-btn tidak tertinggal',
+  !/\.theme-toggle-btn\{/.test(src) && !/#btn-theme-toggle/.test(src));
+t('UI-14: body punya class light di markup (aman sebelum JS jalan)',
+  /<body class="light">/.test(src));
 
 console.log('---- ui11_f06f_bundle: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);
