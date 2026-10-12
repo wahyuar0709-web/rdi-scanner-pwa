@@ -19,6 +19,7 @@
 <script src="./js/cetak.js"></script>
 <script src="./js/outbox.js"></script>
 <script src="./js/format.js"></script>
+<script src="./js/importexcel.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <title>RDI Indirect Scanner v15.30 - PT Rayard Deli Indonesia</title>
 <!-- F5-UI-ARIAHIDDEN: penanda batch aria-hidden (lihat PLAN §1.4 UI-11) -->
@@ -2609,6 +2610,16 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
           <div class="admin-tool-desc">Isi ulang daftar Rak dari data aktual + dedup Vendor/Unit/Kategori (case-insensitive, mis. "Acme"/"ACME" jadi 1 entri).</div>
         </div>
         <button class="btn btn-sm" id="btn-admin-resync" onclick="runAdminTool('resyncMasterLists', this)">Jalankan</button>
+      </div>
+
+      <div class="admin-tool-card" style="flex-wrap:wrap">
+        <div class="admin-tool-info">
+          <div class="admin-tool-title">Import Excel (Merge)</div>
+          <div class="admin-tool-desc">Upload file "Tools &amp; Spare Part Inventory ….xlsx". Aplikasi hanya MENAMBAH item &amp; transaksi yang belum ada (tidak menimpa/menghapus); upload ulang file yang sama aman. Ada pratinjau dulu sebelum data ditulis.</div>
+        </div>
+        <button class="btn btn-sm" id="btn-admin-import-xl" onclick="importXlPick()">Pilih File</button>
+        <input type="file" id="import-xl-file" aria-label="Pilih file Excel untuk import" accept=".xlsx,.xlsm" style="display:none" onchange="importXlOnFile(this)">
+        <div id="import-xl-box" style="width:100%;margin-top:8px"></div>
       </div>
 
       <div id="admin-results" class="u-mt-12"></div>

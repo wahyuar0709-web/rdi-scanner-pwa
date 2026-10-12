@@ -289,10 +289,21 @@
 //
 // ============================================================
 
+//  CHANGELOG v5.27 (Impor Excel kartu stok — mode MERGE idempotent):
+//   - action 'importExcel' (editor saja, lewat gate checkEditorSession_ di doPost). Frontend (js/importexcel.js)
+//     membaca "Tools & Spare Part Inventory ....xlsx" lalu mengirim {items, entries}; backend TIDAK pernah
+//     menimpa/menghapus data: hanya menambah item yang belum ada di Master_Item dan transaksi yang belum ada
+//     di Transaksi_Log. Kunci idempotensi: ID|JENIS|tanggal|qty|(no referensi, khusus MASUK) dihitung sebagai
+//     multiset, jadi upload ulang file yang sama menambah 0 baris dan baris kembar yang sah tetap terhitung.
+//   - mode 'dry' = pratinjau (tidak menulis apa pun). mode 'commit' = tulis, di bawah ScriptLock; chunk pertama
+//     (backup:true) menyalin Transaksi_Log ke sheet cadangan dulu; chunk terakhir (final:true) menghitung ulang saldo.
+//   - Timestamp transaksi = tanggal Excel (MASUK 12:00, KELUAR 13:00), bukan waktu impor. Keterangan = 'IMPOR-EXCEL <sheet>'.
+//   - Cek stok per-rak TIDAK dijalankan (Excel dianggap sumber kebenaran); Stok_Saldo/Stok_Per_Rak dibangun ulang dari log.
+//
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.26';   // + setupAccount(): buat/reset akun editor & viewer
-var API_BUILD   = '2026-09-27.3';  // .3 = build setelah v5.24 (UI fix, setup editor, setup akun)
+var API_VERSION = 'v5.27';   // + importExcel(): impor Excel kartu stok (merge idempotent)
+var API_BUILD   = '2026-10-11.1';  // .1 = build impor Excel (v5.27)
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -733,6 +744,7 @@ function auditSummary_(action, body) {
   if (action === 'postTransaksi') { add('itemId', body.itemId || body.id); add('jenis', body.jenis); add('qty', body.qty); add('rak', body.rak); add('vendor', body.vendor); add('requestId', body.requestId); }
   else if (action === 'addItem' || action === 'updateItem' || action === 'archiveItem') { add('id', body.id); add('nama', body.nama); }
   else if (action === 'addMasterValue') { add('field', body.field); add('value', body.value); }
+  else if (action === 'importExcel') { add('mode', body.mode); add('items', Array.isArray(body.items) ? body.items.length : 0); add('entries', Array.isArray(body.entries) ? body.entries.length : 0); }
   else if (String(action).indexOf('addAset') === 0) { add('kode', body.kodeAlat || body.kode); add('nama', body.namaAlat || body.nama); }
   else { add('id', body.id); }
   return parts.length ? parts.join(' ') : '-';
@@ -1435,6 +1447,7 @@ function doPost(e) {
     if (action === 'archiveItem')   return corsOutput(archiveItem(body));
     if (action === 'addMasterValue') return corsOutput(addMasterValue(body));
     if (action === 'adminTool')     return corsOutput(runAdminToolAPI(body.fn, body));
+    if (action === 'importExcel')   return corsOutput(importExcel(body));   // v5.27
 
     // v5.20 — modul Aset Sirkulasi
     if (action === 'addAsetItem')   return corsOutput(addAsetItem(body));
@@ -4504,4 +4517,198 @@ function fmtDateTime(val) {
     catch(e) { return String(val); }
   }
   return String(val);
+}
+
+
+// ============================================================
+//  v5.27 — IMPOR EXCEL (mode MERGE idempotent). Lihat CHANGELOG v5.27.
+// ============================================================
+var IMPORT_MAX_ITEMS_        = 3000;
+var IMPORT_MAX_ENTRIES_DRY_  = 8000;
+var IMPORT_MAX_ENTRIES_COMMIT_ = 800;
+
+function importTz_() {
+  try { if (typeof Session !== 'undefined' && Session.getScriptTimeZone) return Session.getScriptTimeZone(); } catch (e) {}
+  return 'UTC';
+}
+function importValidYmd_(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s||''));
+  if (!m) return null;
+  var y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 2000 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  var dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return { y: y, m: mo, d: d };
+}
+// HARUS identik dengan entryKey() di js/importexcel.js
+function importKey_(id, jenis, dateStr, qty, ref) {
+  return id + '|' + jenis + '|' + dateStr + '|' + (Math.round(qty * 1000) / 1000) + '|' + (jenis === 'MASUK' ? String(ref||'').trim().replace(/^'/, '').toUpperCase() : '');   // safeCell_ menambah "'" di depan teks berawalan = + - @
+}
+function importStr_(v, max) { return String(v === null || v === undefined ? '' : v).trim().substring(0, max); }
+
+function importValidate_(body) {
+  var mode = String(body.mode || 'dry');
+  if (mode !== 'dry' && mode !== 'commit') return { error: 'mode harus dry atau commit' };
+  var items = Array.isArray(body.items) ? body.items : [];
+  var entries = Array.isArray(body.entries) ? body.entries : [];
+  if (items.length > IMPORT_MAX_ITEMS_) return { error: 'Terlalu banyak item (maks ' + IMPORT_MAX_ITEMS_ + ')' };
+  var maxE = mode === 'commit' ? IMPORT_MAX_ENTRIES_COMMIT_ : IMPORT_MAX_ENTRIES_DRY_;
+  if (entries.length > maxE) return { error: 'Terlalu banyak transaksi per permintaan (maks ' + maxE + ')' };
+  var idRe = /^[A-Z0-9][A-Z0-9\-_.\/ ]{0,39}$/;
+  var cleanItems = [], seen = {};
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i] || {};
+    var id = importStr_(it.id, 40).toUpperCase();
+    if (!idRe.test(id)) return { error: 'ID item tidak valid pada item ke-' + (i + 1) };
+    if (seen[id]) continue;
+    seen[id] = true;
+    cleanItems.push({ id: id, nama: importStr_(it.nama, 200) || id, spec: importStr_(it.spec, 200), unit: importStr_(it.unit, 20),
+      user: importStr_(it.user, 50), bc: importStr_(it.bc, 20), kategori: importStr_(it.kategori, 40) });
+  }
+  var cleanEntries = [];
+  for (var j = 0; j < entries.length; j++) {
+    var e = entries[j] || {};
+    var eid = importStr_(e.id, 40).toUpperCase();
+    if (!idRe.test(eid)) return { error: 'ID item tidak valid pada transaksi ke-' + (j + 1) };
+    var jenis = importStr_(e.j, 10).toUpperCase();
+    if (jenis !== 'MASUK' && jenis !== 'KELUAR') return { error: 'Jenis tidak valid pada transaksi ke-' + (j + 1) };
+    var dp = importValidYmd_(e.d);
+    if (!dp) return { error: 'Tanggal tidak valid pada transaksi ke-' + (j + 1) };
+    var q = typeof e.q === 'number' ? e.q : parseFloat(e.q);
+    if (!isFinite(q) || q <= 0 || q > 1e9) return { error: 'Qty tidak valid pada transaksi ke-' + (j + 1) };
+    var n = parseInt(e.n, 10); if (!isFinite(n) || n < 1) n = 1; if (n > 1000) return { error: 'Jumlah kembar tidak wajar pada transaksi ke-' + (j + 1) };
+    cleanEntries.push({ id: eid, j: jenis, d: String(e.d), dp: dp, q: Math.round(q * 1000) / 1000, n: n,
+      ref: importStr_(e.ref, 60), rak: importStr_(e.rak, 30).toUpperCase() || '-', ven: importStr_(e.ven, 100), ket: importStr_(e.ket, 100) });
+  }
+  return { mode: mode, items: cleanItems, entries: cleanEntries, backup: body.backup === true, final: body.final === true };
+}
+
+function importExcel(body) {
+  try {
+    var v = importValidate_(body || {});
+    if (v.error) return { status: 'error', message: v.error };
+    var commit = v.mode === 'commit';
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var master = ss.getSheetByName(SHEET_MASTER);
+    var trx = ss.getSheetByName(SHEET_TRANSAKSI);
+    if (!master || !trx) return { status: 'error', message: 'Sheet Master_Item / Transaksi_Log tidak ditemukan' };
+
+    var lock = null;
+    if (commit) {
+      lock = LockService.getScriptLock();
+      try { lock.waitLock(30000); } catch (e) { return { status: 'error', message: 'Server sibuk. Coba lagi sebentar.' }; }
+    }
+    try {
+      var tz = importTz_();
+      // --- 1) Master_Item yang sudah ada ---
+      var mLast = master.getLastRow();
+      var info = {}, nameSpec = {}, itemsExisting = 0;
+      if (mLast >= 2) {
+        master.getRange(2, 1, mLast - 1, 9).getValues().forEach(function (r) {
+          var id = String(r[COL_MASTER.ID] || '').trim().toUpperCase();
+          if (!id) return;
+          info[id] = { nama: String(r[COL_MASTER.NAMA] || ''), spec: String(r[COL_MASTER.SPEC] || '') };
+          nameSpec[(info[id].nama + '|' + info[id].spec).toLowerCase()] = id;
+        });
+      }
+      var newItems = [], dupNameSpec = [];
+      v.items.forEach(function (it) {
+        if (info[it.id]) { itemsExisting++; return; }
+        newItems.push(it);
+        var k = (it.nama + '|' + it.spec).toLowerCase();
+        if (nameSpec[k]) dupNameSpec.push({ id: it.id, existingId: nameSpec[k], nama: it.nama });
+      });
+      var known = {}; Object.keys(info).forEach(function (k) { known[k] = true; });
+      newItems.forEach(function (it) { known[it.id] = true; });
+      var unknown = {}, entries = [];
+      v.entries.forEach(function (e) { if (known[e.id]) entries.push(e); else unknown[e.id] = true; });
+
+      // --- 2) Transaksi_Log yang sudah ada (hitung multiset kunci + riwayat per item utk saldo berjalan) ---
+      var idsNeeded = {}; entries.forEach(function (e) { idsNeeded[e.id] = true; });
+      var have = {}, hist = {}, tLast = trx.getLastRow();
+      if (tLast >= 2) {
+        trx.getRange(2, 1, tLast - 1, 13).getValues().forEach(function (row) {
+          var id = String(row[COL_TRX.ID] || '').trim().toUpperCase();
+          if (!id || !idsNeeded[id]) return;
+          var ts = row[COL_TRX.TIMESTAMP];
+          if (!(ts instanceof Date)) return;
+          var jenis = String(row[COL_TRX.JENIS] || '').toUpperCase();
+          var qty = parseFloat(row[COL_TRX.QTY]) || 0;
+          var k = importKey_(id, jenis, String(Utilities.formatDate(ts, tz, 'yyyy-MM-dd')).substring(0, 10), qty, row[COL_TRX.NO_REF]);
+          have[k] = (have[k] || 0) + 1;
+          if (!hist[id]) hist[id] = [];
+          hist[id].push({ ts: ts.getTime(), s: jenis === 'MASUK' ? qty : (jenis === 'KELUAR' ? -qty : 0) });
+        });
+      }
+
+      // --- 3) Tentukan baris yang benar-benar ditambah ---
+      var toAdd = [], masukAdd = 0, keluarAdd = 0, alreadyExist = 0;
+      entries.forEach(function (e) {
+        var k = importKey_(e.id, e.j, e.d, e.q, e.ref);
+        var h = have[k] || 0, use = Math.min(h, e.n);
+        have[k] = h - use; alreadyExist += use;
+        for (var c = 0; c < e.n - use; c++) { toAdd.push(e); if (e.j === 'MASUK') masukAdd++; else keluarAdd++; }
+      });
+      var result = { status: 'ok', mode: v.mode, itemsNew: newItems.length, itemsExisting: itemsExisting,
+        masukAdd: masukAdd, keluarAdd: keluarAdd, alreadyExist: alreadyExist,
+        dupNameSpec: dupNameSpec.slice(0, 10), unknownIds: Object.keys(unknown).slice(0, 10) };
+      if (!commit) return result;
+
+      // --- 4) COMMIT ---
+      if (v.backup && (toAdd.length || newItems.length)) {
+        try {
+          var bname = 'Transaksi_Log_backup_' + Utilities.formatDate(new Date(), tz, 'yyyyMMdd_HHmm');
+          var copy = trx.copyTo(ss); copy.setName(bname);
+          result.backupSheet = bname;
+        } catch (be) {
+          console.error('importExcel backup gagal: ' + (be && be.stack ? be.stack : be));
+          return { status: 'error', message: 'Backup Transaksi_Log gagal — import dibatalkan, tidak ada data yang diubah.' };
+        }
+      }
+      if (newItems.length) {
+        var no0 = mLast < 2 ? 1 : mLast;
+        var mrows = newItems.map(function (it, i) {
+          return [no0 + i, it.id, safeCell_(it.nama), safeCell_(it.spec), safeCell_(it.user), safeCell_(it.bc), safeCell_(it.unit), safeCell_(it.kategori), 0];
+        });
+        master.getRange(mLast + 1, 1, mrows.length, 9).setValues(mrows);
+        newItems.forEach(function (it) { info[it.id] = { nama: it.nama, spec: it.spec }; });
+      }
+      if (toAdd.length) {
+        var admin = String(body.verifiedAdmin || body.admin || 'Impor Excel');
+        var rows = toAdd.map(function (e) {
+          var ts = new Date(e.dp.y, e.dp.m - 1, e.dp.d, e.j === 'MASUK' ? 12 : 13, 0, 0);
+          return { e: e, ts: ts, s: e.j === 'MASUK' ? e.q : -e.q, before: 0, after: 0 };
+        });
+        // saldo berjalan per item, urut kronologis (riwayat lama + baris baru)
+        var byItem = {};
+        rows.forEach(function (r) { (byItem[r.e.id] = byItem[r.e.id] || []).push(r); });
+        Object.keys(byItem).forEach(function (id) {
+          var list = (hist[id] || []).map(function (h) { return { t: h.ts, s: h.s, row: null, ord: 0 }; });
+          byItem[id].forEach(function (r, i) { list.push({ t: r.ts.getTime(), s: r.s, row: r, ord: i + 1 }); });
+          list.sort(function (a, b) { return a.t - b.t || b.s - a.s || a.ord - b.ord; });
+          var run = 0;
+          list.forEach(function (x) { if (x.row) x.row.before = run; run += x.s; if (x.row) x.row.after = run; });
+        });
+        var out = rows.map(function (r) {
+          var e = r.e, nm = info[e.id] || { nama: e.id, spec: '' };
+          return [r.ts, e.id, safeCell_(nm.nama), safeCell_(nm.spec), e.j, e.q, e.rak, safeCell_(e.ven), safeCell_(e.ref),
+            r.before, r.after, safeCell_(e.ket || 'IMPOR-EXCEL'), safeCell_(admin)];
+        });
+        trx.getRange(tLast + 1, 1, out.length, 13).setValues(out);
+        invalidateTrxLogCache_();
+      }
+      SpreadsheetApp.flush();
+      if (v.final) {
+        var rc = recalculateAllSaldoLocked_();
+        result.recalc = !!(rc && rc.ok);
+        if (!result.recalc) { result.status = 'partial'; result.message = 'Data masuk, tapi kalkulasi ulang saldo gagal. Jalankan "Kalkulasi Ulang Stok" dari Admin Database.'; }
+      }
+      return result;
+    } finally {
+      if (lock) { try { lock.releaseLock(); } catch (e2) {} }
+    }
+  } catch (err) {
+    console.error('importExcel error: ' + (err && err.stack ? err.stack : err));
+    return genericError_('importExcel');
+  }
 }

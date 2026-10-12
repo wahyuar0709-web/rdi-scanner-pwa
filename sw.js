@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v38'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v39'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,8 @@ const ASSETS = [
   './js/util.js',
   './js/cetak.js',
   './js/outbox.js',
-  './js/format.js'
+  './js/format.js',
+  './js/importexcel.js'
 ];
 
 self.addEventListener('install', e => {
