@@ -47,6 +47,7 @@
   /* Kunci idempotensi — HARUS identik dengan importKey_ di Code.gs. KELUAR tidak memakai no referensi. */
   function entryKey(e) { return e.id + '|' + e.j + '|' + e.d + '|' + r3(e.q) + '|' + (e.j === 'MASUK' ? txt(e.ref).replace(/^'/, '').toUpperCase() : ''); }
 
+  var ID_RE = /^[A-Z0-9][A-Z0-9\-_.\/ ]{0,39}$/;   // sama dengan idRe di importValidate_ (Code.gs)
   var HDR = {
     'material code': 'code', 'material name': 'name', 'material specification': 'spec',
     'no. invoice': 'ref', 'invoice no.': 'ref', 'invoice no': 'ref', 'nomor po / packing list': 'ref',
@@ -91,6 +92,7 @@
       var code = txt(r[cm.code]).toUpperCase(), name = txt(r[cm.name]);
       if (!code && !name) continue;
       if (!code) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode material kosong, dilewati'); continue; }
+      if (!ID_RE.test(code)) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode "' + code.substring(0, 40) + '" tidak valid (hanya A-Z, 0-9, - _ . / dan spasi) — baris dilewati, perbaiki kode di Excel'); continue; }
       var qin = num(r[cm.qin]);
       if (!(qin > 0)) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ' (' + code + '): Qty In tidak valid, dilewati'); continue; }
       rep.rows++;
@@ -207,7 +209,7 @@
       if (s.keluarSebelumMasuk) warn.push(s.name + ': ' + s.keluarSebelumMasuk + ' KELUAR bertanggal sebelum tanggal terima batch-nya');
       if (s.badCells) warn.push(s.name + ': ' + s.badCells + ' sel qty keluar tidak valid (dilewati)');
     });
-    rep.warnings.slice(0, 20).forEach(function (w) { warn.push(w); });
+    rep.warnings.slice(0, 30).forEach(function (w) { warn.push(w); });
     if (d.dupNameSpec && d.dupNameSpec.length) warn.push(d.dupNameSpec.length + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
     if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + d.unknownIds.slice(0, 5).join(', '));
     if (warn.length) h += '<div style="font-size:11px;color:var(--text3);margin:8px 0;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' + warn.map(function (w) { return '<div style="margin-bottom:4px">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
