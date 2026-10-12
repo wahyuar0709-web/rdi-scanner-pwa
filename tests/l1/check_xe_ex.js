@@ -83,7 +83,7 @@ if (api) {
 }
 
 // definisi tunggal di seluruh file front-end
-const feFiles = ['index.html', 'js/util.js', 'js/format.js', 'js/cetak.js', 'js/outbox.js'];
+const feFiles = ['index.html', 'js/util.js', 'js/format.js', 'js/cetak.js', 'js/outbox.js', 'js/importexcel.js'];
 let fe = '';
 feFiles.forEach(f => { fe += '\n' + fs.readFileSync(path.join(ROOT, f), 'utf8'); });
 ['xe', 'xeJs', 'ex', 'qrImgSrc', 'rakDisplay', 'buildQrPayload'].forEach(fn => {

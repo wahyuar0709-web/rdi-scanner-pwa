@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
-const FILES = ['index.html', 'js/format.js', 'js/util.js', 'js/outbox.js', 'js/cetak.js'];
+const FILES = ['index.html', 'js/format.js', 'js/util.js', 'js/outbox.js', 'js/cetak.js', 'js/importexcel.js'];
 
 let pass = 0, fail = 0;
 function t(name, cond, detail) {

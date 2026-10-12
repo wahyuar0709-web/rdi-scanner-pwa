@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 
-const FE_FILES = ['index.html', 'js/util.js', 'js/format.js', 'js/cetak.js', 'js/outbox.js'];
+const FE_FILES = ['index.html', 'js/util.js', 'js/format.js', 'js/cetak.js', 'js/outbox.js', 'js/importexcel.js'];
 let fe = '';
 FE_FILES.forEach(f => { fe += '\n' + fs.readFileSync(path.join(ROOT, f), 'utf8'); });
 

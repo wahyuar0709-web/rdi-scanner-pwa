@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 
-const files = ['index.html', 'js/util.js', 'js/cetak.js', 'js/outbox.js', 'js/format.js', 'scanner.html'];
+const files = ['index.html', 'js/util.js', 'js/cetak.js', 'js/outbox.js', 'js/format.js', 'js/importexcel.js', 'scanner.html'];
 const srcAll = files.map(f => {
   const p = path.join(ROOT, f);
   return fs.existsSync(p) ? { f, s: fs.readFileSync(p, 'utf8') } : null;
