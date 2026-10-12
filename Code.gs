@@ -4559,7 +4559,7 @@ function importValidate_(body) {
   for (var i = 0; i < items.length; i++) {
     var it = items[i] || {};
     var id = importStr_(it.id, 40).toUpperCase();
-    if (!idRe.test(id)) return { error: 'ID item tidak valid pada item ke-' + (i + 1) };
+    if (!idRe.test(id)) return { error: 'ID item tidak valid pada item ke-' + (i + 1) + ': "' + id.substring(0, 40) + '"' };
     if (seen[id]) continue;
     seen[id] = true;
     cleanItems.push({ id: id, nama: importStr_(it.nama, 200) || id, spec: importStr_(it.spec, 200), unit: importStr_(it.unit, 20),
@@ -4569,7 +4569,7 @@ function importValidate_(body) {
   for (var j = 0; j < entries.length; j++) {
     var e = entries[j] || {};
     var eid = importStr_(e.id, 40).toUpperCase();
-    if (!idRe.test(eid)) return { error: 'ID item tidak valid pada transaksi ke-' + (j + 1) };
+    if (!idRe.test(eid)) return { error: 'ID item tidak valid pada transaksi ke-' + (j + 1) + ': "' + eid.substring(0, 40) + '"' };
     var jenis = importStr_(e.j, 10).toUpperCase();
     if (jenis !== 'MASUK' && jenis !== 'KELUAR') return { error: 'Jenis tidak valid pada transaksi ke-' + (j + 1) };
     var dp = importValidYmd_(e.d);
