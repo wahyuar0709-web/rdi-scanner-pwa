@@ -37,5 +37,7 @@ const fut = P.parseSheets([{ name: 'Indirect', rows: [H.slice(0, 9).concat(['04/
 t('tanggal masa depan (2027) dilewati, kolom 2026 sesudahnya tetap dipakai', fut.entries.filter(e => e.j === 'KELUAR').length === 1 && fut.entries.find(e => e.j === 'KELUAR').d === '2026-03-05', JSON.stringify(fut.entries.map(e => e.j + e.d)));
 t('kunci MASUK abaikan apostrof awal (safeCell_) & huruf besar', P.entryKey({ id: 'A', j: 'MASUK', d: '2026-01-01', q: 1, ref: "'=inv" }) === P.entryKey({ id: 'A', j: 'MASUK', d: '2026-01-01', q: 1, ref: '=INV' }));
 t('kunci KELUAR tidak memakai no referensi', P.entryKey({ id: 'A', j: 'KELUAR', d: '2026-01-01', q: 1, ref: 'x' }) === P.entryKey({ id: 'A', j: 'KELUAR', d: '2026-01-01', q: 1, ref: '' }));
+const badId = P.parseSheets([{ name: 'Spare Part', rows: [H.slice(0, 9).concat(['01/09/2026', 'Stok Akhir']), [1, 'MRO-01-01-[..]', 'Bearing', '', 'r', '01/09/2026', '', 4, 'Pc', null, 4], [2, 'MRO-01-01-001', 'Bearing', '', 'r', '01/09/2026', '', 4, 'Pc', null, 4]] }], { today: '2026-10-12' });
+t('kode placeholder "[..]" dilewati + warning (tidak memblokir import)', badId.items.length === 1 && badId.items[0].id === 'MRO-01-01-001' && badId.report.warnings.some((w) => /baris 2.*tidak valid/.test(w)), JSON.stringify(badId.report.warnings));
 console.log('\nRingkasan import_excel_parse: PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail ? 1 : 0);
