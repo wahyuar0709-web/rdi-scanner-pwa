@@ -11,7 +11,16 @@ const { spawnSync } = require('child_process');
 const L2_DIR = path.join(__dirname, 'l2');
 const RESULTS_DIR = path.join(__dirname, 'results');
 const ROOT = path.resolve(__dirname, '..');
-const SUITE_TIMEOUT_MS = 300000; // browser suite butuh ~210-240s (SW/offline/camera waits); cap 180s membunuh suite sebelum selesai
+/* 2026-10-13: cap dinaikkan 300s -> 900s.
+   BUKAN karena aplikasi makin lambat: r2_browser_suite yang dijalankan SENDIRIAN
+   (node tests/l2/r2_browser_suite.js, tanpa cap) SELESAI dengan 30 PASS / 0 FAIL.
+   Cap 300s yang terlalu kecil membuatnya dibunuh di tengah jalan, dan suite yang
+   dibunuh dilaporkan "FAIL (TIMEOUT)" walau assertion-nya hijau semua — perpetuate
+   false-red yang menyamar sebagai cacat produk.
+   Catatan performa yang terukur (bukan indikasi): Performance navigation timing di
+   suite yang sama melaporkan dcl=6862ms, load=6919ms — sebagian besar datang dari
+   <script> XLSX 861 KB yang diambil dari CDN (index.html:23). Itu issues terpisah. */
+const SUITE_TIMEOUT_MS = 900000;
 
 // CDP/HTTP port yang dipakai suite L2. WAJIB di-update setiap menambah/mengganti port suite
 // (sumber: tiap file tests/l2/*.js). Dipakai untuk membersihkan sisa proses test SAJA —

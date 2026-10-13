@@ -130,6 +130,10 @@ async function main() {
     await ev(GAS_SETUP);
     // seed = bentuk hasil writeSecureStorage (dual-write + touch); fungsi auth ada di scope internal app
     await ev("sessionStorage.setItem('rdi_viewer_token','" + payload + "');localStorage.setItem('rdi_viewer_token','" + payload + "');localStorage.setItem('rdi_last_active',String(Date.now()));'ok'");
+    // nilai seed HARUS diambil di sini (sebelum reload) — kalau diambil setelah boot,
+    // nilainya sudah sama dengan yang dibaca assertion sehingga perbandingan tidak
+    // menguji apa pun (that's what happened in the first attempt at this fix).
+    const laSeed = await ev("parseInt(localStorage.getItem('rdi_last_active')||'0',10)");
     await send('Page.navigate', { url: APP_URL });
     const b1 = await waitBoot();
     rec('T1 boot dengan sesi siap', b1 && b1.n === 4, JSON.stringify(b1));
@@ -137,7 +141,13 @@ async function main() {
     let st = await ev("(function(){return {gate:!document.getElementById('login-gate').classList.contains('hide'),tok:localStorage.getItem('rdi_viewer_token')||'',la:parseInt(localStorage.getItem('rdi_last_active')||'0',10),sesT:sessionStorage.getItem('rdi_viewer_token')||''};})()");
     rec('T1 gate tersembunyi (login aktif)', st.gate === false, JSON.stringify({ gate: st.gate }));
     rec('T1 resume copy ada di localStorage', !!st.tok, 'len=' + (st.tok || '').length);
-    rec('T1 rdi_last_active fresh (<10s)', st.la > 0 && Date.now() - st.la < 10000, 'age=' + (Date.now() - (st.la || 0)) + 'ms');
+    /* FIX 2026-10-13 (2x): assertion pertama mengukur LATENSI reload CDP, bukan logika idle
+   (boot 40-50 detik -> `Date.now()-la < 10000` gagal terus-menerus: 49706ms, lalu 41325ms).
+   Percobaan kedua salah lagi: nilai pembanding diambil SESUDAH boot sehingga selalu sama.
+   Yang benar diuji: enforceSessionIdle() ME-SENTUH nilai saat boot -> la > laSeed.
+   Kebenaran logikanya sendiri sudah dibuktikan T2b/T2c (idle 2 jam tetap bekerja). */
+rec('T1 rdi_last_active di-TOUCH saat boot (lebih baru dari seed)', st.la > 0 && st.la > laSeed,
+  'seed=' + laSeed + ' stiker=' + st.la + ' (umur=' + (Date.now() - (st.la || 0)) + 'ms)');
     rec('T1 sesi utama di sessionStorage', !!st.sesT, 'len=' + (st.sesT || '').length);
 
     /* ---- Tab 2: tab BARU (storage sama, sessionStorage kosong) = PWA dibuka lagi ---- */

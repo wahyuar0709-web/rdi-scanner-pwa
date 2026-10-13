@@ -94,7 +94,15 @@ t('SEC-B9: rate limit login viewer ada (5 gagal → lock 15 menit)',
 
 /* ---------- C. TOKEN & REPLAY ---------- */
 t('SEC-C1: token membawa passwordVersion (pv)', /pvStr/.test(gs) && /function passwordPv_/.test(gs));
-t('SEC-C2: verifyViewerToken membandingkan pv', /expectedHashPv/.test(gs) || /passwordPv/i.test(bodyOf(gs, 'verifyViewerToken', 4000)));
+/* 2026-10-13 (DBG-06): assertion ini duluan membaca body verifyViewerToken — yaitu
+   definisi YANG TER-SHADOW (versi kedua menang, jadi versi pertama tidak pernah jalan).
+   Gate ini karena itu memvalidasi kode mati selama berbulan-bulan. Sekarang diarahkan ke
+   implementasi yang benar-benar hidup: verifyAuthToken_ (verifyViewerToken = alias-nya). */
+const authTokBody = bodyOf(gs, 'verifyAuthToken_', 6000);
+t('SEC-C2: verifikasi token membandingkan pv (pada implementasi yang hidup verifyAuthToken_)',
+  !!authTokBody && /pv|PasswordVersion|passwordPv/i.test(authTokBody), authTokBody ? 'body verifyAuthToken_ ' + authTokBody.length + ' char' : 'verifyAuthToken_ tidak ditemukan');
+t('SEC-C2b: tidak ada lagi definisi verifyViewerToken yang ter-shadow',
+  (gs.match(/function verifyViewerToken\(/g) || []).length === 1, 'jumlah deklarasi=' + (gs.match(/function verifyViewerToken\(/g) || []).length);
 t('SEC-C3: denylist logout (token_deny_ + TTL)', /token_deny_/.test(gs) && /function apiViewerLogout/.test(gs));
 t('SEC-C4: TTL token 6 jam (bukan 12 jam / 30 hari)', /6\s*\*\s*60\s*\*\s*60\s*\*\s*1000/.test(gs) && !/12\s*\*\s*60\s*\*\s*60\s*\*\s*1000/.test(gs));
 t('SEC-C5: viewerLogout tidak bocor status token (selalu status ok)',

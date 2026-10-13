@@ -5,7 +5,7 @@
  * Suite ini memakai API yang benar-benar dipanggil index.html: submitTransaksi() (UI),
  * pushOutbox/readOutbox/writeOutbox/flushOutbox (js/outbox.js).
  * Mock GAS lokal: getData/getItem/getMasterLists normal; postTransaksi bisa disuruh
- * "network error" (socket di-destroy) supaya alur offline-offline。就像生产. */
+ * "network error" (socket di-destroy) supaya alur offline-offline seperti produksi. */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -54,6 +54,14 @@ const server = http.createServer((req, res) => {
       POSTS.push({ action: body.action, rid: body.requestId, qty: body.qty, mode: MODE });
       const r = gasResponse(body.action, body);
       if (r && r.__destroy) { req.socket.destroy(); return; }
+      // 2026-10-13 (DBG-02): backend Sometimes menjawab HTML, bukan JSON —
+      // timeout Apps Script, interstitial login Google, halaman error proxy/CDN.
+      // Hasil transaksi pada kasus ini TIDAK BISA DIPERCAYAKAN -> antrean harus dipertahankan.
+      if (MODE === 'html' && body.action === 'postTransaksi') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end('<!DOCTYPE html><html><body><h1>Script error: exceeded execution time</h1></body></html>');
+        return;
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(r));
     });
     return;
@@ -183,6 +191,31 @@ async function main() {
     await ev("(function(){localStorage.removeItem('rdi_trx_outbox');pushOutbox({action:'postTransaksi',requestId:'p-1',qty:1});return 1;})()");
     const part = await ev("(function(){return Promise.resolve({len:readOutbox().length});})()", true);
     rec('QUEUE: entri partial tersimpan sampai flush (partial dihitung success oleh app)', part && part.len === 1, JSON.stringify(part));
+    await ev("(function(){localStorage.removeItem('rdi_trx_outbox');return 1;})()");
+
+    // ---- 6. DBG-02 (2026-10-13): respons NON-JSON = hasil tidak diketahui.
+    // Entri antrean TIDAK BOLEH dihapus: kalau ternyata server sudah sempat commit,
+    // menghapus antrean = transaksi hilang diam-diam; operator lalu input ulang = duplikat.
+    MODE = 'html';
+    const htmlCase = await ev("(function(){localStorage.removeItem('rdi_trx_outbox');" +
+      "pushOutbox({action:'postTransaksi',requestId:'html-1',qty:1});" +
+      "pushOutbox({action:'postTransaksi',requestId:'html-2',qty:2});" +
+      "var seeded=readOutbox().map(function(e){return e.payload.requestId;});" +
+      "return flushOutbox().then(function(){return {seeded:seeded,after:readOutbox().map(function(e){return e.payload.requestId;})};});})()", true);
+    rec('DBG-02: respons non-JSON -> entri outbox HARUS tetap diantrekan', htmlCase && !htmlCase.error && htmlCase.after.length === 2,
+      'seeded=' + JSON.stringify(htmlCase && htmlCase.seeded) + ' after=' + JSON.stringify(htmlCase && htmlCase.after));
+    MODE = 'ok';
+    await ev("(function(){localStorage.removeItem('rdi_trx_outbox');return 1;})()");
+
+    // ---- 7. DBG-03 (2026-10-13): requestId null TIDAK BOLEH mengosongkan antrean.
+    // removeOutboxByRequestId(null) sebelumnya jatuh ke writeOutbox([]) = hapus SEMUA
+    // transaksi offline milik operator lain yang sedang menunggu sync.
+    const wipe = await ev("(function(){localStorage.removeItem('rdi_trx_outbox');" +
+      "pushOutbox({action:'postTransaksi',requestId:'keep-1',qty:1});" +
+      "pushOutbox({action:'postTransaksi',requestId:'keep-2',qty:2});" +
+      "removeOutboxByRequestId(null);" +
+      "return {len:readOutbox().length};})()");
+    rec('DBG-03: removeOutboxByRequestId(null) tidak boleh menghapus seluruh antrean', wipe && wipe.len === 2, 'len=' + (wipe && wipe.len));
     await ev("(function(){localStorage.removeItem('rdi_trx_outbox');return 1;})()");
 
     rec('NO PAGE EXCEPTION selama suite', exceptions.length === 0, 'exceptions=' + JSON.stringify(exceptions.slice(0, 3)));

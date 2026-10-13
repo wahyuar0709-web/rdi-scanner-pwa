@@ -206,8 +206,21 @@ t('SW: old cache deletion', sw.includes('k !== CACHE') && sw.includes('caches.de
 t('SW: GAS requests not intercepted', sw.includes('script.google.com') && /if \(e\.request\.url\.includes\('script\.google\.com'\)\) return;/.test(sw), 'fetch early return');
 t('SW: only GET intercepted', sw.includes("e.request.method !== 'GET'"), 'POST passthrough');
 t('SW: navigate network-first + cache fallback', sw.includes('navigate') && sw.includes('caches.match'), 'offline shell');
-t('SW: no xlsx/html2pdf in ASSETS', !assetList.some(a => /xlsx|html2pdf|jsdelivr|cdnjs/.test(a)), assetList.join(','));
-t('SW: xlsx CDN accepted limitation', html.includes('cdn.jsdelivr.net/npm/xlsx'), 'index.html:16', 'ACCEPTED LIMITATION: Export/PDF requires network');
+/* FIX PERF 2026-10-13: XLSX 861 KB tadinya CDN dan.register sebagai "ACCEPTED LIMITATION".
+   Sekarang self-host + precache, jadi limitation-nya DIHAPUS dan gate-nya dibalik:
+   assertion lama ("CDN harus ada") dibalik jadi ("CDN tidak boleh ada"). */
+t('SW: XLSX self-host masuk precache ASSETS', assetList.some(a => /xlsx\.full\.min\.js/.test(a)) && fs.existsSync(path.join(ROOT, 'js', 'xlsx.full.min.js')), assetList.join(','));
+t('SW: TIDAK ada CDN eksternal di jalur boot (xlsx/html2pdf)', !/cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|unpkg\.com/.test(html.replace(/https?:\/\/fonts\.(googleapis|gstatic)\.com/g, '')), 'hanya font CDN yang tersisa (bukan blocking script)');
+/* html2pdf boleh muncul di js/cetak.js hanya sebagai FALLBACK untuk harness test L1
+   (lokasi tidak ada di Node). Di browser sungguhan H2P_SRC selalu URL lokal absolut. */
+const cetakTxt = fs.readFileSync(path.join(ROOT, 'js', 'cetak.js'), 'utf8');
+t('Cetak: html2pdf self-host (CDN hanya fallback, bukan jalur utama)',
+  /var H2P_LOCAL=''/.test(cetakTxt) && /new URL\('js\/html2pdf\.bundle\.min\.js',location\.href\)/.test(cetakTxt)
+  && /var H2P_SRC=H2P_LOCAL\|\|/.test(cetakTxt),
+  'CDN muncul ' + (cetakTxt.match(/cdnjs\.cloudflare\.com/g) || []).length + 'x (fallback)');
+t('Cetak: kartu stok punya pesan error bila html2pdf gagal dimuat', /typeof html2pdf!=="function"/.test(cetakTxt));
+t('SW: html2pdf self-host masuk precache', assetList.some(a => /html2pdf\.bundle\.min\.js/.test(a)));
+t('SW: asset precache benar-benar ada di disk', assetList.every(a => a === './' || fs.existsSync(path.join(ROOT, a.replace(/^\.\//, '')))), assetList.filter(a => a !== './' && !fs.existsSync(path.join(ROOT, a.replace(/^\.\//, '')))).join(',') || 'semua ada');
 
 // cache keys full inventory — only CACHE constant + runtime puts of ASSETS/navigate
 const cachePuts = [...sw.matchAll(/caches\.open\(([^)]+)\)|cache\.put\(/g)].length;

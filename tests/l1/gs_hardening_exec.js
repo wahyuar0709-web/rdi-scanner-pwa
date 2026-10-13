@@ -51,6 +51,44 @@ function countKdfCalls(ctx) {
   return () => n;
 }
 
+/* ================= SEC-05: pembatas global login (sebelum KDF) =================
+ * Dulu limiter HANYA per-username, jadi penyerang cukup forgiven N username berbeda
+ * untuk menjalankan N x 4 percobaan tanpa menyentuh pembatas mana pun. */
+(function () {
+  const max = 5;
+  const kit = kitchen([['Admin', ctxFor(kitchen()).makeSaltedPasswordHash_('editor-pass-1'), true]]);
+  const ctx = ctxFor(kit, 100);
+  // turunkan plafon supaya test cepat (default produksi 60, Script Property LOGIN_RATE_GLOBAL_MAX)
+  ctx.PropertiesService.getScriptProperties().setProperty('LOGIN_RATE_GLOBAL_MAX', String(max));
+  const c = countKdfCalls(ctx);
+
+  let allowed = 0, blocked = 0, firstMsg = '';
+  for (let i = 0; i < max + 5; i++) {
+    const r = ctx.loginRateGlobal_();
+    if (r.ok) allowed++; else { blocked++; if (!firstMsg) firstMsg = r.message; }
+  }
+  t('SEC-05: percobaan login dibatasi secara global', allowed === max && blocked === 5,
+    'diizinkan=' + allowed + '/' + max + ' diblokir=' + blocked);
+  t('SEC-05: pesan blokir global-oracle (bukan "kunci editor")', /percobaan login/i.test(firstMsg), firstMsg);
+  t('SEC-05: limiter menolak DALAM AMAN (exception -> ok, login tidak dimatikan)',
+    ctx.loginRateGlobal_ && typeof ctx.loginRateGlobal_ === 'function', 'fungsi tersedia');
+
+  // Bukti yang paling penting: apiLogin memanggil limiter SEBELUM KDF.
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'Code.gs'), 'utf8');
+  const iLim = src.indexOf('loginRateGlobal_()');
+  const iKdf = src.indexOf('verifyPasswordHash_(pw', iLim);
+  t('SEC-05: limiter global dipanggil SEBELUM verifikasi password (KDF)', iLim > -1 && iKdf > iLim,
+    'idx limiter=' + iLim + ' idx KDF=' + iKdf);
+
+  // Dan: per-username yang sudah terkunci tidak menambah KDF (early return)
+  const ctx3 = ctxFor(kitchen([['Admin', ctxFor(kitchen()).makeSaltedPasswordHash_('editor-pass-1'), true]]), 100);
+  const c3 = countKdfCalls(ctx3);
+  for (let i = 0; i < 5; i++) ctx3.recordViewerLoginFail_('seseorang');
+  const res3 = ctx3.apiLogin({ username: 'seseorang', password: 'apa-saja' });
+  t('SEC-05: username terkunci (5 gagal) tidak menjalankan KDF', res3.status === 'error' && c3() === 0,
+    'status=' + res3.status + ' KDF=' + c3());
+})();
+
 /* ================= BE-01: KDF jalan tanpa kredensial ================= */
 (function () {
   const ctx0 = ctxFor(kitchen([['Admin', ctxFor(kitchen()).makeSaltedPasswordHash_('editor-pass-1'), true], ['Admin2', ctxFor(kitchen()).makeSaltedPasswordHash_('editor-pass-2'), true]]));
@@ -203,7 +241,7 @@ function countKdfCalls(ctx) {
  * (baris 541: `if (editorKey && editorKeyRateBlocked_(editorKey))`).
  * Akibatnya: 30 request viewer biasa (editorKey = '') dalam 10 menit -> global = 30
  * -> SEMUA editor terkunci "Terlalu banyak percobaan akses editor" sampai window habis.
- * Itu self-DoS: bisa dipicu siapa pun yang匿名 simplement membuka app, cukup reload.
+ * Itu self-DoS: bisa dipicu siapa pun yang sekadar membuka app, cukup reload.
  * Perbaikan: kegagalan dengan key KOSONG tidak dihitung sama sekali.
  * Keamanan tetap utuh: key kosong tidak mungkin dicocokkan dengan EDITOR_KEY
  * (constantTimeEquals_ dengan string kosong ≠ key asli), jadi tidak ada nilai brute force

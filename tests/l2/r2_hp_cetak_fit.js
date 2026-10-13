@@ -60,7 +60,7 @@ const SNAP = `(function(){
   function OVF(sel){var el=document.querySelector(sel);if(!el)return null;
     return {sw:el.scrollWidth,cw:el.clientWidth,ovf:el.scrollWidth>el.clientWidth+1};}
   var sec=R('#section-cetak');
-  var out={vw:innerWidth,docSW:document.documentElement.scrollWidth,
+  var out={vw:innerWidth,clientW:document.documentElement.clientWidth,docSW:document.documentElement.scrollWidth,
     container:R('#section-cetak .container'),head:R('#section-cetak .panel-head'),
     nav:R('#cetak-mode-nav'),list:R('#cetak-item-list'),act:R('#cetak-action-bar'),
     headOvf:OVF('#section-cetak .panel-head'),navOvf:OVF('#cetak-mode-nav'),listOvf:OVF('#cetak-item-list'),
@@ -169,7 +169,11 @@ async function main() {
     await ev("switchTab('cetak');'ok'");
     await sleep(700);
     const d = await ev(SNAP);
-    rec('DESKTOP 1440 container fill (==1440)', d.container && Math.abs(d.container.w - 1440) <= 1, 'cont=' + (d.container && d.container.w));
+    // FIX 2026-10-13: acuan lama innerWidth (1440) adalah lebar SEJAKH scrollbar ikut terhitung
+// (scrollbar vertikal 5px di headless). Container yang benar-benar fill = clientWidth (1435).
+// Assertion lama membandingkan ke 1440 sehingga gagal 5px walau layout-nya benar.
+rec('DESKTOP 1440 container fill (== clientWidth)', d.container && Math.abs(d.container.w - d.clientW) <= 1,
+  'cont=' + (d.container && d.container.w) + ' clientW=' + d.clientW + ' innerWidth=' + d.vw);
     rec('DESKTOP 1440 no element beyond right edge', d.over && d.over.length === 0, JSON.stringify(d.over));
     rec('DESKTOP 1440 list no h-overflow', d.listOvf && !d.listOvf.ovf, JSON.stringify(d.listOvf));
 

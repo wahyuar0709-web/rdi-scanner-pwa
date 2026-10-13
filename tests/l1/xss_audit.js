@@ -69,11 +69,15 @@ const msgEscaped = msgSites.filter(s => /xe\(|xeJs\(|ex\(/.test(s.arg));
 t('XSS-3: semua showStatus() yang memakai pesan server ter-escape', msgSites.length === msgEscaped.length,
   msgEscaped.length + '/' + msgSites.length + ' call site pesan server');
 
-/* 2. renderer HTML kritis */
+/* 2. renderer HTML kritis
+ * 2026-10-13 (SEC-01): scanFrame/scanFrameRak/scanFrameMaster DITAMBAHKAN.
+ * Ketiganya menulis payload QR attacker-controlled ke label.innerHTML tanpa xe(),
+ * tapi tidak ada di allowlist lama sehingga XSS lolos sebagai 16/16 hijau. */
 const HTML_RENDERERS = ['_buildTableHtml', 'buildCardHtml', 'renderCetakList', 'renderAdminResults',
   'loadDashRecentActivity', 'renderLowestStockWidget', 'renderRakLabelList', 'renderHistTable',
   'renderOperatorProductivity', 'loadAlert', 'renderAsetItemList', 'renderAsetUnitSubpageList',
-  'renderHistFeed', 'renderRackOverview', 'renderHistDay'];
+  'renderHistFeed', 'renderRackOverview', 'renderHistDay',
+  'scanFrame', 'scanFrameRak', 'scanFrameMaster'];
 const missing = HTML_RENDERERS.filter(f => { const b = bodyOf(html, f); return !b || !/\bxe\(|\bxeJs\(|\bex\(/.test(b); });
 t('XSS-4: renderer HTML kritis memakai escaper', missing.length === 0,
   missing.length ? 'tanpa escaper: ' + missing.join(', ') : HTML_RENDERERS.length + ' fungsi aman');

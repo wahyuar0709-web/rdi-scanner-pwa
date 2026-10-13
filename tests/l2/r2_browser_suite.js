@@ -333,7 +333,11 @@ async function main() {
     const offPost = await evalIn(c, "(function(){if(typeof gasPost!=='function')return {err:'gasPost missing'};return gasPost({action:'postTransaksi',itemId:'T-1',jenis:'MASUK',qty:1,requestId:'probe-'+Date.now()}).then(function(result){return {s:result.status,m:String(result.message||'').slice(0,80),queued:readOutbox().length};});})()", true);
     rec('OFFLINE submit -> outbox not success', 'gasPost offline (editor)', (offPost.ok && offPost.value.s !== 'ok') ? 'PASS' : 'FAIL', JSON.stringify(offPost.value || offPost.error));
 
-    await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    // FIX 2026-10-13: panggil `c.send`, bukan `send` — fungsi `send` hanya ada di scope
+    // dalam connectCDP (baris 85). Panggilan `send(...)` di sini melempar ReferenceError,
+    // tertangkap catch, dan seluruh blok offline (termasuk assertions RECONNECT retry)
+    // dilewati sebagai "NOT TESTED: send is not defined".
+    await c.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
     await sleep(1500);
     mockMode = 'ok';
     const onPost = await evalIn(c, "flushOutbox().then(function(){var ob=readOutbox();return {len:ob.length,cleared:ob.length===0};})", true);
