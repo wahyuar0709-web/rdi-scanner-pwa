@@ -1,0 +1,5 @@
+# Binary-ish vendor bundle: JANGAN pernah dikonversi line ending oleh git.
+# Tanpa ini, core.autocrlf=true akan mengubah byte di dalam .min.js dan berkas vendor
+# tidak lagi identik dengan yang diunduh dari sumber aslinya.
+*.min.js -text
+js/html2pdf.LICENSE.txt -text

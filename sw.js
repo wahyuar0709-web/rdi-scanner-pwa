@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v39'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v40'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,13 @@ const ASSETS = [
   './js/cetak.js',
   './js/outbox.js',
   './js/format.js',
-  './js/importexcel.js'
+  './js/importexcel.js',
+  // FIX PERF 2026-10-13: XLSX 861 KB tadinya CDN (tiap launch butuh internet).
+  // Self-host + precache = satu kali unduh, seterusnya offline & instant.
+  './js/xlsx.full.min.js',
+  // FIX OFFLINE 2026-10-13: html2pdf 0.10.1 (885 KB) tadyanya CDN -> kartu stok
+  // "Download PDF" tidak bisa dipakai tanpa internet. Self-host + precache.
+  './js/html2pdf.bundle.min.js'
 ];
 
 self.addEventListener('install', e => {

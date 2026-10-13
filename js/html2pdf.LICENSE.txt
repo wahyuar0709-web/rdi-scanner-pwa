@@ -1,0 +1,21 @@
+html2pdf.bundle.min.js ? vendored 2026-10-13
+==========================================
+Sumber   : https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js
+Versi    : html2pdf.js 0.10.1 (bundle = html2pdf.js + html2canvas + jsPDF)
+Lisensi  : MIT (html2pdf.js) ? bundle juga berisi html2canvas (MIT) dan jsPDF (MIT)
+Ukuran   : ~885 KB
+
+Alasan vendoring
+----------------
+Sebelumnya kartu stok "Download PDF" menyuntik <script src="https://cdnjs.cloudflare.com/...">
+ke popup cetak. Konsekuensinya:
+  1. Fitur TIDAK bisa dipakai tanpa internet ? padahal aplikasinya offline-first.
+  2. html2pdf.js 0.10.1 sudah DEPRECATED (tidak ada rilis baru sejak 2022).
+  3. Ketidakstabilan CDN menambah risiko diam-diam gagal saat operator menekan tombol.
+
+Label PDF sudah lebih dulu pindah ke jsPDF lokal (js/jspdf.min.js) pada v15.26;
+kartu stok sekarang ikut self-host agar konsisten.
+
+Tidak ada modifikasi pada isi berkas ini ? vendored apa adanya.
+Untuk pembaruan: unduh ulang dari URL di atas, lalu bump './js/html2pdf.bundle.min.js'
+di sw.js CACHE (rdi-stok-vNN) supaya klien mendapat versi baru.
