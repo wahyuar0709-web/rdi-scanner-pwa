@@ -24,11 +24,11 @@ npm run test:l2
 node tests/run-l2.js
 ```
 
-- Suites live in `tests/l2/*.js` (`r2_browser_suite`, `r2_label_suite`)
+- Suites live in `tests/l2/*.js` (`r2_browser_suite`, `r2_label_suite`, `r2_feature_smoke`, `r2_hp_cetak_fit`, `r2_login_unified`, `r2_menu_visual_suite`, `r2_outbox_app`, `r2_session_idle`, `r2_ui_quality_gate`, `r2_viewport_mode_suite`)
 - Sequential only — one Chrome/CDP at a time
 - Ports cleaned between suites (8781, 8782, 9338)
 - JSON summary: `tests/results/l2_latest.json`
-- Timeout per suite: 180s
+- Timeout per suite: **900 s** (`SUITE_TIMEOUT_MS` di `tests/run-l2.js`) — 2026-10-13 dinaikkan dari 300 s. Cap lama membunuh `r2_browser_suite` di tengah jalan dan melaporkannya `FAIL (TIMEOUT)`, walau suite itu dijalankan tanpa cap selesai **30 PASS / 0 FAIL**. `TIMEOUT` = kegagalan harness, BUKAN cacat produk.
 
 ## Levels
 

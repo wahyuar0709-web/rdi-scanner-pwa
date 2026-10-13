@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | Document | `PLAN.md` (kanonik untuk pengembangan) |
-| Version | 1.42 |
-| Date | 2026-09-27 |
-| Repo HEAD | lihat §13 (Tahap 3 — 5 gap ditutup + BE-07 ter_koreksi no-op; backend **v5.23 LIVE** di `@42`) |
-| `GAS deployment` | **`@44`** (deployment `@41` di-redeploy dua kali; **exec URL tetap sama**, `access`/`executeAs` tidak diubah; F5-AUTH live) | **L3 PASS 3/0** 2026-09-27 |
+| Version | 1.43 |
+| Date | 2026-10-13 |
+| Repo HEAD | `8089401` + working tree belum di-commit (lihat §14). Backend repo **v5.28**, BELUM di-deploy |
+| `GAS deployment` | **`@44`** — tidak disentuh. Probe L3 read-only 2026-10-13: `/exec` masih balas `v5.27` / `2026-10-11.1` → **paritas repo = UNVERIFIED (repo v5.28 belum live)** | **L3 read-only PASS 2026-10-13** |
 | Mode | Option A — tanpa install ECC baru |
 | Governance | `AGENTS.md` (protected files, L1–L5, approval) |
 
@@ -46,15 +46,15 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | Item | Nilai | Status verif |
 |------|-------|--------------|
 | Git HEAD | (lihat §13 — repo selalu 1 commit di depan PLAN) | — |
-| Working tree | clean | — |
-| `APP_VERSION` | `v15.29` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
-| `APP_BUILD_DATE` | `2026-09-26` | L1 |
-| SW `CACHE` | `rdi-stok-v37` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` | L1+L2 |
-| `index.html` lines | ~4316 (Revisi Cetak: shell flex `#section-cetak` + bar in-flow; audit-tampilan: CSS alert scoped `@media 640` + `#modal-filter`/`#modal-sort` pindah body-level; F-06f: h1 login + ::after 44px + hash deep link + prefers-color-scheme; F-06e: 4 fallback `100dvh` + `role="dialog"` ×2; BUG-01: +8 export; fix-3-bug cetak: `#section-cetak .subpage-bar` in-flow + `<script jspdf.min.js>` + `generateOutput` label-download tanpa popup; fix-2-bug user: `#section-cetak .container{width:100%}` + blok sesi `SESSION_IDLE_MS`/`enforceSessionIdle`/dual-write) | L1 |
-| Suite L1 in-repo | `tests/l1/` **35** suite (30 FE + **5 backend eksekutabel `gs_*`**) · `npm run test:l1` · assertion floor aktif | **L1 PASS 867/0** (2026-09-27) |
-| Suite L2 in-repo | `tests/l2/` **8** suite · `npm run test:l2` · assertion floor + exit code ketat | **L2 PASS 316/0** (2026-09-27, pre & post-bump) |
-| GAS deployment | **`@42`** (deployment `@41` di-redeploy; **exec URL tetap sama**, `access`/`executeAs` tidak diubah) | **L3 PASS 3/0** 2026-09-27 |
-| Versi API backend | `Code.gs` `API_VERSION` = **v5.24** (F5-AUTH; `API_BUILD` 2026-09-27) | **LIVE** — `/exec` balas `version v5.24` (L3 @44) |
+| Working tree | **MODIFIED** — hasil audit 2026-10-13, belum di-commit (lihat §14) | — |
+| `APP_VERSION` | `v15.31` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_BUILD_DATE` | `2026-10-13` | L1 |
+| SW `CACHE` | `rdi-stok-v40` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` + `./js/importexcel.js` + `./js/xlsx.full.min.js` + `./js/html2pdf.bundle.min.js` | L1+L2 |
+| `index.html` lines | ~4965 (lihat §14 untuk perubahan v15.31) | L1 |
+| Suite L1 in-repo | `tests/l1/` **46** suite · `npm run test:l1` · assertion floor aktif | **L1 PASS 1271/0** (2026-10-13) |
+| Suite L2 in-repo | `tests/l2/` **10** suite · `npm run test:l2` · cap 900 s | **L2 PASS 351/0** (2026-10-13) |
+| GAS deployment | **`@44`** — tidak disentuh pada 2026-10-13 | L3 read-only PASS (healthCheck) |
+| Versi API backend | `Code.gs` `API_VERSION` = **v5.28** (`API_BUILD` 2026-10-13.1) — **BELUM DI-DEPLOY** | repo saja; `/exec` masih `v5.27` → paritas **UNVERIFIED** |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
 | Suite terakhir label | 51 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
 | Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
@@ -850,3 +850,97 @@ lalu membuat/refresh akun editor. Fungsinya **idempotent** (aman diulang).
 
 Semua perubahan bersifat **tambahan** (aksi baru + gate baru), tidak menghapus jalur lama:
 set `ALLOW_LEGACY_SINGLE_KEY=TRUE` → kunci tunggal hidup lagi. Plan sheet lama utuh (tidak dihapus).
+
+---
+
+## 15. Audit end-to-end 2026-10-13 (sesi ini)
+
+Level tertinggi yang dieksekusi: **L2 (Chrome/CDP)** + **L3 read-only probe ke GAS produksi**.
+`L4 device = NOT TESTED` · `L5 produksi = NOT TESTED`.
+Tidak ada deploy, tidak ada commit, tidak ada mutasi sheet produksi.
+
+### 15.1 Titik awal (dan why "hijau" ternyata menyesatkan)
+
+L1 hijau penuh (45 suite / 1255 assert) tapi audit kode menemukan **7 bug yang tidaktertangkap
+gate mana pun**. Contoh paling menyakitkan: tombol lihat/sandi di layar login mati —
+`onclick="togglePwVisibility()"` memanggil fungsi yang hanya ada di dalam IIFE.
+
+L2 **MERAH**: 4 suite gagal. Setelah diinvestigasi, 3 di antaranya **bukan cacat produk** —
+`r2_browser_suite` yang dijalankan tanpa cap selesai **30 PASS / 0 FAIL**. Cap 300 detik
+membunuhnya di tengah jalan dan runner melaporkannya `FAIL (TIMEOUT)`.
+Lesson: `TIMEOUT` di suite = kegagalan harness sampai dibuktikan lain, bukan cacat aplikasi.
+
+### 15.2 Temuan + status
+
+| ID | Sev | Temuan | Status |
+|----|-----|--------|--------|
+| DBG-01 | HIGH | `togglePwVisibility` tidak ter-export → ReferenceError saat diklik | **FIXED** v15.31 |
+| DBG-02 | HIGH | `flushOutbox()` menghapus entri saat server balas non-JSON (timeout GAS / halaman login Google) | **FIXED** v15.31 + kontrak `uncertain` di backend |
+| DBG-03 | MED | `removeOutboxByRequestId(null)` menghapus SELURUH antrean; `.catch()` terlalu lebar meng-queue ulang transaksi yang sudah commit | **FIXED** v15.31 |
+| SEC-01 | HIGH | Payload QR mentah masuk `label.innerHTML` (3 sink) — DOM XSS | **FIXED** v15.31 (escape) |
+| SEC-02 | MED | Token dengan karakter `.` melewati rate limit `EDITOR_KEY` sepenuhnya | **FIXED** (`noteFailedCredential_`) |
+| SEC-03 | MED | Formula injection: `rak` ditulis tanpa `safeCell_` | **FIXED** |
+| SEC-04 | MED | Formula injection: `kodeAlat`, `kodeMesin`, `e.rak` pada import | **FIXED** |
+| SEC-05 | MED | Login tanpa throttle global; KDF dibakar oleh percobaan tanpa batas | **FIXED** (ember global, default 60/10 mnt) |
+| DBG-04 | MED | `importExcel` nama sheet backup bentrok (resolusi menit) + orphan sheet menumpuk | **FIXED** |
+| DBG-05 | MED | `normalizeRak_`: blok "whitelist" mati + 3 pembacaan ledger sia-sia per transaksi | **FIXED** (perilaku tidak berubah) |
+| DBG-06 | MED | `verifyViewerToken` ter-shadow: 76 baris logika keamanan mati diam-diam | **FIXED** (dihapus) |
+| PERF-01 | MED | XLSX 861 KB dari CDN diambil tiap launch | **FIXED** (self-host + precache) |
+| PERF-02 | LOW | html2pdf 885 KB dari CDN tiap Download Kartu Stok | **FIXED** (self-host + precache) |
+| GATE-01 | HIGH | `handler_coverage.isGlobalDef()` menghitung deklarasi IIFE sebagai global | **FIXED** (suite baru `handler_reachability.js`) |
+| GATE-02 | HIGH | `xss_audit` allowlist tidak memuat `scanFrame*` | **FIXED** |
+| GATE-03 | MED | `SEC-D7` cek `safeCell_` per-fungsi, bukan per kolom | **FIXED** |
+| GATE-04 | MED | `SEC-C2` memvalidasi kode mati (`verifyViewerToken` ter-shadow) | **FIXED** |
+| TEST-14 | HIGH | Cap L2 300 s terlalu kecil; blok offline di-skip diam-diam (`send` di luar scope) | **FIXED** |
+| TEST-15 | MED | Assertion `rdi_last_active` mengukur latensi harness, bukan logika | **FIXED** (2x — percobaan pertama juga salah) |
+
+### 15.3 Kontrak `uncertain` (konsep baru,WAJIB dibaca)
+
+`status:'error'` lama dipakai untuk dua hal yang konsekuensinya berlawanan:
+- **penolakan definitif** (stok kurang, item arsip) → client boleh membuang entri outbox;
+- **kegagalan ambigu** (exception SETELAH baris ditulis) → client **harus** menahan entri.
+
+ Makanya perlu penanda eksplisit: `genericError_(fnName, true)` → `uncertain:true` di respons.
+Client memakai flag `unknown` (transport/parsing) dan `uncertain` (server) — bukan lagi regex pesan.
+Menghapus entri di sini = transaksi hilang diam-diam; menambahkannya = duplikat di ledger.
+
+### 15.4 Bukti-before/best-after
+
+| Metrik | Sebelum | Sesudah |
+|--------|---------|---------|
+| L1 | 45 suite / 1255 assert / 0 FAIL | 46 suite / **1271** / 0 FAIL |
+| L2 | 4 suite gagal, 242P/1F | **10 suite, 351P/0F** |
+| `r2_browser_suite` | 3 assert lalu timeout | **32P/0F** |
+| `r2_feature_smoke` | **TIMEOUT 1006 s** | **ok 53 s** |
+| Boot DOMContentLoaded | 6862 ms | **5247 ms** (-23%) |
+
+### 15.5 Yang dicabut (temuan yang ternyata salah)
+
+- **"Stall main-thread 0,5–4,9 detik per tab"** — dicabut. CPU profile menunjukkan
+  **7.360 ms IDLE dari 7.409 ms** saat `switchTab('rak')`: bukan bottleneck komputasi.
+  Penyebabnya artefak pengukuran: halaman headless ber-`document.hasFocus() === false`,
+  dan Chrome menunda pekerjaan untuk halaman unfocused.
+- **"Boot lambat karena XLSX 861 KB = hemat 3,9 detik"** — angka itu dari probe dengan mock
+  tidak lengkap (boot tidak pernah selesai). Angka yang bisa dipertanggungjawabkan, harness
+  identik: **-1.615 ms (-23%)**. Arahnya benar, besarnya dikoreksi turun.
+
+### 15.6 Dua insiden yang merusak repo (dicatat, bukan disembunyikan)
+
+1. `Set-Content -Encoding UTF8` membaca `Code.gs` sebagai codepage konsol → ~135 baris
+   komentar berubah jadi mojibake. Tertangkap `git diff`, di-restore, semua edit diulang
+   dengan tool yang aman-byte.
+2. Skrip normalisasi EOL menyisipkan CR **sesudah** LF (`\n\r\n`) pada 14 file.
+   Tertangkap dari `git diff --numstat` yang melonjak, lalu diperbaiki (buang semua CR,
+   sisip CR sebelum setiap LF) dan diverifikasi ulang: **CRLF konsisten di 17 file**.
+
+Pelajaran: jangan pernah `Set-Content` untuk berkas repo non-ASCII; operasi byte-level
+(Buffer) + asersi + verifikasi `git diff --numstat` setelah tiap overhaul.
+
+### 15.7 Yang tersisa (belum dikerjakan)
+
+- **Deploy `Code.gs`** → paritas versi. Repo `v5.28`, produksi `v5.27`. Sampai di-deploy,
+  kontrak `uncertain` **belum hidup**: client siap menerima flag, backend belum mengirim.
+- **L4 device** checklist D1–D12 dan **L5 sign-off** — butuh operator di HP.
+- **SEC-06** (token ikut singgah di `localStorage` ≤2 jam) tetap `ACCEPTED LIMITATION`.
+- `html2pdf.js 0.10.1` sudah deprecated upstream; kalau ingin shedding, ganti kartu stok
+  ke jsPDF lokal seperti yang sudah dilakukan label.
