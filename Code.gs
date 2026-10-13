@@ -302,8 +302,8 @@
 //
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.27';   // + importExcel(): impor Excel kartu stok (merge idempotent)
-var API_BUILD   = '2026-10-11.1';  // .1 = build impor Excel (v5.27)
+var API_VERSION = 'v5.28';   // + kontrak `uncertain` (DBG-02), safeCell_ per kolom (SEC-03/04), backup import unik (DBG-04), rate limit token (SEC-02)
+var API_BUILD   = '2026-10-13.1';
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -430,8 +430,26 @@ function safeCell_(value) {
 }
 
 // FIX TINGGI: pesan error generik — jangan bocorkan err.message (bisa memuat path/sheet internals) ke client
-function genericError_(fnName) {
-  return { status: 'error', message: 'Terjadi kesalahan pada ' + fnName + '. Coba lagi atau hubungi admin.' };
+//
+// KONTRAK `uncertain` (2026-10-13, DBG-02):
+//   Error terbagi dua jenis yang konsekuensinya SANGAT BERBEDA di sisi client,
+//   dan sebelum ini keduanya dilabeli `status:'error'` yang sama:
+//
+//   (a) PENOLAKAN DEFINITIF — validasi gagal, stok tidak cukup, item arsip, lock
+//       timeout. Tidak ada yang tertulis. Client BOLEH membuang entri outbox.
+//
+//   (b) KEGAGALAN AMBIGU — exception yang terjadi SETELAH baris/rows sudah ditulis
+//       ke sheet. Client TIDAK BOLEH membuang entri: kalau ternyata server sempat
+//       commit, membuang antrean = transaksi hilang diam-diam, lalu operator
+//       mengulang input = DUPLIKAT di ledger.
+//
+//   Karena itu pemanggil yang tahu "sudah ditulis atau belum" wajib mengetik
+//   uncertain:true. Tanpa flag ini client hanya menebak dari teks pesan — dan
+//   menebak di sini berarti data hilang ATAU dobel.
+function genericError_(fnName, uncertain) {
+  var r = { status: 'error', message: 'Terjadi kesalahan pada ' + fnName + '. Coba lagi atau hubungi admin.' };
+  if (uncertain) r.uncertain = true;
+  return r;
 }
 
 // ============================================================
@@ -547,82 +565,6 @@ function apiViewerLogout(body) {
     return { status:'ok' };
   } catch(e) { return { status:'ok' }; }
 }
-function verifyViewerToken(token) {
-  try {
-    var parts = String(token||'').split('.');
-    if (parts.length !== 2) return { ok:false };
-    var expectedSig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], getViewerSecret()));
-    if (!constantTimeEquals_(parts[1], expectedSig)) return { ok:false }; // tanda tangan tidak cocok -> dipalsukan/rusak
-    var payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString();
-    var bits = payload.split('|');
-    var expiry = parseInt(bits[2], 10);
-    if (!expiry || Date.now() > expiry) return { ok:false, expired:true };
-    var username = bits[0];
-    var nama = bits[1];
-    var jti = bits[3] || '';
-
-    // FIX KRITIS: cek denylist jti (revoke per-session)
-    if (jti) {
-      var denied = CacheService.getScriptCache().get('token_deny_' + jti);
-      if (denied) return { ok:false, revoked:true };
-    }
-
-    // FIX KRITIS: re-check Viewer_Accounts — status Aktif & passwordVersion
-    // (cache 60 dtk supaya tidak baca sheet tiap request)
-    var cache = CacheService.getScriptCache();
-    var statusKey = 'viewer_status_' + String(username||'').toLowerCase();
-    var cachedStatus = cache.get(statusKey);
-    var aktif = true;
-    var expectedPv = null;
-    var expectedHashPv = null;
-    if (cachedStatus) {
-      try {
-        var cs = JSON.parse(cachedStatus);
-        aktif = !!cs.aktif;
-        expectedPv = cs.pv;
-        expectedHashPv = cs.hpv;
-      } catch(e) {}
-    } else {
-      try {
-        var ss = SpreadsheetApp.getActiveSpreadsheet();
-        var sh = ss.getSheetByName(SHEET_VIEWER_ACCOUNTS);
-        if (sh && sh.getLastRow() >= 2) {
-          var rows = sh.getRange(2,1,sh.getLastRow()-1,5).getValues(); // + passwordVersion col5 jika ada
-          for (var i=0; i<rows.length; i++) {
-            var u = String(rows[i][COL_VIEWER_ACC.USERNAME]||'').trim().toLowerCase();
-            if (u !== String(username||'').toLowerCase()) continue;
-            var aktifRaw = String(rows[i][COL_VIEWER_ACC.AKTIF]).toUpperCase();
-            aktif = rows[i][COL_VIEWER_ACC.AKTIF]===true || aktifRaw==='TRUE' || aktifRaw==='YA' || aktifRaw==='1';
-            if (rows[i].length > 4) expectedPv = rows[i][4]; // passwordVersion opsional
-            // FIX HIGH: fingerprint hash password — kalau kolom pv kosong, ganti password
-            // tetap mematikan token lama.
-            expectedHashPv = passwordPv_(String(rows[i][COL_VIEWER_ACC.PASSWORD]||''));
-            break;
-          }
-        }
-      } catch(e2) {}
-      try { cache.put(statusKey, JSON.stringify({aktif:aktif, pv:expectedPv, hpv:expectedHashPv}), 60); } catch(e3) {}
-    }
-    if (!aktif) return { ok:false, revoked:true };
-
-    // FIX KRITIS: kalau token menyimpan pv & account pv berbeda → force re-login
-    // (pv = passwordVersion / counter reset password, atau fingerprint hash password)
-    var tokenPv = bits[4] || '';
-    if (expectedPv != null && expectedPv !== '' && tokenPv && String(tokenPv) !== String(expectedPv)) {
-      return { ok:false, revoked:true };
-    }
-    if (tokenPv && expectedHashPv && expectedPv !== tokenPv && String(tokenPv) !== String(expectedHashPv)) {
-      // token memakai fingerprint hash lama → password sudah diganti
-      return { ok:false, revoked:true };
-    }
-    if (!tokenPv && expectedHashPv) {
-      // token lama tanpa field pv (pre-fix) → paksa re-login sekali
-      return { ok:false, revoked:true };
-    }
-
-    return { ok:true, username:username, nama:nama };
-  } catch(e) { return { ok:false }; }
-}
 // Cek akses utk doGet -- lolos kalau editorKey ATAU viewerToken valid.
 /* F5-AUTH: akses baca = token valid (editor ATAU viewer, peran dari token). Kunci tunggal
  * hanya break-glass dan harus ALLOW_LEGACY_SINGLE_KEY=TRUE. Token editor sengaja boleh
@@ -659,6 +601,43 @@ function recordViewerLoginFail_(username) {
 }
 function clearViewerLoginFail_(username) {
   try { CacheService.getScriptCache().remove('login_fail_' + String(username||'').toLowerCase()); } catch(e) {}
+}
+/* FIX SEC-05 (2026-10-13): rate limit login dulunya HANYA per-username (5 gagal/15 menit).
+   Verifikasi password menjalankan KDF 5.000 iterasi Utilities.computeDigest yang
+   masing-masingnya adalah jembatan ke server Apps Script, jadi setiap percobaan login —
+   sukses maupun gagal, username ada atau tidak — membakar kuota eksekusi yang sama.
+   Dengan limiter per-username saja, penyerang cukup forgiven N username berbeda untuk
+   menjalankan N x 4 percobaan tanpa pernah menyentuh pembatas mana pun. Itu self-DoS:
+   kuota harian dipakai habis dan login operator yang sah ikut gagal.
+   Fix: satu ember GLOBAL yang menghitung SELURUH percobaan login dalam window 10 menit,
+   dicek SEBELUM KDF dijalankan (bukan sesudah). Nilai default 60 memberi ruang ~3x untuk
+   shift change gudang; bisa diubah lewat Script Property LOGIN_RATE_GLOBAL_MAX.
+   Catatan jujur: biaya "~0,68 ms per iterasi" adalah angka dari komentar kode (diukur di
+   produksi saat setupAccount 2026-09-27), BUKAN benchmark ulang saya — jadi angka "~3,4 dtk
+   per percobaan"pun turunan, bukan hasil ukur saya sendiri. Yang diukur langsung oleh fix
+   ini hanyalah: tidak ada lagi jalur tanpa pembatas. */
+var LOGIN_RATE_GLOBAL_MAX_DEFAULT = 60;
+var LOGIN_RATE_GLOBAL_WINDOW_SEC = 600;
+function loginRateGlobalMax_() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty('LOGIN_RATE_GLOBAL_MAX');
+    var n = parseInt(raw || '', 10);
+    return isFinite(n) && n > 0 ? n : LOGIN_RATE_GLOBAL_MAX_DEFAULT;
+  } catch (e) { return LOGIN_RATE_GLOBAL_MAX_DEFAULT; }
+}
+/* Cek + naikkan satu ember global. WAJIB dipanggil sebelum KDF apa pun.
+   Mengembalikan {ok:false,...} kalau sudah melewati plafon. */
+function loginRateGlobal_() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var key = 'login_attempt_global';
+    var n = parseInt(cache.get(key) || '0', 10);
+    if (n >= loginRateGlobalMax_()) {
+      return { ok:false, message:'Server sedang dipakai banyak percobaan login. Coba lagi dalam 10 menit.' };
+    }
+    cache.put(key, String(n + 1), LOGIN_RATE_GLOBAL_WINDOW_SEC);
+    return { ok:true };
+  } catch (e) { return { ok:true }; }  // limiter tidak boleh mematikan login
 }
 // FIX TINGGI: KDF dengan iterasi (format salt$iterations$hash), backward-compat format lama salt$hash
 /* PENTING - jangan menaikkan angka ini tanpa mengukur dulu.
@@ -899,7 +878,12 @@ function verifyAuthToken_(token) {
     return { ok:true, username:username, nama: acc.nama || nama, role: role };
   } catch(e) { return { ok:false }; }
 }
-/* Alias kompatibilitas: verifyViewerToken lama masih dipakai beberapa call site. */
+/* Alias kompatibilitas. FIX DBG-06 (2026-10-13): sebelumnya file ini punya DUA definisi
+   verifyViewerToken - yang kedua (alias ke verifyAuthToken_) menimpa yang pertama sehingga
+   ~76 baris logika verifikasi (denylist jti, re-read Viewer_Accounts, passwordVersion)
+   diam-diam tidak pernah berjalan. Definisikan yang mati SUDAH DIHAPUS.
+   Catatan: tidak ada call site verifyViewerToken di seluruh file - alias ini dipertahankan
+   hanya sebagai jaring bila ada pemanggil eksternal. */
 function verifyViewerToken(token) { return verifyAuthToken_(token); }
 /* --- gate kunci tunggal: BREAK-GLASS, default MATI --- */
 /* Apakah ada akun editor di RDI_Accounts? Dipakai untuk transisi (lihat catatan di
@@ -950,10 +934,24 @@ function checkEditorSession_(params) {
     var v = verifyAuthToken_(raw);
     if (v.ok && v.role === 'editor') return { ok:true, role:'editor', nama: v.nama || '', username: v.username || '' };
     if (v.ok) return { ok:false, message:'Akun ini tidak punya hak edit. Hubungi admin.' };
+    // FIX SEC-02 (2026-10-13): cabang ini DULU return tanpa pernah menyentuh rate limiter
+    // (editorKeyRateBlocked_/editorKeyRateFail_). Karena slot kredensial yang sama juga
+    // menerima kunci mentah, cukup menempel satu karakter '.' pada setiap tebakan untuk
+    // membuat semua tebakan masuk ke sini - kunci tunggal jadi bisa di-brute-force
+    // tanpa jejak percobaan. Sekarang token invalid tetap DIHITUNG sebagai percobaan gagal.
+    noteFailedCredential_(raw);
     return { ok:false, message:'Sesi edit tidak valid atau sudah habis. Silakan login ulang.' };
   }
   if (!legacySingleKeyEnabled_()) return { ok:false, message:'Akses edit lewat kunci tunggal dinonaktifkan. Silakan login sebagai editor.' };
   return checkLegacySingleKey_(raw);
+}
+/* Catat satu percobaan kredensial gagal ke rate limiter.
+   Hanya berlaku bila jalur kunci tunggal masih hidup - kalau tidak, tidak ada yang perlu
+   dilacak dan tidak ada side effect. Sengaja helper terpisah (bukan checkLegacySingleKey_)
+   supaya TIDAK ikut membandingkan kredensial ini dengan EDITOR_KEY. */
+function noteFailedCredential_(raw) {
+  if (!legacySingleKeyEnabled_()) return;
+  try { editorKeyRateFail_(String(raw || '')); } catch (e) {}
 }
 /* --- API login / logout --- */
 function apiLogin(body) {
@@ -961,6 +959,10 @@ function apiLogin(body) {
     var uname = String(body && body.username || '').trim();
     var pw = String(body && body.password || '');
     if (!uname || !pw) return { status:'error', message:'Username dan password wajib diisi.' };
+    // FIX SEC-05: pembatas global diperiksa SEBELUM KDF, jadi percobaan yang sudah
+    // melewati plafon tidak lagi membakar iterasi computeDigest sama sekali.
+    var rlGlobal = loginRateGlobal_();
+    if (!rlGlobal.ok) return { status:'error', message: rlGlobal.message };
     var rl = rateLimitViewerLogin_(uname);
     if (!rl.ok) return { status:'error', message: rl.message };
     /* Auto-migrasi (F5-AUTH): kalau sheet unified belum pernah diisi, migrasikan viewer
@@ -2122,9 +2124,9 @@ function postTransaksi(params) {
     if (jenis!=='MASUK'&&jenis!=='KELUAR') return { status:'error', message:'Jenis harus MASUK atau KELUAR' };
     if (qty<=0) return { status:'error', message:'Qty harus lebih dari 0' };
     if (!rak) return { status:'error', message:'RAK/lokasi wajib diisi' };
-    // FIX SEDANG: normalisasi rak — whitelist terhadap Master_Rak (atau rak yang sudah
-    // ada di item ini / Master_Rak kosong = terima apa adanya utk kompatibilitas)
-    rak = normalizeRak_(rak, itemId);
+    // Normalisasi rak: trim + uppercase saja. TIDAK ada whitelist Master_Rak yang
+    // ditegakkan (lihat normalizeRak_) - dipakai demi kompatibilitas data lama.
+    rak = normalizeRak_(rak);
 
     var itemResult = getItemById(itemId);
     if (itemResult.status!=='ok') return itemResult;
@@ -2151,7 +2153,7 @@ function postTransaksi(params) {
 
     trx.appendRow([
       new Date(), itemId, safeCell_(item.nama), safeCell_(item.spec||''),
-      jenis, qty, rak, safeCell_(vendor), safeCell_(noReferensi),
+      jenis, qty, safeCell_(rak), safeCell_(vendor), safeCell_(noReferensi),
       saldoSebelumTotal, saldoSesudahTotal, safeCell_(keterangan), safeCell_(admin)
     ]);
     // AUDIT FIX T-16/T-17 (v5.19): invalidasi cache getCachedTrxLogRawRows_() supaya
@@ -2223,50 +2225,31 @@ function postTransaksi(params) {
   } catch(err) {
     // FIX TINGGI: jangan bocorkan err.message
     console.error('postTransaksi error: ' + (err && err.stack ? err.stack : err));
-    return genericError_('postTransaksi');
+    // uncertain:true - catch ini berada SETELAH trx.appendRow() di atas, jadi barisnya
+    // MUNGKIN sudah tercatat di Transaksi_Log. Client wajib menahan entri outbox dan
+    // mencoba lagi, bukan menganggap transaksi gagal lalu operator input ulang (duplikat).
+    return genericError_('postTransaksi', true);
   } finally {
     lock.release();
   }
 }
 
-// FIX SEDANG: normalisasi & whitelist rak — simpan bentuk canonical dari Master_Rak
-// (atau Master_Rak + rak item ini). Kalau Master_Rak kosong → terima apa adanya.
-function normalizeRak_(rawRak, itemId) {
-  var rak = String(rawRak||'').trim().toUpperCase();
-  if (!rak) return rak;
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sh = ss.getSheetByName(SHEET_RAK);
-    var allowed = null;
-    if (sh && sh.getLastRow() >= 2) {
-      var vals = sh.getRange(2,1,sh.getLastRow()-1,1).getValues();
-      allowed = {};
-      for (var i=0; i<vals.length; i++) {
-        var v = String(vals[i][0]||'').trim().toUpperCase();
-        if (v) allowed[v] = true;
-      }
-    }
-    // rak yang sudah ada di item ini juga diizinkan (walau belum di Master_Rak)
-    if (itemId) {
-      var itemRes = getItemById(itemId);
-      if (itemRes && itemRes.status==='ok' && itemRes.item && itemRes.item.rakBreakdown) {
-        itemRes.item.rakBreakdown.forEach(function(rb){
-          var rv = String(rb.rak||'').trim().toUpperCase();
-          if (rv) { if (!allowed) allowed = {}; allowed[rv] = true; }
-        });
-      }
-    }
-    if (allowed) {
-      if (allowed[rak]) {
-        // canonical casing dari Master_Rak bila ada
-        for (var k in allowed) { if (k === rak) return k; }
-        return rak;
-      }
-      // tidak di whitelist — tetap terima (kompatibilitas data lama) tapi trim/uppercase saja
-      return rak;
-    }
-  } catch(e) {}
-  return rak;
+// Normalisasi rak: trim + uppercase. TIDAK ada whitelist yang ditegakkan.
+//
+// FIX DBG-05 (2026-10-13): versi sebelumnya punya blok "whitelist" yang kedua
+// cabangnya sama-sama mengembalikan nilai yang sama (`return rak`) - jadi seluruh blok
+// itu dead code, termasuk pemindaian Master_Rak dan pemanggilan getItemById() (yang
+// membaca Master_Item + getSaldoFullMap + getRakBreakdown + getLastVendorRefMap).
+// Akibatnya satu postTransaksi melakukan 3 pembacaan sebesar ledger hanya untuk
+// menghitung nilai yang dibuang, DI DALAM lock per-item 15 detik. Plus kodenya
+// terbaca seperti ada validasi padahal tidak ada; komentar pemanggilnya pun menulis
+// "whitelist terhadap Master_Rak".
+//
+// Keputusan sadar: TIDAK ditegakkan, demi menjaga kompatibilitas data lama - rak yang
+// belum pernah masuk Master_Rak harus tetap bisa dipakai. Kalau suatu saat butuh
+// whitelist sungguhan: return error di sini, dan perbarui komentar pemanggil.
+function normalizeRak_(rawRak) {
+  return String(rawRak || '').trim().toUpperCase();
 }
 
 // ============================================================
@@ -2978,7 +2961,7 @@ function addAsetItem(body) {
       }
       var newNo = last < 2 ? 1 : last;
       var rowData = [
-        newNo, kodeAlat,
+        newNo, safeCell_(kodeAlat),
         /* FIX BE-05 (2026-09-27): formula-injection guard — input user diawali = + - @ menjadi formula di Sheets. */
         safeCell_(String(body.namaAlat || '')), safeCell_(String(body.brand || '')),
         safeCell_(String(body.cuttingTool || '')), safeCell_(String(body.material || '')),
@@ -3057,11 +3040,11 @@ function addAsetUnit(body) {
         var cycleId = unitId + '-01';
 
         unitRows.push([
-          unitId, kodeAlat, tanggalMasuk, 0, ASET_STATUS.GUDANG,
+          unitId, safeCell_(kodeAlat), tanggalMasuk, 0, ASET_STATUS.GUDANG,
           'GUDANG', '', 'PEMBELIAN_BARU', cycleId, now
         ]);
         logRows.push([
-          now, kodeAlat, unitId, nextTrxId, 'PEMBELIAN_BARU', 1,
+          now, safeCell_(kodeAlat), unitId, nextTrxId, 'PEMBELIAN_BARU', 1,
           cycleId, 1, '', '', admin, 'Unit baru ditambahkan'
         ]);
 
@@ -3198,7 +3181,7 @@ function recordAsetMovement(body) {
 
       // --- update baris di Aset_Unit ---
       shUnit.getRange(found.rowNumber, COL_ASET_UNIT.REGRIND_COUNT + 1, 1, 7).setValues([[
-        newRegrind, newStatus, newLokasi, newKodeMesin, activity, newCycleId, now
+        newRegrind, newStatus, newLokasi, safeCell_(newKodeMesin), activity, newCycleId, now
       ]]);
 
       // --- append baris ke Aset_Movement_Log ---
@@ -4656,13 +4639,25 @@ function importExcel(body) {
 
       // --- 4) COMMIT ---
       if (v.backup && (toAdd.length || newItems.length)) {
+        // FIX DBG-04 (2026-10-13): nama sebelumnya hanya 'yyyyMMdd_HHmm' (resolusi menit)
+        // TANPA cek unik. Sheet.copyTo() sudah menempelkan salinan ke spreadsheet dengan
+        // nama "Copy of Transaksi_Log"; setName() ke nama yang sudah dipakai melempar
+        // IllegalArgumentException, jadi import yang sah gagal - dan karena catch tidak
+        // pernah menghapus salinannya, tiap percobaan meninggalkan satu sheet yatim.
+        var bbase = 'Transaksi_Log_backup_' + Utilities.formatDate(new Date(), tz, 'yyyyMMdd_HHmm');
+        var bname = bbase, bSuffix = 1;
+        while (ss.getSheetByName(bname)) { bname = bbase + '_' + (++bSuffix); }
+        var copy = null;
         try {
-          var bname = 'Transaksi_Log_backup_' + Utilities.formatDate(new Date(), tz, 'yyyyMMdd_HHmm');
-          var copy = trx.copyTo(ss); copy.setName(bname);
+          copy = trx.copyTo(ss);
+          copy.setName(bname);
           result.backupSheet = bname;
         } catch (be) {
+          if (copy) { try { ss.deleteSheet(copy); } catch (e3) { /* orphan tertinggal */ } }
           console.error('importExcel backup gagal: ' + (be && be.stack ? be.stack : be));
-          return { status: 'error', message: 'Backup Transaksi_Log gagal — import dibatalkan, tidak ada data yang diubah.' };
+          // Backup adalah langkah PERTAMA di commit, jadi kalau gagal di sini BELUM ADA
+          // data yang ditulis -> penolakan DEFINITIF (bukan uncertain).
+          return { status: 'error', message: 'Backup Transaksi_Log gagal - import dibatalkan, tidak ada data yang diubah.' };
         }
       }
       if (newItems.length) {
@@ -4691,7 +4686,7 @@ function importExcel(body) {
         });
         var out = rows.map(function (r) {
           var e = r.e, nm = info[e.id] || { nama: e.id, spec: '' };
-          return [r.ts, e.id, safeCell_(nm.nama), safeCell_(nm.spec), e.j, e.q, e.rak, safeCell_(e.ven), safeCell_(e.ref),
+          return [r.ts, e.id, safeCell_(nm.nama), safeCell_(nm.spec), e.j, e.q, safeCell_(e.rak), safeCell_(e.ven), safeCell_(e.ref),
             r.before, r.after, safeCell_(e.ket || 'IMPOR-EXCEL'), safeCell_(admin)];
         });
         trx.getRange(tLast + 1, 1, out.length, 13).setValues(out);
@@ -4709,6 +4704,10 @@ function importExcel(body) {
     }
   } catch (err) {
     console.error('importExcel error: ' + (err && err.stack ? err.stack : err));
-    return genericError_('importExcel');
+    // uncertain:true - catch ini berada setelah master.setValues + trx.setValues
+    // (dan bisa jadi setelah recalculateAllSaldoLocked_). Sebagian data bisa sudah
+    // masuk; client tidak boleh menganggap import gagal total lalu mengulang import
+    // yang sama sehingga baris Transaksi_Log jadi ganda.
+    return genericError_('importExcel', true);
   }
 }
