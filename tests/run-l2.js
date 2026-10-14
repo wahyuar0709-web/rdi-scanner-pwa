@@ -25,7 +25,7 @@ const SUITE_TIMEOUT_MS = 1800000; // 2026-10-14: 900 s -> 1800 s. Bukti: r2_brow
 // CDP/HTTP port yang dipakai suite L2. WAJIB di-update setiap menambah/mengganti port suite
 // (sumber: tiap file tests/l2/*.js). Dipakai untuk membersihkan sisa proses test SAJA —
 // TIDAK boleh memakai "Get-Process chrome" global karena akan menutup Chrome milik user.
-const TEST_CDP_PORTS = [8781, 8782, 9337, 9338, 9371, 9372, 9373, 9374, 9375, 9376, 9423, 9424, 9425, 9426, 9430, 9431, 9432, 9433, 9582, 9583, 9584, 9585]; // 9582/83 = r2_ux_measured, 9584/85 = r2_ux_states
+const TEST_CDP_PORTS = [8781, 8782, 9337, 9338, 9371, 9372, 9373, 9374, 9375, 9376, 9423, 9424, 9425, 9426, 9430, 9431, 9432, 9433, 9582, 9583, 9584, 9585, 9627, 9628]; // 9582/83 = r2_ux_measured, 9584/85 = r2_ux_states, 9627/28 = r2_arsip_search
 
 function killTestChrome() {
   // Hanya chrome yang punya --remote-debugging-port milik test L2.
@@ -59,7 +59,7 @@ function listSuites() {
 }
 
 function killL2Ports() {
-  const ports = [8781, 8782, 9338, 9582, 9583, 9584, 9585];
+  const ports = [8781, 8782, 9338, 9582, 9583, 9584, 9585, 9627, 9628];
   for (const port of ports) {
     try {
       spawnSync(

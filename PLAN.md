@@ -1471,3 +1471,110 @@ Itu jujur: isi keempat sheet itu **belum** diukur dan tetap belum, bukan disembu
 
 Tangkapan layar untuk penilaian visual: **6** berkas
 (HP dan desktop, terang dan gelap) di `Temp/opencode/shots/`.
+
+## 19. REVISI: item terarsip tetap bisa ditemukan lewat panel cari
+
+Diminta 2026-10-15: item berstatus arsip (stok 0, masuk arsip TPI) harus
+tetap muncul ketika dicari lewat panel cari.
+
+### 19.1 Akar masalahnya
+
+`_isArsip(r)` berarti `r.status === "Arsip"` (`js/format.js:9`). Penyaringan ada di
+`_doFilter`, dan berurutannya salah:
+
+```javascript
+if(!_showArsip && _isArsip(r)) return false;   // membuang duluan
+...
+if(!q) return true;                            // baru kemudian mengetik dicocokkan
+```
+
+Baris terarsip dibuang **sebelum** kata kunci dibaca. Jadi mengetik nama item
+terarsip tidak akan pernah menemukannya, dan operator menyimpulkan item hilang
+padahal ada. Tidak ada jalan untuk membuktikannya dari halaman itu.
+
+Teks konfirmasi waktu itu justru mengunci perilaku salah itu: *"Item tidak akan
+muncul lagi di Master List/pencarian transaksi"*. Jadi ini memang disengaja
+sebelumnya - sekarang dibalik karena tidak masuk akal di operasional gudang.
+
+### 19.2 Perbaikannya
+
+```javascript
+if(!_showArsip && !q && _isArsip(r)) return false;   // sembunyikan HANYA saat tidak mencari
+```
+
+Tiga hal ikut diperbarui karena sekarang tidak boleh lagi berbohong:
+
+1. **Petunjuk hasil pencarian** menyebut jumlah item terarsip yang ikut muncul,
+   supaya operator tahu kenapa item "Habis" bisa tampil tanpa filter arsip.
+2. **Teks konfirmasi arsip** diubah: disembunyikan dari Master List, tapi masih
+   bisa ditemukan lewat panel cari dan ditandai.
+3. **Daftar CETAK sengaja tidak diubah.** `renderCetakList` dan `cetakSelectAll`
+   punya pola penyaringan yang sama. Mengubah item mana yang ikut tercetak punya
+   konsekuensi nyata dan tidak diminta, jadi dibiarkan - dan diuji agar tidak
+   diam-diam berubah.
+
+Yang TIDAK ditambahkan: auto-arsip saat stok 0. Tidak ada logika seperti itu di
+sistem, dan menambahkannya mengubah data, bukan hanya tampilan. Itu keputusan
+produk, bukan keputusan teknis.
+
+### 19.3 Item terarsip tidak "tersamar aktif"
+
+Perbaikan ini hanya mengubah apakah item terlihat, BUKAN apakah item itu aktif.
+Yang sudah ada sebelumnya dan dijaga gate:
+
+- kartu terarsip diredupkan `opacity:.62` dan diberi badge **ARSIP**;
+- tombol transaksi disembunyikan untuk item terarsip;
+- lookup transaksi tetap menolak item terarsip dengan pesan "Aktifkan kembali dulu";
+- sakelar "Tampilkan item yang diarsipkan" tetap berfungsi untuk melihat semuanya.
+
+### 19.4 Bukti di browser, bukan di kode
+
+Gate statis hanya membuktikan kodenya tertulis begitu. Perilakunya dibuktikan
+di Chrome sungguhan lewat `tests/l2/r2_arsip_search.js` (8 assert):
+
+| Aksi | Hasil |
+|------|-------|
+| ketik `Rusak` | 1 kartu, petunjuk: `1 dari 5 item untuk "rusak" - termasuk 1 item diarsipkan` |
+| hasil pencarian | redup 0,62 + badge ARSIP |
+| kotak kosong | 4 kartu, item terarsip tersembunyi (perilaku lama utuh) |
+| ketik `Motor` | 4 kartu, item terarsip tidak ikut |
+| ketik yang tidak ada | 0 kartu, tanpa error |
+
+### 19.5 Dua jebakan harness yang hampir membuat saya melaporkan hal salah
+
+Keduanya layak dicatat karena menghasilkan "hasil" yang terlihat sahih:
+
+1. **Placeholder yang tidak cocok.** Templat ditulis `(function(val){` tetapi
+   diganti dengan `.replace("(val)", ...)`. Substring `(val)` tidak ada di
+   `(val){`, jadi ekspresi tidak pernah dipanggil - setiap langkah no-op. Tes
+  kemudian membaca state basi dan melaporkannya sebagai hasil. Untuk sementara
+    sementara tes melaporkan "n=5 untuk semua kata kunci", yang terlihat seperti
+   bug aplikasi, padahal tesnya yang tidak jalan.
+2. **Langkah no-op diterima diam-diam.** Pemeriksa hanya menolak `fatal` atau
+   `err`; hasil `null` lolos. Sekarang setiap langkah WAJIB mengembalikan
+   `ran:true` dan nilai input diverifikasi menempel, kalau tidak dilaporkan
+   sebagai kegagalan.
+
+Cara ini ternyata: `window._doFilter` bernilai **undefined**. Fungsi internal
+aplikasi tidak terekspos ke window, padahal `oninput="filterTableDebounced()"`
+dieksekusi di scope global. Menguji lewat pemanggilan internal akan gagal
+dengan cara yang menyesatkan. Jalur yang benar adalah mengetik ke kotak pencarian.
+
+### 19.6 Yang ditambahkan
+
+- `tests/l1/ui06e_search_arsip.js` - 18 assert statis, termasuk penjaga bahwa daftar
+  cetak TIDAK ikut berubah, dan bahwa penanda arsip tidak hilang.
+- `tests/l2/r2_arsip_search.js` - 8 assert runtime lewat UI sungguhan.
+- Port 9627/9628 didaftarkan di `tests/run-l2.js`.
+
+### 19.7 Status verifikasi
+
+| Level | Status |
+|-------|--------|
+| L1 | 48 suite / 1294 assert / 0 FAIL |
+| L2 `r2_arsip_search` | 8P/0F |
+| L2 batch utuh | ENVIRONMENT-DEPENDENT (17.1) |
+| L4 / L5 | NOT TESTED |
+
+Yang TIDAK diuji: perilaku saat mengetik sebagian (mis. "Rus"), dan di lebar
+HP. Keduanya layak-suara tapi belum dijalankan.
