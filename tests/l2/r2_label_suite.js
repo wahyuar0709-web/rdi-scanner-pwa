@@ -45,12 +45,26 @@ async function connectCDP(port) {
     // cara menjawab dialog JavaScript yang memblokir renderer.
     if (msg.method) eventHandlers.forEach(fn => { try { fn(msg); } catch (e) {} });
   });
+  /* BROWSER_DEAD (2026-10-14) - lihat 16.18 di PLAN.md.
+   * Chrome bisa mati di tengah suite. Tanpa handler di bawah, WebSocket
+   * ditutup diam-diam dan setiap panggilan CDP yang sedang menggantung
+   * menunggu timeout-nya PENUH. Di luar runner tidak ada batas waktu global,
+   * jadi kegagalan yang harusnya milidetik berjalan puluhan menit. */
+  ws.addEventListener('close', () => {
+    if (!pending.size) return;
+    const dead = { error: { message: 'BROWSER_DEAD' } };
+    for (const [, fn] of pending) { try { fn(dead); } catch (e) {} }
+    pending.clear();
+  });
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
       const i = ++id;
       pending.set(i, msg => msg.error ? reject(new Error(JSON.stringify(msg.error))) : resolve(msg.result));
-      ws.send(JSON.stringify({ id: i, method, params }));
-      setTimeout(() => { if (pending.has(i)) { pending.delete(i); reject(new Error('timeout ' + method)); } }, 45000);
+      try { ws.send(JSON.stringify({ id: i, method, params })); }
+      catch (e) { pending.delete(i); reject(new Error('BROWSER_DEAD send: ' + String(e.message || e))); return; }
+      /* 45 s -> 15 s: panggilan CDP lokal selesai dalam hitungan ms.
+         45 s hanya menutupi kegagalan yang jauh lebih cepat terdeteksi. */
+      setTimeout(() => { if (pending.has(i)) { pending.delete(i); reject(new Error('timeout ' + method)); } }, 15000);
     });
   }
   return { send, close: () => ws.close(), onEvent: fn => eventHandlers.push(fn) };
@@ -290,7 +304,22 @@ async function main() {
   }
   rec('L2: CDP connect', 'PASS', { chromeExit });
 
-  const evalIn = async (expr) => {
+  /* 2026-10-14: Page.navigate hanya resolve saat navigasi diterima, bukan
+ * saat halaman selesai dimuat (di mesin ini 13-22 detik). Karena itu sleep
+ * tetap sesudah navigasi menghasilkan merah palsu. Tunggu kondisi boot
+ * nyata: #boot-splash dapat class 'hide' (dipanggil hideBootSplash()).
+ * Hanya menunggu lebih lama, tidak pernah lebih singkat. */
+async function waitBoot(maxMs) {
+  const cap = maxMs || 30000;
+  const step = 250;
+  for (let w = 0; w <= cap; w += step) {
+    const r = await evalIn("(function(){var e=document.getElementById('boot-splash');return e?e.classList.contains('hide'):null;})()");
+    if (r === true) return true;   // evalIn mengembalikan nilai MENTAH, bukan {value:..}
+    await sleep(step);
+  }
+  return false;
+}
+const evalIn = async (expr) => {
     try {
       const r = await cdp.send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
       if (r.exceptionDetails) {
@@ -316,7 +345,7 @@ async function main() {
     await cdp.send('Runtime.enable');
     try { await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: "window.print=function(){window.__rdiPrintCalls=(window.__rdiPrintCalls||0)+1;};" }); } catch (e) {}
     await cdp.send('Page.navigate', { url: 'http://127.0.0.1:' + PORT + '/index.html' });
-    await sleep(2000);
+    await waitBoot();
 
     // Boot path: point GAS to local mock + valid editor session BEFORE reload
     const bootSet = await evalIn(`(function(){

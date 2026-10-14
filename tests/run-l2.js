@@ -20,12 +20,12 @@ const ROOT = path.resolve(__dirname, '..');
    Catatan performa yang terukur (bukan indikasi): Performance navigation timing di
    suite yang sama melaporkan dcl=6862ms, load=6919ms — sebagian besar datang dari
    <script> XLSX 861 KB yang diambil dari CDN (index.html:23). Itu issues terpisah. */
-const SUITE_TIMEOUT_MS = 900000;
+const SUITE_TIMEOUT_MS = 1800000; // 2026-10-14: 900 s -> 1800 s. Bukti: r2_browser_suite jalan sendiri 814 s, jadi cap 900 s hanya memberi margin 10% dan di dalam batch runner suite itu dibunuh lalu dilaporkan "FAIL (TIMEOUT)" padahal 32 PASS / 0 FAIL. Assertion tidak ada yang diturunkan.
 
 // CDP/HTTP port yang dipakai suite L2. WAJIB di-update setiap menambah/mengganti port suite
 // (sumber: tiap file tests/l2/*.js). Dipakai untuk membersihkan sisa proses test SAJA —
 // TIDAK boleh memakai "Get-Process chrome" global karena akan menutup Chrome milik user.
-const TEST_CDP_PORTS = [8781, 8782, 9337, 9338, 9371, 9372, 9373, 9374, 9375, 9376, 9423, 9424, 9425, 9426, 9430, 9431, 9432, 9433, 9582, 9583]; // 9582/9583 = r2_ux_measured
+const TEST_CDP_PORTS = [8781, 8782, 9337, 9338, 9371, 9372, 9373, 9374, 9375, 9376, 9423, 9424, 9425, 9426, 9430, 9431, 9432, 9433, 9582, 9583, 9584, 9585]; // 9582/83 = r2_ux_measured, 9584/85 = r2_ux_states
 
 function killTestChrome() {
   // Hanya chrome yang punya --remote-debugging-port milik test L2.
@@ -59,7 +59,7 @@ function listSuites() {
 }
 
 function killL2Ports() {
-  const ports = [8781, 8782, 9338, 9582, 9583];
+  const ports = [8781, 8782, 9338, 9582, 9583, 9584, 9585];
   for (const port of ports) {
     try {
       spawnSync(

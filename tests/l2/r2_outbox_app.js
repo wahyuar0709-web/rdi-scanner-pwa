@@ -151,14 +151,17 @@ async function main() {
     await ev("(function(){localStorage.removeItem('rdi_trx_outbox');document.getElementById('scan-id-input').value='MRO-02-002';lookupItem();return 'ok';})()");
     let resolved = null;
     for (let i = 0; i < 150; i++) {
-      /* Cukup currentItem terisi - JANGAN mensyaratkan bentuk properti tertentu.
-       * Versi ini mensyaratkan c.id dan selalu balik null, padahal OFFLINE di
-       * baris berikutnya lulus: yang salah assertion-nya, bukan aplikasinya. */
-      resolved = await ev("(function(){var c=window.currentItem;return c?{keys:Object.keys(c).slice(0,6)}:null;})()");
-      if (resolved && !resolved.error && resolved.keys) break;
+      /* window.currentItem SELALU undefined: `var currentItem` privat di
+       * dalam IIFE (index.html:2917), tanpa export ke window/self/globalThis.
+       * Jadi sinyal di bawah diambil dari DOM, bukan dari state privat:
+       *   hideStatus('sbar-lookup') -> class 'sbar' tanpa 'show', dan
+       *   showScanStep('transaksi')  -> #step-transaksi dapat class 'active'.
+       * Keduanya hanya terjadi SESUDAH currentItem=result.item dieksekusi. */
+      resolved = await ev("(function(){var b=document.getElementById('btn-lookup');var sl=document.getElementById('sbar-lookup');var st=document.getElementById('step-transaksi');if(!b||!sl||!st)return null;var done=!b.disabled&&sl.className.indexOf('show')<0;var step=st.classList.contains('active');return(done&&step)?{ready:true,slClass:sl.className}:null;})()");
+      if (resolved && !resolved.error && resolved.ready) break;
       await sleep(200);
     }
-    rec('PRECONDISI: currentItem ter-resolve sebelum submit (anti-flake)', !!(resolved && resolved.keys), JSON.stringify(resolved));
+    rec('PRECONDISI: lookupItem selesai (sinyal DOM, bukan var privat)', !!(resolved && resolved.ready), JSON.stringify(resolved));
     await ev("(function(){setJenis('KELUAR');document.getElementById('qty-input').value='3';document.getElementById('rak-input').value='B-01';return 'ok';})()");
     const offQ = await ev("(function(){submitTransaksi();return new Promise(function(res){setTimeout(function(){var l=readOutbox();res({len:l.length,qty:l[0]&&l[0].payload?l[0].payload.qty:null,jenis:l[0]&&l[0].payload?l[0].payload.jenis:null,rid:!!(l[0]&&l[0].payload&&l[0].payload.requestId)});},2200);});})()", true);
     rec('OFFLINE: submitTransaksi() → pushOutbox() oleh app (qty/jenis/requestId utuh)', offQ && !offQ.error && offQ.len === 1 && offQ.qty === 3 && offQ.jenis === 'KELUAR' && offQ.rid === true, JSON.stringify(offQ));

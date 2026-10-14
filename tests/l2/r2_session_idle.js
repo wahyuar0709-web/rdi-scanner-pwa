@@ -159,15 +159,34 @@ rec('T1 rdi_last_active di-TOUCH saat boot (lebih baru dari seed)', st.la > 0 &&
     await t2.ws.close(); await closeTab(t2.id); t2 = null;
 
     /* ---- Idle window: la = now-30 menit (<2 jam) → tetap login ---- */
-    await ev("localStorage.setItem('rdi_last_active',String(Date.now()-30*60000));'ok'");
+    // matikan heartbeat tab utama lebih dulu (lihat catatan T2c di bawah)
+    await send('Page.navigate', { url: 'about:blank' }); await sleep(300);
+    const seed2 = await openFreshTab(APP_URL);
+    await seed2.ev("localStorage.setItem('rdi_last_active',String(Date.now()-30*60000));'ok'");
+    await seed2.ws.close(); await closeTab(seed2.id);
     t2 = await openFreshTab(APP_URL);
     s2 = await t2.ev("(function(){return {gate:!document.getElementById('login-gate').classList.contains('hide'),tok:localStorage.getItem('rdi_viewer_token')||''};})()");
     rec('T2b la=now-30m: masih login (gate hidden)', s2.gate === false, JSON.stringify({ gate: s2.gate }));
     rec('T2b la=now-30m: kredensial utuh', !!s2.tok, 'len=' + (s2.tok || '').length);
     await t2.ws.close(); await closeTab(t2.id); t2 = null;
 
+/* 2026-10-14 (isolasi test, bukan bug produk).
+     * Tab utama menyalakan heartbeat setInterval(...,60000) ->
+     * _touchSessionActivity(). Heartbeat itu menimpa seed la=now-3jam dengan
+     * waktu sekarang sebelum tab baru selesai boot. Bukti: la yang terbaca di
+     * assert T2c = T1.now + 66.944 ms - persis satu detak heartbeat, bukan
+     * now-3 jam. Boot 13-22 detik vs tick 60 detik -> tabrak ~1 dari 3.
+     * Fix: tab utama dinavigasi ke about:blank sehingga konteks JS dan semua
+     * interval ikut mati, lalu seed lewat tab sementara yang langsung ditutup.
+     * Saat pengukuran tidak ada lagi instance aplikasi yang hidup.
+     * T2b (now-30menit) ikut diperbaiki: sebelumnya SELALU lulus apa pun
+     * karena 30 menit < 2 jam baik pada seed maupun setelah heartbeat - jadi
+     * ia lulus karena alasan yang salah tanpa bisa mendeteksi gangguan ini. */
     /* ---- Idle stale: la = now-3 jam (>2 jam) → auto-logout + purge ---- */
-    await ev("localStorage.setItem('rdi_last_active',String(Date.now()-3*3600000));'ok'");
+    await send('Page.navigate', { url: 'about:blank' }); await sleep(300);
+    const seed3 = await openFreshTab(APP_URL);
+    await seed3.ev("localStorage.setItem('rdi_last_active',String(Date.now()-3*3600000));'ok'");
+    await seed3.ws.close(); await closeTab(seed3.id);
     t2 = await openFreshTab(APP_URL);
     s2 = await t2.ev("(function(){return {gate:!document.getElementById('login-gate').classList.contains('hide'),tok:localStorage.getItem('rdi_viewer_token')||'',sesT:sessionStorage.getItem('rdi_viewer_token')||'',la:localStorage.getItem('rdi_last_active'),ek:localStorage.getItem('rdi_editor_key')||''};})()");
     rec('T2c la=now-3h: GATE TERLIHAT (auto-logout)', s2.gate === true, JSON.stringify({ gate: s2.gate }));

@@ -72,7 +72,17 @@ const SCAN = `(function(){
     if(r.bottom<0||r.top>innerHeight)return false;
     return true;
   });
-  var small=inter.map(function(el){var r=el.getBoundingClientRect();return {id:(el.id||String(el.className).split(' ')[0]||el.tagName),w:Math.round(r.width),h:Math.round(r.height)};})
+  /* Ukuran LAYOUT (offsetWidth/offsetHeight), bukan getBoundingClientRect.
+   * Alasannya konkret: .btn:active punya transform:scale(.94) sehingga kotak
+   * visualnya jadi 44 x 0.94 = 41px, padahal min-height:44px tetap berlaku.
+   * Gate memakai kotak visual akan melaporkan tombol sehat sebagai pelanggaran
+   * (terbukti di r2_ux_states A2). Yang menentukan jari bisa mengetuk adalah
+   * ukuran layout. 2026-10-14 */
+  /* Target EFEKTIF: kalau input dibungkus <label>, yang diketuk operator adalah
+   seluruh label - bukan kotak input-nya. Checkbox 24x24 di dalam label 44px
+   LULUS karena itu target sebenarnya; mengukur kotak input saja akan
+   melaporkan pelanggaran yang tidak bisa diukai pengguna. 2026-10-14 */
+  var small=inter.map(function(el){var r=el.getBoundingClientRect();var tgt=el.closest?el.closest('label'):null;if(!tgt)tgt=el;return {id:(el.id||String(el.className).split(' ')[0]||el.tagName),w:tgt.offsetWidth,h:tgt.offsetHeight,rect:Math.round(r.width)+'x'+Math.round(r.height)};})
                .filter(function(x){return x.w<44||x.h<44;});
   var noName=inter.filter(function(el){return !acc(el).trim();}).map(function(el){return (el.id||String(el.className).split(' ')[0]||el.tagName);});
   var tinyFont=[];

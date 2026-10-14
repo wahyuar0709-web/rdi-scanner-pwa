@@ -605,7 +605,7 @@ F0 Baseline ──► F1 T1 (device+L5) ──C1──► F3 T3 ──► F4 T2b
 | 2026-09-26 | Fix 2 bug user (approval eksplisit "perbaiki bug ini"): (1) HP-CETAK-01 `#section-cetak .container{width:100%}` (akar: auto cross-margin `margin:0 auto` mematikan stretch → max-content ~505px terpotong section overflow:hidden; probe3–7; desktop 1440 cont 655→1440 ikut teratasi); (2) SESI-01 sesi resume dual-write + auto-logout idle 2 jam `enforceSessionIdle()` sebelum migrasi (kritis: urutan sesudah migrasi = touch men-reset la → idle tak pernah terpicu) + visibilitychange + heartbeat 60s; tradeoff token di localStorage ≤2 jam dibatasi TTL server 6h + denylist | bukti: RED→GREEN `bug_hp_cetak_session` 19F→20/0, `r2_hp_cetak_fit` 64/0 (4 HP + desktop), `r2_session_idle` 14/0 (resume/30m/3h purge), `cetak_bar_layout` 22/0 (regex adaptasi), L1 560/0 + L2 308/0 (2x pre/post-bump); bump v15.27 / sw `rdi-stok-v35` | PLAN.md v1.27 |
 | 2026-09-27 | Tahap 1 integritas test (permintaan user: "pahami app secara detail dulu, baru ambil langkah sendiri"): assertion floor kedua runner + 4 suite 0-assert → suite nyata (check_xe_ex 36, dup_check 72, sec_classify 39+6 AL, xss_audit 16) + false-green L2 ditutup (exit code) + outbox L2 via API app + suite baru `r2_outbox_app.js` 7/0 + ESC-01 `xe(0)` fix; bump v15.28 / sw `rdi-stok-v36` | bukti: L1 560→**722/0** (30 suite), L2 308→**313/0** (8 suite), pre & post-bump; 6 ACCEPTED LIMITATION tercatat sebagai target Tahap 3 | PLAN.md v1.28 |
 | 2026-09-27 | Tahap 2 harness `Code.gs` eksekutabel: `tests/tools/gs_harness.js` (vm + fake GAS runtime; range live-view; `computeDigest` array-of-byte; alias `base64EncodeWebSafe`/`computeHmacSha256Signature`; blob dua arah; override KDF untuk kecepatan) + 4 suite `gs_*` (trx 30, auth 36, stok 21, aset 35) — **backend 0 → 122 assert eksekutabel**, L1 722→**844/0** (34 suite). Temuan harness (bukan bug app): `getAsetEligibleUnits(kodeAlat, activity)` POSITIONAL; `getAsetItemList`→`data[]`; `getSheetData` kirim `qty` String (kontrak ESC-01) | PLAN.md v1.29 |
-| 2026-09-27 | **Keputusan yang mengｈemat banyak sekali**: identitas per orang harus mendahului audit log. Dengan satu akun per manusia, kolom `admin` di transaksi dan audit log akhirnya berarti — kalau tidak, lognya hanya berisi "Admin" dan tidak berguna. Urutan: identitas → nonaktifkan akun benar-benar berlaku → baru audit log. |
+| 2026-09-27 | **Keputusan yang menghemat banyak sekali**: identitas per orang harus mendahului audit log. Dengan satu akun per manusia, kolom `admin` di transaksi dan audit log akhirnya berarti — kalau tidak, lognya hanya berisi "Admin" dan tidak berguna. Urutan: identitas → nonaktifkan akun benar-benar berlaku → baru audit log. |
 | 2026-09-27 | **Kesalahan proses saya sendiri (dicatat agar tidak diulang)**: saat mengganti `submitViewerLogin()` di `index.html`, saya pakai regex `/function X\(\)(\{[\s\S]*?\}\n/` pada file yang **minified** (banyak fungsi dalam satu baris) → **menelan ~33 fungsi lain** (`loadData`, `showConfig`, `logoutEditor`, ...). Tidak ketahuan dari jumlah karakter di diff saja; baru ketahuan karena (a) `function ` count assertion yang saya tambahkan, dan (b) probe browser. **Pelajaran**: untuk file minified, ganti fungsi dengan **brace-counting**, bukan regex; dan **lalu jalankan gate penuh + cek `function ` count sebelum commit**. Suite `export_chain_audit` dibuat justru agar kelas kerusakan ini tertangkap otomatis di masa depan. |
   Dampak: tidak ada yang reaches produksi —WORK ter-push dan working tree dipulihkan ke HEAD sebelum lanjut. |
 | 2026-09-27 | **Deploy disetujui & dieksekusi** setelah user memberi `scriptId`. Yang membuatnya aman: (1) snapshot produksi via `clasp clone` sebelum disentuh, (2) `clasp status` membuktikan hanya `appsscript.json` + `Code.js` yang naik, (3) `appsscript.json` produksi dipertahankan utuh, (4) `update-deployment` bukan `create-deployment` → URL & akses tidak berubah, (5) verifikasi L3 otomatis lewat `healthCheck`, bukan klaim "sudah deploy". Pelajaran: **temuan paling berharga muncul di langkah verifikasi, bukan di langkah implementasi** — BE-02b hanya ketahuan karena call-site auth diperiksa sebelum push. |
@@ -991,7 +991,7 @@ Menyelesaikan grep `<style>`/report hijau padahal UI masih 11 px.
 Harus dua tahap: 29 literal di dalam `<style>`, lalu 52 inline di `index.html`/`scanner.html`/
 `js/importexcel.js`. Gate barunya mengukur **computed style** di Chrome, bukan membaca teks.
 
-### 16.5 UX-05 - kontras: dari 3 elemen jadi 5, dan/theme jadi dua
+### 16.5 UX-05 - kontras: dari 3 elemen jadi 5, dan warna teks jadi dua pihak
 
 - **3 elemen amber-di-atas-`amber-dim`** (`.inv-count` 3.82:1, `.chip-filter.active` 4.17:1).
   Diperbaiki ke `--badge-amber-text` `#78350f` = 6.9:1. Latar tidak diubah.
@@ -1023,7 +1023,36 @@ Pelajaran sama seperti 15.6: **verifikasi yang hanya membaca string di memori ti
 apa pun - harus baca ulang dari disk.** Satu skrip bahkan mencetak "OK" padahal `writeFileSync`-nya
 tidak pernah dipanggil; angka gate tetap lama karena file tidak pernah berubah sama sekali.
 
-### 16.8 Gate baru: `tests/l2/r2_ux_measured.js`
+### 16.8 Tiga kegagalan L2 yang ditelusuri sampai ke akar
+
+Run batch pertama setelah perubahan: **3 suite merah**. Tidak satu pun boleh diteruskan sebagai
+"kenaikan versi", jadi ketiganya ditelusuri:
+
+1. **`r2_viewport_mode_suite` - `nav top=91`, diharapkan 56.** Diduga regresi ukuran font
+   (topbar jadi 91px). **Ternyata flake**: dijalankan sendiri `top=56`, **19 PASS / 0 FAIL**.
+   Tidak ada perubahan kode.
+2. **`r2_browser_suite` - TIMEOUT di 900 s.** Dijalankan sendiri **814 s, 32 PASS / 0 FAIL**.
+   Cap 900 s hanya memberi margin 10%, jadi beban ordinary dari batch runner membuatnya
+   dilaporkan `FAIL (TIMEOUT)` palsu. Cap dinaikkan **900 s -> 1800 s** dengan bukti;
+   tidak ada assertion yang diturunkan.
+3. **`r2_outbox_app` - `currentItem` selalu null.** Dua kali assertion saya sendiri yang salah:
+   pertama mensyaratkan `currentItem.id`, lalu mensyaratkan `window.currentItem`.
+   **Akar sebenarnya: `var currentItem` privat di dalam IIFE** (index.html:2917) dan tidak
+   pernah di-export ke `window`/`self`/`globalThis`. `window.currentItem` memang selalu
+   `undefined`. Aplikasi tidak salah - `submitTransaksi()` tetap bekerja. Diperbaiki dengan
+   sinyal DOM yang diambil dari kode aplikasi: `hideStatus('sbar-lookup')` (class `show`
+   hilang) + `showScanStep('transaksi')` (`#step-transaksi` dapat class `active`), yang
+   keduanya hanya terjadi setelah `currentItem=result.item` dieksekusi.
+   Hasil: **14 PASS / 0 FAIL**.
+
+**Pola yang berulang di proyek ini**: state privat yang tidak diekspor. DBG-01 di sesi
+sebelumnya adalah `togglePwVisibility`; sekarang `currentItem`. Keduanya lahir dari produk yang
+menyimpan keadaan penting di dalam IIFE tanpa mengekspos apa pun ke luar - pola yang membuat
+apa yang sebenarnya terjadi sulit diamati dari luar, termasuk oleh test sendiri.
+Belum diperbaiki di sisi produk karena pada kasus ini tidak ada consumer yang membutuhkan,
+tetapi dicatat sebagai utang arsitektur.
+
+### 16.9 Gate baru: `tests/l2/r2_ux_measured.js`
 
 Menutup UX-01..UX-05, 14 assert, semuanya diukur dari DOM + computed style sungguhan di Chrome.
 Empat guard agar gate tidak berbohong:
@@ -1036,23 +1065,254 @@ Empat guard agar gate tidak berbohong:
 - **KONTROL** - menyuntikkan teks amber 12 px di atas amber-dim; gate **harus** menangkapnya.
   Kalau tidak Tertangkap, gate dicatat **vacuous**, bukan hijau.
 
-### 16.9 Angka
+### 16.10 Angka
 
 | Metrik | Sebelum | Sesudah |
 |--------|---------|---------|
-| L1 | 46 suite / 1271 assert / 0 FAIL | 46 suite / **1271** / 0 FAIL |
+| L1 | 46 suite / 1271 assert / 0 FAIL | 47 suite / **1276** / 0 FAIL (+ `encoding_guard`) |
 | Teks < 12 px di shell app | 52 | **0** |
 | Target sentuh < 44 px (audit awal, probe longgar) | 9 dari 39 | **0 dari 104** (gate final, 6 tab) |
 | Teks kecil gagal kontras AA | 3 terukur + 2 tak terukur | **0 dari 32 scan** |
-| L2 | <<L2_FINAL>> |
+| Cap `SUITE_TIMEOUT_MS` | 900 s | **1800 s** (berbasis bukti: 814 s terukur) |
+| L2 suite | 11 | **12** (+ `r2_ux_states`) |
+| Target sentuh < 44 px di sheet tertutup | **tidak pernah dipindai** | **0 dari 16 sheet** (8 cacat diperbaiki, `UX-01b`) |
+| File sumber di bawah encoding guard | 0 | **79** |
+| Cacat encoding ditemukan | 0 | **5** (4 encoding + 1 EOL) |
+| L2 satu batch utuh | **tidak terverifikasi** (ENVIRONMENT-DEPENDENT) - lihat 16.18 dan 16.20 |
 
-### 16.10 Yang TIDAK terukur (tidak boleh diklaim)
+### 16.11 Yang TIDAK terukur (tidak boleh diklaim)
 
-- **State hover/active** dan sheet/modal yang belum dibuka **tidak** diukur gate. Banyak selector
-  amber berukuran 0x0 di semua state yang dipindai.
+- ~~State hover/active dan sheet/modal belum dibuka tidak diukur~~ - **sudah terukur** oleh `r2_ux_states`
+  (16.12): 1006 node dipaksa pada 4 state lewat `CSS.forcePseudoState`, 16 sheet dibuka lewat jalur
+  aplikasi. Empat sheet (`openAddSheet`, `showRakList`, `toggleBatchCartPanel`, `openAsetAksiModal`)
+  masih `ENVIRONMENT-DEPENDENT` - isinya **belum** diukur, dan itu ditampilkan eksplisit oleh suite.
+- Kontras di state interaktif **nol temuan**, tapi hanya setelah filter viewport dilepas (16.15).
+  Dengan filter itu aktif, temuan 4,46:1 yang dihitung manual tidak pernah terlihat.
+- Matematika kontras masih **belum** divalidasi terhadap piksel nyata. `effBg` sudah salah dua kali
+  (gradien shorthand, urutan leluhur) dan tidak ada ground-truth yang mengikat angkanya.
+- `.dash-subtab-btn` 31 px ditemukan di sheet Aset, tapi **hanya** di `openAsetCpModal`; tab subtab yang
+  sama di modul lain belum tentu ikut terukur.
+
 - `.trx-progress-step.done` diperbaiki ke `var(--surface)` berdasarkan **perhitungan token**
   (terang 4.90:1 / gelap 9.53:1), **bukan** pengukuran terukur - state `done` tidak pernah
   ter-render saat gate. Bug laten yang sama (1.74:1 di gelap) tidak akan ditangkap gate.
-- **L3/L4/L5 = NOT TESTED.** Perubahan UI ini belum pernah dilihat di HP sungguhan; perubahan
+- **L4/L5 = NOT TESTED.** L3 read-only sudah PASS untuk versi backend (lihat 16.19); L3 mutasi tetap Perubahan UI ini belum pernah dilihat di HP sungguhan; perubahan
   ukuran teks adalah yang paling perlu diperiksa mata di device (§3.4, D1-D12).
 - **Deploy `Code.gs`** masih tertunda (lihat 15.7) - repo `v5.28`, produksi `v5.27`.
+
+### 16.12 Dua titik buta gate UI, dan cara menutupnya
+
+Gate `r2_ux_measured` (16.9) mengukur keadaan **diam** pada 6 tab. Dua permukaan besar tidak pernah disentuh:
+
+1. **State interaktif.** `.chip-cat.active`, `.user-badge:hover`, `.rak-chip.selected`, `.btn:active` - pada
+   keadaan diam banyak di antaranya 0x0, jadi tidak ada yang bisa diukur. Dipaksa dengan CDP
+   `CSS.forcePseudoState`, lalu **dilepas kembali** sebelum state berikutnya.
+2. **Sheet & modal yang tertutup.** Aplikasi mengekspos **44 fungsi pembuka UI** ke `window`
+   (`openItemDetail`, `openEditSheet`, `openFilterSheet`, `openExportQRModal`, `showRakDetail`, ...).
+   **Nol** dipindai gate mana pun. Suite baru `tests/l2/r2_ux_states.js` memanggil 16 di antaranya lewat
+   jalur aplikasi sendiri, memindai isinya, lalu menutupnya lagi.
+
+Yang diukur per state dan per sheet: kontras teks kecil, target sentuh, ukuran teks, nama aksesibel,
+dan scroll horizontal.
+
+### 16.13 Temuan nyata dari cakupan baru
+
+Delapan target sentuh di sheet, semuanya di bawah 44 px dan **tidak pernah terlihat gate sebelumnya**:
+
+| Target | Ukuran | exhibiting |
+|--------|--------|-----------|
+| `.qr-chip` (filter cepat, `openFilterSheet`) | 69x32 / 62x32 | `min-height:auto`, padding 6px 13px |
+| `#exp-date-from` / `#exp-date-to` | 348x40 | `min-height:0`, padding 10px 13px |
+| `.flt-tgl-dari` / `.flt-tgl-sampai` | 169x40 | `<input type=date class=sel>` |
+| `.dash-subtab-btn` (tab Aset, `openAsetCpModal`) | 116x31 | tinggi dari padding saja |
+| `#flt-show-arsip` | **16x16** | `style="width:16px;height:16px"` inline |
+| `#rak-label-select-all` | **13x13** | checkbox default, tanpa sizing |
+
+Perbaikan (`UX-01b`, `index.html`, akhir blok `@media (max-width:1023px)`): `.qr-chip` dan
+`input[type=date]/select.sel` diberi `min-height:44px`; `input[type=checkbox]` diberi 24x24 sesuai
+WCAG 2.2 Target Size (Minimum); dua label pembungkusnya diberi `min-height:44px` sehingga area sentuh
+sesungguhnya jauh lebih besar daripada kotak checkboxnya. Inline `width/height:16px` pada
+`#flt-show-arsip` dihapus supaya aturan CSS bisa berlaku.
+
+### 16.14 Gate saya sendiri salah dua kali - dibuktikan, bukan ditebak
+
+**A. `.btn` terukur 41 px padahal aturannya 44 px.**
+`.btn:active` punya `transform:scale(.94)`. 44 x 0.94 = **41,36 -> 41 px**, persis angka yang dilaporkan.
+`min-height:44px` tetap berlaku pada ukuran **layout**; yang mengecil hanya kotak **visual** saat ditekan
+(umpan balik tekan yang disengaja). `getBoundingClientRect()` mengembalikan kotak visual.
+Gate `r2_ux_states` **dan** `r2_ux_measured` sekarang memakai `offsetWidth/offsetHeight`.
+
+**B. Checkbox 24x24 "gagal" padahal tidak ada yang bisa diketuk lebih kecil.**
+Checkbox berada di dalam `<label>` yang sudah 44 px; yang diketuk operator adalah seluruh label.
+Gate sekarang mengukur **target efektif**: `el.closest("label") || el`.
+
+### 16.15 Titik buta ketiga: gate hijau karena tidak mengukur
+
+`A1` melaporkan "0 dari 0 temuan" padahal hitungan manual bilang `.chip-cat` saat hover
+(amber `#b45309` di atas `#f6f1e7` = **4,46:1**, di bawah 4,5) **seharusnya gagal**.
+
+Penyebabnya bukan produk: filter `r.top > innerHeight` di fungsi scan membuang elemen di luar viewport, dan
+chip filter ada **di bawah lipatan** layar 390 px. Filter itu ada untuk membuang overlay tersembunyi, tapi
+untuk state interaktif justru membuang elemen yang paling penting. Scan state kini memakai
+`{all:true}`. Scan sheet **tidak** memakainya: isi sheet berada di layar, konten di belakangnya lebih
+baik dibuang.
+
+Konsekuensi umum: **"0 temuan" hanya berarti tidak ada yang diukur.** Karena itu suite punya kontrol
+wajib, bukan hanya asersi: `KONTROL: forcePseudoState benar-benar mengubah computed style` harus PASS
+(dibuktikan: `color` `rgb(102,99,95)` -> `rgb(180,83,9)`), kalau tidak A1-A3 **tidak dihitung sama sekali**.
+Kontrol ini langsung menangkap kesalahan gate pertama: selector kontrol semula `.chip-cat`, padahal chip
+pertama di DOM **sudah** punya class `active`, jadi memaksa `:active` memang tidak mengubah apa pun.
+
+### 16.16 Empat kesalahan saya sendiri, dicatat apa adanya
+
+| # | Kesalahan | Akibat | Pintasan |
+|---|-----------|--------|----------|
+| 1 | Aturan `.aset-subtab-btn{min-height:44px}` | Selector itu **tidak pernah ada** di CSS; class aslinya | `dump_markup2.js` |
+|   | | `.dash-subtab-btn` (yang punya `id=aset-subtab-btn-*`). Perbaikan | |
+|   | | pertama **tidak memperbaiki apa pun** | |
+| 2 | CSS `label[for=rak-label-select-all]` | Label pembungkusnya **tidak punya `for=`**, jadi selector | `dump_markup2.js` |
+|   | | tidak cocok ke elemen mana pun | |
+| 3 | Komentar CSS UX-01b menuliskan markup literal `(<input type=date class=sel>)` | Gate L1 `ui06b_label_escape` | `find_input_miss.js` |
+|   | | memindai `/<input\b[^>]*>/` dan melaporkan **komentar saya** sebagai input tanpa label - L1 FAIL | |
+| 4 | `ev(SCAN)` tanpa pemanggilan | `SCAN` adalah ekspresi fungsi; dievaluasi saja menghasilkan | |
+|   | | objek kosong, `s.contrast` undefined -> `TypeError` | |
+
+Konsekuensi: `ui06b_label_escape` kini **mengosongkan area `<style>`** sebelum dipindai. Alasannya benar -
+CSS tidak bisa memuat form control, jadi tag `<input ...>` di dalam blok `<style>` pasti teks komentar.
+`<script>` **tidak** dikosongkan: input di dalam string template JS memang nyata dan wajib diperiksa.
+
+### 16.17 Gate encoding: `tests/l1/encoding_guard.js`
+
+Lima assert atas 79 file sumber: U+FFFD, CJK/Hangul/fullwidth, EOL campur, BOM, dan anti-vacuum.
+Empat cacat encoding ditemukan yang lolos 1271 assert - termasuk di file **produk**:
+
+- `dup_check.js` L62: `GE` diikuti satu karakter hangul U+CABD di tengah identifier
+- `sim_authz_matrix.js` L90: nama fungsi berawalan `redundancy` diikuti tiga karakter CJK (U+4F4E U+6210 U+672C)
+- EOL campur di `.clasp.json`
+- CJK nyasar di `r2_ui_quality_gate.js` L204, dan satu karakter fullwidth U+FF48 di `PLAN.md`
+
+Semuanya diperbaiki dan diverifikasi ulang dari disk (bukan dari string di memori - pelajaran dari
+`fix_trx_contrast.js` yang dulu mencetak "OK" tanpa menulis).
+
+### 16.18 Batch l2_v6: dua kegagalan harness, keduanya nyata
+
+Batch penuh pertama setelah semua upgrade tidak hijau. Dicatat apa adanya.
+
+```
+RUN  | r2_browser_suite.js ... FAIL (TIMEOUT, exit=null)
+RUN  | r2_feature_smoke.js ... ok (37P/0F, 457026ms)
+RUN  | r2_hp_cetak_fit.js ... ok (64P/0F, 234514ms)
+RUN  | r2_label_suite.js   ... tidak pernah selesai
+```
+
+**A. r2_browser_suite kena cap 1800 s. Angka riil dari salinan berinstrumen:**
+
+```
+WR #1  total=569812ms  readyState=47543ms  tidur buta=3500ms  poll boot=522269ms
+       iters=120 (kena ceiling)   boot-splash hidden = FALSE
+```
+
+Tidur antar iterasi hanya 250 ms. Jadi satu panggilan CDP memakan:
+
+- poll readyState: 47543 / 50 = **0,95 detik** per panggilan
+- poll boot-splash: 522269 / 120 = **4,35 detik** per panggilan
+
+Itu 4 sampai 17 kali dari tidurnya. Satu waitReady = 570 detik, dan dipanggil 15 kali, jadi sekitar
+**2,4 jam** untuk suite yang mestinya butuh 814 detik. Cap 1800 detik bukan terlalu kecil; cap itu
+benar dan suite memang tidak akan pernah selesai dalam keadaan ini.
+
+`boot-splash hidden = FALSE` adalah bukti terkuat: halaman **tidak pernah selesai boot** dalam
+seluruh jendela polling. Ini bukan soal cap atau scheduling.
+
+Sumbernya lingkungan, bukan regresi dari perubahan sesi ini. Pada saat yang sama `r2_feature_smoke`
+37P dan `r2_hp_cetak_fit` 64P **lulus** setelah perubahan `index.html` yang sama, jadi CSS UX-01b tidak
+menghambat boot. Saat pengukuran: RAM 6,9 GB dengan hanya **2,0 GB bebas (71% terpakai)**, sementara 11
+proses msedge milik pengguna berjalan. Disk 23,4 GB bebas, Temp bersih. Renderer Chrome ikut kelaparan
+sumber daya, jadi setiap bolak-balik CDP dari 1 detik jadi 4 detik.
+
+Konsekuensi yang jujur dan tidak bisa dihias: **L2 penuh tidak dapat diverifikasi sebagai satu batch
+utuh di lingkungan ini.** Statusnya ENVIRONMENT-DEPENDENT, bukan PASS dan bukan FAIL. Per-suite ada bukti
+terpisah (lihat 16.20), tetapi klaim "satu batch hijau" tidak dibuat.
+
+SUITE_TIMEOUT_MS tidak dinaikkan lagi. Menaikkannya dari 900 ke 1800 s sudah dicatat sebagai treadmill
+di komentar run-l2.js:23. Mengulanginya menutupi masalah, bukan memperbaikinya - dan pengukuran di atas
+membuktikan bahwa menaikkan cap memang tidak akan menolong apa pun.
+
+Catatan: `Page.reload` sendiri sudah 13-22 s di mesin ini, sudah tercatat di komentar suite, jadi boot
+memang lambat sejak awal. Yang berubah di sini adalah **frekuensi** CDP yang lambat, bukan hanya
+lambatnya boot.
+
+**B. r2_label_suite hang 27 menit dengan Chrome sudah mati.**
+
+Ini ditemukan karena diperiksa, bukan karena menebak. Bukti dari proses yang masih hidup:
+
+| Pemeriksaan | Hasil | Arti |
+|-------------|-------|-------|
+| proses node suite | hidup, mulai 20:46:57 | suite tidak keluar |
+| chrome.exe | 0 proses | browser sudah mati |
+| port 8782 (HTTP suite) | LISTEN, PID 8948 | server suite hidup |
+| port 9338 (CDP) | tidak listen | tidak ada browser debug |
+
+Akar masalah: send() memasang setTimeout 45000 ms per panggilan, tapi tidak ada handler untuk event
+close WebSocket. Saat Chrome mati, socket ditutup tanpa memberitahu. Setiap panggilan yang sedang
+menggantung lalu menunggu timeout-nya penuh. Suite juga tidak punya batas waktu global, jadi runner baru
+membunuhnya di 1800 s. Puluhan panggilan 45 detik sama dengan puluhan menit untuk kegagalan yang
+harusnya terdeteksi dalam milidetik.
+
+Perbaikan, di r2_browser_suite.js dan r2_label_suite.js:
+
+1. ws.addEventListener("close") menolak semua promise yang masih menunggu, dengan penanda BROWSER_DEAD.
+2. timeout per panggilan turun dari 45000 ke 15000 ms. Panggilan CDP lokal selesai dalam hitungan ms.
+3. ws.send dibungkus try/catch, jadi socket yang sudah tutup menolak seketika.
+
+Yang tidak diketahui dan tidak diklaim: kenapa Chrome mati di tengah suite. Bukti yang terkumpul hanya
+menunjukkan akibatnya, yaitu socket tertutup dan port CDP hilang. Tidak ada log yang menangkap
+penyebabnya. Perbaikannya membuat kegagalan berikutnya cepat dan eksplisit. Penyebabnya masih perlu dicari
+bila terulang.
+
+### 16.19 L3 read-only: versi backend produksi terverifikasi
+
+Probe non-mutating ke healthCheck, diizinkan AGENTS.md bagian C. GET, tanpa body, tidak mengubah data.
+
+```json
+{"status":"ok","api":"RDI Kartu Stok","version":"v5.27","builtAt":"2026-10-11.1"}
+```
+
+Jadi L3 PASS untuk pemeriksaan versi. Konsekuensinya tegas. Repo v5.28, produksi v5.27. Kontrak uncertain
+yang dibaca client v15.31 ke atas memang belum pernah dikirim backend. Ini bukan regresi dari sesi ini,
+dan sekarang statusnya terbukti, bukan lagi asumsi. Bagian 15.7 masih terbuka karena deploy butuh
+clasp login interaktif dengan akun pemilik RDI.
+
+L3 untuk mutasi tetap NOT TESTED dan di luar cakupan sesi ini.
+
+
+### 16.20 Bukti L2 per-suite, dan apa yang TIDAK diklaim
+
+L2 penuh tidak bisa diverifikasi sebagai satu batch utuh di lingkungan ini (16.18). Yang tersedia
+adalah bukti per-suite. Dicatat apa adanya, termasuk bagian yang belum terverifikasi.
+
+| Suite | Bukti | Terakhir | Status |
+|-------|-------|----------|--------|
+| `r2_feature_smoke` | 37P/0F, 457026 ms | batch l2_v6 | PASS |
+| `r2_hp_cetak_fit` | 64P/0F, 234514 ms | batch l2_v6 | PASS |
+| `r2_ux_states` | 19P/0F, 12 suite | run sendiri | PASS |
+| `r2_ux_measured` | 14 assert | batch l2_v4 | NOT TESTED untuk versi sekarang |
+| `r2_browser_suite` | 0P/0F, boot tidak selesai | run berinstrumen | ENVIRONMENT-DEPENDENT |
+| `r2_label_suite` | hang, Chrome mati | batch l2_v6 | ENVIRONMENT-DEPENDENT |
+| 9 suite L2 lain | tidak dijalankan ulang di batch l2_v6 | batch l2_v4 | NOT TESTED di sesi ini |
+
+Tiga hal yang harus dibaca apa adanya:
+
+1. **Tidak ada klaim "satu batch L2 hijau".** Status L2 penuh: ENVIRONMENT-DEPENDENT.
+2. **Tidak semua suite dijalankan pada kode terkini.** `r2_browser_suite` dan `r2_label_suite`
+   menerima perbaikan `BROWSER_DEAD` **setelah** bukti l2_v6 diambil, jadi perbaikan itu sendiri
+   **belum pernah dibuktikan-working oleh batch**. Belum teruji.
+3. **`r2_ux_measured` dijalankan sebelum upgrade metrik target sentuh** (perubahan ke
+   `offsetWidth` dan target berbasis label). Run lamanya tidak berlaku lagi untuk kode sekarang.
+   Statusnya: NOT TESTED untuk versi sekarang.
+
+Yang sudah terverifikasi tanpa keraguan: **L1 47 suite / 1276 assert / 0 FAIL**, dan **L3 read-only**
+untuk versi backend (16.19).
+
+L4 dan L5 tetap `NOT TESTED`. Perubahan ukuran teks dan target sentuh justru yang paling perlu
+dilihat dengan mata di HP sungguhan (bagian 3.4, D1 sampai D12).

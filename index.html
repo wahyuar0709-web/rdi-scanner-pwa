@@ -768,6 +768,28 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
      (1,2,0), sehingga MENANG dari .btn (0,1,0) berapa pun kita taruh belakangan.
      Terukur: #idd-btn-archive tetap 40px sebelum selector ini ditulis. */
   .item-detail-actions .btn:not(#idd-btn-trx){min-height:44px;}
+  /* ===== UX-01b (2026-10-14) target sentuh di SHEET =====
+     Terukur oleh gate r2_ux_states B2, yang membUKA sheet lewat fungsi
+     aplikasi sendiri. 44 fungsi pembuka UI ada di aplikasi; tidak satu pun
+     pernah dipindai gate sebelumnya, jadi sheet terus menjadi tempat
+     target sentuh terkecil bersembunyi. Ditemukan:
+       .qr-chip               69x32 / 62x32  (min-height auto, padding 6px)
+       #exp-date-from/to      348x40        (min-height 0, padding 10px)
+       .flt-tgl-dari/sampai   169x40        (input type=date, class sel)
+       #flt-show-arsip        16x16         (inline width/height 16px)
+       #rak-label-select-all  13x13         (checkbox default tanpa sizing)
+     CATATAN jujur: 24px untuk checkbox mengikuti WCAG 2.2 Target Size
+     (Minimum); label pembungkusnya juga diberi min-height 44px sehingga
+     area sentuh sebenarnya jauh lebih besar dari kotak checkbox-nya. */
+  .qr-chip{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  input[type=date],select.sel{min-height:44px}
+  /* Terukur 116x31 di openAsetCpModal oleh r2_ux_states B2. Selector
+     PERBAIKAN: class yang benar adalah .dash-subtab-btn (yang punya
+     id=aset-subtab-btn-*), bukan .aset-subtab-btn - versi pertama tidak
+     cocok ke elemen apa pun, jadi tidak memperbaiki apa pun. */
+  .dash-subtab-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  input[type=checkbox]{width:24px;height:24px;flex:none}
+  label[for=flt-show-arsip],label[for=rak-label-select-all]{min-height:44px;display:flex;align-items:center;gap:var(--sp-7)}
 }
 </style>
 
@@ -2711,7 +2733,7 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
           </div>
           <div class="field-group u-mt-16">
             <label class="field-label" style="display:flex;align-items:center;gap:var(--sp-7);cursor:pointer" for="flt-show-arsip">
-              <input type="checkbox" id="flt-show-arsip" onchange="toggleShowArsip()" style="width:16px;height:16px;flex:none">
+              <input type="checkbox" id="flt-show-arsip" onchange="toggleShowArsip()" style="flex:none">
               Tampilkan item yang diarsipkan
             </label>
           </div>
@@ -4800,7 +4822,7 @@ window.removeManualRakLabel=removeManualRakLabel;
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" class="search-input" id="rak-label-search" aria-label="Cari nomor / nama rak" placeholder="Cari nomor / nama rak…" oninput="renderRakLabelList()">
     </div>
-    <label style="display:flex;align-items:center;gap:var(--space-1);font-size:12.5px;color:var(--text2);padding:var(--space-half) var(--sp-2)">
+    <label for="rak-label-select-all" style="display:flex;align-items:center;gap:var(--space-1);font-size:12.5px;color:var(--text2);padding:var(--space-half) var(--sp-2)">
       <input type="checkbox" id="rak-label-select-all" aria-label="Pilih semua label rak" onchange="toggleRakLabelAll(this.checked)"> Pilih semua rak yang tampil
     </label>
     <div style="display:flex;gap:var(--space-1);margin:8px 0 4px">

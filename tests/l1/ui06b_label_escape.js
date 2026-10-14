@@ -3,7 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
-const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const raw = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+/* 2026-10-14: area <style> DIKOSONGKAN sebelum dipindai.
+ * Alasannya nyata: CSS tidak bisa memuat form control, jadi tag <input ...>
+ * yang muncul di dalam blok <style> pasti teks di komentar - bukan elemen.
+ * Tanpa ini, satu kalimat penjelasan di komentar CSS (yang sengaja menuliskan
+ * contoh markup) dilaporkan sebagai input tanpa label, dan gate jadi menyesatkan.
+ * <script> TIDAK dikosongkan: input di dalam string template JS memang nyata
+ * dan wajib tetap diperiksa. */
+const src = raw.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, m => m.replace(/[^\n]/g, ' '));
 let pass = 0, fail = 0;
 function t(name, cond, detail) {
   if (cond) { pass++; console.log('PASS  ' + name); }

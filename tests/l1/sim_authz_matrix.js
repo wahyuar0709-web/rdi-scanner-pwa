@@ -87,7 +87,7 @@ t('Code.gs verifyViewerToken checks expired', /exp|expiry|Date\.now\(\)/.test(gs
 // FIX 2026-09-27 (TEST-AUD-11): assertion ini tadinya "… || true" → SELALU PASS
 // (vakum permanen, tidak bisa gagal). Sekarang benar-benar menguji: setiap call site
 // showStatus() yang memakai pesan server harus ter-escape (dicek di xss_audit juga, ini
-// redundancy低成本 di level matriks authz).
+// redundancy-nya di level matriks authz).
 (function () {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const calls = [];

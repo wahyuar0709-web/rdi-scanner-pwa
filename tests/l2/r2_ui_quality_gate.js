@@ -78,7 +78,13 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
   await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
   await send('Page.navigate', { url: APP }); await sleep(1000);
   await ev("localStorage.setItem('rdi_gas_url','http://127.0.0.1:" + HTTP_PORT + "/gas');localStorage.setItem('rdi_viewer_token','" + TOK + "');1");
-  await send('Page.navigate', { url: APP }); await sleep(3000);
+  await send('Page.navigate', { url: APP });
+  /* 2026-10-14: ganti sleep tetap dengan tunggu kondisi boot nyata. */
+  for (let i = 0; i < 120; i++) {
+    const bt = await ev("(function(){var e=document.getElementById('boot-splash');return e?e.classList.contains('hide'):null;})()");
+    if (bt === true) break;   // ev mengembalikan nilai MENTAH, bukan {value:..}
+    await sleep(250);
+  }
 
   /* ---------- A. ASSERTION: batas keras yang harus tetap terpenuhi ---------- */
 
@@ -195,7 +201,7 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
   if (!tinyT.length) rec('UQ-10: tidak ada teks < 9px', true, '');
   else owed('UQ-DEBT-4', 'Teks sangat kecil (< 9px)',
     tinyT.length + ' elemen: ' + tinyT.slice(0, 6).join(' | '),
-    'naikkan ke token --fs-10 minimal (target发表评论: 11-12px untuk label di HP)');
+    'naikkan ke token --fs-10 minimal (target: 11-12px untuk label di HP)');
 
   // A11: dark mode — topbar harus tetap punya teks yang terbaca
   await ev("toggleTheme();1"); await sleep(800);

@@ -82,12 +82,26 @@ async function connectCDP(port) {
       }
     }
   });
+  /* BROWSER_DEAD (2026-10-14) - lihat 16.18 di PLAN.md.
+   * Chrome bisa mati di tengah suite. Tanpa handler di bawah, WebSocket
+   * ditutup diam-diam dan setiap panggilan CDP yang sedang menggantung
+   * menunggu timeout-nya PENUH. Di luar runner tidak ada batas waktu global,
+   * jadi kegagalan yang harusnya milidetik berjalan puluhan menit. */
+  ws.addEventListener('close', () => {
+    if (!pending.size) return;
+    const dead = { error: { message: 'BROWSER_DEAD' } };
+    for (const [, fn] of pending) { try { fn(dead); } catch (e) {} }
+    pending.clear();
+  });
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
       const i = ++id;
       pending.set(i, msg => msg.error ? reject(new Error(JSON.stringify(msg.error))) : resolve(msg.result));
-      ws.send(JSON.stringify({ id: i, method, params }));
-      setTimeout(() => { if (pending.has(i)) { pending.delete(i); reject(new Error('timeout ' + method)); } }, 45000);
+      try { ws.send(JSON.stringify({ id: i, method, params })); }
+      catch (e) { pending.delete(i); reject(new Error('BROWSER_DEAD send: ' + String(e.message || e))); return; }
+      /* 45 s -> 15 s: panggilan CDP lokal selesai dalam hitungan ms.
+         45 s hanya menutupi kegagalan yang jauh lebih cepat terdeteksi. */
+      setTimeout(() => { if (pending.has(i)) { pending.delete(i); reject(new Error('timeout ' + method)); } }, 15000);
     });
   }
   return { send, events, close: () => ws.close() };
@@ -121,6 +135,22 @@ async function waitReady(c, extraMs) {
     if (st.ok && st.value === 'complete') break;
   }
   await sleep(extraMs || 3500);
+  /* 2026-10-14 (balapan harness, bukan bug produk).
+   * readyState hanya bisa dibaca SEBAGAI dokumen LAMA: setelah Page.reload,
+   * evaluate pertama masih bisa mengenai halaman sebelumnya yang sudah
+   * 'complete', sehingga loop keluar seketika. Setelah sleep tetap, dokumen
+   * BARU bisa masih 'interactive' - DOMContentLoaded belum jalan, jadi
+   * login gate belum disembunyikan dan assertion auth gagal.
+   * Bukti: probe timeline 3 ronde -> Page.reload 13-22 detik, tapi login
+   * gate tersembunyi di 100% sampel. Gate-nya benar, yang salah waktunya.
+   * Sinyal: #boot-splash dapat class 'hide', dipanggil hideBootSplash()
+   * setelah boot selesai - konvensi yang sama dipakai suite L2 lain di repo
+   * ini. Cap 30 detik supaya tidak menggantung selamanya. */
+  for (let i = 0; i < 120; i++) {
+    const boot = await evalIn(c, "(function(){var e=document.getElementById('boot-splash');return e?e.classList.contains('hide'):null;})()");
+    if (boot.ok && boot.value === true) break;
+    await sleep(250);
+  }
 }
 function makeToken(expOffsetMs) {
   const payload = Buffer.from(['h', 'n', String(Date.now() + expOffsetMs), 'sig'].join('|')).toString('base64');
@@ -320,7 +350,8 @@ async function main() {
     await c.send('Network.enable');
     await c.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
     await c.send('Page.navigate', { url: 'http://127.0.0.1:' + PORT + '/index.html' });
-    await sleep(6000);
+    /* 2026-10-14: ganti sleep tetap dengan tunggu kondisi boot nyata. */
+    await waitReady(c, 1500);
     const off = await evalIn(c, "({title:document.title,gate:!!document.getElementById('login-gate'),len:document.body?document.body.innerHTML.length:0,blank:!document.body||document.body.innerHTML.length<500,href:location.href})");
     rec('OFFLINE reload loads app', 'CDP offline + SW', (off.ok && off.value.gate && !off.value.blank && off.value.len > 5000) ? 'PASS' : 'FAIL', JSON.stringify(off.value || off.error));
 
@@ -345,7 +376,8 @@ async function main() {
 
 
     await c.send('Page.navigate', { url: 'http://127.0.0.1:' + PORT + '/index.html' });
-    await sleep(4500);
+    /* 2026-10-14: ganti sleep tetap dengan tunggu kondisi boot nyata. */
+    await waitReady(c, 1500);
     const on = await evalIn(c, "({len:document.body?document.body.innerHTML.length:0,gate:!!document.getElementById('login-gate')})");
     rec('ONLINE reload after reconnect', 'Page.navigate', (on.ok && on.value.len > 5000) ? 'PASS' : 'FAIL', JSON.stringify(on.value || on.error));
   } catch (e) {

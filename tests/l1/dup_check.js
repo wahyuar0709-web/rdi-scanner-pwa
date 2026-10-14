@@ -59,7 +59,7 @@ BE_ONLY.forEach(fn => {
   t('boundary FE/BE: ' + fn + '() tidak ada di front-end', n === 0, 'def=' + n);
 });
 
-// 4. Server tetap punya implementasi (kalau area ini dihapus, GE쪽 rusak tanpa suite ini)
+// 4. Server tetap punya implementasi (kalau area ini dihapus, GE-nya rusak tanpa suite ini)
 const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 ['function postTransaksi', 'function checkEditorSession_', 'function verifyViewerToken',
  'function safeCell_', 'function recalculateAllSaldoLocked_', 'function acquirePerItemLock_',
