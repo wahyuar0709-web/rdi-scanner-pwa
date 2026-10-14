@@ -24,9 +24,9 @@ npm run test:l2
 node tests/run-l2.js
 ```
 
-- Suites live in `tests/l2/*.js` (`r2_browser_suite`, `r2_label_suite`, `r2_feature_smoke`, `r2_hp_cetak_fit`, `r2_login_unified`, `r2_menu_visual_suite`, `r2_outbox_app`, `r2_session_idle`, `r2_ui_quality_gate`, `r2_viewport_mode_suite`)
+- Suites live in `tests/l2/*.js` (`r2_browser_suite`, `r2_label_suite`, `r2_feature_smoke`, `r2_hp_cetak_fit`, `r2_login_unified`, `r2_menu_visual_suite`, `r2_outbox_app`, `r2_session_idle`, `r2_ui_quality_gate`, `r2_viewport_mode_suite`, `r2_ux_measured`)
 - Sequential only — one Chrome/CDP at a time
-- Ports cleaned between suites (8781, 8782, 9338)
+- Ports cleaned between suites (`TEST_CDP_PORTS` di `tests/run-l2.js`). **Tambah port di sini setiap menambah suite baru** — port yang tidak terdaftar membuat Chrome yatim tidak pernah dibersihkan, lalu suite berikutnya gagal bind dan timeout.
 - JSON summary: `tests/results/l2_latest.json`
 - Timeout per suite: **900 s** (`SUITE_TIMEOUT_MS` di `tests/run-l2.js`) — 2026-10-13 dinaikkan dari 300 s. Cap lama membunuh `r2_browser_suite` di tengah jalan dan melaporkannya `FAIL (TIMEOUT)`, walau suite itu dijalankan tanpa cap selesai **30 PASS / 0 FAIL**. `TIMEOUT` = kegagalan harness, BUKAN cacat produk.
 
@@ -52,7 +52,7 @@ node tests/run-l2.js
 1. Drop a Node script in `tests/l2/`
 2. Use unique Chrome profile dirs; sequential only
 3. Print `PASS |` / `FAIL |` lines (or `=== NAME: N PASS / M FAIL ===`)
-4. Runner kills ports 8781/8782/9338 between suites
+4. Daftarkan port CDP + port HTTP mock-mu di `TEST_CDP_PORTS` dan `killL2Ports()` di `tests/run-l2.js`; kalau tidak, suite-mu meninggalkan Chrome yatim yang menahan port
 
 ## Prohibited
 

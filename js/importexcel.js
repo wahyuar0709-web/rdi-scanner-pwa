@@ -212,7 +212,7 @@
     rep.warnings.slice(0, 30).forEach(function (w) { warn.push(w); });
     if (d.dupNameSpec && d.dupNameSpec.length) warn.push(d.dupNameSpec.length + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
     if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + d.unknownIds.slice(0, 5).join(', '));
-    if (warn.length) h += '<div style="font-size:11px;color:var(--text3);margin:8px 0;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' + warn.map(function (w) { return '<div style="margin-bottom:4px">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
+    if (warn.length) h += '<div style="font-size:12px;color:var(--text3);margin:8px 0;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' + warn.map(function (w) { return '<div style="margin-bottom:4px">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
     var nothing = !d.itemsNew && !d.masukAdd && !d.keluarAdd;
     if (nothing) h += msg('ok', 'Tidak ada yang perlu ditambah — data aplikasi sudah sesuai Excel.');
     else h += '<button class="btn btn-sm" id="import-xl-apply" onclick="importXlApply(this)">Terapkan Import</button>';

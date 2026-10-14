@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v40'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v41'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',

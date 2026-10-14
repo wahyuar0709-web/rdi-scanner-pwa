@@ -130,9 +130,35 @@ async function main() {
 
     // ---- 1. Offline submit via UI → antrean dibuat oleh APLIKASI ----
     MODE = 'neterr';
-    await ev("switchTab('scanner');'ok'"); await sleep(400);
+    /* 2026-10-14 (anti-flake): dua asumsi timing yang rapuh dihapus.
+     * (1) sleep(400) setelah switchTab tidak menjamin form scanner sudah ada.
+     * (2) lookupItem() ASYNC; sleep(1000) setelahnya tidak menjamin item selesai
+     *     di-resolve. Kalau belum, submitTransaksi() keluar lewat guard
+     *     `if(!currentItem)` (index.html:3499) dan TIDAK ADA yang masuk antrean —
+     *     assert OFFLINE gagal, lalu assert RETRY ikut gagal karena antrean memang
+     *     kosong sejak awal. Bukti: suite ini 10P/2F di dalam batch runner,
+     *     tapi 12P/0F dijalankan sendiri. Batch runner menghapus ~100 MB profil
+     *     Chrome di antara suite, jadi 1000 ms tidak cukup di sana.
+     * Sekarang: tunggu elemen dan await/loop sinyal nyata, bukan menebak durasi. */
+    await ev("switchTab('scanner');'ok'");
+    let formReady = false;
+    for (let i = 0; i < 60; i++) {
+      formReady = await ev("!!document.getElementById('scan-id-input') && !!document.getElementById('qty-input')");
+      if (formReady === true) break;
+      await sleep(200);
+    }
+    rec('PRECONDISI: form scanner ter-mount sebelum diisi', formReady === true, 'scan-id-input+qty-input tersedia=' + formReady);
     await ev("(function(){localStorage.removeItem('rdi_trx_outbox');document.getElementById('scan-id-input').value='MRO-02-002';lookupItem();return 'ok';})()");
-    await sleep(1000);
+    let resolved = null;
+    for (let i = 0; i < 150; i++) {
+      /* Cukup currentItem terisi - JANGAN mensyaratkan bentuk properti tertentu.
+       * Versi ini mensyaratkan c.id dan selalu balik null, padahal OFFLINE di
+       * baris berikutnya lulus: yang salah assertion-nya, bukan aplikasinya. */
+      resolved = await ev("(function(){var c=window.currentItem;return c?{keys:Object.keys(c).slice(0,6)}:null;})()");
+      if (resolved && !resolved.error && resolved.keys) break;
+      await sleep(200);
+    }
+    rec('PRECONDISI: currentItem ter-resolve sebelum submit (anti-flake)', !!(resolved && resolved.keys), JSON.stringify(resolved));
     await ev("(function(){setJenis('KELUAR');document.getElementById('qty-input').value='3';document.getElementById('rak-input').value='B-01';return 'ok';})()");
     const offQ = await ev("(function(){submitTransaksi();return new Promise(function(res){setTimeout(function(){var l=readOutbox();res({len:l.length,qty:l[0]&&l[0].payload?l[0].payload.qty:null,jenis:l[0]&&l[0].payload?l[0].payload.jenis:null,rid:!!(l[0]&&l[0].payload&&l[0].payload.requestId)});},2200);});})()", true);
     rec('OFFLINE: submitTransaksi() → pushOutbox() oleh app (qty/jenis/requestId utuh)', offQ && !offQ.error && offQ.len === 1 && offQ.qty === 3 && offQ.jenis === 'KELUAR' && offQ.rid === true, JSON.stringify(offQ));

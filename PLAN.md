@@ -47,12 +47,12 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 |------|-------|--------------|
 | Git HEAD | (lihat §13 — repo selalu 1 commit di depan PLAN) | — |
 | Working tree | **MODIFIED** — hasil audit 2026-10-13, belum di-commit (lihat §14) | — |
-| `APP_VERSION` | `v15.31` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
-| `APP_BUILD_DATE` | `2026-10-13` | L1 |
-| SW `CACHE` | `rdi-stok-v40` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` + `./js/importexcel.js` + `./js/xlsx.full.min.js` + `./js/html2pdf.bundle.min.js` | L1+L2 |
-| `index.html` lines | ~4965 (lihat §14 untuk perubahan v15.31) | L1 |
+| `APP_VERSION` | `v15.32` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_BUILD_DATE` | `2026-10-14` | L1 |
+| SW `CACHE` | `rdi-stok-v41` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` + `./js/importexcel.js` + `./js/xlsx.full.min.js` + `./js/html2pdf.bundle.min.js` | L1+L2 |
+| `index.html` lines | ~5000 (lihat §16 untuk perubahan v15.32) | L1 |
 | Suite L1 in-repo | `tests/l1/` **46** suite · `npm run test:l1` · assertion floor aktif | **L1 PASS 1271/0** (2026-10-13) |
-| Suite L2 in-repo | `tests/l2/` **10** suite · `npm run test:l2` · cap 900 s | **L2 PASS 351/0** (2026-10-13) |
+| Suite L2 in-repo | `tests/l2/` **11** suite · `npm run test:l2` · cap 900 s | **L2 PASS 351/0** (2026-10-13) |
 | GAS deployment | **`@44`** — tidak disentuh pada 2026-10-13 | L3 read-only PASS (healthCheck) |
 | Versi API backend | `Code.gs` `API_VERSION` = **v5.28** (`API_BUILD` 2026-10-13.1) — **BELUM DI-DEPLOY** | repo saja; `/exec` masih `v5.27` → paritas **UNVERIFIED** |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
@@ -944,3 +944,115 @@ Pelajaran: jangan pernah `Set-Content` untuk berkas repo non-ASCII; operasi byte
 - **SEC-06** (token ikut singgah di `localStorage` ≤2 jam) tetap `ACCEPTED LIMITATION`.
 - `html2pdf.js 0.10.1` sudah deprecated upstream; kalau ingin shedding, ganti kartu stok
   ke jsPDF lokal seperti yang sudah dilakukan label.
+
+## 16. Sesi UI/UX - implementasi temuan audit (2026-10-14)
+
+Level tertinggi yang dieksekusi: **L2 (Chrome/CDP)**. `L3 = NOT TESTED` · `L4 = NOT TESTED` · `L5 = NOT TESTED`.
+Tidak ada deploy, tidak ada mutasi GAS produksi. App naik **v15.31 → v15.32**, SW cache `rdi-stok-v40 → v41`.
+
+### 16.1 Titik awal, dan batasan alat yang harus jujur disebut
+
+Audit memakai skill `ui-ux-pro-max`. **Hanya tabel prioritas 1-10 di `SKILL.md` yang bisa dipakai**:
+`scripts/search.py` dan `references/` tidak ada di mesin ini, jadi **tidak ada query database skill
+yang diklaim** di dokumen ini. Stack aplikasi vanilla HTML/CSS/JS tanpa build step, jadi panduan
+`--stack html-tailwind` juga tidak dipakai.
+
+Audit awal (read-only): 16 item PASS terverifikasi, **5 temuan**, dan **5 false positive yang dicabut**.
+
+### 16.2 Temuan + status
+
+| ID | Sev | Temuan terukur | Status |
+|----|-----|----------------|--------|
+| UX-01 | MED-HIGH | Target sentuh 34-40 px di layar sentuh (panduan 44 px) | **FIXED** v15.32 |
+| UX-02 | MEDIUM | 52 node teks 11 px di shell app - termasuk 5 label bottom-nav | **FIXED** v15.32 |
+| UX-03 | MEDIUM | 2 `<select>` tanpa nama aksesibel | **FIXED** v15.32 |
+| UX-04 | LOW | `tab-scanner` tidak pernah menerima `aria-selected` | **FIXED** v15.32 |
+| UX-05 | MEDIUM | Teks kecil di atas latar amber/gelap di bawah ambang AA | **FIXED** v15.32 (5 elemen) |
+
+### 16.3 Yang dicabut (temuan yang ternyata salah)
+
+- **"`#edit-item-id` tanpa nama aksesibel"** - itu `<input type="hidden">`, yang **tidak masuk
+  accessibility tree**. Tidak butuh nama. False positive probe.
+- **"Navigasi bottom tidak bisa diakses keyboard" (dibilang CRITICAL)** - kelima tab punya
+  `role="tab"`, `tabindex="0"`, dan `aria-selected`, dan memang terjangkau Tab. Klaim ini
+  **sepenuhnya salah**.
+- **Kontras di atas gradien** - `background-image` tidak di-resolve; tiga pengukuran saling
+  bertentakan jauh (4.26 / 3.97 / 1.07). Semuanya salah.
+- **Sampling piksel kontras** - gagal 3x; kotak yang di-sampel berisi krem datar tanpa piksel teks
+  (1.07:1). Diganti komposit alpha berlapis.
+
+### 16.4 UX-02 - grep buta adalah bahaya, bukan bukti
+
+Gate L1 `ui06d_font_contrast` hanya menguji 12 selector dan **hanya membaca blok `<style>`**.
+Padahal `font-size:11px` yang sesungguhnya ada di **50 tempat inline** (`style="..."`) dan di dalam
+string HTML milik JS - bukan CSS sama sekali (contoh `.viewer-badge`, `.id-chip` di tab Alert).
+Menyelesaikan grep `<style>`/report hijau padahal UI masih 11 px.
+
+Harus dua tahap: 29 literal di dalam `<style>`, lalu 52 inline di `index.html`/`scanner.html`/
+`js/importexcel.js`. Gate barunya mengukur **computed style** di Chrome, bukan membaca teks.
+
+### 16.5 UX-05 - kontras: dari 3 elemen jadi 5, dan/theme jadi dua
+
+- **3 elemen amber-di-atas-`amber-dim`** (`.inv-count` 3.82:1, `.chip-filter.active` 4.17:1).
+  Diperbaiki ke `--badge-amber-text` `#78350f` = 6.9:1. Latar tidak diubah.
+  **51 rule lain** memakai `var(--amber)` - itu seluruh bahasa visual; mengganti semuanya
+  berarti redesign, bukan patch aksesibilitas.
+- **2 elemen di tab `scanner`** ditemukan setelah gate diperlebar (lihat 16.6):
+  `.trx-progress-lbl` (amber di atas krem 4.38:1) dan `.trx-progress-dot` (teks di atas amber pekat).
+- **Pelajaran tema**: `--amber` berbalik (`#b45309` terang / `#f0b45a` gelap), jadi **tidak ada satu
+  warna teks yang cukup untuk kedua tema**. `#fff` OK di terang (5.02:1) tapi gagal di gelap (1.85:1);
+  `#1a1200` sebaliknya. Yang benar `var(--surface)`: terang 4.90:1, gelap 9.00:1.
+
+### 16.6 Gate yang diperlebar langsung menemukan kegagalan nyata
+
+Gate kontras semula hanya **4 tab / 1 viewport / 1 tema**. Diperluas ke **8 tab x 2 viewport x
+2 tema = 32 scan**. Tab `scanner` dan `aset` **tidak pernah diukur** - dan di sanalah dua
+kegagalan nyata ada. Ini contoh langsung bahwa "hijau" pada cakupan sempit bukan "hijau".
+
+### 16.7 Dua cacat gate yang saya sebabkan sendiri (dicatat, bukan disembunyikan)
+
+1. **`effBg` salah baca gradien shorthand.** `background: linear-gradient(...)+warna` membuat Chrome
+   menyertakan warnanya sebagai stop terakhir; kode lama memperlakukan semua stop sebagai lapisan
+   yang dikomposit -> rasio mustahil (1.09:1 untuk teks gelap di atas latar terang).
+2. **Dua regresi beruntun setelah "perbaikan":** (a) gradien pekat (topbar navy) itu menutupi
+   seluruh leluhurnya, tapi kode tetap naik ke `body` dan menghitung teks putih di atas krem -> 1.15:1;
+   (b) teks yang benar-benar disembunyikan (`.sr-only`, `clip: rect(0,0,0,0)`) dilaporkan gagal
+   1.5:1 padahal WCAG 1.4.3 mengecualikannya. Keduanya diperbaiki dan diverifikasi ulang.
+
+Pelajaran sama seperti 15.6: **verifikasi yang hanya membaca string di memori tidak membuktikan
+apa pun - harus baca ulang dari disk.** Satu skrip bahkan mencetak "OK" padahal `writeFileSync`-nya
+tidak pernah dipanggil; angka gate tetap lama karena file tidak pernah berubah sama sekali.
+
+### 16.8 Gate baru: `tests/l2/r2_ux_measured.js`
+
+Menutup UX-01..UX-05, 14 assert, semuanya diukur dari DOM + computed style sungguhan di Chrome.
+Empat guard agar gate tidak berbohong:
+
+- **BOOT + ANTI-VACUUM** - versi pertama hijau dengan **10 elemen hampa** karena lupa men-seed sesi
+  login. Sekarang `FAIL` kalau app tidak benar-benar DI DALAM.
+- **CAKUPAN** - minimal 60 elemen interaktif + 10 baris tabel harus terlihat; kalau tidak, gate hampa.
+- **TANPA SCROLL HORIZONTAL** - menaikkan 52 node teks 11→12 px bisa membuat tabel melebar;
+  gate harus membuktikan "semua teks >=12px" **tidak dibeli dengan merusak layout**.
+- **KONTROL** - menyuntikkan teks amber 12 px di atas amber-dim; gate **harus** menangkapnya.
+  Kalau tidak Tertangkap, gate dicatat **vacuous**, bukan hijau.
+
+### 16.9 Angka
+
+| Metrik | Sebelum | Sesudah |
+|--------|---------|---------|
+| L1 | 46 suite / 1271 assert / 0 FAIL | 46 suite / **1271** / 0 FAIL |
+| Teks < 12 px di shell app | 52 | **0** |
+| Target sentuh < 44 px (audit awal, probe longgar) | 9 dari 39 | **0 dari 104** (gate final, 6 tab) |
+| Teks kecil gagal kontras AA | 3 terukur + 2 tak terukur | **0 dari 32 scan** |
+| L2 | <<L2_FINAL>> |
+
+### 16.10 Yang TIDAK terukur (tidak boleh diklaim)
+
+- **State hover/active** dan sheet/modal yang belum dibuka **tidak** diukur gate. Banyak selector
+  amber berukuran 0x0 di semua state yang dipindai.
+- `.trx-progress-step.done` diperbaiki ke `var(--surface)` berdasarkan **perhitungan token**
+  (terang 4.90:1 / gelap 9.53:1), **bukan** pengukuran terukur - state `done` tidak pernah
+  ter-render saat gate. Bug laten yang sama (1.74:1 di gelap) tidak akan ditangkap gate.
+- **L3/L4/L5 = NOT TESTED.** Perubahan UI ini belum pernah dilihat di HP sungguhan; perubahan
+  ukuran teks adalah yang paling perlu diperiksa mata di device (§3.4, D1-D12).
+- **Deploy `Code.gs`** masih tertunda (lihat 15.7) - repo `v5.28`, produksi `v5.27`.
