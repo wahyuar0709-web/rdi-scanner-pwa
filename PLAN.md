@@ -1316,3 +1316,158 @@ untuk versi backend (16.19).
 
 L4 dan L5 tetap `NOT TESTED`. Perubahan ukuran teks dan target sentuh justru yang paling perlu
 dilihat dengan mata di HP sungguhan (bagian 3.4, D1 sampai D12).
+
+## 17. BACKLOG - pekerjaan yang ditunda, bukan yang dibuang
+
+Dicatat saat sesi redesign dimulai, 2026-10-14. Semua ini **sadar** ditunda, bukan terlupa.
+Status L2 penuh tetap ENVIRONMENT-DEPENDENT sampai nomor 1 selesai.
+
+### 17.1 Gate dan harness
+
+| # | Item | Status | Catatan |
+|---|------|--------|---------|
+| 1 | L2 satu batch utuh | ENVIRONMENT-DEPENDENT | Boot tidak pernah selesai saat RAM 6,9 GB dengan 2,0 GB bebas. |
+|   |   |   | Tutup Edge lalu jalankan ulang `node tests/run-l2.js`. |
+| 2 | Perbaikan BROWSER_DEAD belum dibuktikan | NOT TESTED | Diperbaiki pada `r2_browser_suite.js` dan `r2_label_suite.js` |
+|   |   |   | **setelah** bukti l2_v6 diambil. Suite itu belum dijalankan lagi sejak itu. |
+| 3 | 4 sheet ENVIRONMENT-DEPENDENT | belum dikerjakan | `openAddSheet`, `showRakList`, `toggleBatchCartPanel`, |
+|   |   |   | `openAsetAksiModal`. Akar masalah tiap opener sudah diketahui dan skrip upgradenya |
+|   |   |   | sudah ada di `Temp/opencode/upgrade_sheet_coverage.js`, **belum diterapkan**. |
+| 4 | Validasi piksel untuk matematika kontras | belum dikerjakan | `effBg` sudah salah dua kali. Skripnya sudah ada di |
+|   |   |   | `Temp/opencode/pixel_validate.js`, **belum dijalankan**. |
+| 5 | `r2_ux_measured` untuk versi sekarang | NOT TESTED | Run lamanya tidak berlaku lagi karena metrik target sentuh |
+|   |   |   | berubah ke ukuran layout dan target berbasis label. |
+
+### 17.2 Produk dan backend
+
+| # | Item | Status | Catatan |
+|---|------|--------|---------|
+| 6 | Deploy `Code.gs` | terhalang | Repo v5.28, produksi v5.27. Butuh `clasp login` interaktif dengan akun |
+|   |   |   | pemilik RDI. Kontrak `uncertain` masih belum terkirim backend (16.19). |
+| 7 | SEC-06 token di localStorage, TTL 2 jam | ACCEPTED LIMITATION | Disepakati, tidak diubah. |
+| 8 | `html2pdf` 0.10.1 deprecated | belum dikerjakan | Migrasi ke jsPDF lokal. Tidak mendesak. |
+| 9 | Target sentuh desktop 34-40px | dibiarkan sadar | 44px adalah pedoman sentuh, bukan klaim WCAG. |
+|   |   |   | Proyek-targeted 24px, WCAG 2.2 AA, sudah diverifikasi `r2_ui_quality_gate` UQ-9. |
+
+### 17.3 Yang hanya bisa dilakukan manusia
+
+- **L4 checklist perangkat** (bagian 3.4, D1 sampai D12). Perubahan ukuran teks dan target sentuh
+  justru yang paling perlu dilihat dengan mata di HP sungguhan. Tidak bisa disimulasikan.
+- **L5** verifikasi operasional produksi setelah L1 sampai L4.
+
+---
+
+Status per 2026-10-14: L1 47 suite / 1276 assert / 0 FAIL. L3 read-only PASS untuk versi backend.
+L2 penuh ENVIRONMENT-DEPENDENT. L4 dan L5 NOT TESTED.
+
+## 18. REDESIGN (2026-10-14)
+
+Acuan visual: gambar referensi yang dilampirkan pengguna - kartu putih di atas abu-abu dingin,
+biru vif, radius besar, bayangan lembut, tab bar dengan tombol tengah. Skill `ui-ux-pro-max`
+sudah dipakai untuk pagarnya (kontras, target sentuh, dark mode), tetapi **hasil design-system
+dari skill tidak dipakai sebagai palet**: dia menyarankan slate + hijau dan "flat design tanpa
+shadow", yang justru bertentangan dengan gambar referensi. Sesuai aturan skill, hasil yang tidak
+cocok tidak dipaksakan. Gambar jadi acuan visual; skill jadi pagar aksesibilitas.
+
+### 18.1 Strategi: retheme lewat token, bukan tulis ulang
+
+`index.html` punya **1119 aturan CSS**. Menulis ulang semuanya berisiko tinggi dan sulit
+diverifikasi. Tapi ia juga punya **141 token warna** di tiga blok (`:root`, `body.light`,
+`body:not(.light)`). Jadi pendekatan yang dipakai: **hanya nilai token yang diganti**, tidak satu
+pun aturan komponen. Seluruh aplikasi berganti tampilan tanpa risiko struktural.
+
+| Pass | Isi | Jumlah |
+|------|-----|--------|
+| 1 | Warna: 96 token + 4 brand + 3 hex keras | 100 |
+| 2 | Geometri: radius 8/12/16 -> 12/16/24, bayangan dingin, 3 token elevasi | 14 |
+| 3 | Warna keras liar -> palet baru | 27 |
+| 4 | Koreksi: bayangan tombol login kembali amber | 1 |
+
+### 18.2 Palet: dipilih oleh perhitungan, bukan oleh liking
+
+Sebelum menulis warna apa pun, semua pasangan kontras dihitung lebih dulu. Hasilnya penting:
+
+- **Biru `#0A84FF` dari gambar referensi hanya memberi 3,65:1 untuk teks putih.** Menempelkan
+  warna itu apa adanya akan memasukkan cacat aksesibilitas di topbar dan setiap tombol utama.
+- `--text3` proposals `#64748B` jatuh ke 4,32 / 4,47 / 4,08 di tiga permukaan - gagal 4,5.
+- `--neutral-400` 2,56 - gagal ambang non-teks 3,0.
+- Ujung terang gradien tombol memberi teks putih 2,86:1.
+
+Jadi solver mencari kandidat yang **paling dekat dengan usulan gambar referensi** sekaligus
+lolos semua ambang. Hasil akhir:
+
+| Token | Usulan referensinya | Dipakai | Alasan |
+|-------|--------------------|---------|--------|
+| `--action` / `--brand-1` | #0A84FF | **#0067E2** / #0057C2 | teks putih 6,68:1 |
+| `--blue` (ikon, indikator) | #0A84FF | **#0A84FF** | non-teks, cukup 3:1 |
+| `--action-light` | #3D9BFF | **#0A6FD6** | hover jadi lebih gelap, bukan lebih terang |
+| `--text3` | #64748B | **#5A6A81** | 4,72:1 di permukaan paling gelap |
+| `--surface` | #FFFFFF | **#FFFFFF** | kartu putih di atas abu-abu dingin |
+| `--bg` | #F1F4F9 | **#F1F4F9** | abu-abu dingin, kartu putih jadi standout |
+
+Verifikasi akhir: **50 pasangan lolos, 0 gagal, 0 tidak terhitung**. Ada guard anti-hampa karena
+versi pertama pre-flight melaporkan "0 gagal" padahal **tidak menghitung apa pun** - parser warnanya
+hanya menerima `rgb()` sementara nilai sumbernya hex.
+
+### 18.3 Yang ditangkap gate, bukan perkiraan saya
+
+Setelah pass 1, `r2_ux_measured` menangkap **satu regresi nyata**:
+
+```
+FAIL | UX-05b: 4,02:1  12px  .topbar-sub  "Spare Part · Too"  (desktop terang)
+```
+
+Penyebabnya `body.light .topbar-sub{color:rgba(255,255,255,.78)}` - putih transparan di atas
+gradien brand. **Pre-flight palet tidak menangkap ini**, karena pre-flight hanya menguji pasangan
+token, sedangkan nilai ini ditulis keras di luar token. Gate browser yang menangkap. Dua alat itu
+saling melengkapi, tidak saling menggantikan.
+
+Perbaikannya dua sisi: `--brand-1` digelapkan ke #0057C2 (teks putih penuh jadi 6,68:1) dan
+opasitas `.topbar-sub` dinaikkan ke .90 (3,76 -> 5,72:1).
+
+### 18.4 Kesalahan saya sendiri di sesi ini
+
+| # | Kesalahan | Akibat |
+|---|-----------|--------|
+| 1 | Pengecualian token pakai awalan `br` | `--brand-1` dan `--brand-2` ikut dikecualikan karena diawali `--br`, seperti `--br-16`. Keduanya **tidak berganti** tanpa saya sadari. |
+| 2 | Regex menuntut titik koma | Deklarasi terakhir dalam blok sering tanpa titik koma, jadi `--shadow-lg` di `body.light` **dilewati**. |
+| 3 | Jangkar `/:\{/` | Karakter di `body:not(.light){` adalah `){`, bukan `:{`. `replace()` tidak mengubah apa pun - tapi log tetap mencetak "ditambahkan". |
+| 4 | Pre-flight hampa | Parser warna hanya menerima `rgb()`, sementara sumbernya hex. Semua baris `n/a`, "0 gagal" berarti **0 dihitung**. |
+| 5 | Mode gelap mewarisi bayangan terang | Setelah `:root` diganti ke bayangan dingin, kartu gelap kehilangan pemisahannya. |
+| 6 | Bayangan tombol login jadi biru | Tombolnya tetap amber, jadi justru tidak konsisten. Dikembalikan. |
+| 7 | Jangkar `/{/ `salah | Karakter di `body:not(.light){` adalah `){`. `replace()` tidak mengubah apa pun, tapi log tetap mencetak "ditambahkan". |
+| 8 | Rentang tergeser saat mengganti | Semua rentang dikumpulkan dulu lalu diganti berurutan; setiap penggantian menggeser string sehingga rentang berikutnya basi. Dipakai urutan terbalik. |
+| 9 | Pencarian selector terlalu sempit | Hanya menerima selector yang **diawali** kelas target, jadi `body.light .id-chip` selalu terlewat. |
+| 10 | Gaya di atribut inline | `.viewer-badge` berlatar kuning `#F59E0B` ada di atribut `style` pada markup, jadi tidak pernah terlihat oleh pencarian CSS mana pun. Baru terbuka oleh probe DOM. |
+
+Pola yang berulang: **penggantian yang gagal diam-diam terlihat berhasil**. Tiga dari enam error
+itu adalah `replace()` atau cek yang tidak mengubah apa pun tanpa memberi tanda. Perbaikan yang dipakai
+mulai sekarang: setelah setiap penggantian, **dicek ulang dari disk** dan jumlah byte/garis
+dihitung, bukan diasumsikan.
+
+### 18.5 Yang decided secara sadar
+
+- **Layar login tetap amber.** 22 aturan `rgba(245,166,35)` adalah tanda tangan visual aplikasi
+  dengan sistem animasinya sendiri, dan layar itu terisolasi dari aplikasi utama. Mengganti hanya
+  tombolnya memecah sistem; mengganti seluruhnya membuang identitas. Dicatat sebagai
+  pengecualian sadar, bukan kelalaian.
+- **Teks < 12px tetap 12px.** Tidak dikembalikan. Menurunkan ke bawah akan melanggar temuan UX-02
+  yang sudah diperbaiki dan diverifikasi.
+- **Radius dinaikkan tanpa mengubah padanan token**. `--br-*` dan `--sp-*` tetap utuh karena ada
+  gate yang mengunci nilainya (`cetak_bar_layout`, `r2_ui_quality_gate`).
+
+### 18.6 Status verifikasi
+
+| Level | Status |
+|-------|--------|
+| L1 | **PASS** - 47 suite / 1276 assert / 0 FAIL, dijalankan ulang setelah tiap pass |
+| L2 `r2_ux_measured` | **14P/0F** - 32 scan kontras bersih, 0 gagal |
+| L2 `r2_ux_states` | **19P/0F** - state interaktif, state berbasis class, dan 16 sheet |
+| L2 batch utuh | **ENVIRONMENT-DEPENDENT** (lihat 17.1) |
+| L3 / L4 / L5 | lihat 16.19 dan 17.3 |
+
+Gerbang `r2_ux_states` tetap melaporkan 4 sheet sebagai `ENVIRONMENT-DEPENDENT` seperti pada 16.13.
+Itu jujur: isi keempat sheet itu **belum** diukur dan tetap belum, bukan disembunyikan.
+
+Tangkapan layar untuk penilaian visual: **6** berkas
+(HP dan desktop, terang dan gelap) di `Temp/opencode/shots/`.
