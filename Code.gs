@@ -303,7 +303,7 @@
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
 var API_VERSION = 'v5.28';   // + kontrak `uncertain` (DBG-02), safeCell_ per kolom (SEC-03/04), backup import unik (DBG-04), rate limit token (SEC-02)
-var API_BUILD   = '2026-10-15.1';   // BUG-1/BUG-2 (§19.9) + BUG-2c. Kontrak API TIDAK berubah -> API_VERSION sengaja tidak dinaikkan. Build naik supaya healthCheck bisa membuktikan kode mana yang live.
+var API_BUILD   = '2026-10-15.2';   // BUG-1b: normalisasi RAK di recalculateAllSaldoLocked_ (lupa di §19.9)   // BUG-1/BUG-2 (§19.9) + BUG-2c. Kontrak API TIDAK berubah -> API_VERSION sengaja tidak dinaikkan. Build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -1632,7 +1632,7 @@ function getCachedTrxLogRawRows_() {
       return [
         r[COL_TRX.TIMESTAMP] instanceof Date ? r[COL_TRX.TIMESTAMP].getTime() : 0,
         String(r[COL_TRX.ID]||''), String(r[COL_TRX.NAMA]||''), String(r[COL_TRX.SPEC]||''),
-        String(r[COL_TRX.JENIS]||''), String(r[COL_TRX.QTY]||''), String(r[COL_TRX.RAK]||''),
+        String(r[COL_TRX.JENIS]||''), String(r[COL_TRX.QTY]||''), textMarkerStrip_(r[COL_TRX.RAK]),
         String(r[COL_TRX.VENDOR]||''), String(r[COL_TRX.NO_REF]||''),
         String(r[COL_TRX.SALDO_SEBELUM]||''), String(r[COL_TRX.SALDO_SESUDAH]||''),
         String(r[COL_TRX.KETERANGAN]||''), String(r[COL_TRX.ADMIN]||'')
@@ -3808,7 +3808,11 @@ function recalculateAllSaldoLocked_() {
       var id    = String(row[COL_TRX.ID]||'').trim().toUpperCase();
       var jenis = String(row[COL_TRX.JENIS]||'').toUpperCase();
       var qty   = parseFloat(row[COL_TRX.QTY])||0;
-      var rak   = String(row[COL_TRX.RAK]||'').trim().toUpperCase();
+      // BUG-1b (2026-10-15): WAJIB textMarkerStrip_. Tanpa ini, RAK "-" dan "'-"
+      // jadi dua kunci id|rak BERBEDA -> Stok_Per_Rak rebuilt menjadi dua baris
+      // untuk satu item+rak yang sama. §19.9 menormalkan postTransaksi,
+      // updateRakSaldo, dan situs tampilan, tapi TIDAK fungsi rebuild ini.
+      var rak   = textMarkerStrip_(row[COL_TRX.RAK]).trim().toUpperCase();
       if (!id) return;
       if (!totals[id]) totals[id] = { masuk:0, keluar:0 };
       if (jenis==='MASUK') totals[id].masuk += qty; else if (jenis==='KELUAR') totals[id].keluar += qty;

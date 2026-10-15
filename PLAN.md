@@ -1843,3 +1843,88 @@ live. `2026-10-13.1` = paste terakhir belum masuk (kemungkinan lupa
 - Apakah `recalculateAllSaldo()` benar sudah dijalankan dan
   `Stok_Per_Rak` sudah kembali satu baris per (item, rak) - hanya bisa
   dilihat dari sheet.
+### 19.11 BUG-1b: perbaikan §19.9 tidak lengkap (`recalculateAllSaldoLocked_`)
+
+#### Gejala yang(Application trigger)
+
+Setelah §19.9 diperbaiki, setelah di-deploy, dan setelah
+`recalculateAllSaldo()` dijalankan, tab `Stok_Per_Rak` untuk
+`MRO-01-09-137` **masih punya 2 baris**.
+
+#### Penyebab: kelalaian saya, bukan masalah data Anda
+
+`recalculateAllSaldoLocked_()` membangun `Stok_Per_Rak` dari
+`Transaksi_Log` dengan kunci `id + "|" + rak`:
+
+```javascript
+var rak = String(row[COL_TRX.RAK]||'').trim().toUpperCase();   // BELUM dinormalkan
+var key = id + '|' + rak;
+if (!rakTotals[key]) rakTotals[key] = { id:id, rak:rak, masuk:0, keluar:0 };
+```
+
+RAK belum melewati `textMarkerStrip_` di sini. Kalau `Transaksi_Log`
+menyimpan `-` pada satu baris dan `'-` pada baris lain - persis yang
+dilakukan `safeCell_` - keduanya jadi **dua ember berbeda**, sehingga
+`Stok_Per_Rak` dibangun ulang menjadi dua baris untuk satu `item+rak`.
+
+§19.9 menormalkan `postTransaksi`, `updateRakSaldo`, dan 7 situs
+tampilan. Yang **terlewat adalah fungsi rebuild itu sendiri** - dan justru
+dialah yang bertanggung jawab menyatukan kembali variant yang sudah
+terpisah.
+
+Pelajaran yang lebih besar: **pemeriksaan titik hanya menguji lokasi yang
+sudah saya ingat.** Saya menulis 21 assertion, semuanya hijau, dan
+tetap melewatkan fungsi yang menentukan. Lokasi yang tidak terpikir tidak
+pernah masuk daftar assertion.
+
+#### Perbaikan
+
+```javascript
+var rak = textMarkerStrip_(row[COL_TRX.RAK]).trim().toUpperCase();
+```
+
+Karena `recalculateAllSaldoLocked_` adalah **rebuild penuh** dari
+`Transaksi_Log` (`setValues` di atas nilai lama + `truncateSheetRows_`),
+menormalkan di sini **sekalian memperbaiki data**: variant `-` dan tanda
+kutipnya menyatu jadi satu kunci. Jadi tidak perlu alat perbaikan
+terpisah - jalankan ulang `recalculateAllSaldo()` setelah deploy.
+
+`getCachedTrxLogRawRows_()` juga membaca RAK mentah. RAK tidak dipakai
+`getLastVendorRefMap`/`getDashboard` jadi tidak merusak apa pun sekarang,
+tapi kolom itu ikut masuk cache bersama pembacaan kunci yang belum
+dinormalkan adalah bom waktu. Dinormalkan juga.
+
+Sekarang **12 dari 12** penyebutan kunci RAK di `Code.gs` ternormalkan,
+ diverifikasi dengan pemindaian seluruh file.
+
+#### Gate: dari pemeriksaan titik menjadi pemindaian
+
+Empat assert baru, `PINDAI-1` s.d. `PINDAI-4`:
+
+- `PINDAI-1` guard anti-vacuity - memastikan pemindaian benar-benar
+  menemukan baris (bukan 0, yang akan selalu hijau).
+- `PINDAI-2` **setiap** baris yang menyebut `COL_TRX.RAK` atau
+  `COL_RAK_SALDO.RAK` harus menormalkan. Lokasi yang tidak terpikir ikut
+  tertangkap, bukan hanya yang ada di assertion.
+- `PINDAI-3` `recalculateAllSaldoLocked_` ikut menormalkan - dialah yang
+  menyatukan kembali variant.
+- `PINDAI-4` `getCachedTrxLogRawRows_` ikut menormalkan.
+
+Kelas kesalahan yang sama juga berlaku untuk `Kode_Alat`. Pemindaian itu
+hanya mencakup RAK saat ini;cakupan `Kode_Alat` masih daftar titik (§19.9)
+dan **masih bisa terlewat** di lokasi yang belum terpikir - lihat §17.
+
+#### Verifikasi
+
+- L1 `bug_key_join_safeCell.js`: **69 PASS / 0 FAIL** (dari 65, +4).
+- L1 penuh: **49 suite / 1372 assert / 0 FAIL** (dari 1368).
+- `API_BUILD` dinaikkan ke `2026-10-15.2`.
+
+#### Yang belum terverifikasi
+
+- Masih **L1 (statis)**. Tidak ada yang dijalankan terhadap Sheets.
+- **Hipotesis** bahwa dua baris itu adalah variant tanda kutip dan tanpa
+  tanda kutip belum dibuktikan. Kemungkinan lain: kedua baris memang RAK
+  berbeda yang sah (mis. `-` dan `A-04`) - dalam kasus itu
+  `recalculateAllSaldo()` benar dan 2 baris memang hasil yang benar.
+  Butuh melihat isi dua baris itu di sheet sebelum disimpulkan.

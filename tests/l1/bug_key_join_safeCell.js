@@ -176,6 +176,41 @@ t('BUG3-6: meta theme-color di index.html = #f1f4f9',
 t('BUG3-7: hanya ada satu meta theme-color', (html.match(/<meta name="theme-color"/g) || []).length === 1);
 t('BUG3-8: manifest.json tetap JSON valid', (() => { try { JSON.parse(manifest); return true; } catch (e) { return false; } })());
 
+console.log('\n=== PINDAI SEMUA pembacaan kunci (bukan pemeriksaan titik) ===');
+/* Kenapa dipindai, bukan dicek satu-satu:
+ *
+ * §19.9 memperbaiki postTransaksi, updateRakSaldo, dan 7 situs tampilan - lalu
+ * TUTUP: recalculateAllSaldoLocked_ masih membaca RAK mentah. Akibatnya
+ * Stok_Per_Rak tetap rebuilt jadi 2 baris untuk MRO-01-09-137 setelah
+ * recalculateAllSaldo() dijalankan, dan perbaikannya terlihat "tidak
+ * berhasil" padahal salah tempat.
+ *
+ * Pemeriksaan titik hanya menguji lokasi yang sudah saya ingat. Pemindaian
+ * menguji seluruh file, termasuk tempat yang belum pernah terpikir - dan itu
+ * satu-satunya yang bisa menangkap kelas kesalahan ini. */
+const KUNCI = ['COL_TRX.RAK', 'COL_RAK_SALDO.RAK'];
+const barisGs = gs.split(/\r?\n/);
+const belum = [];
+let dipindai = 0;
+barisGs.forEach((ln, i) => {
+  if (!KUNCI.some(k => ln.indexOf(k) >= 0)) return;
+  // definisi konstanta & pemotongan kolom (bukan pembacaan nilai) bukan target
+  if (/var COL_(TRX|RAK_SALDO|ASET)/.test(ln)) return;
+  if (/COL_RAK_SALDO\.RAK\+1/.test(ln)) return;   // hanya batas kolom getRange
+  dipindai++;
+  const ok = ln.indexOf('textMarkerStrip_') >= 0
+    || /COL_RAK_SALDO\.RAK,\s*rakKey/.test(ln);
+  if (!ok) belum.push('L' + (i + 1) + ': ' + ln.trim().slice(0, 90));
+});
+t('PINDAI-1: ada baris kunci RAK yang dipindai (bukan 0)', dipindai >= 8, 'dapat ' + dipindai);
+t('PINDAI-2: SEMUA pembacaan kunci RAK ternormalisasi', belum.length === 0,
+  belum.join('\n        '));
+t('PINDAI-3: recalculateAllSaldoLocked_ ikut ternormalisasi',
+  /var rak\s+= textMarkerStrip_\(row\[COL_TRX\.RAK\]\)\.trim\(\)\.toUpperCase\(\);/.test(gs),
+  'fungsi rebuild Stok_Per_Rak WAJIB menormalkan - dialah yang menyatukan kembali variant');
+t('PINDAI-4: getCachedTrxLogRawRows_ ikut ternormalisasi',
+  /textMarkerStrip_\(r\[COL_TRX\.RAK\]\)/.test(gs));
+
 console.log('\n=== BUMP BUILD: verifikasi deploy harus mungkin dilakukan dari luar ===');
 /* Pelajaran dari §19.9: saya memperbaiki backend tapi TIDAK menaikkan
  * API_BUILD, sehingga healthCheck membalas identik untuk kode lama dan baru -
@@ -210,7 +245,7 @@ const LOCK = [
   ['LOCK-6: sw.js CACHE tidak diubah', /CACHE = 'rdi-stok-v41'/.test(sw)],
   ['LOCK-7: sw.js precache tetap 16 aset terakhir', /'\.\/js\/html2pdf\.bundle\.min\.js'/.test(sw)],
   ['LOCK-8: API_VERSION masih v5.28', /API_VERSION = 'v5\.28'/.test(gs)],
-  ['LOCK-9: API_BUILD = 2026-10-15.1 (build perbaikan §19.9)', /API_BUILD\s*=\s*'2026-10-15\.1'/.test(gs)],
+  ['LOCK-9: API_BUILD = 2026-10-15.2 (BUG-1b: normalisasi RAK di fungsi rebuild)', /API_BUILD\s*=\s*'2026-10-15\.2'/.test(gs)],
   ['LOCK-10: kontrak uncertain masih ada di postTransaksi', /genericError_\('postTransaksi', true\)/.test(gs)],
   ['LOCK-11: genericError_ ASLI tidak diubah',
     /function genericError_\(fnName, uncertain\)\s*\{\s*var r = \{ status: 'error', message: 'Terjadi kesalahan pada '/.test(gs)],
