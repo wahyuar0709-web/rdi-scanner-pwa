@@ -176,6 +176,29 @@ t('BUG3-6: meta theme-color di index.html = #f1f4f9',
 t('BUG3-7: hanya ada satu meta theme-color', (html.match(/<meta name="theme-color"/g) || []).length === 1);
 t('BUG3-8: manifest.json tetap JSON valid', (() => { try { JSON.parse(manifest); return true; } catch (e) { return false; } })());
 
+console.log('\n=== BUMP BUILD: verifikasi deploy harus mungkin dilakukan dari luar ===');
+/* Pelajaran dari §19.9: saya memperbaiki backend tapi TIDAK menaikkan
+ * API_BUILD, sehingga healthCheck membalas identik untuk kode lama dan baru -
+ * L3 probe tidak bisa membuktikan mana yang live.
+ *
+ * Dua penjaga di sini supaya tidak terulang:
+ *   1. API_BUILD harus ada DAN punya bentuk tanggal (bukan disamakan dengan
+ *      API_VERSION, karena keduanya jenis pengenal yang berbeda).
+ *   2. healthCheck harus melaporkan builtAt, di doGet DAN doPost - kalau
+ *      hanya salah satu, jalur yang dipakai client tetap tidak bisa
+ *      diverifikasi. */
+t('BUILD-1: API_BUILD ada dan berbentuk yyyy-mm-dd.n',
+  /var API_BUILD\s*=\s*'\d{4}-\d{2}-\d{2}\.\d+'/.test(gs));
+t('BUILD-2: API_BUILD TIDAK disamakan dengan API_VERSION',
+  !/var API_BUILD\s*=\s*'v\d/.test(gs),
+  'API_VERSION = versi kontrak, API_BUILD = versi kode; menyamakan keduanya membuat build tak ter_track');
+t('BUILD-3: healthCheck melaporkan builtAt di doGet',
+  /function doGet[\s\S]{0,2000}builtAt:API_BUILD/.test(gs));
+t('BUILD-4: healthCheck melaporkan builtAt di doPost',
+  /function doPost[\s\S]{0,2000}builtAt:API_BUILD/.test(gs));
+t('BUILD-5: kedua healthCheck melaporkan versi DAN build',
+  (gs.match(/version:API_VERSION, builtAt:API_BUILD/g) || []).length === 2);
+
 console.log('\n=== TIDAK BOLEH BERUBAH (regression lock) ===');
 const LOCK = [
   ['LOCK-1: --bg light tetap #F1F4F9', /--bg:#F1F4F9;/i.test(html)],
@@ -187,7 +210,7 @@ const LOCK = [
   ['LOCK-6: sw.js CACHE tidak diubah', /CACHE = 'rdi-stok-v41'/.test(sw)],
   ['LOCK-7: sw.js precache tetap 16 aset terakhir', /'\.\/js\/html2pdf\.bundle\.min\.js'/.test(sw)],
   ['LOCK-8: API_VERSION masih v5.28', /API_VERSION = 'v5\.28'/.test(gs)],
-  ['LOCK-9: API_BUILD masih 2026-10-13.1', /API_BUILD\s*=\s*'2026-10-13\.1'/.test(gs)],
+  ['LOCK-9: API_BUILD = 2026-10-15.1 (build perbaikan §19.9)', /API_BUILD\s*=\s*'2026-10-15\.1'/.test(gs)],
   ['LOCK-10: kontrak uncertain masih ada di postTransaksi', /genericError_\('postTransaksi', true\)/.test(gs)],
   ['LOCK-11: genericError_ ASLI tidak diubah',
     /function genericError_\(fnName, uncertain\)\s*\{\s*var r = \{ status: 'error', message: 'Terjadi kesalahan pada '/.test(gs)],

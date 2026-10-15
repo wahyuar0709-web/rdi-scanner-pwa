@@ -1775,3 +1775,71 @@ Keduanya nyaris membuat laporan palsu. Dicatat supaya tidak terulang:
   mengembalikan `Stok_Per_Rak` ke bentuk yang benar. **Belum dijalankan.**
 - RAK `-` sendiri sebaiknya diganti kode rak asli di sheet, kalau
   `Majun` memang punya lokasi.
+### 19.10 API_BUILD dinaikkan: menutup kekaburan verifikasi (§19.9)
+
+#### Kekaburan yang saya buat sendiri
+
+Saat memperbaiki BUG-1/BUG-2 di §19.9, saya **sengaja tidak menaikkan**
+`API_VERSION` maupun `API_BUILD` dengan alasan "kontrak API tidak berubah".
+Alasan itu benar untuk `API_VERSION`, tapi **salah untuk verifikasi**.
+
+Akibatnya `healthCheck` membalas `v5.28 / 2026-10-13.1` untuk kode lama
+**dan** kode baru - persis sama. L3 probe tidak bisa membuktikan BUG-1 dan
+BUG-2 benar-benar live. Saya baru menyadari ini **setelah** deploy, saat
+user sudah menjalankan langkah 1 dan 2 dan saya tidak punya cara
+memastikannya. Itu urutan yang salah.
+
+#### Dua pengenal, dua fungsi
+
+| Pengenal | Apa yang diukur | Kapan naik |
+|-----------|-----------------|------------|
+| `API_VERSION` | **kontrak** - perilaku yang dirasakan client | hanya kalau klien perlu bereaksi |
+| `API_BUILD` | **kode** - isi file Code.gs | **setiap** kali Code.gs berubah |
+
+`API_BUILD` adalah satu-satunya yang bisa dibaca `healthCheck` tanpa
+kredensial. Selama keduanya ditahan, deploy apa pun tidak bisa dibuktikan
+dari luar - titik buta permanen, bukan sekali pakai.
+
+#### Yang diubah
+
+```javascript
+var API_VERSION = 'v5.28';   // TIDAK berubah - kontrak tidak berubah
+var API_BUILD   = '2026-10-15.1';   // naik: build pertama tanggal 2026-10-15
+```
+
+Konvensi nomor: `2026-10-13.1` = build pertama tanggal 2026-10-13 (commit
+`7cc4fdd`), `2026-10-15.1` = build pertama tanggal 2026-10-15 (§19.9).
+
+`healthCheck` sudah melaporkan `builtAt` di `doGet` **dan** `doPost` sejak
+sebelumnya, jadi tidak ada perubahan endpoint - hanya isinya.
+
+#### Penjaga supaya tidak terulang
+
+Lima assert baru di `tests/l1/bug_key_join_safeCell.js`:
+
+- `API_BUILD` ada dan berbentuk `yyyy-mm-dd.n`
+- `API_BUILD` **tidak** disamakan dengan `API_VERSION`
+- `healthCheck` melaporkan `builtAt` di `doGet`
+- `healthCheck` melaporkan `builtAt` di `doPost`
+- keduanya melaporkan versi **dan** build
+
+Yang ketiga dan keempat penting: kalau hanya salah satu jalur yang
+melaporkan build, jalur yang benar-benar dipakai client tetap tidak bisa
+diverifikasi.
+
+#### Verifikasi setelah deploy
+
+`healthCheck` membalas `2026-10-15.1` = perbaikan §19.9 **terbukti**
+live. `2026-10-13.1` = paste terakhir belum masuk (kemungkinan lupa
+`Deploy -> New version`, bukan hanya Save).
+
+#### Yang tetap belum terverifikasi
+
+- Semua perbaikan §19.9 tetap **L1 (statis)**. Tidak ada satu pun yang
+  dijalankan terhadap Google Sheets sungguhan.
+- Apakah Sheets menyimpan atau melepas tanda kutip paksa-teks saat
+  `setValue` masih belum terjawab. `textMarkerStrip_` sengaja indifferent
+  terhadap dua kemungkinan itu, tapi belum dibuktikan pada data asli.
+- Apakah `recalculateAllSaldo()` benar sudah dijalankan dan
+  `Stok_Per_Rak` sudah kembali satu baris per (item, rak) - hanya bisa
+  dilihat dari sheet.
