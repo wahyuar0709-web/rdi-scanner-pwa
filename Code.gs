@@ -429,6 +429,32 @@ function safeCell_(value) {
   return s;
 }
 
+// BUG-1 (2026-10-15): normalisasi tanda kutip paksa-teks untuk kolom yang
+// sekaligus jadi KUNCI GABUNG antar sheet (RAK, Kode_Alat).
+//
+// Konteks: safeCell_() menulis "'v" untuk teks berawalan = + - @. Itu
+// BERHASIL mencegah formula injection, tapi bentuk yang TERSIMPAN lalu tidak
+// lagi sama dengan bentuk yang DICARI oleh findRowIndex() atau pembanding
+// string lain.
+//
+// Untuk kolom teks bebas tidak masalah - tidak ada yang mencarinya. Untuk
+// kolom kunci, lookup gagal diam-diam: baris tidak ditemukan, jadi data
+// ditulis sebagai baris BARU tiap kali alih-alih diperbarui.
+//
+// Fungsi ini dipakai di KEDUA sisi (yang searching dan yang disimpan), jadi
+// hasilnya sama apa pun keputusan Sheets tentang tanda kutip itu. Tanpa ini
+// kode benar secara logika tapi salah secara data.
+//
+// Dipakai di 3 kelompok tempat: updateRakSaldo (kunci RAK),
+// postTransaksi (perbandingan saldo rak), dan modul Aset Sirkulasi (kunci
+// Kode_Alat di Aset_Item/Aset_Unit/Aset_Movement_Log).
+function textMarkerStrip_(v) {
+  var t = (v === null || v === undefined) ? '' : String(v);
+  // bisa lebih dari satu tanda kutip kalau safeCell_ sempat jalan dua kali
+  while (t.charAt(0) === "'") t = t.slice(1);
+  return t;
+}
+
 // FIX TINGGI: pesan error generik — jangan bocorkan err.message (bisa memuat path/sheet internals) ke client
 //
 // KONTRAK `uncertain` (2026-10-13, DBG-02):
@@ -1956,7 +1982,7 @@ function getRakBreakdown(itemId) {
       var rows = sh.getRange(2,1,sh.getLastRow()-1,3).getValues();
       rows.forEach(function(row){
         if (String(row[COL_RAK_SALDO.ID]||'').trim().toUpperCase()===itemId && parseFloat(row[COL_RAK_SALDO.QTY])!==0) {
-          out.push({ rak:String(row[COL_RAK_SALDO.RAK]||''), qty:parseFloat(row[COL_RAK_SALDO.QTY])||0 });
+          out.push({ rak:textMarkerStrip_(row[COL_RAK_SALDO.RAK]), qty:parseFloat(row[COL_RAK_SALDO.QTY])||0 });
         }
       });
     }
@@ -1974,7 +2000,7 @@ function getRakSummaryMap() {
       var rows = sh.getRange(2,1,sh.getLastRow()-1,3).getValues();
       rows.forEach(function(row){
         var id = String(row[COL_RAK_SALDO.ID]||'').trim().toUpperCase();
-        var rak = String(row[COL_RAK_SALDO.RAK]||'').trim();
+        var rak = textMarkerStrip_(row[COL_RAK_SALDO.RAK]).trim();
         var qty = parseFloat(row[COL_RAK_SALDO.QTY])||0;
         if (!id || !rak || qty===0) return;
         if (!map[id]) map[id] = [];
@@ -2140,7 +2166,8 @@ function postTransaksi(params) {
 
     var saldoSebelumTotal = item.saldo;
     var saldoSebelumRak = 0;
-    item.rakBreakdown.forEach(function(rb){ if(rb.rak===rak) saldoSebelumRak = rb.qty; });
+        var rakKeyTrim = textMarkerStrip_(rak);
+    item.rakBreakdown.forEach(function(rb){ if(textMarkerStrip_(rb.rak)===rakKeyTrim) saldoSebelumRak = rb.qty; });
 
     if (jenis==='KELUAR' && qty>saldoSebelumRak)
       return { status:'error', message:'Stok di rak '+rak+' tidak cukup. Saldo rak ini: '+saldoSebelumRak+' '+item.unit };
@@ -2305,7 +2332,15 @@ function updateSaldo(itemId, nama, unit, jenis, qty) {
 //  di-filter itemId DAN rak sekaligus)
 // ============================================================
 function updateRakSaldo(itemId, rak, jenis, qty) {
-  rak = safeCell_(rak);
+  // BUG-1 (2026-10-15): versi lama men-corrupt nilai rak di baris pertama
+  // fungsi ini, lalu memakai hasil_corrupt itu sebagai kunci findRowIndex().
+  // Untuk RAK berawalan - + = @ (mis. placeholder "-") bentuk yang dicari
+  // tidak lagi sama dengan bentuk yang tersimpan -> idx = -1 -> appendRow()
+  // tiap transaksi -> Stok_Per_Rak pecah jadi banyak baris untuk 1 item+rak.
+  //
+  // Sekarang: rak dipakai apa adanya untuk MENCARI (lewat findRowIndexLoose
+  // yang menormalkan tanda kutip), dan baru diproteksi saat MENULIS.
+  var rakKey = rak;
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sh = ss.getSheetByName(SHEET_RAK_SALDO);
@@ -2320,7 +2355,7 @@ function updateRakSaldo(itemId, rak, jenis, qty) {
       // PERF v5.4: baris di sini = kombinasi item x rak (kecil, stabil), bukan jumlah transaksi.
       // Sama seperti updateSaldo -- dulu full replay Transaksi_Log tiap transaksi, sekarang O(1) delta.
       var existing = sh.getRange(2,1,lastRow-1,3).getValues();
-      var idx = findRowIndex(existing, [[COL_RAK_SALDO.ID, itemId], [COL_RAK_SALDO.RAK, rak]]);
+      var idx = findRowIndexLoose(existing, [[COL_RAK_SALDO.ID, itemId], [COL_RAK_SALDO.RAK, rakKey]]);
       if (idx >= 0) {
         foundRow = idx+2;
         curQty = parseFloat(existing[idx][COL_RAK_SALDO.QTY])||0;
@@ -2328,7 +2363,7 @@ function updateRakSaldo(itemId, rak, jenis, qty) {
     }
 
     var newQty = curQty + delta;
-    var rowData = [itemId, rak, newQty];
+    var rowData = [itemId, safeCell_(rak), newQty];
     if (foundRow>0) sh.getRange(foundRow,1,1,3).setValues([rowData]);
     else sh.appendRow(rowData);
   } catch(e) {
@@ -2415,7 +2450,7 @@ function getAllHistory(limit) {
         timestamp:fmtDateTime(row[COL_TRX.TIMESTAMP]), itemId:String(row[COL_TRX.ID]),
         nama:String(row[COL_TRX.NAMA]), spec:String(row[COL_TRX.SPEC]),
         jenis:String(row[COL_TRX.JENIS]), qty:String(row[COL_TRX.QTY]),
-        rak:String(row[COL_TRX.RAK]), vendor:String(row[COL_TRX.VENDOR]), noReferensi:String(row[COL_TRX.NO_REF]),
+        rak:textMarkerStrip_(row[COL_TRX.RAK]), vendor:String(row[COL_TRX.VENDOR]), noReferensi:String(row[COL_TRX.NO_REF]),
         saldoSebelum:String(row[COL_TRX.SALDO_SEBELUM]), saldoSesudah:String(row[COL_TRX.SALDO_SESUDAH]),
         keterangan:String(row[COL_TRX.KETERANGAN]), admin:String(row[COL_TRX.ADMIN]),
         unit: unitMap[idKey] || ''
@@ -2460,7 +2495,7 @@ function getHistory(itemId) {
         timestamp:fmtDateTime(row[COL_TRX.TIMESTAMP]), itemId:String(row[COL_TRX.ID]),
         nama:String(row[COL_TRX.NAMA]), spec:String(row[COL_TRX.SPEC]),
         jenis:String(row[COL_TRX.JENIS]), qty:String(row[COL_TRX.QTY]),
-        rak:String(row[COL_TRX.RAK]), vendor:String(row[COL_TRX.VENDOR]), noReferensi:String(row[COL_TRX.NO_REF]),
+        rak:textMarkerStrip_(row[COL_TRX.RAK]), vendor:String(row[COL_TRX.VENDOR]), noReferensi:String(row[COL_TRX.NO_REF]),
         saldoSebelum: sebelumValid ? String(sSebelum) : '⚠ data tidak valid',
         saldoSesudah: sesudahValid ? String(sSesudah) : '⚠ data tidak valid',
         keterangan:String(row[COL_TRX.KETERANGAN]), admin:String(row[COL_TRX.ADMIN]),
@@ -2638,7 +2673,7 @@ function getExportData(dateFrom, dateTo) {
           ts: ts,
           jenis: String(row[COL_TRX.JENIS]||'').toUpperCase(),
           qty: parseFloat(row[COL_TRX.QTY])||0,
-          rak: String(row[COL_TRX.RAK]||''),
+          rak: textMarkerStrip_(row[COL_TRX.RAK]),
           vendor: String(row[COL_TRX.VENDOR]||''),
           noRef: String(row[COL_TRX.NO_REF]||'')
         });
@@ -2887,7 +2922,7 @@ function generateAsetUnitId_(kodeAlat) {
     rows.forEach(function(r) {
       var unitId = String(r[0] || '').trim();
       var kode   = String(r[1] || '').trim();
-      if (kode !== String(kodeAlat).trim()) return;
+      if (textMarkerStrip_(kode) !== textMarkerStrip_(kodeAlat).trim()) return;
       if (unitId.indexOf(prefix) !== 0) return;
       var suffix = unitId.slice(prefix.length);
       var n = parseInt(suffix, 10);
@@ -2954,7 +2989,7 @@ function addAsetItem(body) {
       if (last >= 2) {
         var existing = sh.getRange(2, COL_ASET_ITEM.KODE_ALAT + 1, last - 1, 1).getValues();
         for (var i = 0; i < existing.length; i++) {
-          if (String(existing[i][0] || '').trim() === kodeAlat) {
+          if (textMarkerStrip_(existing[i][0]).trim() === textMarkerStrip_(kodeAlat).trim()) {
             return { status:'error', message:'Kode_Alat "' + kodeAlat + '" sudah ada di ' + SHEET_ASET_ITEM };
           }
         }
@@ -3013,7 +3048,7 @@ function addAsetUnit(body) {
     if (lastItem >= 2) {
       var kodeCol = shItem.getRange(2, COL_ASET_ITEM.KODE_ALAT + 1, lastItem - 1, 1).getValues();
       for (var i = 0; i < kodeCol.length; i++) {
-        if (String(kodeCol[i][0] || '').trim() === kodeAlat) { itemAda = true; break; }
+        if (textMarkerStrip_(kodeCol[i][0]).trim() === textMarkerStrip_(kodeAlat).trim()) { itemAda = true; break; }
       }
     }
     if (!itemAda) return { status:'error', message:'Kode_Alat "' + kodeAlat + '" belum terdaftar di ' + SHEET_ASET_ITEM + '. Tambahkan lewat addAsetItem dulu.' };
@@ -3143,7 +3178,7 @@ function recordAsetMovement(body) {
       var currentLokasi = String(row[COL_ASET_UNIT.LOKASI_SAAT_INI] || '').trim();
       var currentCycleId = String(row[COL_ASET_UNIT.LAST_CYCLE_ID] || '').trim();
       var currentRegrind = parseInt(row[COL_ASET_UNIT.REGRIND_COUNT], 10) || 0;
-      var kodeAlat = String(row[COL_ASET_UNIT.KODE_ALAT] || '').trim();
+      var kodeAlat = textMarkerStrip_(row[COL_ASET_UNIT.KODE_ALAT]).trim();
 
       // --- validasi transisi state machine ---
       if (activity === ASET_ACTIVITY.SCRAP_RUSAK) {
@@ -3236,7 +3271,7 @@ function getAsetUnitAggregates_() {
 
   var rows = sh.getRange(2, 1, last - 1, 10).getValues();
   rows.forEach(function(r) {
-    var kodeAlat = String(r[COL_ASET_UNIT.KODE_ALAT] || '').trim();
+    var kodeAlat = textMarkerStrip_(r[COL_ASET_UNIT.KODE_ALAT]).trim();
     if (!kodeAlat) return;
     var status = String(r[COL_ASET_UNIT.STATUS_UNIT] || '').trim();
     if (!agg[kodeAlat]) agg[kodeAlat] = { total:0, gudang:0, dipakai:0, tumpul:0, diasah:0, scrap:0 };
@@ -3267,7 +3302,7 @@ function getAsetItemList() {
     if (last >= 2) {
       var rows = sh.getRange(2, 1, last - 1, 18).getValues();
       rows.forEach(function(r) {
-        var kodeAlat = String(r[COL_ASET_ITEM.KODE_ALAT] || '').trim();
+        var kodeAlat = textMarkerStrip_(r[COL_ASET_ITEM.KODE_ALAT]).trim();
         if (!kodeAlat) return;
         var a = agg[kodeAlat] || { total:0, gudang:0, dipakai:0, tumpul:0, diasah:0, scrap:0 };
         var safetyStock = parseFloat(r[COL_ASET_ITEM.SAFETY_STOCK]) || 0;
@@ -3315,10 +3350,10 @@ function getAsetUnitList(kodeAlat) {
     if (last >= 2) {
       var rows = sh.getRange(2, 1, last - 1, 10).getValues();
       rows.forEach(function(r) {
-        if (kode && String(r[COL_ASET_UNIT.KODE_ALAT] || '').trim() !== kode) return;
+        if (kode && textMarkerStrip_(r[COL_ASET_UNIT.KODE_ALAT]).trim() !== textMarkerStrip_(kode).trim()) return;
         list.push({
           unitId: String(r[COL_ASET_UNIT.UNIT_ID] || ''),
-          kodeAlat: String(r[COL_ASET_UNIT.KODE_ALAT] || ''),
+          kodeAlat: textMarkerStrip_(r[COL_ASET_UNIT.KODE_ALAT]),
           tanggalMasuk: r[COL_ASET_UNIT.TANGGAL_MASUK],
           regrindCount: parseInt(r[COL_ASET_UNIT.REGRIND_COUNT], 10) || 0,
           statusUnit: String(r[COL_ASET_UNIT.STATUS_UNIT] || ''),
@@ -3347,7 +3382,7 @@ function getAsetUnitById(unitId) {
     var r = found.values;
     return { status:'ok', data: {
       unitId: String(r[COL_ASET_UNIT.UNIT_ID] || ''),
-      kodeAlat: String(r[COL_ASET_UNIT.KODE_ALAT] || ''),
+      kodeAlat: textMarkerStrip_(r[COL_ASET_UNIT.KODE_ALAT]),
       tanggalMasuk: r[COL_ASET_UNIT.TANGGAL_MASUK],
       regrindCount: parseInt(r[COL_ASET_UNIT.REGRIND_COUNT], 10) || 0,
       statusUnit: String(r[COL_ASET_UNIT.STATUS_UNIT] || ''),
@@ -3382,7 +3417,7 @@ function getAsetMovementLog(unitId, limit) {
         if (kode && String(r[COL_ASET_LOG.UNIT_ID] || '').trim() !== kode) return;
         list.push({
           timestamp: r[COL_ASET_LOG.TIMESTAMP],
-          kodeAlat: String(r[COL_ASET_LOG.KODE_ALAT] || ''),
+          kodeAlat: textMarkerStrip_(r[COL_ASET_LOG.KODE_ALAT]),
           unitId: String(r[COL_ASET_LOG.UNIT_ID] || ''),
           idTransaksi: r[COL_ASET_LOG.ID_TRANSAKSI],
           activity: String(r[COL_ASET_LOG.ACTIVITY] || ''),
@@ -3424,7 +3459,7 @@ function getAsetDashboard() {
     if (last >= 2) {
       var rows = shItem.getRange(2, 1, last - 1, 18).getValues();
       rows.forEach(function(r) {
-        var kodeAlat = String(r[COL_ASET_ITEM.KODE_ALAT] || '').trim();
+        var kodeAlat = textMarkerStrip_(r[COL_ASET_ITEM.KODE_ALAT]).trim();
         if (!kodeAlat) return;
         var a = agg[kodeAlat] || { total:0, gudang:0, dipakai:0, tumpul:0, diasah:0, scrap:0 };
         var safetyStock = parseFloat(r[COL_ASET_ITEM.SAFETY_STOCK]) || 0;
@@ -3465,8 +3500,8 @@ function getAsetKontrolAsahCycles_(kodeAlatFilter) {
   rows.forEach(function(r) {
     var cycleId = String(r[COL_ASET_LOG.CYCLE_ID] || '').trim();
     if (!cycleId) return;
-    var kodeAlat = String(r[COL_ASET_LOG.KODE_ALAT] || '').trim();
-    if (kode && kodeAlat !== kode) return;
+    var kodeAlat = textMarkerStrip_(r[COL_ASET_LOG.KODE_ALAT]).trim();
+    if (kode && kodeAlat !== textMarkerStrip_(kode).trim()) return;
 
     if (!cycles[cycleId]) {
       cycles[cycleId] = {
@@ -3602,7 +3637,7 @@ function getAsetEligibleUnits(kodeAlat, activity) {
     if (last >= 2) {
       var rows = sh.getRange(2, 1, last - 1, 10).getValues();
       rows.forEach(function(r) {
-        if (String(r[COL_ASET_UNIT.KODE_ALAT] || '').trim() !== kode) return;
+        if (textMarkerStrip_(r[COL_ASET_UNIT.KODE_ALAT]).trim() !== textMarkerStrip_(kode).trim()) return;
         var statusUnit = String(r[COL_ASET_UNIT.STATUS_UNIT] || '').trim();
         if (!isEligible(statusUnit)) return;
         list.push({
@@ -4159,7 +4194,7 @@ function getAllRakBreakdown() {
     if (sh && sh.getLastRow() >= 2) {
       sh.getRange(2,1,sh.getLastRow()-1,3).getValues().forEach(function(r){
         var qty = parseFloat(r[COL_RAK_SALDO.QTY])||0;
-        if (qty !== 0) rows.push({ id:String(r[COL_RAK_SALDO.ID]||''), rak:String(r[COL_RAK_SALDO.RAK]||''), qty:qty });
+        if (qty !== 0) rows.push({ id:String(r[COL_RAK_SALDO.ID]||''), rak:textMarkerStrip_(r[COL_RAK_SALDO.RAK]), qty:qty });
       });
     }
     return { status:'ok', rows:rows };
@@ -4197,7 +4232,7 @@ function getStockLedger(itemId) {
       tData.forEach(function(row){
         entries.push({
           timestamp: fmtDateTime(row[COL_TRX.TIMESTAMP]), jenis: String(row[COL_TRX.JENIS]), qty: parseFloat(row[COL_TRX.QTY])||0,
-          rak: String(row[COL_TRX.RAK]), vendor: String(row[COL_TRX.VENDOR]), noReferensi: String(row[COL_TRX.NO_REF]),
+          rak: textMarkerStrip_(row[COL_TRX.RAK]), vendor: String(row[COL_TRX.VENDOR]), noReferensi: String(row[COL_TRX.NO_REF]),
           saldoSebelum: parseFloat(row[COL_TRX.SALDO_SEBELUM])||0, saldoSesudah: parseFloat(row[COL_TRX.SALDO_SESUDAH])||0,
           keterangan: String(row[COL_TRX.KETERANGAN]), admin: String(row[COL_TRX.ADMIN])
         });
@@ -4329,7 +4364,7 @@ function setupMasterListSheetsCore() {
   var rakSld = ss.getSheetByName(SHEET_RAK_SALDO);
   if (rakSld && rakSld.getLastRow()>=2) {
     rakSld.getRange(2,1,rakSld.getLastRow()-1,COL_RAK_SALDO.RAK+1).getValues().forEach(function(r){
-      addDedup(rakSet, r[COL_RAK_SALDO.RAK]);
+      addDedup(rakSet, textMarkerStrip_(r[COL_RAK_SALDO.RAK]));
     });
   }
 
@@ -4410,6 +4445,24 @@ function findRowIndex(data, matchers) {
     for (var j=0; j<matchers.length; j++) {
       var col = matchers[j][0], val = matchers[j][1];
       if (String(row[col]||'').trim().toUpperCase() !== val) { isMatch = false; break; }
+    }
+    if (isMatch) return i;
+  }
+  return -1;
+}
+
+// BUG-1 (2026-10-15): varian findRowIndex untuk kolom yang nilainya mungkin
+// sudah melewati safeCell_() (tanda kutip paksa-teks). Kedua sisi dinormalkan
+// lewat textMarkerStrip_ dulu, jadi lookup tetap cocok apa pun yang Sheets
+// lakukan terhadap tanda kutip itu. Dipakai untuk kolom KUNCI GABUNG saja,
+// bukan untuk pencarian teks bebas yang tidak memerlukannya.
+function findRowIndexLoose(data, matchers) {
+  for (var i=0; i<data.length; i++) {
+    var row = data[i];
+    var isMatch = true;
+    for (var j=0; j<matchers.length; j++) {
+      var col = matchers[j][0], val = matchers[j][1];
+      if (textMarkerStrip_(row[col]).trim().toUpperCase() !== textMarkerStrip_(val).trim().toUpperCase()) { isMatch = false; break; }
     }
     if (isMatch) return i;
   }

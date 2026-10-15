@@ -1648,3 +1648,130 @@ boleh dianggap lulus.
 
 **Yang tidak diuji:** items > 50 (halaman 2), dan perilaku saat daftar sedang
 berada di sheet cetak. Keduanya belum dijalankan.
+### 19.9 Empat bug ditemukan setelah v5.28 LIVE (2026-10-15)
+
+Sumbernya satu: transaksi uji "Majun / MRO-01-09-137" pada 15/10/2026
+09:34:56 tercatat dengan **RAK = `-`**. Transaksinya sendiri benar
+(KELUAR 1, 123 -> 122), tapi nilai rak itu membuka kelas bug yang lebih
+besar: `safeCell_` merusak kunci gabung antar sheet.
+
+#### BUG-1 (KRITIS) - `safeCell_` merusak kunci gabung RAK
+
+`safeCell_(v)` mengubah teks berawalan `= + - @` menjadi `"'v"` (tanda
+kutip paksa-teks). Untuk kolom teks bebas itu benar dan memang tujuannya.
+Tapi **RAK adalah kunci gabung** `Transaksi_Log` <-> `Stok_Per_Rak`.
+
+`updateRakSaldo()` doing proteksi formula pada nilai rak **di awal fungsi**:
+
+```javascript
+function updateRakSaldo(itemId, rak, jenis, qty) {
+  rak = safeCell_(rak);                                  // <- korup
+  ...
+  var idx = findRowIndex(existing, [..., [COL_RAK_SALDO.RAK, rak]]);  // <- cari yg korup
+  ...
+  var rowData = [itemId, rak, newQty];
+```
+
+Untuk RAK berawalan `-`, bentuk yang DICARI tidak lagi sama dengan bentuk
+yang TERSIMPAN. Akibatnya `idx = -1` -> `appendRow()` -> **Stok_Per_Rak
+pecah jadi banyak baris untuk satu item+rak yang sama**, setiap kali ada
+transaksi. `getRakBreakdown()` lalu melaporkan qty per baris terpisah.
+
+Dampak kedua: di `postTransaksi`, `rb.rak === rak` membandingkan nilai
+dari sheet dengan nilai dari request. Kalau bentuknya berbeda,
+`saldoSebelumRak` tetap `0`, dan KELUAR berikutnya ditolak palsu
+*"Stok di rak tidak cukup: 0"* padahal rak itu berisi 122.
+
+**Perbaikan** (proteksi formula TIDAK dilonggarkan):
+
+- Helper `textMarkerStrip_(v)` menormalkan tanda kutip paksa-teks.
+- Helper `findRowIndexLoose()` membandingkan kedua sisi lewat normalisasi
+  itu, sehingga hasilnya benar apa pun keputusan Sheets soal tanda kutip.
+- `updateRakSaldo` memakai rak apa adanya untuk **mencari**, dan baru
+  memproteksinya saat **menulis**.
+- `postTransaksi` menormalkan kedua sisi perbandingan saldo rak.
+- Nilai yang benar-benar tersimpan di sheet tidak berubah.
+
+#### BUG-2 - kelas identik di `Kode_Alat` (modul Aset Sirkulasi)
+
+`Kode_Alat` adalah kunci gabung **tiga** sheet: `Aset_Item` <->
+`Aset_Unit` <-> `Aset_Movement_Log`. Nilainya ditulis dengan
+`safeCell_(kodeAlat)` di tiga tempat, tapi dibaca dan dibandingkan dengan
+`trim()` mentah di 13 titik lain. Untuk `Kode_Alat` berawalan `- + = @`:
+
+| Fungsi | Gejala kalau lookup gagal |
+|--------|---------------------------|
+| `addAsetItem` | cek duplikat lolos untuk kode yang sudah terdaftar |
+| `addAsetUnit` | "Kode_Alat belum terdaftar" padahal baru didaftarkan |
+| `generateAsetUnitId_` | nomor urut selalu mulai dari 1 -> Unit_ID kembar |
+| `getAsetUnitList` | daftar unit kosong |
+| `getAsetEligibleUnits` | tidak ada unit eligible |
+| `getAsetKontrolAsahCycles_` | riwayat asah kosong |
+
+Semua 13 titik sekarang menormalkan kedua sisi. Nilai yang ditulis tetap
+`safeCell_`, jadi proteksi formula utuh.
+
+#### BUG-2c - tampilan masih mentah
+
+Setelah BUG-1 & BUG-2 membuat perbandingan tahan tanda kutip, nilai yang
+dikembalikan ke UI masih mentah. Tujuh situs tampilan dinormalkan:
+`getRakSummaryMap`, `getRakBreakdown`, `getAllRakBreakdown`,
+`getHistory`, `getAllHistory`, `getStockLedger`, `getExportData`, dan
+`setupMasterListSheetsCore` (supaya `Master_Rak` tidak menyimpan `-`
+dengan tanda kutip).
+
+#### BUG-3 - warna `#f3efe6` masih tertinggal dari redesign §18
+
+`manifest.json` (`background_color` + `theme_color`) dan
+`<meta name="theme-color">` masih krem hangat, padahal `--bg` sudah
+`#F1F4F9` (light) / `#0A1017` (dark). `#f3efe6` tidak ada lagi di palette
+baru - ini sisa yang tidak ikut terpetakan. Efeknya: splash screen Android
+mulai dari krem hangat lalu melompat ke abu-abu dingin, dan bilah status
+peramban tetap kecoklatan ketika aplikasi sudah biru.
+
+Diubah ke `#f1f4f9`. Nilai **dark tidak** ikut diubah: Chrome/Android
+memakai `theme_color` sebagai warna bilah status, dan mengikuti tema gelap
+adalah perilaku platform, bukan keputusan desain repo ini. Itu perlu
+diuji di perangkat nyata (L4), bukan ditebak sekarang.
+
+#### Dua jebakan harness yang terjadi saat bekerja, dan penjaganya
+
+Keduanya nyaris membuat laporan palsu. Dicatat supaya tidak terulang:
+
+1. **Gate SEC-D7 bisa cocok ke KOMENTAR, bukan kode.** Regex-nya
+   `/safeCell_\(/`, dan komentar penjelas saya menyalin baris lama secara
+   harfiah (`"rak = safeCell_(rak)"`). Gate tetap hijau walau `safeCell_`
+   **benar-benar dihapus** dari `updateRakSaldo` - kelulusan hampa.
+   Gate baru `bug_key_join_safeCell.js` menghitung panggilan di baris kode
+   saja, dan punya uji bukti: hapus semua panggilan, gate harus ikut mati.
+2. **Jendela 6000 karakter milik SEC-D7.** `postTransaksi` sendiri 11.246
+   karakter, jadi hanya sisa ~40. Menambah komentar 4 baris di dalamnya
+   mendorong gate gagal (offset 6275 vs 6000).
+
+   Jendelanya **sengaja tidak dilonggarkan** - melemahkan gate supaya kode
+   bisa lulus adalah cara membuat test tidak berguna. Penjelasan dipindah ke
+   blok dokumentasi `textMarkerStrip_` sebagai gantinya.
+
+#### Yang terverifikasi
+
+- L1 `bug_key_join_safeCell.js`: **60 PASS / 0 FAIL** (baru).
+- L1 penuh: **49 suite / 1363 assert / 0 FAIL** (dari 48 / 1303).
+- L2 `r2_qty0_last` 7 PASS / 0 FAIL, `r2_arsip_search` 8 PASS / 0 FAIL.
+
+#### Yang BELUM terverifikasi - tingkat kejujuran
+
+- Semua perbaikan ini **L1 (statis)**. Tidak ada satu pun yang dijalankan
+  terhadap Google Sheets sungguhan.
+- Pertanyaan yang belum terjawab dan hanya bisa dijawab data produksi:
+  apakah Google Sheets **menyimpan** tanda kutip paksa-teks atau
+  **melepasnya** saat `setValue`. `textMarkerStrip_` sengaja dibuat
+  indifferent terhadap dua kemungkinan itu, tapi belum dibuktikan pada data
+  asli.
+- **Data yang mungkin sudah terluka**: setiap transaksi dengan RAK
+  berawalan `- + = @` sejak `safeCell_` diperkenalkan bisa sudah Pecah di
+  `Stok_Per_Rak`. Perbaikannya hanya mencegah kerusakan lanjutan.
+  `recalculateAllSaldo()` (tombol Admin Database) akan membangun ulang
+  `Stok_Saldo` + `Stok_Per_Rak` dari `Transaksi_Log` dan mengembalikan
+  mengembalikan `Stok_Per_Rak` ke bentuk yang benar. **Belum dijalankan.**
+- RAK `-` sendiri sebaiknya diganti kode rak asli di sheet, kalau
+  `Majun` memang punya lokasi.
