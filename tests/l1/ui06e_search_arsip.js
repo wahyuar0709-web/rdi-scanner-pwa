@@ -104,5 +104,30 @@ t('ARS-16: reset filter mematikan kembali _showArsip',
   fReset !== null && fReset.indexOf('_showArsip=false') >= 0,
   'resetAllFilters tidak ditemukan atau tidak mematikan _showArsip');
 
+/* --- 6. REVISI 2 (2026-10-15): stok 0 urut di paling belakang ---
+ * Aturan ini TIDAK BOLEH ikut _sortDir: kalau ikut, memilih "stok naik"
+ * justru menaikkan stok 0 ke paling atas - persis kebalikan dari yang
+ * diminta. Dan hanya boleh diuji lewat filterTable/sortByColumn, karena
+ * setSort tidak ada (lihat r2_qty0_last.js). */
+const fSort = bodyOf('_sortCompare');
+t('QTY-1: _sortCompare ada', fSort !== null);
+t('QTY-2: ada prioritas stok 0 di awal comparator',
+  fSort !== null && fSort.indexOf('var az=(parseFloat(a.qty)||0)===0,bz=(parseFloat(b.qty)||0)===0;') >= 0);
+t('QTY-3: prioritas mengembalikan az?1:-1 (tidak dikalikan _sortDir)',
+  fSort !== null && /if\(az!==bz\)return az\?1:-1;/.test(fSort),
+  'pola "return az?1:-1" tidak ada');
+t('QTY-4: prioritas TIDAK dikalikan _sortDir',
+  fSort !== null && !/if\(az!==bz\)return az\?1:-1;[^;]*_sortDir/.test(fSort),
+  'ada pengali _sortDir di aturan prioritas - stok 0 akan ikut terbalik');
+t('QTY-5: prioritas placed SEBELUM logika pengurutan per-field',
+  fSort !== null && fSort.indexOf('az!==bz') < fSort.indexOf("if(_sortField==='_idx')"),
+  'prioritas tidak di awal comparator');
+t('QTY-6: list utama tetap memakai comparator itu',
+  /function _applySort\(\)\{filteredRows\.sort\(_sortCompare\);\}/.test(src));
+t('QTY-7: comparator tidak dilewati di daftar cetak', /rows\.sort\(_sortCompare\)/.test(src));
+t('QTY-8: penanda "Habis" untuk stok 0 masih ada', src.indexOf("'Habis'") >= 0);
+t('QTY-9: tidak ada aturan auto-arsip stok 0 yang mengira/menulis kolom status',
+  !/_isArsip\s*=\s*function[^}]*qty\s*===\s*0/.test(src));
+
 console.log('\n---- ui06e_search_arsip: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

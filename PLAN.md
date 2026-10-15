@@ -1578,3 +1578,73 @@ dengan cara yang menyesatkan. Jalur yang benar adalah mengetik ke kotak pencaria
 
 Yang TIDAK diuji: perilaku saat mengetik sebagian (mis. "Rus"), dan di lebar
 HP. Keduanya layak-suara tapi belum dijalankan.
+### 19.8 Revisi 2: item stok 0 tetap di list, tapi di paling belakang
+
+Permintaan lanjutan: *"kalau qty 0 dia tetap ada di list TPI, di tampil di paling
+belakang dan ketika cari masih muncul, tujuannya agar dia tidak mengotori
+tampilan."*
+
+Satu koreksi penting atas 19.1-19.2: **sistem ini tidak punya auto-arsip saat
+stok 0.** `Code.gs` hanya menyaring transaksi untuk item berstatus `Arsip`; status
+itu hanya berubah kalau operator menekan tombolnya. Jadi permintaan ini bukan
+perbaikan dari perubahan §19, melainkan fitur baru: item stok 0 tetap tampil,
+hanya dipindahkan ke posisi paling akhir.
+
+**Perubahan: satu aturan prioritas di `_sortCompare`.**
+
+```javascript
+var az=(parseFloat(a.qty)||0)===0, bz=(parseFloat(b.qty)||0)===0;
+if(az!==bz) return az?1:-1;   // SEBELUM logika pengurutan per-field
+```
+
+Keputusan yang perlu dijelaskan: aturan ini **sengaja dikecualikan dari
+`_sortDir`**. Kalau ikut arah pengurutan, memilih "stok naik" justru menaikkan
+stok 0 ke paling atas - persis kebalikan dari yang diminta. Ini soal **tempat**,
+bukan soal arah.
+
+Comparator ini dipakai list utama (`_applySort`) **dan** daftar cetak
+(`renderCetakList`), jadi keduanya ikut. Untuk daftar cetak itu masuk akal juga:
+item kosong tidak perlu tercetak sebelum yang masih terisi. Kalau tidak diinginkan, itu
+pemisahan sederhana.
+
+Tidak ada yang disembunyikan: stok 0 tetap punya tombol stok merah dan label
+"Habis" seperti sebelumnya. Yang berubah hanya **posisinya**.
+
+**Bukti runtime** (`tests/l2/r2_qty0_last.js`, 7 assert; fixture 5 item dengan
+DUA item stok 0 yang di sumbernya berada di TENGAH, supaya urutannya benar-benar
+diuji dan bukan kebetulan sudah di akhir):
+
+| Keadaan | Urutan |
+|---------|--------|
+| bawaan | 15, 8, 25, **0, 0** |
+| sort stok, arah turun | 25, 15, 8, **0, 0** |
+| sort stok, arah naik | 8, 15, 25, **0, 0** |
+| mengetik "Habis" | ditemukan |
+
+Perhatikan baris ketiga: urutan bukan-nol benar-benar terbalik (25,15,8 jadi
+8,15,25) sementara stok 0 tetap di akhir. Itulah yang membuktikan aturan ini
+tidak ikut arah pengurutan.
+
+**Dua jebakan harness lagi, dan penjaganya:**
+
+1. **`setSort` tidak ada.** Pemicu pengurutan yang sebenarnya adalah
+   `sortByColumn` (dirujuk dari `onclick` header tabel). Versi pertama memakainya
+   `setSort`, sehingga arah tidak pernah berubah, ketiga skenario menghasilkan
+   urutan IDENTIK, dan test meluluskan sesuatu yang tidak diuji.
+2. **Ekspektasi arah saya salah.** Panggilan pertama `sortByColumn("qty")`
+   menghasilkan TURUN, bukan naik. Assertion harus ikut datanya, bukan tebakan
+   saya. Betul begitu setelah ketiganya jadi sama persis.
+
+Karena itu assert 4 punya **guard anti-hampa**: urutan item bukan-nol wajib
+benar-benar terbalik. Kalau tidak, skenario itu tidak menguji apa pun dan tidak
+boleh dianggap lulus.
+
+**Yang ditambahkan:**
+
+- `tests/l2/r2_qty0_last.js` - 7 assert runtime (port 9629/9630).
+- 9 assert statis `QTY-1` s.d. `QTY-9` di `tests/l1/ui06e_search_arsip.js`, termasuk
+  penjaga bahwa aturan prioritas tidak diam-diam dikalikan `_sortDir`.
+- L1 kini 48 suite / 1303 assert / 0 FAIL.
+
+**Yang tidak diuji:** items > 50 (halaman 2), dan perilaku saat daftar sedang
+berada di sheet cetak. Keduanya belum dijalankan.
