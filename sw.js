@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v41'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v42'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -45,23 +45,35 @@ self.addEventListener('fetch', e => {
   // Hanya intercept GET (POST/PUT jangan di-cache/di-rewrite)
   if (e.request.method !== 'GET') return;
 
-  // HTML / navigasi → NETWORK-FIRST: selalu coba versi terbaru dulu,
-  // baru fallback ke cache kalau offline. Ini mencegah HP "terjebak"
-  // di versi lama walau sudah deploy ulang.
+  // HTML / navigasi → NETWORK-FIRST dgn BATAS WAKTU (PERF 2026-10-16).
+  // Dulu: navigasi SELALU menunggu jaringan selesai — di WiFi lambat itu
+  // menahan boot beberapa detik. Sekarang: kalau jaringan belum selesai
+  // dalam 2,5 dtk TAPI ada versi cache → sajikan cache dulu (boot instan);
+  // unduhan jaringan tetap jalan di background dan memperbarui cache,
+  // jadi buka berikutnya sudah versi terbaru. Offline / jaringan gagal
+  // tetap fallback ke cache seperti sebelumnya.
   if (e.request.mode === 'navigate' || (e.request.headers.get('accept') || '').includes('text/html')) {
+    const net = fetch(e.request)
+      .then(res => {
+        // hanya cache res.ok — res 4xx/5xx jangan masuk cache
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        }
+        return res;
+      });
+    const cached = caches.match(e.request).then(r => r || caches.match('./index.html'));
     e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          // hanya cache res.ok — res 4xx/5xx jangan masuk cache
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() =>
-          caches.match(e.request).then(r => r || caches.match('./index.html'))
-        )
+      Promise.race([
+        net,
+        new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 2500))
+      ]).then(out => {
+        if (out === 'TIMEOUT') {
+          net.catch(() => {}); // jangan biarkan unduhan background jadi unhandled rejection
+          return cached.then(r => r || net);
+        }
+        return out;
+      }).catch(() => cached)
     );
     return;
   }

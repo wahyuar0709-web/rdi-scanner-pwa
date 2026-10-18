@@ -46,18 +46,18 @@ Google Sheets (Master_Item, Transaksi_Log, Stok_Saldo, Stok_Per_Rak, …)
 | Item | Nilai | Status verif |
 |------|-------|--------------|
 | Git HEAD | (lihat §13 — repo selalu 1 commit di depan PLAN) | — |
-| Working tree | **MODIFIED** — hasil audit 2026-10-13, belum di-commit (lihat §14) | — |
-| `APP_VERSION` | `v15.32` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
-| `APP_BUILD_DATE` | `2026-10-14` | L1 |
-| SW `CACHE` | `rdi-stok-v41` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` + `./js/importexcel.js` + `./js/xlsx.full.min.js` + `./js/html2pdf.bundle.min.js` | L1+L2 |
-| `index.html` lines | ~5000 (lihat §16 untuk perubahan v15.32) | L1 |
-| Suite L1 in-repo | `tests/l1/` **46** suite · `npm run test:l1` · assertion floor aktif | **L1 PASS 1271/0** (2026-10-13) |
-| Suite L2 in-repo | `tests/l2/` **11** suite · `npm run test:l2` · cap 900 s | **L2 PASS 351/0** (2026-10-13) |
+| Working tree | **MODIFIED** — audit 2026-10-13 + PERF v15.33 (2026-10-16), belum di-commit (lihat §14, §20) | — |
+| `APP_VERSION` | `v15.33` (source of truth + title/apple/css/js/topbar sinkron) | L1 PASS |
+| `APP_BUILD_DATE` | `2026-10-16` | L1 |
+| SW `CACHE` | `rdi-stok-v42` (`sw.js:1`) + precache `./js/util.js` + `./js/cetak.js` + `./js/outbox.js` + `./js/format.js` + `./js/jspdf.min.js` + `./js/importexcel.js` + `./js/xlsx.full.min.js` + `./js/html2pdf.bundle.min.js` | L1+L2 |
+| `index.html` lines | ~5000 (lihat §16 untuk v15.32; §20 untuk v15.33) | L1 |
+| Suite L1 in-repo | `tests/l1/` **50** suite · `npm run test:l1` · assertion floor aktif | **L1 PASS 1418/0** (2026-10-16b) |
+| Suite L2 in-repo | `tests/l2/` **15** suite · `npm run test:l2` · cap 1800 s | **subset relevan 74/0** (2026-10-16) — batch penuh tidak dijalankan ulang; lihat §20 |
 | GAS deployment | **`@44`** — tidak disentuh pada 2026-10-13 | L3 read-only PASS (healthCheck) |
 | Versi API backend | `Code.gs` `API_VERSION` = **v5.28** (`API_BUILD` 2026-10-13.1) — **BELUM DI-DEPLOY** | repo saja; `/exec` masih `v5.27` → paritas **UNVERIFIED** |
 | Suites di Temp | 37 file `.js` | inventory (L2 sudah di-copy ke repo) |
 | Suite terakhir label | 51 PASS / 0 FAIL (+3 NOT TESTED INFO) | **L2 PASS** |
-| Suite terakhir browser | 32 PASS / 0 FAIL | **L2 PASS** |
+| Suite terakhir browser | 32 PASS / 0 FAIL (pra-review-fix; ulangi sebelum deploy — §20.8) | **L2 PASS** |
 | Suite terakhir smoke | 37 PASS / 0 FAIL (0 page error) | **L2 PASS** |
 | Suite terakhir fix-cetak | 21 PASS / 0 FAIL (L1 `bug_cetak_label3`) | **L1 PASS** |
 | Suite terakhir viewport/mode | 19 PASS / 0 FAIL (4 kombinasi) | **L2 PASS** |
@@ -1928,3 +1928,211 @@ dan **masih bisa terlewat** di lokasi yang belum terpikir - lihat §17.
   berbeda yang sah (mis. `-` dan `A-04`) - dalam kasus itu
   `recalculateAllSaldo()` benar dan 2 baris memang hasil yang benar.
   Butuh melihat isi dua baris itu di sheet sebelum disimpulkan.
+
+---
+
+## 20. PERFORMA v15.33 (2026-10-16): lag autocomplete, transaksi & boot
+
+> Tidak ada deploy. App naik `v15.32` → **`v15.33`**, SW cache `rdi-stok-v41` → **`v42`**,
+> `package.json` `15.33.0`. **`Code.gs` tidak disentuh** — rilis ini sengaja frontend-only (§20.6).
+> Semua angka di bawah berasal dari run yang benar-benar dieksekusi di sesi ini; yang tidak
+> terlaksana ditandai eksplisit (§20.7).
+
+### 20.1 Keluhan dan akar masalah (terukur, bukan ditebak)
+
+Keluhan: aplikasi terasa berat/lag saat dipakai harian — saat mengetik di autocomplete kolom
+cari, sesaat setelah menyimpan transaksi, dan saat membuka aplikasi di jaringan lambat.
+Akar yang terukur di sesi ini:
+
+1. `acShow` — fallback fuzzy **sinkron** ±0,9 dtk @ 3001 baris: setiap ketikan yang tidak
+   cocok prefix membekukan UI.
+2. `silentRefreshAfterTransaksi()` lama langsung menjalankan `getData` **penuh** (~3000
+   baris) pada setiap transaksi sukses — respons + render, berkali-kali sehari.
+3. Boot splash menunggu data selesai (`maxWait`) — di jaringan lambat splash bertahan lama.
+4. Tab Rak dan dashboard masing-masing fetch ulang (`getRakBreakdownAll` / `getDashboard`);
+   `DASH_CACHE_TTL` hanya 20 dtk.
+5. Kamera master/rak: throttle 80 ms + frame berdimensi penuh; font Google render-blocking.
+
+### 20.2 Perbaikan (P-1…P-6)
+
+| # | Area | Perubahan | Bukti terukur |
+|---|------|-----------|---------------|
+| P-1 | `acShow` fallback fuzzy | pass async beranggaran ~22 ms/chunk (`setTimeout`) + token run `_acFuzzySeq` (dibatalkan saat ketikan baru/tutup) | `acShow` sinkron **65–67 ms** @3001 baris (dulu ±0,9 dtk); stall event-loop maks **75–79 ms**; hasil fuzzy menyusul 0,8–2,3 dtk |
+| P-2 | `lookupItem` non-exact | pass-1 murah selalu; pass-2 fuzzy penuh hanya bila katalog ≤ `FUZZY_FULL_SCAN_MAX` (400) | query typo uji "kathode bering" tetap menemukan item uji `SP-TYPO-01` |
+| P-3 | kamera master/rak | throttle 80→160 ms, downscale `maxDim` 480 | L1 guard (nilai di kode); perilaku frame nyata butuh device (L4) |
+| P-4 | pasca-transaksi | `silentRefreshAfterTransaksi(itemId,saldoSesudah)`: patch baris lokal + 1× `getItem` ringan, invalidasi `_rakBreakdownMap`/`_dashLastLoad`, refresh penuh **dikoalesce 90 dtk** (`DATA_REFRESH_COALESCE_MS`) | `getData` **1→1** pasca-transaksi sukses; `getItem` 1→2; baris ter-patch 25→23 (`rak: A-01: 23`); refresh coalesced terukur **~88 dtk** setelah transaksi |
+| P-5 | peta rak bersama | `_rakMapFromRows_`/`_rakRowsFromMap_` dipakai katalog, tab Rak, dan dashboard | buka tab Rak ke-2: `getRakBreakdownAll` **1→1**; dashboard ke-2 dalam TTL: `getDashboard` **1→1** (`DASH_CACHE_TTL` 20→60 dtk) |
+| P-6 | boot & lain-lain | splash tidak menunggu data (minWait ±0,6 dtk; `maxWait` dihapus); `_applyHashTab` 2× idempotent; guard `_dataLoading`; font Google non-blocking; `sw.js` HTML network-first + batas 2,5 dtk lalu cache (unduhan lanjut di background) | splash hilang **965–1115 ms** saat `getData` sengaja ditunda 3 dtk — saat splash hilang **rows=0** (decouple terbukti); 3001 baris tiba **7,9–9,0 dtk** setelahnya |
+
+Catatan desain: call-site transaksi **batch** sengaja tidak diubah — item batch tidak
+menyimpan `saldoSesudah`, jadi patch lokal dilewati, tetapi koalesensi refresh tetap
+berlaku (tidak ada `getData` per transaksi lagi).
+
+### 20.3 Gate baru
+
+- L1 `tests/l1/perf_pass_v1533.js` — **46** assert (+6 guard review-fix 2026-10-16b REV-F1/F2/F4×2/F5/F6): versi v15.33 (7 titik), `FUZZY_FULL_SCAN_MAX`,
+  `DATA_REFRESH_COALESCE_MS`, `_acFuzzySeq`, `_rakMapFromRows_`, `DASH_CACHE_TTL=60000`,
+  `sw.js` v42 + race 2500 ms, sinkronisasi LOCK-6.
+- L2 `tests/l2/r2_perf_pass.js` — **18** assert (16 + BOOT-4/BOOT-5 review-fix F-4; katalog 3001 baris, `getData` ditunda 3 dtk,
+  penghitung panggilan di server mock); port HTTP **9631** / CDP **9632** terdaftar di
+  `TEST_CDP_PORTS` + `killL2Ports()` (`tests/run-l2.js`).
+- `tests/l1/bug_key_join_safeCell.js` LOCK-6: v41 → v42 (penjaga cache diperbarui).
+
+### 20.4 Bukti (run yang dieksekusi)
+
+- **L1 penuh**: `L1 PASS | suites=50 failedSuites=0 assertPass=1412 assertFail=0`
+  (baseline sesi 49/1372 + 40 assert suite baru).
+- **L2 `r2_perf_pass`**: **16 PASS / 0 FAIL** — BOOT-1/2 (splash 965–1115 ms, rows=0 saat
+  splash hilang), BOOT-3 (3001 baris @ ~7,9–9,0 dtk), AC-1 (sync 65–67 ms), AC-2/AC-4
+  (fuzzy async menemukan item, jalur event nyata), AC-3 (stall maks 75–79 ms), RAK-1/2,
+  DASH-1, TRX-0…TRX-4 (`getData` 1→1, `getItem` 1→2, kartu hasil 25→23 Pcs dari respons
+  server, refresh coalesced ~88 dtk).
+- **L2 subset regresi** (suite relevan dengan permukaan perubahan):
+  `r2_feature_smoke` 37/0 · `r2_outbox_app` 14/0 · `r2_qty0_last` 7/0 ·
+  `r2_perf_pass` 16/0 → **74 PASS / 0 FAIL**.
+- **SW v42 (probe terisolasi)**: install → activate → claim OK; cache `rdi-stok-v42`;
+  16/16 asset `ASSETS` ada; reload dengan SW aktif terukur **71–220 ms**.
+- **`r2_browser_suite` (run ulang 2026-10-16, EXIT 0)**: **32 PASS / 0 FAIL** — termasuk
+  SW registers (`active:true`, `keys:["rdi-stok-v42"]`, `old:[]`), cache `rdi-stok-v42`,
+  precache lengkap, OFFLINE reload memuat app (judul v15.33, `gate:true`), OFFLINE submit →
+  masuk outbox (bukan sukses palsu), RECONNECT flush outbox, ONLINE reload, timing navigasi
+  `dcl 1791 ms / load 1821 ms`, `No uncaught CDP exceptions`.
+- Batch L2 penuh (~48 menit) **tidak dijalankan ulang** — verifikasi dijalankan sebagai
+  subset regresi + `r2_browser_suite` tersendiri (di atas). Diketahui merah **pra-eksisting**:
+  `r2_session_idle` 4 FAIL pada run 2026-10-14 (bukan area perubahan ini) — sengaja tidak
+  diklaim hijau.
+- **Pasca-review-fix (2026-10-16b)**: L1 diulang — **1418/0** (suite perf kini 46 assert);
+  subset L2 diulang — `r2_perf_pass` **17/18** (BOOT-3 environment-dependent; semua jalur
+  lain hijau termasuk BOOT-4/BOOT-5 baru), `r2_feature_smoke` 37/0, `r2_outbox_app` 14/0,
+  `r2_qty0_last` 7/0; `r2_browser_suite` TIDAK diulang. Detail: §20.8.
+
+### 20.5 Pelajaran harness (false green yang tertangkap)
+
+1. Suite L2 baru awalnya berjalan di **sesi viewer**: `gasPost()` (`js/outbox.js`) menolak
+   semua tulis **tanpa menyentuh `fetch`** → transaksi uji tidak pernah terkirim, dan
+   assertion "kartu hasil" saya membaca teks statis di markup → **dua lapis false-green**.
+   Perbaikan: suite memakai sesi **editor** (`rdi_editor_key` + `rdi_editor_key_set_at` di
+   localStorage **dan** sessionStorage — `readSecureStorage()` membaca sessionStorage) dan
+   assertion pindah ke elemen **dinamis** (`result-before`/`result-after` = "25 Pcs"/"23 Pcs"
+   dari respons mock).
+2. Probe SW pertama saya **tidak valid** — server probe tidak memetakan `/` → `index.html`,
+   sehingga `addAll('./')` gagal dan SW tidak pernah install (`controller=null`); reload
+   yang terlihat "cepat" itu tidak menguji jalur SW sama sekali. Setelah server meniru suite
+   (baris 34), barulah kesimpulan diambil.
+3. Run pertama `r2_browser_suite` (2026-10-16) gagal di level **harness**, bukan assertion:
+   `SUITE_ERROR timeout Page.reload` sebelum satu pun assertion tercatat. Penyebab terbukti:
+   cap baku CDP suite = 15 dtk (`send()`, baris 104) sementara suite itu sendiri mencatat
+   `Page.reload` pernah 13–22 dtk di mesin ini (baris 144). Probe terisolasi: reload dengan
+   SW v42 aktif hanya **71–220 ms**; **run ulang dengan kode yang sama hijau penuh 32/0,
+   tanpa satu assertion pun diubah** → kegagalan pertama = flake lingkungan/mesin + cap
+   ketat, bukan cacat produk. Tidak ada assertion yang dilemahkan.
+4. Catatan pengukuran untuk harness L2 lain: di probe, event `load` halaman tertunda
+   ~20 dtk (domContent 6,6 dtk → loadFired 26,5 dtk), tetapi di run ulang suite `load`
+   hanya ~1,8 dtk — **variabel antar-run** (diduga kuat latensi fetch CSS Google Fonts
+   eksternal, satu-satunya resource eksternal; belum dikonfirmasi lewat Network domain).
+   SW diregistrasi pada event `load` (`index.html:3935`), jadi registrasi SW bisa ikut
+   tertunda di kondisi itu. Render-blocking sudah dihilangkan oleh P-6; yang tersisa adalah
+   warisan latensi jaringan eksternal, bukan regresi v15.33.
+
+### 20.6 Yang sengaja ditunda
+
+- **`Code.gs` tidak disentuh.** Usulan optimasi backend (cache data rak) tidak dikerjakan:
+  nilainya kecil dibanding biaya `clasp push` + deployment baru + verifikasi L3, dan seluruh
+  permukaan rilis ditekan ke frontend-only supaya bisa diverifikasi penuh di L1/L2.
+- Deploy belum dilakukan (butuh keputusan user). Setelah deploy, perilaku P-6: jaringan
+  normal → kunjungan pertama sudah versi baru; jaringan lambat → kunjungan pertama menyajikan
+  cache sambil mengunduh di background, kunjungan berikutnya sudah versi baru.
+
+### 20.7 Yang belum terverifikasi
+
+- **L3 (GAS live) — NOT TESTED**: backend tidak berubah; tidak ada mutasi (sesuai aturan).
+- **L4 (device) — NOT TESTED**: kamera QR di HP, PWA install, toggle offline nyata.
+- **L5 — NOT TESTED.**
+- Suite L2 yang tidak dijalankan ulang tetap berstatus run 2026-10-13/14 (lihat §1.2) —
+  bukan klaim hijau untuk v15.33.
+- `r2_browser_suite` pasca-review-fix — **NOT re-run**: host tersaturasi (CPU 100%, RAM
+  bebas ~1 GB dari 7 GB — aplikasi desktop user) + cap CDP 15 dtk (§20.5#3) → risiko flake;
+  status terakhir 32/0 = revisi **pra**-review-fix. Jalankan di host tenang sebagai gate pra-deploy.
+
+### 20.8 Review independen + review-fix (2026-10-16b)
+
+Diff v15.33 seluruhnya direview oleh agent `code-reviewer`: **0 CRITICAL / 0 HIGH**; 6 temuan
+MEDIUM/LOW + 1 INFO ditindaklanjuti. Setiap temuan **diverifikasi ulang langsung dari kode dan
+`git diff` penuh** sebelum diterima (tidak diterima begitu saja).
+
+| ID | Sev | Inti temuan | Tindakan |
+|----|-----|-------------|----------|
+| F-1 | MEDIUM | `_ensureRakBreakdownMap` mengisi peta `{}` saat respons error → tab Rak ke-2 tidak retry | fix: peta hanya di-set bila `status==='ok'`; `_rakBreakdownLoading=false` (selesai-loading) tetap dieksekusi lebih dulu |
+| F-2 | MEDIUM | call-site batch tanpa refresh katalog (item batch tidak menyimpan `saldoSesudah`) → data bisa basi sampai 90 dtk | fix: helper `_refreshAfterBatch()` (invalidasi peta + TTL, batalkan timer coalesce, `loadData()` langsung) dipakai 3 call-site batch |
+| F-3 | LOW | `_dataLoading=false` di akhir rantai render → CTA "Muat data" tertahan pada state selesai-kosong | fix: dipindah sebelum `renderTable` di jalur sukses (mode memuat tetap benar) |
+| F-4 | LOW | boot `#dashboard`: `loadDashboard` memicu `getData` kedua saat data masih dimuat + dashboard tidak dirender ulang setelah data tiba | fix: guard `if(!allRows.length&&_dataLoading)return;` + cabang dashboard di rantai re-render `loadData` |
+| F-5 | LOW | id item dibaca dari `currentItem` saat respons tiba (bisa sudah berganti) | fix: `_itemIdSubmit` dikunci saat submit; 2 call-site memakainya |
+| F-6 | LOW | re-render async fuzzy mereset highlight pilihan (`_acIdx`) → navigasi keyboard vs daftar bisa drift | fix: `keepSel` — kelas `ac-active` di-apply ulang pada indeks yang sama (WYSIWYG) |
+| INFO-3 | INFO | komentar font mengklaim SW meng-cache font CDN (klaim salah) | klaim dihapus dari komentar |
+
+INFO-1b, INFO-2 (`gasGet` tanpa timeout — pra-eksisting), INFO-4 (guard L1 berbasis string):
+diterima tanpa perubahan; alasan dicatat di laporan sesi. Guard L1 baru merekam tindakan di
+atas: suite `perf_pass_v1533` 40 → **46 assert**; total L1 1412 → **1418**.
+
+Re-review delta (sesi reviewer yang sama, 2026-10-16b): **APPROVE SHIP** — 0 CRITICAL/HIGH/MEDIUM. Tiga INFO baru diterima sebagai accepted limitation: **INFO-A** retry `_ensureRakBreakdownMap` tanpa cooldown bila endpoint terus gagal (dibatasi aksi user + guard `_rakBreakdownLoading`; opsi: cooldown ±30 dtk); **INFO-B** guard F-4a berada setelah `loadOperatorProductivity`/`loadRackOverview` (worst case +1–2 GET saat boot, biasanya ter-dedupe cache `opProdLoaded`/`dashRakLoaded`; tujuan anti-`getData`-ganda tetap tercapai); **INFO-C** `keepSel` F-6 berbasis indeks — highlight bisa pindah item bila urutan top-8 berubah saat pass-2 (highlight & Enter tetap sinkron; murni kosmetik).
+
+Bukti pasca-fix (revisi final):
+
+- **L1 penuh**: `suites=50 failedSuites=0 assertPass=1418 assertFail=0`. Blok script inline
+  lolos kompilasi (`vm.Script`, 358.847 char).
+- **L2 `r2_perf_pass` (18 assert)**: **17 PASS / 1 FAIL** — hijau: BOOT-1/2, AC-1…4, RAK-1/2,
+  DASH-1, TRX-0…4, **BOOT-4** (boot `#dashboard`: `getData` 2→3 = tepat 1×, dulu 2×), **BOOT-5**
+  (dashboard ter-render setelah data tiba), `NO PAGE EXCEPTION`. Merah: **BOOT-3** (ambang data
+  ≤15 dtk) — **ENVIRONMENT-DEPENDENT**, bukan regresi: kode produk identik hijau **10,8 dtk**
+  (run2) lalu 33 / 46 / 115 dtk (run3/4/5) saat host tersaturasi penuh (CPU 100%; RAM bebas
+  ~1–1,7 GB dari 7 GB). BOOT-4/5 hijau 3× berturut-turut.
+- **L2 subset regresi**: `r2_feature_smoke` **37/0** · `r2_outbox_app` **14/0** ·
+  `r2_qty0_last` **7/0**.
+- `r2_browser_suite`: TIDAK dijalankan ulang pasca-review-fix (lihat §20.7) — status 32/0
+  berlaku untuk revisi pra-review-fix.
+
+Rollback (semua perubahan sesi ini **belum di-commit**): `git checkout -- index.html PLAN.md
+TESTING.md package.json sw.js tests/l1/bug_key_join_safeCell.js tests/run-l2.js` lalu hapus
+`tests/l1/perf_pass_v1533.js` + `tests/l2/r2_perf_pass.js`.
+
+### 20.9 Uji pakai langsung — walkthrough L2 (2026-10-16c)
+
+Selain suite assertion, aplikasi dipakai satu sesi penuh seperti operator lewat tool baru
+`tests/tools/live_walk.js` (Chrome headless + CDP, viewport HP 390×844, mock GAS lokal;
+domain produksi diblokir `Network.setBlockedURLs` selama run). Skenario: login lewat
+**form asli** (mock balas token `editor` → kunci editor ter-set otomatis) → buka Transaksi
+dari tab FAB asli → ketik typo `kathode bering` (input event nyata + debounce 150 ms) →
+dropdown fuzzy async menemukan `Kathode Bearing KX-9` → pilih item (`mousedown` → `acPick`)
+→ simpan KELUAR 1 Pcs lewat tombol asli `#btn-submit` → Dashboard lewat tab asli →
+tab Rak lewat drawer "Lainnya".
+
+Hasil: **12 PASS / 0 FAIL** — `tests/results/l2_live_walk_run1.txt`; 8 screenshot di
+`tests/results/live_walk/` (keduanya gitignored). Terverifikasi di jalur nyata (bukan
+suite): `getData` tetap **1×** setelah transaksi (baris di-patch lokal ke `qty` `24` =
+`saldoSesudah` server), kartu hasil **25 Pcs → 24 Pcs**, Cek Per Rak merender
+A-01 (2 item) / A-02 (1 item), **0 page/console error** seluruh run. Tanpa assertion
+timing (fungsi, bukan batas waktu — batas waktu tetap tugas `r2_perf_pass`).
+
+Rollback walkthrough: hapus `tests/tools/live_walk.js` + hasil gitignored
+(`tests/results/live_walk/`, `tests/results/l2_live_walk_run1.txt`) — tidak menyentuh
+file produk.
+
+### 20.10 Rilis (2026-10-18)
+
+Paket v15.33 di-commit dan di-push ke `main` — deploy PWA lewat GitHub Pages + SW
+`rdi-stok-v42`; backend `Code.gs` tidak berubah (rilis frontend-only, §20.6).
+
+Gate pra-rilis pada revisi final (perubahan kode terakhir = review-fix §20.8):
+
+- L1: `suites=50 failedSuites=0 assertPass=1418 assertFail=0`
+  (`tests/results/l1_predeploy_20261018.txt`).
+- L2 perf: **18/18** — termasuk BOOT-3 8,8 dtk (ambang 15 dtk), BOOT-4/5, AC-1…4,
+  RAK-1/2, DASH-1, TRX-0…4 (`tests/results/l2_perf_predeploy_20261018.txt`).
+- L2 browser suite: **32/0** (`tests/results/l2_browser_predeploy2_20261018.txt`).
+  Run pertama gagal di startup harness (`timeout Page.reload` 15 dtk saat host
+  CPU 100%, 0 assertion berjalan) — run kedua hijau tanpa perubahan kode.
+- Walkthrough §20.9: 12/0; smoke 37/0; outbox 14/0; qty0 7/0 (pasca-review-fix).
+
+Rollback rilis: `git revert <hash commit v15.33>` lalu push — SW mendeteksi perubahan
+`sw.js` pada kunjungan berikutnya; klien yang telanjur v42 kembali ke shell versi
+sebelumnya lewat alur update SW yang sama.

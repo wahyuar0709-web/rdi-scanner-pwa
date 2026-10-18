@@ -1,7 +1,7 @@
 /* UI MEASURE v2 — pengukuran runtime yang AKURAT.
  * Perbaikan atas v1 (v1 menghasilkan angka yang bisa menyesatkan):
- *  1) Kontras: alpha di-composite ke atas background efektif (v1 prayed opacity=1 →
- *    的几 false positive "1.02:1" untuk teks semi-transparan).
+ *  1) Kontras: alpha di-composite ke atas background efektif (v1 memakai opacity=1 →
+ *    beberapa false positive "1.02:1" untuk teks semi-transparan).
  *  2) Target kecil: menyimpan class + selector path, supaya temuan bisa langsung ditindaklanjuti.
  *  3) State: login sungguhan lewat form (mock GAS mengembalikan token valid) →
  *     app dalam kondisi normal, bukan setengah boot.
