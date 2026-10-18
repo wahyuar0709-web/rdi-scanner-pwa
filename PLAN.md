@@ -2136,3 +2136,12 @@ Gate pra-rilis pada revisi final (perubahan kode terakhir = review-fix §20.8):
 Rollback rilis: `git revert <hash commit v15.33>` lalu push — SW mendeteksi perubahan
 `sw.js` pada kunjungan berikutnya; klien yang telanjur v42 kembali ke shell versi
 sebelumnya lewat alur update SW yang sama.
+
+Catatan pasca-rilis (2026-10-18): halaman Pages terbukti memuat v15.33 + SW
+`rdi-stok-v42` (dicek dari luar). CI L1 GitHub Actions ternyata **merah sejak
+6dddf21** — gate ENC di `tests/l1/bug_key_join_safeCell.js` menuntut EOL CRLF
+hardcoded, sehingga selalu gagal di checkout Linux (LF) walau kode benar; lokal
+Windows lolos karena `core.autocrlf=true`. Gate dibuat portabel (EOL tunggal:
+semua CRLF **atau** semua LF; tetap tanpa BOM/U+FFFD) di commit `ebd9def`:
+verifikasi 69/0 lokal + 69/0 pada simulasi checkout LF, L1 penuh 1418/0, CI L1
+hijau kembali.
