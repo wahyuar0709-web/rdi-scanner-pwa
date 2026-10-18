@@ -256,13 +256,19 @@ const LOCK = [
 LOCK.forEach(([n, ok]) => t(n, ok));
 
 console.log('\n=== encoding ===');
-[['Code.gs', '\r\n'], ['index.html', '\r\n'], ['sw.js', '\r\n'], ['manifest.json', '\n']].forEach(([f, eol]) => {
+/* EOL tunggal = SEMUA CRLF atau SEMUA LF - bukan salah satu yang diwajibkan.
+ * Versi lama menuntut CRLF hardcoded: lolos di checkout Windows, tetapi
+ * SELALU merah di GitHub Actions (checkout Linux = LF) sejak commit 6dddf21.
+ * Jenis EOL adalah urusan checkout git (core.autocrlf), bukan kebenaran kode.
+ * Yang wajib dijaga: tidak campur, tanpa BOM, tanpa U+FFFD. */
+['Code.gs', 'index.html', 'sw.js', 'manifest.json'].forEach(f => {
   const b = fs.readFileSync(path.join(ROOT, f));
   const c = b.toString('utf8');
-  const utama = eol === '\r\n' ? (c.match(/\r\n/g) || []).length : (c.match(/(?<!\r)\n/g) || []).length;
-  const lain = eol === '\r\n' ? (c.match(/(?<!\r)\n/g) || []).length : (c.match(/\r\n/g) || []).length;
+  const crlf = (c.match(/\r\n/g) || []).length;
+  const lf = (c.match(/(?<!\r)\n/g) || []).length;
   t('ENC: ' + f + ' tanpa BOM/U+FFFD, EOL tunggal',
-    b[0] !== 0xEF && !/\uFFFD/.test(c) && lain === 0 && utama > 0);
+    b[0] !== 0xEF && !/\uFFFD/.test(c) && (crlf === 0) !== (lf === 0),
+    'crlf=' + crlf + ' lf=' + lf);
 });
 
 console.log('\n---- ' + pass + ' PASS / ' + fail + ' FAIL ----');
