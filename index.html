@@ -3434,13 +3434,13 @@ var alerts=allRows.filter(function(r){var min=parseInt(minStockMap[r.id]||0);ret
 // ===== SECTION: TRANSAKSI: scan, mode, draft, lookup item =====
 function openScanTransaksi(){currentItem=null;currentRequestId=null;document.getElementById('scan-id-input').value='';hideStatus('sbar-lookup');showScanStep('input');setScanMode('transaksi');switchTab('scanner');}
 function goToTransaksi(id){switchTab('scanner',true);setScanMode('transaksi');document.getElementById('scan-id-input').value=id;lookupItem();}
-function exportExcel(){if(!allRows.length){alert('Tidak ada data. Load data terlebih dahulu.');return;}
+function exportExcel(){if(!allRows.length){cetakNotice('Tidak ada data. Muat data terlebih dahulu.','warn');return;}
 var rows=filteredRows.length?filteredRows:allRows;var header=['ID Item','No','Nama Material','Kategori','Spesifikasi','BC/Non BC','Vendor Terakhir','No SJ/PO Terakhir','RAK (per lokasi)','Qty/Saldo Total','Unit','Min Stock'];var csv=[header.join(',')].concat(rows.map(function(r){return[r.id,r.no,r.nama,r.kategori||'',r.spec,r.bc,r.vendor||'',r.noReferensi||'',r.rak,r.qty,r.unit,minStockMap[r.id]||0].map(function(v){var s=String(v||'').replace(/"/g,'""');return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s+'"':s;}).join(',');})).join('\n');var BOM='\uFEFF';var blob=new Blob([BOM+csv],{type:'text/csv;charset=utf-8;'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='MasterItem_RDI_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);}
 // ===== Export Excel Lengkap (kartu stok per-batch FIFO, per kategori, format meniru file referensi user) =====
 function openExportExcelModal(){var m=document.getElementById('modal-export-excel');m.classList.add('show');modalFocusOpen(m);}
 function closeExportExcelModal(){var m=document.getElementById('modal-export-excel');m.classList.remove('show');modalFocusClose(m);}
 // ===== F-05 Export QR Massal =====
-function openExportQRModal(){if(!allRows.length){alert('Tidak ada data. Load data terlebih dahulu.');return;}var m=document.getElementById('modal-export-qr');m.classList.add('show');modalFocusOpen(m);}
+function openExportQRModal(){if(!allRows.length){cetakNotice('Tidak ada data. Muat data terlebih dahulu.','warn');return;}var m=document.getElementById('modal-export-qr');m.classList.add('show');modalFocusOpen(m);}
 function closeExportQRModal(){var m=document.getElementById('modal-export-qr');m.classList.remove('show');modalFocusClose(m);}
 function _qrExportRows(scope){
   if(scope==='selected'){var ids=cetakSelectedIds||new Set();return allRows.filter(function(r){return ids.has(r._idx);});}
@@ -3704,7 +3704,7 @@ var allShown=raks.length>0&&raks.every(function(r){return rakLabelSelected.has(r
 function onRakLabelCheck(el){var rak=el.getAttribute('data-rak');if(el.checked)rakLabelSelected.add(rak);else rakLabelSelected.delete(rak);updateRakLabelCount();var allBox=document.getElementById('rak-label-select-all');var boxes=document.querySelectorAll('#rak-label-list input[type=checkbox]');allBox.checked=boxes.length>0&&Array.prototype.every.call(boxes,function(b){return b.checked;});}
 function toggleRakLabelAll(checked){document.querySelectorAll('#rak-label-list input[type=checkbox]').forEach(function(b){b.checked=checked;var rak=b.getAttribute('data-rak');if(checked)rakLabelSelected.add(rak);else rakLabelSelected.delete(rak);});updateRakLabelCount();}
 function updateRakLabelCount(){document.getElementById('rak-label-count').textContent=rakLabelSelected.size+' rak dipilih';}
-function printRakLabels(){if(!rakLabelSelected.size){alert('Pilih minimal 1 rak yang ingin dicetak!');return;}
+function printRakLabels(){if(!rakLabelSelected.size){cetakNotice('Pilih minimal 1 rak dulu — tap kartu rak untuk mencentang.','warn');return;}
 var raks=Array.from(rakLabelSelected).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true});});var w=window.open('','_blank');if(!w){cetakNotice('Popup diblokir browser. Izinkan popup untuk domain ini lalu coba lagi.','err',7000);return;}
 w.document.write(buildRakLabelHTML(raks));w.document.close();closeRakLabelSheet();}
 function showRakDetail(rak){var groups=getRakGroups();var items=groups[rak]||[];document.getElementById('rak-detail-title').textContent='Rak '+rak;document.getElementById('rak-detail-sub').textContent=items.length+' item ditemukan';var container=document.getElementById('rak-detail-container');if(!items.length){container.innerHTML='<div class="empty-state u-py24"><p>Tidak ada item di rak ini</p></div>';}else{container.innerHTML=items.map(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var bcBadgeCls=isBC.includes('NON')?'badge-nonbc':'badge-bc';var idHtml=r.id&&r.id.trim()!==''?'<span class="ilc-id"><svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="14" x2="13" y2="14"/></svg>'+xe(r.id)+'</span>':'<span class="ilc-id" style="background:#fef3c7;color:#92400e;border-color:#f59e0b">No ID</span>';var vendorPill=r.vendor?'<span class="ilc-chip ilc-chip-vendor"><span class="ilc-chip-lbl">Vendor</span>'+xe(r.vendor)+'</span>':'';var catPill=r.kategori?'<span class="ilc-chip ilc-chip-cat">'+xe(r.kategori)+'</span>':'';var bcPill=r.bc?'<span class="badge '+bcBadgeCls+'" style="font-size:12px;padding:var(--sp-2) var(--sp-5)">'+xe(r.bc)+'</span>':'';return'<div class="item-list-card">'
@@ -3741,7 +3741,7 @@ if(user&&r.admin!==user)return false;if(histFeedJenis!=='ALL'&&(r.jenis||'').toU
 return true;});histFeedPage=1;renderHistFeed();}
 function resetHistFeedFilter(){document.getElementById('hfeed-date-from').value='';document.getElementById('hfeed-date-to').value='';document.getElementById('hfeed-rak').value='';document.getElementById('hfeed-user').value='';clearHistFeedSearch();setHistFeedChip('ALL');}
 /* pure helpers moved → js/format.js (F4.5) */
-function exportHistFeedCSV(){if(!histFeedFiltered.length){alert('Tidak ada data riwayat untuk diexport (filter saat ini kosong).');return;}
+function exportHistFeedCSV(){if(!histFeedFiltered.length){cetakNotice('Tidak ada data riwayat untuk diexport (filter saat ini kosong).','warn');return;}
 var header=['Tanggal','Kode Item','Nama Barang','Spesifikasi','Jenis','Qty','Rak','Vendor','No Referensi','Saldo Sebelum','Saldo Sesudah','Keterangan','Admin'];var lines=[header.map(csvEscapeField).join(',')];histFeedFiltered.forEach(function(r){lines.push([r.timestamp,r.itemId,r.nama,r.spec,r.jenis,r.qty,r.rak,r.vendor,r.noReferensi,r.saldoSebelum,r.saldoSesudah,r.keterangan,r.admin].map(csvEscapeField).join(','));});var csvContent='\uFEFF'+lines.join('\r\n');var blob=new Blob([csvContent],{type:'text/csv;charset=utf-8;'});var now=new Date();var fname='Inventory_Report_'+now.getFullYear()+pad2(now.getMonth()+1)+pad2(now.getDate())
 +'_'+pad2(now.getHours())+pad2(now.getMinutes())+'.csv';var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
 function histFeedTotalPages(){return calcTotalPages(histFeedFiltered,HIST_PAGE_SIZE);}
@@ -4159,7 +4159,7 @@ function loadAsetSummary(){
   }).catch(function(){ _asetDashLoaded=false; var b=document.getElementById('aset-kpi-err'); if(b)b.style.display=''; });
 }
 function asetPlaceholder(namaFitur){
-  alert('Fitur "'+namaFitur+'" belum tersedia — masih dalam tahap pembangunan bertahap.');
+  cetakNotice('Fitur "'+namaFitur+'" belum tersedia — masih dalam tahap pembangunan bertahap.','info');
 }
 
 /* ============================================================
@@ -4725,7 +4725,7 @@ function asetCpPickActivity(activity){
   _asetCpKodeAlat=document.getElementById('aset-cp-select-kode').value;
   _asetCpActivity=activity;
   if(!_asetCpKodeAlat){
-    alert('Pilih Kode_Alat dulu.');
+    cetakNotice('Pilih Kode_Alat dulu.','warn');
     return;
   }
   showAsetCpStep(2);

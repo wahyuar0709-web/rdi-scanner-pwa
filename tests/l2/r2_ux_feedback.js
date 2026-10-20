@@ -28,7 +28,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       let a = '';
       try { a = JSON.parse(Buffer.concat(ch).toString() || '{}').action || ''; } catch (e) {}
-      if (a === 'getData') res.end(JSON.stringify({ status: 'ok', total: ROWS.length, rows: ROWS }));
+      if (a === 'getData') { const zeroRows = req.url.indexOf('rows=0') !== -1; res.end(JSON.stringify({ status: 'ok', total: zeroRows ? 0 : ROWS.length, rows: zeroRows ? [] : ROWS })); }
       else res.end(JSON.stringify({ status: 'ok', message: 'ok', total: 0, items: [], alat: [], raks: [], trx: [] }));
     });
     return;
@@ -101,17 +101,18 @@ async function main() {
     await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.enable');
     const payload = Buffer.from(['h', 'n', String(Date.now() + 3600000), 'sig'].join('|')).toString('base64').replace(/=+$/, '') + '.sig';
 
-    async function boot() {
+    async function boot(nRows) {
+      const expectRows = nRows === undefined ? ROWS.length : nRows;
       await send('Page.navigate', { url: 'http://127.0.0.1:' + HTTP_PORT + '/index.html' });
       for (let i = 0; i < 50; i++) {
         if (await ev("typeof window.switchTab==='function' && !!document.getElementById('boot-splash')") === true) break;
         await sleep(300);
       }
-      await ev("localStorage.setItem('rdi_gas_url','http://127.0.0.1:" + HTTP_PORT + "/gas');sessionStorage.setItem('rdi_viewer_token','" + payload + "');sessionStorage.removeItem('rdi_editor_key');'ok'");
+      await ev("localStorage.setItem('rdi_gas_url','http://127.0.0.1:" + HTTP_PORT + "/gas" + (nRows === 0 ? '?rows=0' : '') + "');sessionStorage.setItem('rdi_viewer_token','" + payload + "');sessionStorage.removeItem('rdi_editor_key');'ok'");
       await send('Page.navigate', { url: 'http://127.0.0.1:' + HTTP_PORT + '/index.html' });
       for (let i = 0; i < 70; i++) {
         const r = await ev("(function(){var b=document.getElementById('boot-splash');return {h:!b||b.classList.contains('hide'),rs:document.readyState,n:(window.allRows||[]).length,fn:typeof window.switchTab==='function'};})()");
-        if (r && !r.error && r.h === true && r.rs === 'complete' && r.fn === true && r.n === ROWS.length) return true;
+        if (r && !r.error && r.h === true && r.rs === 'complete' && r.fn === true && r.n === expectRows) return true;
         await sleep(300);
       }
       return false;
@@ -238,6 +239,36 @@ async function main() {
     const rmVib = await ev("({vib:window.__vib,pid:(document.getElementById('preview-id')||{}).textContent||null,trx:document.getElementById('step-transaksi').classList.contains('active'),sbar:(document.getElementById('sbar-lookup')||{}).textContent||null})");
     rec('reduced motion: tidak ada getaran (preferensi OS dihormati)', rmVib && Array.isArray(rmVib.vib) && rmVib.vib.length === 0, rmVib);
     rec('alur tetap jalan tanpa getaran (item tampil di preview)', rmVib && rmVib.pid === 'MRO-02-001' && rmVib.trx === true, rmVib);
+
+    const boot0 = await boot(0);
+    rec('boot ulang dengan data kosong (0 baris, jalur nyata getData)', boot0 === true);
+
+    const alertFree = await ev(`(function(){
+      var calls=[]; var real=window.alert; window.alert=function(m){calls.push(String(m));};
+      var r={};
+      exportExcel(); r.export={a:calls.length, n:(window.allRows||[]).length, txt:(document.getElementById('cetak-pdf-banner')||{}).textContent||null};
+      cetakBanner(false); calls.length=0;
+      openExportQRModal(); r.qr={a:calls.length, txt:(document.getElementById('cetak-pdf-banner')||{}).textContent||null, modal:(document.getElementById('modal-export-qr')||{}).className?document.getElementById('modal-export-qr').classList.contains('show'):null};
+      document.getElementById('modal-export-qr').classList.remove('show'); cetakBanner(false); calls.length=0;
+      printRakLabels(); r.rak={a:calls.length, txt:(document.getElementById('cetak-pdf-banner')||{}).textContent||null};
+      cetakBanner(false); calls.length=0;
+      exportHistFeedCSV(); r.hist={a:calls.length, txt:(document.getElementById('cetak-pdf-banner')||{}).textContent||null};
+      cetakBanner(false); calls.length=0;
+      asetPlaceholder('Uji Coba'); r.ph={a:calls.length, txt:(document.getElementById('cetak-pdf-banner')||{}).textContent||null};
+      cetakBanner(false); calls.length=0;
+      window.alert=real;
+      return r;
+    })()`);
+    rec('U-1+: exportExcel tanpa data memakai notice, bukan alert',
+      alertFree && alertFree.export && alertFree.export.n === 0 && alertFree.export.a === 0 && /Muat data terlebih dahulu/.test(alertFree.export.txt || ''), alertFree && alertFree.export);
+    rec('U-1+: openExportQRModal tanpa data tidak membuka modal + notice',
+      alertFree && alertFree.qr && alertFree.qr.a === 0 && alertFree.qr.modal === false && /Muat data terlebih dahulu/.test(alertFree.qr.txt || ''), alertFree && alertFree.qr);
+    rec('U-1+: printRakLabels tanpa rak terpilih memakai notice',
+      alertFree && alertFree.rak && alertFree.rak.a === 0 && /Pilih minimal 1 rak/.test(alertFree.rak.txt || ''), alertFree && alertFree.rak);
+    rec('U-1+: exportHistFeedCSV tanpa data memakai notice',
+      alertFree && alertFree.hist && alertFree.hist.a === 0 && /Tidak ada data riwayat/.test(alertFree.hist.txt || ''), alertFree && alertFree.hist);
+    rec('U-1+: asetPlaceholder memakai notice info, bukan alert',
+      alertFree && alertFree.ph && alertFree.ph.a === 0 && /belum tersedia/.test(alertFree.ph.txt || ''), alertFree && alertFree.ph);
 
     console.log('---');
     console.log('UX_FEEDBACK: ' + pass + ' PASS / ' + fail + ' FAIL');
