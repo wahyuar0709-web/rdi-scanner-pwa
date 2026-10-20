@@ -30,4 +30,6 @@ Desktop.ini
 
 # accidental result artifacts under tests/l1
 tests/l1/*.json
+# ...kecuali fixture yang memang harus ikut versi (gate cache service worker)
+!tests/l1/sw_shell_manifest.json
 tests/l2/*.json

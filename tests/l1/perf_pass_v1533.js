@@ -135,7 +135,7 @@ t('FONT: link Google Fonts non-blocking (media=print + onload media=all)',
   cnt('rel="stylesheet" media="print" onload="this.media=\'all\'"') === 1);
 
 // --- sw.js: network-first + batas waktu + cache v42 ---
-t('SW: CACHE rdi-stok-v42', /CACHE = 'rdi-stok-v42'/.test(sw));
+t('SW: CACHE berpola rdi-stok-v<N> (nilai pasti dijaga sw_shell_cache_gate)', /CACHE = 'rdi-stok-v\d+'/.test(sw));
 t('SW: HTML network-first dgn batas waktu 2,5 dtk (fallback cache)',
   sw.indexOf('2500') !== -1 && sw.indexOf("'TIMEOUT'") !== -1);
 t('SW: precache aset inti tetap ada (guard LOCK-7 tidak dilanggar)',

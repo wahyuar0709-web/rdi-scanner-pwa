@@ -242,7 +242,7 @@ const LOCK = [
   ['LOCK-4: #f59e0b tidak dipakai sebagai color: (hanya gradient/border)',
     !/(^|[^-])color:\s*#f59e0b/i.test(html)],
   ['LOCK-5: --br-16 tetap 16px (gate cetak_bar_layout)', /--br-16:16px/.test(html)],
-  ['LOCK-6: sw.js CACHE = rdi-stok-v42 (bump disengaja rilis PERF 2026-10-16; dulu dijaga v41 saat fix safeCell)', /CACHE = 'rdi-stok-v42'/.test(sw)],
+  ['LOCK-6: sw.js CACHE bernama rdi-stok-v<N> (nilai pasti dijaga sw_shell_cache_gate)', /CACHE = 'rdi-stok-v\d+'/.test(sw)],
   ['LOCK-7: sw.js precache tetap 16 aset terakhir', /'\.\/js\/html2pdf\.bundle\.min\.js'/.test(sw)],
   ['LOCK-8: API_VERSION masih v5.28', /API_VERSION = 'v5\.28'/.test(gs)],
   ['LOCK-9: API_BUILD = 2026-10-15.2 (BUG-1b: normalisasi RAK di fungsi rebuild)', /API_BUILD\s*=\s*'2026-10-15\.2'/.test(gs)],
