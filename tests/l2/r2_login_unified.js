@@ -173,6 +173,7 @@ async function main() {
   await ev("localStorage.setItem('rdi_gas_url','" + GAS_URL + "');localStorage.setItem('rdi_bypass_boot','1');'ok'");
   await send('Page.navigate', { url: APP_URL });
   await waitFor("document.getElementById('login-username') && document.getElementById('login-password')", 20000, 'form login siap setelah navigasi');
+  await waitFor("typeof submitViewerLogin==='function' && typeof gasPost==='function'", 30000, 'mesin login siap (submitViewerLogin + gasPost)');
 
   // --- 1. form login ada & field Editor Key tidak ada ---
   rec('LU-1: form login username+password ada di layar utama',
@@ -209,6 +210,7 @@ async function main() {
   await ev("(function(){try{sessionStorage.clear();}catch(e){} localStorage.removeItem('rdi_editor_key');localStorage.removeItem('rdi_viewer_token');localStorage.removeItem('rdi_last_active');return 1;})()");
   await send('Page.navigate', { url: APP_URL });
   await waitFor("document.getElementById('login-username')", 20000, 'form login siap untuk sesi viewer');
+  await waitFor("typeof submitViewerLogin==='function' && typeof gasPost==='function'", 30000, 'mesin login siap untuk sesi viewer');
   await ev("(function(){document.getElementById('login-username').value='gudang01';document.getElementById('login-password').value='ViewerPass123!';return 1;})()");
   await ev("submitViewerLogin();1");
   await waitFor("document.getElementById('login-gate').classList.contains('hide') && document.body.classList.contains('viewer-mode')", 25000, 'login viewer: masuk app + viewer-mode');

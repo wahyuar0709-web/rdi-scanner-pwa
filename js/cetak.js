@@ -1,12 +1,14 @@
 // F4.3 pure cetak/label HTML builders — loaded without defer after js/util.js.
 // Depends on global ex/qrImgSrc (js/util.js). Keep free of IIFE/DOM/GAS state.
 // Orchestration (doCetak/generateOutput/setCetakMode/printRakLabels) stays in index.html IIFE.
+// FIX 2026-10-19 (kiyes cetak): QR px per modul (160 → 10) + builder dipisah open/page/tail
+// supaya popup bisa diisi per halaman (lihat cetakFillPopup di index.html).
 
 function buildRakLabelHTML(raks){/* AUDIT FIX T-19 (v14.90): escaper ex + qrImgSrc di js/util.js (F4.2); kutip atribut wajib via ex(). */
 
 var cols=3,perPage=cols*4;var cards=raks.map(function(rak){var qrData=encodeURIComponent(rak);return'<div class="lbl u-flex-none u-pad-20-0 u-mt-12 u-mt-10 u-flex-c-g1 u-label-sm u-mt-8">'
 +'<div class="lbl-co">PT RAYARD DELI INDONESIA</div>'
-+'<img class="lbl-qr" src="'+qrImgSrc(rak,160)+'" width="100%" height="100%" alt="Kode QR rak '+ex(rak)+'">'
++'<img class="lbl-qr" src="'+qrImgSrc(rak,10)+'" width="100%" height="100%" alt="Kode QR rak '+ex(rak)+'">'
 +'<div class="lbl-code">'+ex(rak)+'</div>'
 +'</div>';});var pages=[];for(var p=0;p<cards.length;p+=perPage){pages.push(cards.slice(p,p+perPage));}
 var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';}).join('');return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Barcode Rak</title><style>'
@@ -38,21 +40,19 @@ var LABEL_TPL={
 };
 function getLabelTpl(id){return LABEL_TPL[id]||LABEL_TPL['4x6'];}
 function labelPerPage(id){var t=getLabelTpl(id);return t.cols*t.rows;}
+function labelTglNow(){return new Date();}
 
-function buildLabelHTML(items,mode,tplId){var now=new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';
-
-var tpl=getLabelTpl(tplId);
-var cols=tpl.cols,rows=tpl.rows,perPage=cols*rows,qrMm=tpl.qrMm;
-var cards=items.map(function(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');return'<div class="lbl2">'
+/* FIX 2026-10-19 (P1): builder label dipecah open/page/tail.
+   Syarat: labelOpenHTML+labelPageHTML*+labelTailHTML WAJIB byte-identik
+   dengan keluaran buildLabelHTML lama (dibuktikan hash keluaran di probe cetak). */
+function labelCardHTML(item,idx){var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');return'<div class="lbl2">'
 +'<div class="lbl2-co">PT RAYARD DELI INDONESIA</div>'
 +'<img class="lbl2-qr" data-qr="'+ex(qrPayload)+'" src="'+qrImgSrc(qrPayload,10)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'">'
 +'<div class="lbl2-kode">'+ex(qrID)+'</div>'
 +'<div class="lbl2-nama">'+ex(item.nama)+'</div>'
 +(item.spec?'<div class="lbl2-spec">'+ex(item.spec)+'</div>':'')
-+'</div>';});
-var pages=[];for(var p=0;p<cards.length;p+=perPage)pages.push(cards.slice(p,p+perPage));
-var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.join('')+'</div>';}).join('');
-var scriptAction='<script>window.onload=function(){window.print();}<\/script>';
++'</div>';}
+function labelOpenHTML(tplId,extra){var tpl=getLabelTpl(tplId);var cols=tpl.cols,rows=tpl.rows,qrMm=tpl.qrMm;
 return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label Barang</title><style>'
 +'@page{size:A4 portrait;margin:0mm}'
 +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{margin:0;background:#fff}.page{box-shadow:none!important;margin:0!important;page-break-after:always;page-break-inside:avoid}.page.last-page{page-break-after:avoid!important}}'
@@ -66,7 +66,15 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 +'.lbl2-nama{font-size:7.5pt;font-weight:700;color:#1a1d27;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'.lbl2-spec{font-size:6pt;color:#5c7099;line-height:1.15;display:-webkit-box;-webkit-line-clamp:1;-webkit-line-orient:vertical;overflow:hidden;padding:0 .5mm}'
 +'@media print{.lbl2{border:1px dashed #99a3b8!important}}'
-+'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
++'</style></head><body>'+(extra||'')+'<div id="pw">';}
+function labelPageHTML(chunk,tplId,isLast,idx0){var off=idx0||0;
+return'<div class="page'+(isLast?' last-page':'')+'">'+chunk.map(function(item,i){return labelCardHTML(item,off+i);}).join('')+'</div>';}
+function labelTailHTML(){return'</div>'+'<script>window.onload=function(){window.print();}<\/script>'+'</body></html>';}
+function buildLabelHTML(items,mode,tplId){var tpl=getLabelTpl(tplId);
+var perPage=tpl.cols*tpl.rows;
+var pages=[];for(var p=0;p<items.length;p+=perPage)pages.push(items.slice(p,p+perPage));
+var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return labelPageHTML(c,tplId,isLast,pi*perPage);}).join('');
+return labelOpenHTML(tplId)+ph+labelTailHTML();}
 
 /* FIX OFFLINE 2026-10-13: html2pdf 0.10.1 tadinya diambil dari cdnjs.cloudflare.com
    SETIAP kali operator menekan "Download Kartu Stok". Aplikasi ini offline-first, jadi
@@ -77,37 +85,18 @@ return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Label B
 var H2P_LOCAL='';
 try{ if(typeof location!=='undefined'&&location&&location.href){H2P_LOCAL=new URL('js/html2pdf.bundle.min.js',location.href).href;}}catch(e){}
 var H2P_SRC=H2P_LOCAL||'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-function buildPrintHTML(items,mode,pSize){var now=new Date();var tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');var pdfFilename='kartu-stok.'+yyyy+'.'+mm+'.'+dd+'.pdf';var cpp=pSize==='A5'?2:4;var pages=[];for(var p=0;p<items.length;p+=cpp){var c=items.slice(p,p+cpp);while(c.length<cpp)c.push(null);pages.push(c);}
-/* AUDIT FIX T-19 (v14.90): escaper ex pindah ke js/util.js (F4.2). */
-function kartu(item,idx){if(!item)return'<div class="kartu kartu-empty"></div>';var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');function qrSrc(text,px){try{if(typeof qrcode==='function'){var q=qrcode(0,'M');q.addData(String(text||''));q.make();return q.createDataURL(Math.max(4,px||120),2);}}catch(e){}return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';}var rows='';for(var n=2;n<=15;n++)rows+='<div class="tr"><div class="td no">'+n+'</div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td last"></div></div>';return'<div class="kartu">'
-+'<div class="bar"></div>'
-+'<div class="kh">'
-+'<div class="khl">'
-+'<div class="htop"><div class="la"><div class="li"><svg viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1" stroke="white" stroke-width="1.5"/><path d="M5 4V3a3 3 0 016 0v1" stroke="white" stroke-width="1.5"/></svg></div>'
-+'<div><div class="cn">PT RAYARD DELI INDONESIA</div><div class="cs">Spare Part, Tools &amp; Indirect Inventory</div></div></div>'
-+'<div class="tb2">KARTU STOK</div></div>'
-+'<div class="id-row"><span class="id-lbl">ID Item</span><span class="id-val">'+ex(item.id||'—')+'</span></div>'
-+'<div class="ig">'
-+'<span class="il">No SJ/PO Terakhir</span><span class="iv mono">'+ex(item.noReferensi||'—')+'</span>'
-+'<span class="il">Nama Material</span><span class="iv" style="font-size:6.5pt;white-space:normal;line-height:1.3">'+ex(item.nama)+'</span>'
-+'<span class="il">Spesifikasi</span><span class="iv spec-val">'+ex(item.spec)+'</span>'
-+'</div>'
-+'<div class="i2"><div class="ic"><span class="il">Rak / Lokasi</span><span class="iv" style="font-weight:800;color:#1a3a7a">'+ex(item.rak||'—')+'</span></div>'
-+'<div class="ic"><span class="il">Satuan</span><span class="iv">'+ex(item.unit||'Pcs')+'</span></div></div>'
-+'<div class="i2" style="margin-top:.4mm"><div class="ic"><span class="il">User / Dept</span><span class="iv">'+ex(item.user||'—')+'</span></div>'
-+'<div class="ic"><span class="il">BC / Non BC</span><span class="iv">'+ex(item.bc||'—')+'</span></div></div>'
-+'</div>'
-+'<div class="qa"><div class="qb"><img data-qr="'+ex(qrPayload)+'" src="'+qrSrc(qrPayload,160)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'"></div>'
-+'<div class="qk">'+ex(qrID)+'</div><div class="ql">Scan untuk Transaksi</div></div>'
-+'</div>'
-+'<div class="ss"><div class="sc masuk"><span class="sl">Total Masuk</span><span class="sv">'+ex(item.totalMasuk||0)+'</span></div>'
-+'<div class="sc keluar"><span class="sl">Total Keluar</span><span class="sv">'+ex(item.totalKeluar||0)+'</span></div>'
-+'<div class="sc saldo"><span class="sl">Stok Saldo</span><span class="sv">'+ex(item.qty)+'</span></div></div>'
-+'<div class="tt"><div class="thr"><div class="th">No.</div><div class="th">Tanggal</div><div class="th">Masuk</div><div class="th">Keluar</div><div class="th">Saldo</div><div class="th last">Keterangan</div></div>'
-+'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(tgl)+'</div><div class="td"></div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">Saldo saat cetak</div></div>'+rows+'</div></div>'
-+'<div class="kf"><div class="kfl">Cetak: '+tgl+' | Form: WH-KS-001</div><div class="kfr">Vendor Terakhir: '+ex(item.vendor||'—')+'</div><div class="kfv">v5.0</div></div>'
-+'</div>';}
-var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div class="page'+(isLast?' last-page':'')+'">'+c.map(function(item,i){return kartu(item,i);}).join('')+'</div>';}).join('');var gridRows=pSize==='A5'?'1fr':'1fr 1fr';var pageRule=pSize==='A5'?'A5 landscape':'A4 portrait';var pdfOrient=pSize==='A5'?'landscape':'portrait';var pageH=pSize==='A5'?'148.5mm':'297mm';var cutV='.page::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #bbb;transform:translateX(-50%);z-index:1}';var cutH=pSize==='A5'?'':'.page::after{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed #bbb;transform:translateY(-50%);z-index:1}';var scriptAction=mode==='download'?'<script src="'+H2P_SRC+'"><\/script><script>window.onload=function(){if(typeof html2pdf!=="function"){document.getElementById("pw").innerHTML="<p style=\'font-family:sans-serif;padding:24px\'>Library html2pdf gagal dimuat. Periksa lalu coba lagi.</p>";return;}html2pdf().set({margin:0,filename:"'+pdfFilename+'",image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:"mm",format:"'+pSize.toLowerCase()+'",orientation:"'+pdfOrient+'"}}).from(document.getElementById("pw")).save().then(function(){setTimeout(function(){window.close();},1500);});}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Kartu Stok</title><style>'
+/* FIX 2026-10-19: jsPDF lokal dipakai runner PDF per halaman (bundle html2pdf
+   tidak mengekspos html2canvas/jsPDF global — diuji di probe cetak). */
+var K_JSPDF_LOCAL='';
+try{ if(typeof location!=='undefined'&&location&&location.href){K_JSPDF_LOCAL=new URL('js/jspdf.min.js',location.href).href;}}catch(e){}
+var K_JSPDF_SRC=K_JSPDF_LOCAL||'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+
+function kartuTgl(now){now=now||new Date();return now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}
+function kartuPdfFilename(now){now=now||new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');return 'kartu-stok.'+yyyy+'.'+mm+'.'+dd+'.pdf';}
+
+/* FIX 2026-10-19 (P1): builder kartu dipecah open/page/tail (byte-identik). */
+function printOpenHTML(pSize,extra){var gridRows=pSize==='A5'?'1fr':'1fr 1fr';var pageRule=pSize==='A5'?'A5 landscape':'A4 portrait';var pageH=pSize==='A5'?'148.5mm':'297mm';var cutV='.page::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #bbb;transform:translateX(-50%);z-index:1}';var cutH=pSize==='A5'?'':'.page::after{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed #bbb;transform:translateY(-50%);z-index:1}';
+return'<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Kartu Stok</title><style>'
 +'@page{size:'+pageRule+';margin:0mm}'
 +'@media print{'
 +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
@@ -179,24 +168,83 @@ var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return'<div cla
 +'.iv{border-bottom:1px solid #b0bcd8!important}'
 +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
 +'}'
-+'</style></head><body><div id="pw">'+ph+'</div>'+scriptAction+'</body></html>';}
++'</style></head><body>'+(extra||'')+'<div id="pw">';}
 
-/* BUG FIX 2026-09-26 (3 bug menu cetak label):
-   Download label dulu = window.open popup → html2pdf dari CDN → html2canvas
-   raster A4 scale:2 → jsPDF repack → user menunggu beberapa detik.
-   Kini: jsPDF vector langsung di window utama — teks vektor, QR addImage PNG
-   240px, klik tombol → file terunduh tanpa popup & tanpa jaringan. */
+function printPageHTML(chunk,tgl,isLast){
+function kartu(item,idx){if(!item)return'<div class="kartu kartu-empty"></div>';var qrID=item.id&&item.id.trim()!==''?item.id.trim():('MAT'+String(idx+1).padStart(3,'0'));var qrPayload=qrID+'|'+item.nama+'|'+(item.rak||'');function qrSrc(text,px){try{if(typeof qrcode==='function'){var q=qrcode(0,'M');q.addData(String(text||''));q.make();return q.createDataURL(Math.max(4,px||120),2);}}catch(e){}return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';}var rows='';for(var n=2;n<=15;n++)rows+='<div class="tr"><div class="td no">'+n+'</div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td last"></div></div>';return'<div class="kartu">'
++'<div class="bar"></div>'
++'<div class="kh">'
++'<div class="khl">'
++'<div class="htop"><div class="la"><div class="li"><svg viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1" stroke="white" stroke-width="1.5"/><path d="M5 4V3a3 3 0 016 0v1" stroke="white" stroke-width="1.5"/></svg></div>'
++'<div><div class="cn">PT RAYARD DELI INDONESIA</div><div class="cs">Spare Part, Tools &amp; Indirect Inventory</div></div></div>'
++'<div class="tb2">KARTU STOK</div></div>'
++'<div class="id-row"><span class="id-lbl">ID Item</span><span class="id-val">'+ex(item.id||'—')+'</span></div>'
++'<div class="ig">'
++'<span class="il">No SJ/PO Terakhir</span><span class="iv mono">'+ex(item.noReferensi||'—')+'</span>'
++'<span class="il">Nama Material</span><span class="iv" style="font-size:6.5pt;white-space:normal;line-height:1.3">'+ex(item.nama)+'</span>'
++'<span class="il">Spesifikasi</span><span class="iv spec-val">'+ex(item.spec)+'</span>'
++'</div>'
++'<div class="i2"><div class="ic"><span class="il">Rak / Lokasi</span><span class="iv" style="font-weight:800;color:#1a3a7a">'+ex(item.rak||'—')+'</span></div>'
++'<div class="ic"><span class="il">Satuan</span><span class="iv">'+ex(item.unit||'Pcs')+'</span></div></div>'
++'<div class="i2" style="margin-top:.4mm"><div class="ic"><span class="il">User / Dept</span><span class="iv">'+ex(item.user||'—')+'</span></div>'
++'<div class="ic"><span class="il">BC / Non BC</span><span class="iv">'+ex(item.bc||'—')+'</span></div></div>'
++'</div>'
++'<div class="qa"><div class="qb"><img data-qr="'+ex(qrPayload)+'" src="'+qrSrc(qrPayload,10)+'" width="100%" height="100%" alt="Kode QR item '+ex(qrID)+'"></div>'
++'<div class="qk">'+ex(qrID)+'</div><div class="ql">Scan untuk Transaksi</div></div>'
++'</div>'
++'<div class="ss"><div class="sc masuk"><span class="sl">Total Masuk</span><span class="sv">'+ex(item.totalMasuk||0)+'</span></div>'
++'<div class="sc keluar"><span class="sl">Total Keluar</span><span class="sv">'+ex(item.totalKeluar||0)+'</span></div>'
++'<div class="sc saldo"><span class="sl">Stok Saldo</span><span class="sv">'+ex(item.qty)+'</span></div></div>'
++'<div class="tt"><div class="thr"><div class="th">No.</div><div class="th">Tanggal</div><div class="th">Masuk</div><div class="th">Keluar</div><div class="th">Saldo</div><div class="th last">Keterangan</div></div>'
++'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(tgl)+'</div><div class="td"></div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">Saldo saat cetak</div></div>'+rows+'</div></div>'
++'<div class="kf"><div class="kfl">Cetak: '+tgl+' | Form: WH-KS-001</div><div class="kfr">Vendor Terakhir: '+ex(item.vendor||'—')+'</div><div class="kfv">v5.0</div></div>'
++'</div>';}
+return'<div class="page'+(isLast?' last-page':'')+'">'+chunk.map(function(item,i){return kartu(item,i);}).join('')+'</div>';}
+
+function printTailHTML(mode,pdfFilename,pSize){var pdfOrient=pSize==='A5'?'landscape':'portrait';
+var scriptAction=mode==='download'?'<script src="'+H2P_SRC+'"><\/script><script>window.onload=function(){if(typeof html2pdf!=="function"){document.getElementById("pw").innerHTML="<p style=\'font-family:sans-serif;padding:24px\'>Library html2pdf gagal dimuat. Periksa lalu coba lagi.</p>";return;}html2pdf().set({margin:0,filename:"'+pdfFilename+'",image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:"mm",format:"'+pSize.toLowerCase()+'",orientation:"'+pdfOrient+'"}}).from(document.getElementById("pw")).save().then(function(){setTimeout(function(){window.close();},1500);});}<\/script>':'<script>window.onload=function(){window.print();}<\/script>';
+return'</div>'+scriptAction+'</body></html>';}
+
+function buildPrintHTML(items,mode,pSize){var now=new Date();var tgl=kartuTgl(now);var pdfFilename=kartuPdfFilename(now);var cpp=pSize==='A5'?2:4;var pages=[];for(var p=0;p<items.length;p+=cpp){var c=items.slice(p,p+cpp);while(c.length<cpp)c.push(null);pages.push(c);}
+var ph=pages.map(function(c,pi){var isLast=(pi===pages.length-1);return printPageHTML(c,tgl,isLast);}).join('');
+return printOpenHTML(pSize)+ph+printTailHTML(mode,pdfFilename,pSize);}
+
+/* FIX 2026-10-19 (RC-C): runner PDF kartu PER HALAMAN di dalam popup.
+   html2pdf lama meraster SELURUH #pw jadi satu canvas → >14 halaman A4 (56 kartu)
+   melewati batas canvas (32767 px) dan PDF keluar kosong. Sekarang: raster tiap
+   .page → addImage ke jsPDF lokal → progres di #cetak-progress → doc.save().
+   Fungsi ini mengembalikan BODY skrip (tanpa tag), disuntik via createElement. */
+function kartuPdfRunnerSrc(fname,pSize,orient){var fmt=String(pSize||'A4').toLowerCase();var o=(pSize==='A5')?'landscape':'portrait';var wmm=(pSize==='A5')?210:210;var hmm=(pSize==='A5')?148.5:297;
+var S='';
+S+='(function(){var pages=Array.prototype.slice.call(document.querySelectorAll("#pw .page"));var total=pages.length,i=0,doc=null,done=false;';
+S+='function msg(t){var e=document.getElementById("cetak-progress");if(e)e.textContent=t;}';
+S+='function fail(e){if(done)return;done=true;msg("Gagal membuat PDF: "+((e&&e.message)?e.message:e));}';
+S+='function JsPdf(){if(typeof jsPDF!=="undefined")return jsPDF;if(window.jspdf&&window.jspdf.jsPDF)return window.jspdf.jsPDF;return null;}';
+S+='function step(){if(done)return;if(i>=total){done=true;msg("Menyimpan PDF…");try{doc.save("'+fname+'");}catch(e){fail(e);return;}setTimeout(function(){try{window.close();}catch(e){}},1500);return;}';
+S+='msg("Merender halaman "+(i+1)+"/"+total+" …");';
+S+='html2pdf().set({margin:0,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,logging:false}}).from(pages[i]).toCanvas().get("canvas").then(function(cv){';
+S+='try{var C=JsPdf();if(!C)throw new Error("jsPDF tidak termuat");if(!doc)doc=new C({unit:"mm",format:"'+fmt+'",orientation:"'+o+'",compress:true});else doc.addPage();';
+S+='doc.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",0,0,'+wmm+','+hmm+',undefined,"FAST");}catch(e){fail(e);return;}';
+S+='i++;msg("Halaman "+i+"/"+total+" selesai …");setTimeout(step,30);},function(e){fail(e);});}';
+S+='setTimeout(step,80);})();';
+return S;}
+
 function labelPdfFilename(now){now=now||new Date();var yyyy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');return 'label-barang.'+yyyy+'.'+mm+'.'+dd+'.pdf';}
 
-function buildLabelPDFDoc(items,tplId){
+/* FIX 2026-10-19 (RC-D): PDF label dipecah init + draw(chunk, indeks absolut) supaya
+   bisa digambar bertahap di main thread (progres, UI tidak beku). Keluaran PDF sama. */
+function labelPDFInit(tplId){
   var J=(typeof jsPDF!=='undefined')?jsPDF:(typeof jspdf!=='undefined'&&jspdf&&jspdf.jsPDF)?jspdf.jsPDF:null;
   if(!J)throw new Error('jsPDF belum dimuat');
   var tpl=getLabelTpl(tplId),cols=tpl.cols,rows=tpl.rows,perPage=cols*rows,qrMm=tpl.qrMm;
   var doc=new J({unit:'mm',format:'a4',orientation:'portrait',compress:true});
   var pad=5,PW=210,PH=297,cw=(PW-pad*2)/cols,ch=(PH-pad*2)/rows;
-  var GAP=0.6,PT=0.3528;
+  return {doc:doc,cols:cols,rows:rows,perPage:perPage,qrMm:qrMm,pad:pad,cw:cw,ch:ch,GAP:0.6,PT:0.3528};
+}
+function labelPDFDraw(st,items,i0,i1){
+  var doc=st.doc,cols=st.cols,perPage=st.perPage,qrMm=st.qrMm,pad=st.pad,cw=st.cw,ch=st.ch,GAP=st.GAP,PT=st.PT;
   function clampLines(lines,max){lines=lines||[];if(lines.length>max){var last=lines[max-1]||'';lines=lines.slice(0,max);lines[max-1]=(last.length>1?last.slice(0,-1):last)+'…';}return lines;}
-  for(var i=0;i<items.length;i++){
+  for(var i=i0;i<i1&&i<items.length;i++){
     var item=items[i]||{};
     if(i>0&&i%perPage===0)doc.addPage();
     var p=i%perPage,x=pad+(p%cols)*cw,y=pad+Math.floor(p/cols)*ch;
@@ -226,11 +274,44 @@ function buildLabelPDFDoc(items,tplId){
     if(specLines.length){doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(92,112,153);
       doc.text(specLines,cx,cy+6*PT*0.85,{align:'center'});}
   }
-  return {doc:doc,fname:labelPdfFilename()};
+  return st;
+}
+function buildLabelPDFDoc(items,tplId){
+  var st=labelPDFInit(tplId);
+  labelPDFDraw(st,items,0,items.length);
+  return {doc:st.doc,fname:labelPdfFilename()};
 }
 
+var _labelPdfBusy=false;
 function downloadLabelPDF(items,tplId){
-  var r=buildLabelPDFDoc(items,tplId);
-  r.doc.save(r.fname);
-  return r.fname;
+  if(_labelPdfBusy)return '';
+  var st;
+  try{st=labelPDFInit(tplId);}catch(e){banner(true,'Gagal membuat PDF label: '+(e&&e.message?e.message:e),'err');return '';}
+  _labelPdfBusy=true;
+  var fname=labelPdfFilename(),i=0,CHUNK=4;
+  var el=document.getElementById('cetak-sel-label');
+  var base=el?el.innerHTML:'';
+  function banner(show,t,kind){try{if(kind&&typeof cetakNotice==='function'){cetakNotice(t,kind);return;}if(typeof cetakBanner==='function')cetakBanner(show,t);}catch(e){}}
+  banner(true,'Membuat PDF label… 0/'+items.length);
+  function tick(){
+    try{
+      var end=Math.min(items.length,i+CHUNK);
+      labelPDFDraw(st,items,i,end);i=end;
+      if(el)el.textContent='Membuat PDF… '+i+'/'+items.length;
+      banner(true,'Membuat PDF label… '+i+'/'+items.length);
+      if(i<items.length){setTimeout(tick,0);return;}
+      if(el)el.innerHTML=base;
+      banner(true,'Menyimpan PDF label…');
+      try{st.doc.save(fname);}catch(e){banner(true,'Gagal menyimpan PDF: '+(e&&e.message?e.message:e),'err');}
+      _labelPdfBusy=false;
+      setTimeout(function(){banner(false);},1200);
+      if(typeof updateCetakCount==='function')updateCetakCount();
+    }catch(e){
+      _labelPdfBusy=false;
+      if(el)el.innerHTML=base;
+      banner(true,'Gagal membuat PDF label: '+(e&&e.message?e.message:e),'err');
+    }
+  }
+  setTimeout(tick,0);
+  return fname;
 }

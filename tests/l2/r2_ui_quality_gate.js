@@ -158,7 +158,7 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
     tbInfo[w] = await ev(`(function(){
       var t=document.querySelector('.topbar');
       var over=0, worst='';
-      for(var i=0;i<t.children.length;i++){ var c=t.children[i], r=c.getBoundingClientRect(), tr=t.getBoundingClientRect();
+      for(var i=0;i<t.children.length;i++){ var c=t.children[i], st=getComputedStyle(c); if(st.display==='none'||st.visibility==='hidden') continue; var r=c.getBoundingClientRect(), tr=t.getBoundingClientRect();
         var o=Math.max(0, Math.round(tr.top - r.top)) + Math.max(0, Math.round(r.bottom - tr.bottom));
         if(o>over){ over=o; worst=(c.className||c.tagName).toString().slice(0,30)+' h='+Math.round(r.height); } }
       return { c:t.clientHeight, s:t.scrollHeight, over:over, worst:worst };
@@ -233,6 +233,27 @@ function owed(id, title, evidence, fix) { debt.push({ id, title, evidence, fix }
   else owed('UQ-DEBT-6', 'Tidak ada tombol lihat/sembunyikan sandi',
     'input#login-password tidak punya tombol toggle diDalam wrapper-nya',
     'tambahkan tombol ikon dengan aria-label="Lihat sandi" + aria-pressed');
+
+  // A13: hit-area >= 44px lewat pseudo-element (I-04) — probe sintetis memakai cascade nyata,
+  // jadi tidak bergantung pada apakah elemen itu sedang ter-render di layar ini.
+  const hit = await ev(`(function(){
+    var out=[];
+    function probe(cls){
+      var d=document.createElement('div');
+      d.className=cls; d.style.position='absolute'; d.style.left='-9999px'; d.style.top='0';
+      document.body.appendChild(d);
+      var a=getComputedStyle(d,'::after');
+      var h=parseFloat(a.height)||0, top=a.top, tf=a.transform;
+      var own=d.getBoundingClientRect().height;
+      document.body.removeChild(d);
+      return {cls:cls,h:Math.round(h*10)/10,own:Math.round(own*10)/10,top:top,tf:tf};
+    }
+    return [probe('subpage-back'), probe('hist-card-detail-btn')];
+  })()`);
+  const hitBad = (hit || []).filter(x => !x || x.h < 44);
+  rec('UQ-13: hit-area >= 44px via ::after (subpage-back, hist-card-detail-btn)',
+    !!hit && hit.length === 2 && hitBad.length === 0,
+    (hit || []).map(x => x.cls + '::after h=' + x.h + 'px own=' + x.own + 'px').join(' | '));
 
   /* ---------- LAPORAN ---------- */
   console.log('\n---- UTANG UI yang sudah ada (DEBT, tidak menggagalkan gate) ----');

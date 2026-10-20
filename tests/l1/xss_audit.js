@@ -83,20 +83,25 @@ t('XSS-4: renderer HTML kritis memakai escaper', missing.length === 0,
   missing.length ? 'tanpa escaper: ' + missing.join(', ') : HTML_RENDERERS.length + ' fungsi aman');
 
 /* 3. builder cetak (pakai segmen eksplisit: buildPrintHTML berisi inner function,
-      sehingga bodyOf terpotong di '\nfunction ' — verified 17 pemanggilan ex()) */
-['buildRakLabelHTML', 'buildLabelHTML'].forEach(f => {
+      sehingga bodyOf terpotong di '\nfunction ' — verified 17 pemanggilan ex()).
+      2026-10-19: setelah builder dipecah open/page/tail, titik interpolasi data
+      pindah ke labelCardHTML() dan segmen printPageHTML() (berisi kartu()). */
+['buildRakLabelHTML', 'labelCardHTML'].forEach(f => {
   t('XSS-5: js/cetak.js ' + f + '() memakai ex()', /\bex\(/.test(bodyOf(cetak, f)));
 });
-const printSeg = cetak.slice(cetak.indexOf('function buildPrintHTML'), cetak.indexOf('function labelPdfFilename'));
-t('XSS-5: js/cetak.js buildPrintHTML() memakai ex()', /\bex\(/.test(printSeg), (printSeg.match(/\bex\(/g) || []).length + ' pemanggilan ex()');
+const printSeg = cetak.slice(cetak.indexOf('function printPageHTML'), cetak.indexOf('function labelPdfFilename'));
+t('XSS-5: js/cetak.js printPageHTML()/kartu() memakai ex()', /\bex\(/.test(printSeg), (printSeg.match(/\bex\(/g) || []).length + ' pemanggilan ex()');
 
 /* 4. builder jsPDF = vektor, tidak boleh innerHTML */
 const pdf = bodyOf(cetak, 'buildLabelPDFDoc');
 t('XSS-6: buildLabelPDFDoc (jsPDF vektor) tidak memakai innerHTML/document.write', !/innerHTML|document\.write/.test(pdf));
 
-/* 5. document.write hanya untuk window cetak */
+/* 5. document.write hanya untuk window cetak — 5 situs terverifikasi:
+      L3477 window cetak lain, L3691 printRakLabels, L3791 generateOutput (fallback),
+      L3805 + L3807 cetakFillPopup (head + fallback tanpa DOM). Semua menulis ke
+      window hasil window.open('','_blank'), bukan ke dokumen aplikasi. */
 const writes = (html.match(/document\.write\(/g) || []).length;
-t('XSS-7: document.write terbatas di 3 window cetak', writes === 3, 'jumlah=' + writes);
+t('XSS-7: document.write hanya di window cetak (5 situs)', writes === 5, 'jumlah=' + writes);
 
 /* 6. vendor lokal & tanpa eval */
 ['jsQR.min.js', 'qrcode.min.js', 'js/jspdf.min.js'].forEach(f => {

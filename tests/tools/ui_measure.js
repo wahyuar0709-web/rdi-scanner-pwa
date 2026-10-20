@@ -5,7 +5,7 @@
  *  2) Target kecil: menyimpan class + selector path, supaya temuan bisa langsung ditindaklanjuti.
  *  3) State: login sungguhan lewat form (mock GAS mengembalikan token valid) →
  *     app dalam kondisi normal, bukan setengah boot.
- *  4) both themes: ukur light lalu dark (theme toggle), karena kontras beda per tema.
+ *  4) theme: ukur light saja; mode gelap tidak diukur.
  */
 const http = require('http');
 const fs = require('fs');
@@ -142,6 +142,12 @@ const MEASURE = `(function(){
   var fx=document.querySelectorAll('.tabnav,.trx-submit-bar,.bottom-sheet,.topbar,.item-detail-sheet,.edit-sheet,.more-drawer');
   for(var f=0;f<fx.length;f++){ var e3=fx[f]; if(!vis(e3))continue; var r3=e3.getBoundingClientRect(), c3=getComputedStyle(e3);
     out.fixed.push({sel:sel(e3),pos:c3.position,top:Math.round(r3.top),bottom:Math.round(r3.bottom),h:Math.round(r3.height),padB:c3.paddingBottom}); }
+  var sb=document.querySelector('.boot-splash-sub');
+  if(sb && vis(sb)){
+    var stb=getComputedStyle(sb), fgb=parse(stb.color), bgsb=effBgAll(sb), rsb=1e9, wb=null;
+    for(var si=0; si<bgsb.length; si++){ var bsb=bgsb[si]; var rs=ratio(over(fgb,bsb), bsb); if(rs<rsb){ rsb=rs; wb=bsb; } }
+    out.splash={ratio:Math.round(rsb*100)/100,color:stb.color,bg:wb};
+  }
   out.vw=innerWidth; out.vh=innerHeight;
   out.bodyClass=document.body.className;
   return out;
@@ -182,7 +188,7 @@ function report(r, label) {
   let id = 0; const pend = new Map();
   ws.onmessage = e => { const m = JSON.parse(e.data); if (m.id && pend.has(m.id)) { pend.get(m.id)(m); pend.delete(m.id); } };
   const send = (m, p) => new Promise(r => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method: m, params: p || {} })); });
-  const ev = async e => { const r = await send('Runtime.evaluate', { expression: e, returnByValue: true }); if (r.result && r.result.exceptionDetails) return { __err: r.result.exceptionDetails.text }; return r.result && r.result.result ? r.result.result.value : null; };
+  const ev = async e => { const r = await send('Runtime.evaluate', { expression: e, returnByValue: true }); if (r.result && r.result.exceptionDetails) { const ex = r.result.exceptionDetails; return { __err: (ex.exception && ex.exception.description) || ex.text }; } return r.result && r.result.result ? r.result.result.value : null; };
 
   await send('Runtime.enable'); await send('Page.enable');
   const APP = 'http://127.0.0.1:' + PORT + '/index.html';
@@ -192,18 +198,31 @@ function report(r, label) {
   await sleep(1200);
   await ev("localStorage.setItem('rdi_gas_url','" + GAS + "');1");
   await send('Page.navigate', { url: APP });
-  await sleep(2500);
+  for (let i = 0; i < 20; i++) {
+    if (await ev('!!document.body')) break;
+    await sleep(500);
+  }
+  const boot = await ev("(function(){var s=document.querySelector('.boot-splash'),cs=false,csb=false;if(!s){s=document.createElement('div');s.className='boot-splash';document.body.appendChild(s);cs=true;}var sb=s.querySelector('.boot-splash-sub');if(!sb){sb=document.createElement('div');sb.className='boot-splash-sub';sb.textContent='Menyiapkan data';s.appendChild(sb);csb=true;}var tr=s.style.transition,od=s.style.display,ov=s.style.visibility,oo=s.style.opacity,sa=s.style.animation,was=s.classList.contains('hide');var st=sb.style.transition,sd=sb.style.display,sv=sb.style.visibility,so=sb.style.opacity,sba=sb.style.animation;s.style.transition='none';s.style.animation='none';s.style.display='flex';s.style.visibility='visible';s.style.opacity='1';s.classList.remove('hide');sb.style.transition='none';sb.style.animation='none';sb.style.display='block';sb.style.visibility='visible';sb.style.opacity='1';void s.offsetWidth;var r=" + MEASURE + ";if(csb)sb.remove();else{sb.style.transition=st;sb.style.animation=sba;sb.style.display=sd;sb.style.visibility=sv;sb.style.opacity=so;}if(cs)s.remove();else{s.classList.toggle('hide',was);s.style.transition=tr;s.style.animation=sa;s.style.display=od;s.style.visibility=ov;s.style.opacity=oo;}return r;})()");
+  console.log('BOOT splash: ' + JSON.stringify(boot && boot.splash ? boot.splash : (boot && boot.__err ? boot : null)));
+  if (!boot || !boot.splash) console.log('WARN: kontras splash tidak terukur');
+  else if (boot.splash.ratio < 4.5) console.log('WARN: kontras splash ' + boot.splash.ratio + ':1 < 4.5');
+  await sleep(1600);
 
   // login sungguhan lewat form
   const gate = await ev("(function(){var g=document.getElementById('login-gate');return g?!g.classList.contains('hide'):'tidak-ada';})()");
   console.log('login gate: ' + gate);
-  if (gate === false) {
+  if (gate === true) {
     await ev("(function(){document.getElementById('login-username').value='" + LOGIN.username + "';document.getElementById('login-password').value='" + LOGIN.password + "';return 1;})()");
     await ev("submitViewerLogin();1");
     await sleep(3000);
   }
-  const state = await ev("(function(){return {gate:(document.getElementById('login-gate')||{className:'?'}).className, tabnav:!!document.querySelector('.tabnav'), rows:document.querySelectorAll('#tbody tr, table tbody tr').length};})()");
+  const state = await ev("(function(){var g=document.getElementById('login-gate');var gv=false;if(g){var c=getComputedStyle(g);gv=c.display!=='none'&&c.visibility!=='hidden'&&g.getClientRects().length>0;}return {gate:g?g.className:'?',gateVisible:gv,tabnav:!!document.querySelector('.tabnav'),rows:document.querySelectorAll('#tbody tr, table tbody tr').length,err:(document.getElementById('login-error')||{}).textContent,gas:!!(localStorage.getItem('rdi_gas_url')||'')};})()");
   console.log('state setelah login: ' + JSON.stringify(state));
+  if (!state || !state.tabnav || !state.rows || state.rows < 1 || state.gateVisible) {
+    console.log('FATAL: login/data tidak siap — pengukuran dibatalkan');
+    process.exit(3);
+  }
+  console.log('labels: ' + JSON.stringify(await ev("(function(){var h=document.querySelector('.hist-search-input');var hs=h?getComputedStyle(h):null;var sv=document.getElementById('sheet-version-label');return {histPadLeft:hs&&hs.paddingLeft,histPadRight:hs&&hs.paddingRight,sheetVersion:sv&&sv.textContent,topVersion:(document.getElementById('topbar-version-label')||{}).textContent};})()")));
 
   const all = {};
   for (const vp of [[375, 812, 'HP 375x812'], [320, 568, 'HP kecil 320x568'], [812, 375, 'landscape 812x375'], [1440, 900, 'desktop 1440x900']]) {
@@ -214,12 +233,6 @@ function report(r, label) {
     all[vp[2]] = r;
     report(r, vp[2]);
   }
-
-  // mode gelap
-  await ev("(function(){ try{ if(typeof toggleTheme==='function'){ toggleTheme(); return 'toggled'; } }catch(e){ return 'err:'+e.message; } })()");
-  await sleep(900);
-  const dark = await ev(MEASURE);
-  if (dark && !dark.__err) { all.dark375 = dark; report(dark, 'DARK mode 375x812'); }
 
   fs.writeFileSync('C:/Users/lenov/AppData/Local/Temp/opencode/ui_measure2.json', JSON.stringify(all, null, 1), 'utf8');
   console.log('\n(Disimpan ui_measure2.json)');

@@ -437,15 +437,16 @@ const evalIn = async (expr) => {
     })`);
     rec('L2: select all => N label / 1 halaman', (hint && /4 item dipilih/.test(hint.label || '') && /4 label/.test(hint.hint || '') && /1 halaman/.test(hint.hint || '') && hint.checked === 4 && hint.rows === 4) ? 'PASS' : 'FAIL', hint);
 
-    // empty selection alert via doCetak (exported)
+    // empty selection => notice in-app (bukan alert modal blocking); popup tidak dibuka
     await evalIn(`cetakClearAll()`);
     await sleep(150);
-    const emptyAlert = await evalIn(`(function(){
-      var old = window.alert; var msg=null; window.alert=function(m){msg=m;};
-      try { doCetak(); } finally { window.alert=old; }
-      return msg;
+    const emptyNotice = await evalIn(`(function(){
+      var oldOpen=window.open, opened=false; window.open=function(){opened=true;return null;};
+      try { doCetak(); } finally { window.open=oldOpen; }
+      var el=document.getElementById('cetak-pdf-banner');
+      return { opened:opened, txt:el?el.textContent:null, role:el?el.getAttribute('role'):null };
     })()`);
-    rec('L2: empty selection alerts via doCetak', (typeof emptyAlert === 'string' && /Pilih minimal 1/.test(emptyAlert)) ? 'PASS' : 'FAIL', emptyAlert);
+    rec('L2: empty selection => notice in-app, tanpa popup', (emptyNotice && emptyNotice.opened === false && typeof emptyNotice.txt === 'string' && /Pilih minimal 1/.test(emptyNotice.txt)) ? 'PASS' : 'FAIL', emptyNotice);
 
     // popup capture: select clean row for structure, XSS row for escape
     await evalIn(`cetakClearAll(); toggleCetakRow(null, 0); setCetakMode('label');`);

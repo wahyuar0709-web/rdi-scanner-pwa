@@ -297,7 +297,11 @@ async function main() {
   rec('Outbox PENDING on network error (pushOutbox app)', 'gasPost mock network → pushOutbox()', (ob1.ok && ob1.value.isNet && ob1.value.len === 1 && ob1.value.rid === 'r2x' && ob1.value.notOk && !ob1.value.notViewer) ? 'PASS' : 'FAIL', JSON.stringify(ob1.value || ob1.error));
 
   mockMode = 'ok';
-  const ob2 = await evalIn(c, "flushOutbox().then(function(){var ob=readOutbox();return {len:ob.length,cleared:ob.length===0};})", true);
+  /* Hardening 2026-10-19: flushOutbox() SAH no-op bila retry 30 s sedang memegang kunci
+     (_outboxFlushing). Assertion lama menuntut antrean kosong tepat setelah satu panggilan →
+     merah bila retry kebetulan in-flight (terbukti: 1 FAIL lalu 0 FAIL tanpa perubahan kode).
+     Sekarang: tunggu antrean benar-benar kosong maks 2 s; tetap merah bila kunci macet. */
+  const ob2 = await evalIn(c, "flushOutbox().then(function(){return new Promise(function(res){var t=0;var iv=setInterval(function(){if(!readOutbox().length||t++>=20){clearInterval(iv);res();}},100);});}).then(function(){var ob=readOutbox();return {len:ob.length,cleared:ob.length===0};})", true);
   rec('Outbox SYNCED on retry ok (flushOutbox app)', 'flushOutbox() mock ok', (ob2.ok && ob2.value.cleared) ? 'PASS' : 'FAIL', JSON.stringify(ob2.value || ob2.error));
 
   mockMode = 'partial';

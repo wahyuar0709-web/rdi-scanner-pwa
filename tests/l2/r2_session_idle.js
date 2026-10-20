@@ -92,13 +92,16 @@ async function main() {
     await send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 2, mobile: true });
     const payload = Buffer.from(['h', 'n', String(Date.now() + 3600000), 'sig'].join('|')).toString('base64').replace(/=+$/, '') + '.sig';
 
-    async function waitBoot() {
+    async function waitBoot(opts) {
+      const needRows = !!(opts && opts.needRows);
+      let last = null;
       for (let i = 0; i < 80; i++) {
         const r = await ev("(function(){var b=document.getElementById('boot-splash');return {h:!b||b.classList.contains('hide'),rs:document.readyState,fn:typeof window.switchTab==='function',n:(window.allRows||[]).length};})()");
-        if (r && !r.error && r.h === true && r.rs === 'complete' && r.fn === true) return r;
+        if (r && !r.error) last = r;
+        if (r && !r.error && r.h === true && r.rs === 'complete' && r.fn === true && (!needRows || r.n > 0)) return r;
         await sleep(300);
       }
-      return null;
+      return last;
     }
     // helper untuk attach tab baru (proses terpisah = model PWA process-kill: sessionStorage kosong)
     async function openFreshTab(url) {
@@ -135,7 +138,7 @@ async function main() {
     // menguji apa pun (that's what happened in the first attempt at this fix).
     const laSeed = await ev("parseInt(localStorage.getItem('rdi_last_active')||'0',10)");
     await send('Page.navigate', { url: APP_URL });
-    const b1 = await waitBoot();
+    const b1 = await waitBoot({ needRows: true });
     rec('T1 boot dengan sesi siap', b1 && b1.n === 4, JSON.stringify(b1));
 
     let st = await ev("(function(){return {gate:!document.getElementById('login-gate').classList.contains('hide'),tok:localStorage.getItem('rdi_viewer_token')||'',la:parseInt(localStorage.getItem('rdi_last_active')||'0',10),sesT:sessionStorage.getItem('rdi_viewer_token')||''};})()");
