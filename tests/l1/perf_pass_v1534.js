@@ -142,11 +142,11 @@ t('SW: precache aset inti tetap ada (guard LOCK-7 tidak dilanggar)',
   sw.indexOf('html2pdf') !== -1);
 
 // --- package.json ---
-t('PKG: version 15.33.0', /"version":\s*"15\.33\.0"/.test(pkg));
+t('PKG: version 15.34.0', /"version":\s*"15\.34\.0"/.test(pkg));
 
 // --- jejak alasan perubahan (komentar PERF) ---
 t('DOC: komentar PERF 2026-10-16 hadir di >= 8 titik perubahan',
   cnt('PERF 2026-10-16') >= 8, 'dapat ' + cnt('PERF 2026-10-16'));
 
-console.log('---- perf_pass_v1533: ' + pass + ' PASS / ' + fail + ' FAIL ----');
+console.log('---- perf_pass_v1534: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);
