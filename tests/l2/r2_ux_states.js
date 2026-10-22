@@ -385,7 +385,7 @@ async function main() {
         if (s.overflow > 0) bOverflow.push(o.name + ' +' + s.overflow + 'px');
       }
       // tutup apa pun yang terbuka, lalu kembali ke keadaan bersih
-      await ev("(function(){try{['closeItemDetail','closeEditSheet','closeAddSheet','closeFilterSheet','closeSortSheet','closeRakLabelSheet','closeExportQRModal','closeExportExcelModal','closeMoreDrawer','closeRakLabelSheet','closeAsetCpModal','closeAsetAksiModal','closeUserModal','closeConfig','closeAdminTools','toggleBatchCartPanel'].forEach(function(f){try{if(typeof window[f]==='function')window[f]();}catch(e){}});document.querySelectorAll('.modal,.bottom-sheet,.edit-sheet').forEach(function(x){x.classList.remove('show');});document.querySelectorAll('.modal-overlay,.overlay,.sheet-overlay,.bottom-sheet-overlay,.edit-sheet-overlay').forEach(function(x){x.classList.remove('show');x.style.display='';});}catch(e){}return 1;})()");
+      await ev("(function(){try{['closeItemDetail','closeEditSheet','closeAddSheet','closeFilterSheet','closeSortSheet','closeRakLabelSheet','closeExportQRModal','closeExportExcelModal','closeRakLabelSheet','closeAsetCpModal','closeAsetAksiModal','closeUserModal','closeConfig','closeAdminTools'].forEach(function(f){try{if(typeof window[f]==='function')window[f]();}catch(e){}});document.querySelectorAll('.modal,.bottom-sheet,.edit-sheet').forEach(function(x){x.classList.remove('show');});document.querySelectorAll('.modal-overlay,.overlay,.sheet-overlay,.bottom-sheet-overlay,.edit-sheet-overlay').forEach(function(x){x.classList.remove('show');x.style.display='';});}catch(e){}return 1;})()");
       await sleep(350);
     }
     console.log('  terbuka (tanpa error): ' + opened.length + '/' + OPENERS.length + '  -> ' + opened.join(', '));

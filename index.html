@@ -401,64 +401,10 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #master-panel-head{padding-top:8px!important;padding-bottom:8px!important}
 }
 /* ================================================================
-   MENU LAINNYA: dari jendela mengapung menjadi halaman
-   ---------------------------------------------------------------
-   Sebelum: bottom sheet 704px (83% layar), sudut 18px, bayangan
-   0 -6px 24px, gagang tarik, 10 tile @86px. Itu semua sinyal jendela.
-   Sesudah: tinggi layar penuh, tanpa sudut, tanpa bayangan, tanpa gagang,
-   kepala bergaya topbar. Tab bar tetap di atas (z 200 > 199) jadi
-   navigasi utama tidak tertutup dan pindah tab tetap bisa.
+   MENU LAINNYA: halaman section penuh (switchTab('more') = halaman)
    ================================================================ */
-#more-drawer{
-  top:0;
-  bottom:0;
-  height:auto;
-  /* .bottom-sheet punya max-height:calc(100dvh - 140px); itulah yang membuat
-     panel berhenti di 704px dan tetap terbaca sebagai panel. */
-  max-height:none;
-  border-radius:0;
-  box-shadow:none;
-  border-top:none;
-  /* Ruang untuk tab bar yang menutupi bagian bawah. */
-  padding-bottom:calc(66px + env(safe-area-inset-bottom,0px));
-}
-#more-drawer .sheet-handle{display:none}
-#more-drawer .sheet-header{
-  min-height:calc(46px + env(safe-area-inset-top,0px));
-  padding:calc(11px + env(safe-area-inset-top,0px)) 14px 11px 18px;
-  background:var(--grad-brand);
-  border-bottom:1px solid rgba(255,255,255,.16);
-  flex:none;
-}
-#more-drawer .sheet-title{color:#fff;font-size:var(--fs-15);font-weight:800}
-#more-drawer .sheet-close{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff}
-#more-drawer .sheet-close .ic{stroke:#fff}
-#more-drawer .sheet-menu{background:var(--bg2)}
-#more-drawer .sheet-group-label{color:var(--text2);margin:var(--sp-7) var(--sp-2) var(--space-1)}
-#more-drawer .sheet-footer{background:var(--bg2)}
-/* Tinggi tile 86px sebelumnya datang dari padding vertikal, bukan min-height,
-   jadi mengubah min-height saja tidak mengubah apa pun. Padding dikecilkan. */
-#more-drawer .more-menu-btn{min-height:56px;padding:var(--sp-7) var(--space-1);gap:var(--sp-5)}
-
-#more-drawer .sheet-header{
-  min-height:calc(46px + env(safe-area-inset-top,0px));
-  padding:calc(11px + env(safe-area-inset-top,0px)) 14px 11px 18px;
-  background:var(--grad-brand);
-  border-bottom:1px solid rgba(255,255,255,.16);
-  flex:none;
-}
-#more-drawer .sheet-title{color:#fff;font-size:var(--fs-15);font-weight:800}
-#more-drawer .sheet-close{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.36);color:#fff}
-#more-drawer .sheet-close .ic{stroke:#fff}
-#more-drawer .sheet-menu{background:var(--bg2)}
-#more-drawer .sheet-group-label{color:var(--text2)}
-#more-drawer .sheet-footer{background:var(--bg2)}
-/* Tile 86px -> 58px. 10 tile jadi 580px, muat tanpa menggulir di HP. */
-/* Tinggi tile 86px sebelumnya datang dari padding vertikal, bukan min-height,
-   jadi min-height saja tidak mengubah apa pun. Padding dikecilkan. */
-#more-drawer .more-menu-btn{min-height:56px;padding:var(--sp-7) var(--space-1)}
-#more-drawer .more-menu-btn{gap:var(--sp-5)}
-#more-drawer .sheet-group-label{margin:var(--sp-7) var(--sp-2) var(--space-1)}
+#section-more .sheet-group-label{color:var(--text2);margin:var(--sp-7) var(--sp-2) var(--space-1)}
+#section-more .more-menu-btn{min-height:56px;padding:var(--sp-7) var(--space-1);gap:var(--sp-5)}
 /* ================================================================
    CETAK + LABEL DI HP
    ---------------------------------------------------------------
@@ -755,7 +701,6 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #master-search-zone{padding:8px var(--space-2)!important}
 }
 
-
 /* ===== UX-01 (2026-10-14) target sentuh >= 44px di layar sentuh =====
    Terukur di 390x844: 9 dari 39 target interaktif hanya 34-40px tinggi
    (#btn-add-item 84x36, #btn-load 83x36, #btn-save-edit 230x40,
@@ -941,86 +886,6 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
   </div>
 </nav>
 
-<!-- Bottom Sheet (menggantikan more-drawer lama) -->
-<div class="bottom-sheet-overlay" id="more-overlay" onclick="closeMoreDrawer()" aria-hidden="true"></div>
-<div class="bottom-sheet" id="more-drawer" role="dialog" aria-modal="true" aria-label="Menu lainnya">
-  <div class="sheet-handle"></div>
-  <div class="sheet-header">
-    <span class="sheet-title">Menu Lainnya</span>
-    <div class="sheet-close" onclick="closeMoreDrawer()" role="button" tabindex="0" aria-label="Tutup menu"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></div>
-  </div>
-  <div class="sheet-menu">
-    <div class="sheet-group-label">Sering Dipakai</div>
-    <div class="sheet-grid">
-      <button class="more-menu-btn" onclick="switchTab('alert');closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-        <span id="more-alert-label">Alert Stok</span>
-      </button>
-    </div>
-    <!-- PP-04 fix (Audit UX v14.70, Medium): entry "Dashboard" di grup Laporan dihapus --
-         sudah ada jalur utama tab bawah "Dashboard" yang selalu terlihat, jadi duplikasi
-         ini cuma menambah keputusan navigasi tanpa manfaat (maks. 1 jalur utama + 1
-         shortcut kontekstual per rekomendasi audit). -->
-    <div class="sheet-group-label">Laporan</div>
-    <div class="sheet-grid">
-      <button class="more-menu-btn" onclick="switchTab('cetak');closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span>Cetak Kartu</span>
-      </button>
-      <button class="more-menu-btn" onclick="exportExcel();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>Export CSV</span>
-      </button>
-      <button class="more-menu-btn" onclick="openExportExcelModal();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span>Export Excel Lengkap</span>
-      </button>
-      <button class="more-menu-btn" id="btn-export-qr" onclick="openExportQRModal();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
-        <span>Export QR Massal</span>
-      </button>
-    </div>
-    <div class="sheet-group-label">Operasional</div>
-    <div class="sheet-grid">
-      <button class="more-menu-btn" onclick="switchTab('rak');closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
-        <span>Cek Per Rak</span>
-      </button>
-      <button class="more-menu-btn" onclick="switchTab('aset');closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-        <span>Aset Sirkulasi</span>
-      </button>
-    </div>
-    <div class="sheet-group-label">Akun & Pengaturan</div>
-    <div class="sheet-grid">
-      <button class="more-menu-btn" onclick="showUserModal();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        <span>Ganti Operator</span>
-      </button>
-      <button class="more-menu-btn" onclick="showConfig();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        <span>Pengaturan</span>
-      </button>
-      <button class="more-menu-btn" onclick="showAdminTools();closeMoreDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-        <span>Admin Database</span>
-      </button>
-      <button class="more-menu-btn u-hide" onclick="logoutViewer()" id="btn-logout-viewer">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>Keluar</span>
-      </button>
-      <button class="more-menu-btn" onclick="logoutEditor()" id="btn-logout-editor">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>Keluar (Editor)</span>
-      </button>
-    </div>
-  </div>
-  <div class="sheet-footer">
-    <span class="sheet-version" id="sheet-version-label">v15.34</span>
-    <span class="sheet-user" id="drawer-username"></span>
-  </div>
-</div>
-
 <!-- ═══════════════════════════════════════════ -->
 <!-- MAIN CONTENT (F6-03 fix: 1 landmark <main> membungkus seluruh section tab + 1 h1 sr-only sbg entry point struktur heading) -->
 <!-- ═══════════════════════════════════════════ -->
@@ -1180,7 +1045,6 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
       <div class="trx-progress-lbl">Selesai</div>
     </div>
   </div>
-
 
   <!-- Step 1: Input ID -->
   <div class="scan-step active" id="step-input">
@@ -1572,7 +1436,6 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
       </div>
     </div>
   </div>
-
 
   <div class="hist-step" id="hstep-result">
     <div class="item-card" id="hist-item-preview">
@@ -2031,6 +1894,76 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
      kembali-diasah-pakai lagi, bukan barang habis pakai). Kerangka
      dulu (BAGIAN B) -- isi panel diisi bertahap di BAGIAN C-I. -->
 <!-- ═══════════════════════════════════════════ -->
+<div class="page-section" id="section-more">
+<div class="subpage-bar"><span class="subpage-title">Lainnya</span></div>
+<div class="container">
+    <div class="sheet-group-label">Sering Dipakai</div>
+    <div class="sheet-grid">
+      <button class="more-menu-btn" onclick="switchTab('alert')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span id="more-alert-label">Alert Stok</span>
+      </button>
+    </div>
+    <!-- PP-04 fix (Audit UX v14.70, Medium): entry "Dashboard" di grup Laporan dihapus --
+         sudah ada jalur utama tab bawah "Dashboard" yang selalu terlihat, jadi duplikasi
+         ini cuma menambah keputusan navigasi tanpa manfaat (maks. 1 jalur utama + 1
+         shortcut kontekstual per rekomendasi audit). -->
+    <div class="sheet-group-label">Laporan</div>
+    <div class="sheet-grid">
+      <button class="more-menu-btn" onclick="switchTab('cetak')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Cetak Kartu</span>
+      </button>
+      <button class="more-menu-btn" onclick="exportExcel()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export CSV</span>
+      </button>
+      <button class="more-menu-btn" onclick="openExportExcelModal()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Export Excel Lengkap</span>
+      </button>
+      <button class="more-menu-btn" id="btn-export-qr" onclick="openExportQRModal()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+        <span>Export QR Massal</span>
+      </button>
+    </div>
+    <div class="sheet-group-label">Operasional</div>
+    <div class="sheet-grid">
+      <button class="more-menu-btn" onclick="switchTab('rak')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
+        <span>Cek Per Rak</span>
+      </button>
+      <button class="more-menu-btn" onclick="switchTab('aset')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        <span>Aset Sirkulasi</span>
+      </button>
+    </div>
+    <div class="sheet-group-label">Akun & Pengaturan</div>
+    <div class="sheet-grid">
+      <button class="more-menu-btn" onclick="showUserModal()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span>Ganti Operator</span>
+      </button>
+      <button class="more-menu-btn" onclick="showConfig()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Pengaturan</span>
+      </button>
+      <button class="more-menu-btn" onclick="showAdminTools()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span>Admin Database</span>
+      </button>
+      <button class="more-menu-btn u-hide" onclick="logoutViewer()" id="btn-logout-viewer">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Keluar</span>
+      </button>
+      <button class="more-menu-btn" onclick="logoutEditor()" id="btn-logout-editor">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Keluar (Editor)</span>
+      </button>
+    </div>
+</div>
+</div>
+
 <div class="page-section" id="section-aset">
 <div class="subpage-bar"><span class="subpage-title">Aset Sirkulasi</span></div>
 <div class="container">
@@ -3050,12 +2983,7 @@ function _beep(kind){if(!_beepPref)return;try{var AC=window.AudioContext||window
 function _buzz(p){if(_buzzReduced)return;try{if(navigator&&typeof navigator.vibrate==='function')navigator.vibrate(p);}catch(e){}}
 function showStatus(elId,type,html){var el=document.getElementById(elId);if(!el)return;el.className='sbar '+type+' show';/* FIX SEDANG: caller sudah xe()-escape string dinamis; fungsi ini tetap innerHTML karena IC icons = HTML. */el.innerHTML=html;}
 function hideStatus(elId){var el=document.getElementById(elId);el.className='sbar';el.innerHTML='';}
-var IC={ok:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',err:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',load:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>',info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'};var _tabHashNames=['scanner','dashboard','master','history','more','alert','cetak','rak','aset'];function _applyHashTab(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0&&!(document.getElementById('section-'+h)&&document.getElementById('section-'+h).classList.contains('active')))switchTab(h);}function switchTab(name,skipAutoScan){if(_tabHashNames.indexOf(name)<0){if(window.console&&console.warn)console.warn('[switchTab] nama tab tidak dikenal:',name);return;}if(_tabHashNames.indexOf(name)>=0&&location.hash!=='#'+name)history.replaceState(null,'','#'+name);if(name!=='more')closeMoreDrawer();if(name==='more'){var drawer=document.getElementById('more-drawer');var overlay=document.getElementById('more-overlay');var isOpen=drawer.classList.contains('show');if(isOpen){closeMoreDrawer();}else{drawer.classList.remove('closing');overlay.classList.remove('closing');overlay.style.display='';drawer.classList.add('show');overlay.classList.add('show');document.getElementById('drawer-username').textContent=currentUser?currentUser.name:'';/* UX-04 (2026-10-14): guard hasAttribute() DIHAPUS. Sebelumnya hanya tab yang
-   sudah punya atribut aria-selected yang ikut di-update, sehingga #tab-scanner
-   (tab FAB) tidak pernah_selected state-nya — terukur aria-selected=null saat
-   tab itu aktif, sementara keempat saudaranya true/false benar. */
-document.querySelectorAll('.tab,.tab-fab').forEach(function(el){el.classList.remove('active');el.setAttribute('aria-selected','false');});var moreTab=document.getElementById('tab-more');if(moreTab){moreTab.classList.add('active');moreTab.setAttribute('aria-selected','true');}}
-return;}
+var IC={ok:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',err:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',load:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>',info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'};var _tabHashNames=['scanner','dashboard','master','history','more','alert','cetak','rak','aset'];function _applyHashTab(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0&&!(document.getElementById('section-'+h)&&document.getElementById('section-'+h).classList.contains('active')))switchTab(h);}function switchTab(name,skipAutoScan){if(_tabHashNames.indexOf(name)<0){if(window.console&&console.warn)console.warn('[switchTab] nama tab tidak dikenal:',name);return;}if(_tabHashNames.indexOf(name)>=0&&location.hash!=='#'+name)history.replaceState(null,'','#'+name);
 /* FIX SEDANG: stop scanner SELALU saat pindah tab (bukan hanya dari scanner aktif) —
    monyet-patch switchTab di bawah dihapus, logic pindah ke sini. */
 stopInlineScanner();stopInlineScannerHist();stopInlineScannerRak();stopInlineScannerMaster();var wasScanner=document.getElementById('section-scanner').classList.contains('active');document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');});/* UX-04 (2026-10-14): guard hasAttribute() DIHAPUS. Sebelumnya hanya tab yang
@@ -3068,13 +2996,11 @@ function backFromSubpage(){switchTab(_lastMainTab);}
 /* Durasi gerak dibaca dari token CSS supaya JS dan CSS tidak bisa terpisah.
    Sebelumnya angka 220 ditulis manual; kalau CSS diubah, angka itu tidak ikut
    dan sheet akan tertarik di tengah animasi. Definisi harus berada di IIFE #1
-   (sama dengan closeMoreDrawer) lalu di-ekspos ke window agar IIFE #2 yang
+   (sama dengan sheet-close lainnya) lalu di-ekspos ke window agar IIFE #2 yang
    memuat closeSheet ikut memakainya - dua IIFE berbeda punya scope berbeda. */
 function motionMs(nama, cadangan){try{var v=getComputedStyle(document.documentElement).getPropertyValue(nama).trim();if(!v)return cadangan;var n=parseFloat(v);if(isNaN(n))return cadangan;return /ms$/.test(v)?n:n*1000}catch(e){return cadangan}}
 window.motionMs=motionMs;
-function closeMoreDrawer(){var drawer=document.getElementById('more-drawer');var overlay=document.getElementById('more-overlay');var moreTab=document.getElementById('tab-more');if(moreTab){moreTab.classList.remove('active');moreTab.setAttribute('aria-selected','false');var activeSection=document.querySelector('.page-section.active');if(activeSection){var matchTab=document.getElementById('tab-'+activeSection.id.replace('section-',''));if(matchTab){matchTab.classList.add('active');matchTab.setAttribute('aria-selected','true');}}}
-if(!drawer.classList.contains('show')){overlay.classList.remove('show','closing');overlay.style.display='none';return;}
-drawer.classList.add('closing');overlay.classList.add('closing');setTimeout(function(){drawer.classList.remove('show','closing');overlay.classList.remove('show','closing');overlay.style.display='none';},window.motionMs('--dur-sheet-out',220));}
+
 function quickLoadData(afterFn){loadData().then(function(){if(typeof afterFn==='function')afterFn();});}
 /* AUDIT FIX F-15 (v14.90): setelah postTransaksi sukses, allRows/dashboard cache
    tidak pernah di-refresh otomatis -> tab Data/Dashboard bisa tampilkan saldo basi
@@ -3976,7 +3902,7 @@ if(document.getElementById('add-sheet').classList.contains('show')){closeAddShee
 if(document.getElementById('rak-label-sheet').classList.contains('show')){closeRakLabelSheet();return;}
 if(document.getElementById('modal-config').classList.contains('show')){hideConfig();return;}
 if(document.getElementById('modal-user').classList.contains('show')){hideUserModal();return;}
-if(document.getElementById('more-drawer').classList.contains('show')){closeMoreDrawer();return;}closeTopOverlay();});
+closeTopOverlay();});
 var _overlayCloseMap={'modal-filter':'closeFilterSheet','modal-sort':'closeSortSheet','modal-hist-card-detail':'closeHistCardDetail','modal-aset-aksi':'closeAsetAksiModal','modal-aset-tambah-unit':'closeAsetTambahUnitModal','modal-aset-tambah-item':'closeAsetTambahItemModal','modal-aset-cp':'closeAsetCpModal','modal-aset-performa-vendor':'closeAsetPerformaVendorModal','modal-admin-tools':'hideAdminTools','modal-config':'hideConfig','modal-user':'hideUserModal','modal-export-excel':'closeExportExcelModal','modal-export-qr':'closeExportQRModal'};
 function closeTopOverlay(){var vis=document.querySelectorAll('.modal-overlay.show');var el=null,zTop=-1;for(var i=0;i<vis.length;i++){var e=vis[i],id=e.id;if(!id||!_overlayCloseMap[id])continue;var zi=parseInt(window.getComputedStyle(e).zIndex,10)||0;if(zi>=zTop){zTop=zi;el=e;}}if(!el)return;var fn=window[_overlayCloseMap[el.id]];if(typeof fn==='function')fn();}
 document.addEventListener('click',function(e){var t=e.target;if(t&&t.classList&&t.classList.contains('modal-overlay'))closeTopOverlay();});
@@ -3994,7 +3920,7 @@ window.addEventListener('scroll',function(){
 // ===== SECTION: BOOT SPLASH =====
 var _bootSplashStart=Date.now();function hideBootSplash(){var el=document.getElementById('boot-splash');if(!el)return;el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},560);}
 window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0)switchTab(h);});window.addEventListener('DOMContentLoaded',function(){applyTheme();var dataReady;if(!hasValidSession()){showLoginGate();dataReady=Promise.resolve();}else{hideLoginGate();if(VIEWER_MODE)document.body.classList.add('viewer-mode');dataReady=startAppAfterAuth();}
-var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.closeItemDetail=closeItemDetail;window.closeMoreDrawer=closeMoreDrawer;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
+var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.closeItemDetail=closeItemDetail;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
 
 // ===== SECTION: TAMBAH / EDIT ITEM (sheet form) =====
 function updateAddRakHint(){var qty=parseFloat(document.getElementById('add-qty').value);var rak=document.getElementById('add-rak').value.trim();var needRak=!isNaN(qty)&&qty>0;var hint=document.getElementById('add-rak-hint');var label=document.getElementById('add-rak-label');if(hint)hint.classList.toggle('u-hide',!(needRak&&!rak));if(label)label.textContent=needRak?'Rak / Lokasi Awal *':'Rak / Lokasi Awal';}
@@ -4142,7 +4068,6 @@ function renderAsetItemList(){
     +'</div>';
   }).join('');
 }
-
 
 // ===== SECTION: ASET: detail item aset =====
 var _asetDetailKodeAlat=null;
@@ -4468,7 +4393,6 @@ function _asetPopulateKodeAlatSelect(selectId,selectedKode){
   if(selectedKode)sel.value=selectedKode;
 }
 
-
 // ===== SECTION: ASET: tambah unit baru =====
 function openAsetTambahUnitModal(preselectKode){
   document.getElementById('aset-tu-err').classList.remove('show');
@@ -4520,7 +4444,6 @@ function submitAsetTambahUnit(){
     errBar.classList.add('show');
   });
 }
-
 
 // ===== SECTION: ASET: tambah item aset baru =====
 var _asetTiFromUnitModal=false;
@@ -4796,7 +4719,6 @@ function renderAsetKontrolAsahList(){
     +'</div>';
   }).join('');
 }
-
 
 // ===== SECTION: ASET: performa vendor =====
 function openAsetPerformaVendorModal(){

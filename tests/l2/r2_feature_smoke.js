@@ -1,6 +1,6 @@
 /* L2 feature_smoke (audit menyeluruh tombol/fitur — 2026-09-25):
  * Boot editor dgn 4 rows mock → (1) semua tab aktif & section benar,
- * (2) more-drawer open/close, (3) modal utama buka → Escape → tutup (13 overlay map
+ * (2) menu Lainnya = section-more, (3) modal utama buka → Escape → tutup (13 overlay map
  * F-06b + sheet tambah), (4) master search+sort, (5) cetak mode switch + select,
  * (6) input scanner/render tiap section — semua tanpa page error / console error. */
 const http = require('http');
@@ -156,15 +156,15 @@ async function main() {
     rec('TAB: semua 8 section aktif sesuai switchTab', secOk, secBad.join(','));
     await ev("window.switchTab('scanner')");
 
-    // ---- MORE DRAWER ----
-    await step('MORE: drawer open',
+// ---- MORE: kini halaman section penuh (bukan drawer lagi) ----
+    await step('MORE: switchTab more menampilkan section-more + tab aktif',
       "(function(){window.switchTab('more');return 'ok';})()",
-      (r) => r === 'ok',
-      "(function(){return {open:document.getElementById('more-drawer').classList.contains('show')};})()");
-    await step('MORE: drawer close (toggle lagi)',
-      "(function(){window.switchTab('more');return 'ok';})()",
-      (r) => r === 'ok',
-      "(function(){return {open:document.getElementById('more-drawer').classList.contains('show')};})()");
+      (r, x) => r === 'ok' && x && x.active === true && x.tab === 'true',
+      "(function(){var s=document.getElementById('section-more'),t=document.getElementById('tab-more');return {active:s&&s.classList.contains('active'),tab:t?t.getAttribute('aria-selected'):null};})()");
+    await step('MORE: pindah tab lain me-nonaktifkan section-more',
+      "(function(){window.switchTab('master');return 'ok';})()",
+      (r, x) => r === 'ok' && x && x.active === false && x.master === true && x.tabSel === 'false',
+      "(function(){var s=document.getElementById('section-more'),t=document.getElementById('tab-more');return {active:s&&s.classList.contains('active'),master:document.getElementById('section-master').classList.contains('active'),tabSel:t?t.getAttribute('aria-selected'):null};})()")
 
     // ---- MODAL/SHEET: buka → Escape → tutup (13 overlay map + add sheet) ----
     const MODALS = [

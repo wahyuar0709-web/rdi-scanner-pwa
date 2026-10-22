@@ -1,7 +1,7 @@
 /* L2 menu_visual (2026-09-25): cek TAMPILAN semua menu di semua kombinasi
  * HP/Desktop × Viewer/Editor. Per menu: section aktif & terlihat, tak overflow
  * horizontal (section + page), elemen kunci konten terlihat (width>0),
- * screenshot bukti ke temp. Plus: more-drawer rect & modal fit per kombinasi.
+ * screenshot bukti ke temp. Plus: halaman Lainnya (section-more) rect & modal fit per kombinasi.
  * Boot: mock 4 rows via HTTP /gas, 2x reload (viewer -> editor). */
 const http = require('http');
 const fs = require('fs');
@@ -170,7 +170,7 @@ async function main() {
       r.secOv === true && r.pageOv === true &&
       r.keyVisible === true);
 
-    const LEAK_EXPR = "((document.querySelectorAll('.modal-overlay.show').length)+(document.getElementById('more-drawer').classList.contains('show')?1:0))";
+    const LEAK_EXPR = "document.querySelectorAll('.modal-overlay.show').length";
 
     const checkAllMenus = async label => {
       const leak0 = await ev(LEAK_EXPR);
@@ -187,15 +187,15 @@ async function main() {
           assertMenu(r) && errDelta === 0 && shotOk && leak === 0,
           JSON.stringify({ r, err: errDelta, shot: shotOk, leak: leak, last: pageErrors.slice(-1).concat(consoleErrors.slice(-1)) }).slice(0, 360));
       }
-      // more drawer rect
+      // more: halaman section penuh (bukan drawer lagi)
       const before = pageErrors.length + consoleErrors.length;
-      const d = await ev("(function(){window.switchTab('more');var dr=document.getElementById('more-drawer');var r=dr.getBoundingClientRect();var cs=getComputedStyle(dr);return {show:dr.classList.contains('show'),w:Math.round(r.width),h:Math.round(r.height),disp:cs.display,pageOv:document.documentElement.scrollWidth<=window.innerWidth+2,vw:window.innerWidth};})()");
+      const d = await ev("(function(){window.switchTab('more');var p=document.getElementById('section-more');var r=p.getBoundingClientRect();var cs=getComputedStyle(p);return {active:p.classList.contains('active'),disp:cs.display,vis:cs.visibility,w:r.width,h:r.height,vw:innerWidth};})()");
       await sleep(150);
       const errDelta = (pageErrors.length + consoleErrors.length) - before;
-      rec('MORE DRAWER [' + label + ']: tampil + rect fit + no overflow',
-        !!(d && !d.error && d.show === true && d.disp !== 'none' && d.w > 0 && d.w <= d.vw + 2 && d.h > 0 && d.pageOv === true) && errDelta === 0,
+      rec('MORE PAGE [' + label + ']: aktif + rect fit + no overflow',
+        !!(d && !d.error && d.active === true && d.disp !== 'none' && d.vis !== 'hidden' && d.w > 0 && d.w <= d.vw + 2 && d.h > 0) && errDelta === 0,
         JSON.stringify({ d, err: errDelta }).slice(0, 300));
-      await ev("window.switchTab('more');'ok'"); // toggle close
+      await ev("window.switchTab('master');'ok'"); // pindah tab bersih (dulu: toggle close drawer)
       // modal fit per kombinasi + Escape wajib menutup
       for (const mid of MODALS) {
         const fn = MODAL_OPENERS[mid];

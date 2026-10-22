@@ -28,7 +28,7 @@ const handlers = [];
 const re = new RegExp('\\s(' + ATTRS + ')="([^"]*)"', 'g');
 let m;
 while ((m = re.exec(idx))) handlers.push({ attr: m[1], code: m[2] });
-t('coverage: >=343 inline handler terdeteksi (baseline 346)', handlers.length >= 343, 'dapat ' + handlers.length);
+t('coverage: >=341 inline handler terdeteksi (baseline 344)', handlers.length >= 341, 'dapat ' + handlers.length);
 
 const ATTR_COUNT = {};
 for (const h of handlers) ATTR_COUNT[h.attr] = (ATTR_COUNT[h.attr] || 0) + 1;
@@ -37,7 +37,9 @@ for (const h of handlers) ATTR_COUNT[h.attr] = (ATTR_COUNT[h.attr] || 0) + 1;
 // Selisih terverifikasi: 281 -> 279, tepat 2 handler, tidak ada yang lain.
 // Baseline turun 279 -> 274 (2026-10-21): panel Keranjang Batch dihapus atas
 // keputusan user (5 onclick: toggle/add/clear/submit/retry-failed).
-t('coverage: onclick >=272 (baseline 274)', ATTR_COUNT.onclick >= 272, 'dapat ' + ATTR_COUNT.onclick);
+// Turun lagi 274 -> 272 (2026-10-21): menu Lainnya jadi halaman section
+// penuh — overlay #more-overlay + sheet-close ikut dihapus dari nomor dasar.
+t('coverage: onclick >=270 (baseline 272)', ATTR_COUNT.onclick >= 270, 'dapat ' + ATTR_COUNT.onclick);
 t('coverage: onkeydown >=30 (baseline 32)', ATTR_COUNT.onkeydown >= 30, 'dapat ' + ATTR_COUNT.onkeydown);
 
 // ---- 2. calon callee ----
