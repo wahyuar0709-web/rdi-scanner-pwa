@@ -179,7 +179,6 @@ const OPENERS = [
   { name: 'showAdminTools', call: "showAdminTools()", tab: 'more' },
   { name: 'showConfig', call: "showConfig()", tab: 'more' },
   { name: 'showUserModal', call: "showUserModal()", tab: 'more' },
-  { name: 'toggleBatchCartPanel', call: "toggleBatchCartPanel()", tab: 'scanner' },
   { name: 'openAsetCpModal', call: "openAsetCpModal()", tab: 'aset' },
   { name: 'openAsetAksiModal', call: "openAsetAksiModal()", tab: 'aset' },
 ];
@@ -365,9 +364,9 @@ async function main() {
       /* Signature 'terbuka', bukan sekadar jumlah elemen terlihat.
        * Alasannya: showRakList/showRakDetail adalah navigasi (section
        * aktif berubah, jumlah elemen terlihat justru bisa MENURUN karena
-       * daftar diganti detail), sedangkan toggleBatchCartPanel &
-       * openAsetAksiModal memperluas panel yang sudah di layar. Metrik
-       * 'vis bertambah' salah menilai keduanya sebagai tidak terbuka. */
+       * daftar diganti detail), sedangkan openAsetAksiModal memperluas
+       * panel yang sudah di layar. Metrik 'vis bertambah' salah menilai
+       * itu sebagai tidak terbuka. */
       const sig = () => ev("(function(){var a=document.querySelector('.page-section.active');var n=0,t=0;document.querySelectorAll('*').forEach(function(x){if(x.children.length)return;var r=x.getBoundingClientRect();if(r.width<1||r.height<1)return;var s=getComputedStyle(x);if(s.display==='none'||s.visibility==='hidden')return;var p=x.parentElement,hid=false;while(p&&p!==document.body){var q=getComputedStyle(p);if(q.display==='none'||q.visibility==='hidden'||p.classList.contains('u-hide')){hid=true;break;}p=p.parentElement;}if(hid)return;n++;t+=(x.textContent||'').trim().length;});return (a?a.id:'')+'|'+n+'|'+t;})()");
       const pre = await ev('(' + SCAN + ')()', 40000);
       const preSig = await sig();

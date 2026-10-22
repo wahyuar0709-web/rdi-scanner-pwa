@@ -118,8 +118,8 @@ t('P-6: tab aktif yang butuh data dirender ulang saat data tiba',
 // --- Review-fix 2026-10-16b (F-1/F-2/F-4/F-5/F-6) ---
 t('REV-F1: peta rak TIDAK diisi saat getRakBreakdownAll gagal (masih bisa retry)',
   cnt("_rakBreakdownLoading=false;if(!res||res.status!=='ok')return;") === 1);
-t('REV-F2: selesai batch memicu refresh katalog langsung (bukan tunggu coalesce)',
-  cnt('function _refreshAfterBatch(){') === 1 && cnt('_refreshAfterBatch();') === 3);
+// REV-F2 dihapus (2026-10-21): _refreshAfterBatch milik alur Keranjang Batch
+// yang dihapus atas keputusan user; refresh alur langsung tetap dijaga REV-F4.
 t('REV-F4: dashboard boot tidak memicu getData ganda saat data masih dimuat',
   cnt('if(!allRows.length&&_dataLoading)return;') === 1);
 t('REV-F4: dashboard dirender ulang saat data tiba (bila tab dashboard aktif)',

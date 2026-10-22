@@ -45,7 +45,7 @@ while ((m = re.exec(src)) !== null) {
     isWrapped(m.index);
   if (!ok) miss.push((id || '-') + ':' + type);
 }
-t('UI-03: deteksi input >= 65', total >= 65, 'total=' + total);
+t('UI-03: deteksi input >=64 (floor 65 turun 1 mengikuti hapus panel batch 2026-10-21)', total >= 64, 'total=' + total);
 t('UI-03: 0 input placeholder-only (tanpa label/for/wrap/aria)', miss.length === 0, miss.length + ' miss: ' + miss.slice(0, 12).join(', '));
 t('UI-03: login-username ada aria-label', /id="login-username"[^>]*aria-label=/.test(src));
 t('UI-03: login-password ada aria-label', /id="login-password"[^>]*aria-label=/.test(src));
