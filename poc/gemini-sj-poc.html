@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!-- =============================================================
+  POC GEMINI (TIER GRATIS) — BACA SURAT JALAN → KODE MATERIAL
+  Halaman uji terpisah — tidak menyentuh aplikasi produksi.
+  1) Buat API key GRATIS di https://aistudio.google.com (Get API key)
+  2) Paste key ke bawah (tersimpan di HP ini saja, localStorage —
+     untuk POC; kalau nanti jadi fitur asli, key pindah ke Apps Script)
+  3) Foto SJ → Gemini membaca → JSON item {kode, nama, spec, qty, no SJ}
+  4) Dicocokkan otomatis dengan daftar kode Master Item yang di-paste
+  Format API sesuai docs resmi: POST /v1beta/models/{model}:generateContent,
+  header x-goog-api-key, inline_data base64, generationConfig.responseSchema.
+============================================================= -->
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>POC Gemini Vision — Surat Jalan → Kode Material</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:16px;background:#f1f5f9;color:#0f172a}
+h1{font-size:18px;margin:0 0 4px}
+.sub{font-size:12px;color:#64748b;margin:0 0 14px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px}
+label.fl{font-size:12px;font-weight:700;color:#475569;display:block;margin:0 0 6px}
+input[type=file],input[type=password],select{width:100%;font-size:14px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+.preview{max-width:100%;border:1px solid #cbd5e1;border-radius:8px;margin-top:8px;display:none}
+.btn{background:#334155;color:#fff;border:0;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;margin:8px 8px 0 0}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.blue{background:#1d4ed8}
+textarea{width:100%;min-height:110px;font:12px/1.45 monospace;border:1px solid #cbd5e1;border-radius:8px;padding:8px}
+#log,#jsonraw{font:12px/1.5 monospace;background:#0f172a;color:#a5f3fc;border-radius:8px;padding:10px;min-height:56px;white-space:pre-wrap;word-break:break-word}
+#jsonraw{color:#fde68a;max-height:200px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left}
+th{background:#eef2f7;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+code{font-weight:700}
+.matched{background:#dcfce7}
+.unmatched{background:#fee2e2}
+.dim{color:#94a3b8}
+</style>
+</head>
+<body>
+<h1>POC Gemini Vision (Gratis) — Surat Jalan → Kode Material</h1>
+<p class="sub">Gemini API tier gratis (quota harian) • halaman uji, bukan bagian aplikasi</p>
+
+<div class="card">
+  <label class="fl">A. API Key Gemini (gratis dari aistudio.google.com)</label>
+  <input type="password" id="key" placeholder="AIza… (paste di sini)">
+  <button class="btn" id="btn-save-key">Simpan key di HP ini</button>
+  <span id="keystate" class="dim"></span>
+</div>
+
+<div class="card">
+  <label class="fl">B. Model &amp; Foto Surat Jalan</label>
+  <select id="model">
+    <option value="gemini-2.5-flash">gemini-2.5-flash (tier gratis — default)</option>
+    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (lebih hemat quota)</option>
+    <option value="gemini-3.8-flash">gemini-3.8-flash (terbaru, uji jika option A gagal kuota)</option>
+  </select>
+  <input type="file" id="foto" accept="image/*" capture="environment" style="margin-top:8px">
+  <img id="preview" class="preview" alt="Pratinjau foto SJ">
+  <button class="btn blue" id="btn-ai" disabled>Kirim ke Gemini</button>
+  <span id="waktu" class="dim"></span>
+  <div id="log" style="margin-top:10px">Belum ada foto.</div>
+</div>
+
+<div class="card">
+  <label class="fl">C. Daftar kode Master Item (paste sekali — tersimpan di HP)</label>
+  <textarea id="master" placeholder="Paste daftar kode material di sini, satu kode per baris.&#10;Contoh:&#10;MRO-01-09-301&#10;MRO-02-14-115&#10;SPR-03-02-018"></textarea>
+  <button class="btn" id="btn-clear">Hapus daftar</button>
+</div>
+
+<div class="card">
+  <label class="fl">D. Item terbaca dari SJ ± saran kode Master</label>
+  <table><thead><tr><th>Kode dari SJ</th><th>Nama / Spec / Qty</th><th>Saran material (Master)</th><th>Skor</th></tr></thead>
+  <tbody id="tbody"><tr><td colspan="4" class="dim">Belum ada hasil.</td></tr></tbody></table>
+</div>
+
+<div class="card">
+  <label class="fl">E. Respon mentah Gemini</label>
+  <div id="jsonraw">—</div>
+</div>
+
+<script>
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+var LS_KEY = 'poc-gemini-key-' + 'v1';
+var LS_MASTER = 'poc-ocr-master'; /* sama dengan POC OCR — daftar master dipakai bersama */
+
+try { $('key').value = localStorage.getItem(LS_KEY) || ''; $('master').value = localStorage.getItem(LS_MASTER) || ''; } catch (e) {}
+function stateKey() { $('keystate').textContent = $('key').value ? 'key tersimpan ✓' : ''; }
+stateKey();
+$('btn-save-key').addEventListener('click', function () {
+  try { localStorage.setItem(LS_KEY, $('key').value.trim()); stateKey(); } catch (e) {}
+});
+$('master').addEventListener('change', function () { try { localStorage.setItem(LS_MASTER, $('master').value); } catch (e) {} });
+$('btn-clear').addEventListener('click', function () { $('master').value = ''; try { localStorage.setItem(LS_MASTER, ''); } catch (e) {} });
+
+var cv = document.createElement('canvas');
+var cvCtx = cv.getContext('2d', { willReadFrequently: true });
+var jpgB64 = '';
+var MIME = 'image/jpeg';
+
+$('foto').addEventListener('change', function () {
+  var f = this.files && this.files[0];
+  if (!f) return;
+  var img = new Image();
+  img.onload = function () {
+    /* Resolusi diturunkan ke 1600px: cukup tajam untuk AI baca tulisan, hemat kuota & memori HP */
+    var MAX = 1600, r = Math.min(1, MAX / Math.max(img.width, img.height));
+    cv.width = Math.round(img.width * r); cv.height = Math.round(img.height * r);
+    cvCtx.drawImage(img, 0, 0, cv.width, cv.height);
+    jpgB64 = cv.toDataURL(MIME, 0.9).split(',')[1];
+    var pv = $('preview');
+    pv.src = 'data:' + MIME + ';base64,' + jpgB64;
+    pv.style.display = 'block';
+    $('btn-ai').disabled = !jpgB64;
+    $('log').textContent = 'Foto siap (' + cv.width + 'x' + cv.height + ' px, ~' + Math.round(jpgB64.length * 3 / 4 / 1024) + ' KB).';
+  };
+  img.src = URL.createObjectURL(f);
+});
+
+/* ---------- panggil Gemini ---------- */
+var PROMPT = 'Dokumen ini adalah surat jalan (delivery note) gudang. Baca semua baris item di dalamnya. ' +
+  'Untuk setiap baris item, ekstrak: kode/nomor item yang tertulis (material code, part number, atau nomor PO item), ' +
+  'nama material, spesifikasi, jumlah (qty), dan satuan. Juga catat no surat jalan dan tanggal dokumen di bagian header. ' +
+  'Salin tulis persis seperti di dokumen (jangan memperbaiki ejaan). Jika sebuah kolom tidak ada, isi string kosong. ' +
+  'Tulis dalam Bahasa Indonesia untuk dokumen, tetapi data kode/nama tetap asli.';
+
+$('btn-ai').addEventListener('click', function () {
+  var key = $('key').value.trim();
+  if (!key) { $('log').textContent = 'API key belum ada. Buat gratis di aistudio.google.com lalu simpan.'; return; }
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Gemini membaca…';
+  var t0 = Date.now();
+  $('log').textContent = 'Mengirim foto ke ' + $('model').value + '…';
+
+  var body = {
+    contents: [{
+      parts: [
+        { inline_data: { mime_type: MIME, data: jpgB64 } },
+        { text: PROMPT }
+      ]
+    }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          no_surat_jalan: { type: 'STRING' },
+          tanggal_dokumen: { type: 'STRING' },
+          items: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              properties: {
+                kode: { type: 'STRING' },
+                nama: { type: 'STRING' },
+                spec: { type: 'STRING' },
+                qty: { type: 'STRING' },
+                satuan: { type: 'STRING' }
+              },
+              required: ['kode', 'nama', 'spec', 'qty', 'satuan']
+            }
+          }
+        },
+        required: ['no_surat_jalan', 'tanggal_dokumen', 'items']
+      }
+    }
+  };
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + $('model').value + ':generateContent';
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify(body)
+  }).then(function (r) {
+    return r.text().then(function (t) { return { ok: r.ok, status: r.status, t: t }; });
+  }).then(function (res) {
+    var dur = ((Date.now() - t0) / 1000).toFixed(1);
+    btn.disabled = false; btn.textContent = 'Kirim ke Gemini';
+    $('waktu').textContent = dur + ' s';
+    $('jsonraw').textContent = res.t;
+    if (!res.ok) { $('log').textContent = 'Gagal HTTP ' + res.status + ' — lihat respon mentah. (404 = model tidak tersedia, 429 = kuota gratis habis hari ini, 400 = key/model salah)'; return; }
+    var out;
+    try { out = JSON.parse(JSON.parse(res.t).candidates[0].content.parts.map(function (p) { return p.text || ''; }).join('')); }
+    catch (e) { $('log').textContent = 'Respon tidak bisa diurai sebagai JSON — lihat respon mentah.'; return; }
+    tampil(out, dur);
+  }).catch(function (e) {
+    btn.disabled = false; btn.textContent = 'Kirim ke Gemini';
+    $('log').textContent = 'Gagal jaringan: ' + (e && e.message ? e.message : e);
+  });
+});
+
+/* ---------- tampil + fuzzy match ke master ---------- */
+function daftarMaster() {
+  return $('master').value.split(/[\r\n]+/).map(function (s) { return s.trim().toUpperCase(); }).filter(function (s) { return s.length >= 3; });
+}
+function jarakLev(a, b) {
+  if (a === b) return 0;
+  var m = a.length, n = b.length, prev = new Array(n + 1), cur, i, j;
+  for (j = 0; j <= n; j++) prev[j] = j;
+  for (i = 1; i <= m; i++) { cur = [i]; for (j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[n];
+}
+function skor(k, mc) {
+  if (!k) return 0;
+  if (k === mc) return 100;
+  return Math.round(100 * (1 - jarakLev(k, mc) / Math.max(k.length, mc.length)));
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+function tampil(out, dur) {
+  var items = out.items || [];
+  var master = daftarMaster();
+  var tbody = $('tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="dim">Gemini tidak menemukan baris item — coba foto lebih dekat/terang atau ganti model.</td></tr>';
+  } else {
+    tbody.innerHTML = '';
+    items.forEach(function (it) {
+      var kode = String(it.kode || '').trim().toUpperCase();
+      var best = '', bs = 0;
+      master.forEach(function (mc) { var s = skor(kode, mc); if (s > bs) { bs = s; best = mc; } });
+      var tr = document.createElement('tr');
+      tr.className = bs >= 75 ? 'matched' : 'unmatched';
+      tr.innerHTML = '<td><code>' + esc(kode) + '</code></td>' +
+        '<td>' + esc(it.nama || '') + '<br><span class="dim" style="font-size:11px">' + esc(it.spec || '') + '</span></td>' +
+        '<td>' + (bs >= 75 ? esc(best) : '<span class="dim">tidak ada yang cocok</span>') + '</td>' +
+        '<td>' + (kode ? bs : '—') + '</td>';
+      tr.addEventListener('click', function () { try { navigator.clipboard.writeText(bs >= 75 ? best : kode); } catch (e) {} });
+      tbody.appendChild(tr);
+    });
+  }
+  var cocok = items.filter(function (it) {
+    var kode = String(it.kode || '').trim().toUpperCase(); var bs = 0;
+    master.forEach(function (mc) { var s = skor(kode, mc); if (s > bs) bs = s; });
+    return kode && bs >= 75;
+  }).length;
+  $('log').textContent = 'No. SJ: ' + (out.no_surat_jalan || '(kosong)') + ' · Tanggal: ' + (out.tanggal_dokumen || '(kosong)') +
+    ' · ' + items.length + ' item terbaca, ' + cocok + ' cocok dengan Master (skor ≥75) · ' + dur + ' s';
+}
+</script>
+</body>
+</html>
