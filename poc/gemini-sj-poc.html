@@ -66,8 +66,10 @@ code{font-weight:700}
 </div>
 
 <div class="card">
-  <label class="fl">C. Daftar kode Master Item (paste sekali — tersimpan di HP)</label>
-  <textarea id="master" placeholder="Paste daftar kode material di sini, satu kode per baris.&#10;Contoh:&#10;MRO-01-09-301&#10;MRO-02-14-115&#10;SPR-03-02-018"></textarea>
+  <label class="fl">C. Daftar kode Master — dua cara paste:</label>
+  <textarea id="master" placeholder="Cara 1 (kode saja, satu per baris):&#10;MRO-01-09-301&#10;SPR-03-02-018"></textarea>
+  <label class="fl" style="margin-top:10px">Cara 2 (opsional, agar cocok lewat NAMA juga): format  KODE | NAMA  per baris</label>
+  <textarea id="master-nama" placeholder="MRO-01-09-301 | Double Ended Bit PH2&#10;SPR-03-02-018 | Bearing 6204"></textarea>
   <button class="btn" id="btn-clear">Hapus daftar</button>
 </div>
 
@@ -88,14 +90,15 @@ var $ = function (id) { return document.getElementById(id); };
 var LS_KEY = 'poc-gemini-key-' + 'v1';
 var LS_MASTER = 'poc-ocr-master'; /* sama dengan POC OCR — daftar master dipakai bersama */
 
-try { $('key').value = localStorage.getItem(LS_KEY) || ''; $('master').value = localStorage.getItem(LS_MASTER) || ''; } catch (e) {}
+try { $('key').value = localStorage.getItem(LS_KEY) || ''; $('master').value = localStorage.getItem(LS_MASTER) || ''; $('master-nama').value = localStorage.getItem(LS_MASTER + '-nama') || ''; } catch (e) {}
 function stateKey() { $('keystate').textContent = $('key').value ? 'key tersimpan ✓' : ''; }
 stateKey();
+$('master-nama').addEventListener('change', function () { try { localStorage.setItem(LS_MASTER + '-nama', $('master-nama').value); } catch (e) {} });
 $('btn-save-key').addEventListener('click', function () {
   try { localStorage.setItem(LS_KEY, $('key').value.trim()); stateKey(); } catch (e) {}
 });
 $('master').addEventListener('change', function () { try { localStorage.setItem(LS_MASTER, $('master').value); } catch (e) {} });
-$('btn-clear').addEventListener('click', function () { $('master').value = ''; try { localStorage.setItem(LS_MASTER, ''); } catch (e) {} });
+$('btn-clear').addEventListener('click', function () { $('master').value = ''; $('master-nama').value = ''; try { localStorage.setItem(LS_MASTER, ''); localStorage.setItem(LS_MASTER + '-nama', ''); } catch (e) {} });
 
 var cv = document.createElement('canvas');
 var cvCtx = cv.getContext('2d', { willReadFrequently: true });
@@ -132,6 +135,8 @@ $('btn-ai').addEventListener('click', function () {
   var key = $('key').value.trim();
   if (!key) { $('log').textContent = 'API key belum ada. Buat gratis di aistudio.google.com lalu simpan.'; return; }
   var btn = this;
+  var retrikan = 0;
+  function kirim() {
   btn.disabled = true; btn.textContent = 'Gemini membaca…';
   var t0 = Date.now();
   $('log').textContent = 'Mengirim foto ke ' + $('model').value + '…';
@@ -182,7 +187,18 @@ $('btn-ai').addEventListener('click', function () {
     btn.disabled = false; btn.textContent = 'Kirim ke Gemini';
     $('waktu').textContent = dur + ' s';
     $('jsonraw').textContent = res.t;
-    if (!res.ok) { $('log').textContent = 'Gagal HTTP ' + res.status + ' — lihat respon mentah. (404 = model tidak tersedia, 429 = kuota gratis habis hari ini, 400 = key/model salah)'; return; }
+    if (!res.ok) {
+      /* RETRY: 503/500 = server Gemini sesaat kelebihan beban (transien) → coba ulang otomatis */
+      if ((res.status === 503 || res.status === 500) && retrikan < 2) {
+        retrikan++;
+        $('log').textContent = 'Server Gemini sesaat sibuk (' + res.status + '). Coba ulang ke-' + retrikan + ' dalam 3 detik…';
+        setTimeout(kirim, 3000);
+        return;
+      }
+      btn.disabled = false; btn.textContent = 'Kirim ke Gemini';
+      $('log').textContent = 'Gagal HTTP ' + res.status + ' — lihat respon mentah. (503 = server Gemini sesaat sibuk, coba lagi; 404 = model tidak tersedia; 429 = kuota gratis habis hari ini; 400 = key/model salah)';
+      return;
+    }
     var out;
     try { out = JSON.parse(JSON.parse(res.t).candidates[0].content.parts.map(function (p) { return p.text || ''; }).join('')); }
     catch (e) { $('log').textContent = 'Respon tidak bisa diurai sebagai JSON — lihat respon mentah.'; return; }
@@ -191,6 +207,8 @@ $('btn-ai').addEventListener('click', function () {
     btn.disabled = false; btn.textContent = 'Kirim ke Gemini';
     $('log').textContent = 'Gagal jaringan: ' + (e && e.message ? e.message : e);
   });
+  } /* kirim() */
+  kirim(); /* panggil pertama */
 });
 
 /* ---------- tampil + fuzzy match ke master ---------- */
@@ -221,14 +239,29 @@ function tampil(out, dur) {
     tbody.innerHTML = '';
     items.forEach(function (it) {
       var kode = String(it.kode || '').trim().toUpperCase();
-      var best = '', bs = 0;
-      master.forEach(function (mc) { var s = skor(kode, mc); if (s > bs) { bs = s; best = mc; } });
+      var nama = String(it.nama || '').trim().toUpperCase();
+      var best = '', bs = 0, cara = '';
+      /* 1) cocokkan dengan KODE master */
+      master.forEach(function (mc) { var s = skor(kode, mc); if (s > bs) { bs = s; best = mc; cara = 'kode'; } });
+      /* 2) kalau kode tidak menolong (0/rendah), cocokkan lewat NAMA material */
+      var namaDaftar = $('master-nama').value.split(/[\r\n]+/).map(function (s) { return s.trim().toUpperCase(); }).filter(function (s) { return s.length >= 4; });
+      var bestNama = '', bsNama = 0;
+      namaDaftar.forEach(function (nc) { var s = skor(nama, nc); if (s > bsNama) { bsNama = s; bestNama = nc; } });
+      var pakaiNama = (bs < 75 && bsNama >= 75);
+      if (pakaiNama) {
+        /* pasangkan nama dengan kode master sebaris (format paste: KODE | NAMA) */
+        var baris = null;
+        try { baris = ($('master-nama').value.split(/[\r\n]+/).filter(function (s) { return s.toUpperCase().indexOf(bestNama + (bestNama[bestNama.length - 1] === '|' ? '' : '')) >= 0 || s.toUpperCase().indexOf(bestNama) >= 0; })[0] || '').split('|'); } catch (e) {}
+        var kodePair = baris && baris[0] ? baris[0].trim().toUpperCase() : '';
+        if (kodePair && master.indexOf(kodePair) >= 0) { best = kodePair; bs = Math.max(80, bs); cara = 'nama'; }
+        else { best = bestNama; bs = bsNama; cara = 'nama'; }
+      }
       var tr = document.createElement('tr');
       tr.className = bs >= 75 ? 'matched' : 'unmatched';
       tr.innerHTML = '<td><code>' + esc(kode) + '</code></td>' +
         '<td>' + esc(it.nama || '') + '<br><span class="dim" style="font-size:11px">' + esc(it.spec || '') + '</span></td>' +
         '<td>' + (bs >= 75 ? esc(best) : '<span class="dim">tidak ada yang cocok</span>') + '</td>' +
-        '<td>' + (kode ? bs : '—') + '</td>';
+        '<td>' + (kode ? bs : '—') + '<br><span class="dim" style="font-size:10px">' + cara + '</span></td>';
       tr.addEventListener('click', function () { try { navigator.clipboard.writeText(bs >= 75 ? best : kode); } catch (e) {} });
       tbody.appendChild(tr);
     });
