@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v48'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v49'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -17,6 +17,9 @@ const ASSETS = [
   // FIX PERF 2026-10-13: XLSX 861 KB tadinya CDN (tiap launch butuh internet).
   // Self-host + precache = satu kali unduh, seterusnya offline & instant.
   './js/xlsx.full.min.js',
+  // EXPORT 2026-10-28: ExcelJS utk tulis file Excel dgn rumus+style + modul penyusun export kartu stok
+  './js/exceljs.min.js',
+  './js/exportexcel.js',
   // FIX OFFLINE 2026-10-13: html2pdf 0.10.1 (885 KB) tadyanya CDN -> kartu stok
   // "Download PDF" tidak bisa dipakai tanpa internet. Self-host + precache.
   './js/html2pdf.bundle.min.js'

@@ -55,7 +55,7 @@ t('UI-03: template cetak-item-cb ada aria-label', /cetak-item-cb"\s+aria-label="
 t('UI-03: label exp-date punya for', /<label[^>]*for="exp-date-from"/.test(src) && /<label[^>]*for="exp-date-to"/.test(src));
 
 const ovIds = [...src.matchAll(/class="modal-overlay" id="([\w-]+)"/g)].map(x => x[1]);
-t('UI-04: jumlah .modal-overlay = 13', ovIds.length === 13, 'dapat ' + ovIds.length);
+t('UI-04: jumlah .modal-overlay = 14', ovIds.length === 14, 'dapat ' + ovIds.length);
 const mapDef = src.match(/_overlayCloseMap\s*=\s*\{([\s\S]*?)\}/);
 t('UI-04: _overlayCloseMap didefinisikan', !!mapDef);
 const pairs = mapDef ? [...mapDef[1].matchAll(/'([\w-]+)'\s*:\s*'(\w+)'/g)] : [];

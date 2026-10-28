@@ -178,11 +178,23 @@
     setBox(msg('info', 'Membaca ' + file.name + '…'));
     var fr = new FileReader();
     fr.onerror = function () { setBox(msg('err', 'Gagal membaca file.')); };
+    /* Variabel modul */
+    function txtToday() { var t = new Date(); return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()); }
+    /* Simpan salinan sheet "Master Code" dari file yang diimpor supaya Export Excel bisa menyertakannya */
+    function simpanMasterCode(wb2) {
+      if (!root.RdiExport) return;
+      var mcName = wb2.SheetNames.filter(function (n) { return norm(n) === 'master code'; })[0];
+      if (!mcName) return; /* file tanpa sheet Master Code — abaikan sesempurna */
+      var rows = root.XLSX.utils.sheet_to_json(wb2.Sheets[mcName], { header: 1, raw: true, defval: null });
+      root.RdiExport.mcSaveFromSheetRows(rows, txtToday());
+    }
     fr.onload = function () {
-      var parsed;
-      try { parsed = parseWorkbook(root.XLSX, root.XLSX.read(new Uint8Array(fr.result), { type: 'array' })); }
+      var parsed, wb2;
+      try { wb2 = root.XLSX.read(new Uint8Array(fr.result), { type: 'array' }); parsed = parseWorkbook(root.XLSX, wb2); }
       catch (e) { setBox(msg('err', 'File bukan Excel yang valid: ' + (e && e.message ? e.message : e))); return; }
       if (!parsed.entries.length) { setBox(msg('err', 'Tidak ada baris transaksi yang terbaca. Pastikan format kolom sesuai (Material code, Material name, Qty In, tanggal…, Stok Akhir).')); return; }
+      /* CACHE MASTER CODE (dipakai sheet Master Code di Export Excel); bila gagal -> dilewati */
+      try { simpanMasterCode(wb2); } catch (e) { /* tetap lanjut */ }
       state = { file: file.name, parsed: parsed };
       setBox(msg('info', 'Memeriksa ke server (belum ada data yang diubah)…'));
       root.gasPost({ action: 'importExcel', mode: 'dry', items: parsed.items, entries: parsed.entries }).then(function (res) {

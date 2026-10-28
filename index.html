@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.35">
+<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.36">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,11 +27,17 @@
      Paradox. Sekarang self-host (sama seperti jsQR.min.js, qrcode.min.js, jspdf.min.js),
      di-cache service worker, dan bisa dipakai tanpa internet sama sekali. -->
 <script src="./js/xlsx.full.min.js" defer></script>
-<title>RDI Indirect Scanner v15.35 - PT Rayard Deli Indonesia</title>
+<!-- EXPORT 2026-10-28: ExcelJS self-host (948 KB, jsDelivr exceljs@4.4.0). SheetJS 0.18.5 versi
+     open-source tidak bisa memasang gaya/format pada export, dan hasil export harus meniru file
+     kertas "Tools & Spare Part Inventory" (header berwarna + border + rumus + tanggal asli Excel)
+     sekaligus dapat di-impor ulang.   -->
+<script src="./js/exceljs.min.js" defer></script>
+<script src="./js/exportexcel.js" defer></script>
+<title>RDI Indirect Scanner v15.36 - PT Rayard Deli Indonesia</title>
 <!-- F5-UI-ARIAHIDDEN: penanda batch aria-hidden (lihat PLAN §1.4 UI-11) -->
 <style>
 /* ===================================================================
-   RDI INDIRECT SCANNER — STYLESHEET (v15.35)
+   RDI INDIRECT SCANNER — STYLESHEET (v15.36)
    File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
    =================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:hidden}:root{--badge-blue-text:#0057C2;--badge-blue-bg:#EAF3FF;--badge-blue-border:#0A84FF;--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;--bg:#F1F4F9;--bg2:#FFFFFF;--surface:#FFFFFF;--surface2:#F6F8FB;--surface3:#E9EEF5;--glass:rgba(15,23,42,.045);--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.16);--border3:rgba(15,23,42,.26);--text:#0F172A;--text2:#475569;--text3:#5A6A81;--neutral-50:#F8FAFC;--neutral-100:#EEF2F7;--neutral-200:#E2E8F0;--neutral-300:#CBD5E1;--neutral-400:#7E8DA2;--neutral-500:#64748B;--neutral-600:#475569;--neutral-700:#334155;--neutral-800:#1E293B;--neutral-900:#0F172A;--amber:#B45309;--amber-dim:rgba(180,83,9,.12);--amber-border:rgba(180,83,9,.4);--green:#15803D;--green-dim:rgba(21,128,61,.1);--green-border:rgba(21,128,61,.32);--green-text:#166534;--red:#b91c1c;--red-dim:rgba(185,28,28,.08);--red-border:rgba(185,28,28,.32);--red-text:#991b1b;--blue:#0A84FF;--blue-dim:rgba(10,132,255,.10);--blue-border:rgba(10,132,255,.30);--blue-text:#0A63D6;--navy:#0067E2;--navy2:#0060DF;--brand-1:#0057C2;--brand-2:#0060DF;--grad-brand:linear-gradient(135deg,var(--brand-1) 0%,var(--brand-2) 100%);--action:#0067E2;--action-dark:#0047B0;--action-light:#0A6FD6;--grad-action:linear-gradient(135deg,var(--action),var(--action-dark));--grad-action-hover:linear-gradient(135deg,var(--action-light),var(--action));--badge-amber-text:#78350F;--badge-amber-bg:#FEF7EC;--badge-amber-border:#D97706;--r:var(--br-12);--rl:var(--br-16);--rxl:var(--br-24);
@@ -850,7 +856,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.35</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.36</span>
   <div class="topbar-online" id="dot-online" role="status" aria-live="polite" aria-label="Status koneksi internet" title="Terhubung ke internet"></div>
   <span class="viewer-badge" style="display:none;font-size:12px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:var(--action);color:#fff;white-space:nowrap;flex-shrink:0">LIHAT SAJA</span>
   <span class="user-badge" id="user-badge-topbar" onclick="showUserModal()" role="button" tabindex="0" aria-label="Buka menu pengguna" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showUserModal()}">
@@ -1937,6 +1943,10 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
         <span>Aset Sirkulasi</span>
       </button>
+      <button class="more-menu-btn" onclick="openImportXlModal()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Import Excel (Merge)</span>
+      </button>
     </div>
     <div class="sheet-group-label">Akun & Pengaturan</div>
     <div class="sheet-grid">
@@ -2604,14 +2614,12 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <button class="btn btn-sm" id="btn-admin-resync" onclick="runAdminTool('resyncMasterLists', this)">Jalankan</button>
       </div>
 
-      <div class="admin-tool-card" style="flex-wrap:wrap">
+      <div class="admin-tool-card">
         <div class="admin-tool-info">
           <div class="admin-tool-title">Import Excel (Merge)</div>
           <div class="admin-tool-desc">Upload file "Tools &amp; Spare Part Inventory ….xlsx". Aplikasi hanya MENAMBAH item &amp; transaksi yang belum ada (tidak menimpa/menghapus); upload ulang file yang sama aman. Ada pratinjau dulu sebelum data ditulis.</div>
         </div>
-        <button class="btn btn-sm" id="btn-admin-import-xl" onclick="importXlPick()">Pilih File</button>
-        <input type="file" id="import-xl-file" aria-label="Pilih file Excel untuk import" accept=".xlsx,.xlsm" style="display:none" onchange="importXlOnFile(this)">
-        <div id="import-xl-box" style="width:100%;margin-top:8px"></div>
+        <button class="btn btn-sm" id="btn-admin-import-xl" onclick="openImportXlModal()">Buka Import</button>
       </div>
 
       <div id="admin-results" class="u-mt-12"></div>
@@ -2761,11 +2769,11 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
 <script>
 // ===================================================================
-// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.35)
+// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.36)
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.35';var APP_BUILD_DATE='2026-10-28';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.36';var APP_BUILD_DATE='2026-10-28';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -3275,6 +3283,9 @@ var rows=filteredRows.length?filteredRows:allRows;var header=['ID Item','No','Na
 // ===== Export Excel Lengkap (kartu stok per-batch FIFO, per kategori, format meniru file referensi user) =====
 function openExportExcelModal(){var m=document.getElementById('modal-export-excel');m.classList.add('show');modalFocusOpen(m);}
 function closeExportExcelModal(){var m=document.getElementById('modal-export-excel');m.classList.remove('show');modalFocusClose(m);}
+/* MODAL IMPORT EXCEL 2026-10-28: masuk ke menu Lainnya (Operasional) selain dari Admin Database */
+function openImportXlModal(){var m=document.getElementById('modal-import-excel');m.classList.add('show');modalFocusOpen(m);}
+function closeImportXlModal(){var m=document.getElementById('modal-import-excel');m.classList.remove('show');modalFocusClose(m);}
 // ===== F-05 Export QR Massal =====
 function openExportQRModal(){if(!allRows.length){cetakNotice('Tidak ada data. Muat data terlebih dahulu.','warn');return;}var m=document.getElementById('modal-export-qr');m.classList.add('show');modalFocusOpen(m);}
 function closeExportQRModal(){var m=document.getElementById('modal-export-qr');m.classList.remove('show');modalFocusClose(m);}
@@ -3337,53 +3348,13 @@ function doExportQR(){
   }
 }
 function doExportExcelLengkap(){
-var from=document.getElementById('exp-date-from').value;var to=document.getElementById('exp-date-to').value;var sbar=document.getElementById('sbar-export');var btn=document.getElementById('btn-do-export');
-btn.disabled=true;sbar.className='sbar s-info show';sbar.innerHTML='Mengambil & menyimulasikan data (FIFO)...';
-try{checkUrl();}catch(e){sbar.className='sbar s-err show';sbar.innerHTML=xe(friendlyErr(e));btn.disabled=false;return;}
-var params={action:'getExportData'};if(from)params.dateFrom=from;if(to)params.dateTo=to;
-gasGet(params).then(function(res){
-if(res.status!=='ok'){sbar.className='sbar s-err show';sbar.innerHTML=xe(res.message||'Export gagal.');btn.disabled=false;return;}
-if(!res.sheets||!res.sheets.length){sbar.className='sbar s-err show';sbar.innerHTML=xe('Tidak ada data untuk diexport.');btn.disabled=false;return;}
-var wb=XLSX.utils.book_new();
-var baseHeaders=['No.','Material code','Material name','Material Specification','User','BC/Non BC','Vendor','Nomor PO / packing List','Received Date','Rak','Qty In','Unit'];
-var EPOCH=Date.UTC(1899,11,30);
-function xlSerial(dmy){var p=String(dmy||'').split('/');var d=+p[0],m=+p[1],y=+p[2];if(!(y>2000&&y<2100&&m>0&&m<13&&d>0&&d<32))return null;return (Date.UTC(y,m-1,d)-EPOCH)/86400000;}
-var mismatchRows=0;
-res.sheets.forEach(function(sheetData){
-var headers=baseHeaders.concat(sheetData.dateColumns).concat(['Stok Akhir']);
-var ncol=headers.length,ws={},put=function(rr,cc,cell){ws[XLSX.utils.encode_cell({r:rr,c:cc})]=cell;};
-headers.forEach(function(h,c){put(0,c,{t:'s',v:String(h)});});
-var penCol=XLSX.utils.encode_col(ncol-2),noDateCols=ncol<=13;
-sheetData.rows.forEach(function(r,i){
-var rr=i+1,kref='K'+(rr+1);
-put(rr,0,{t:'s',f:'IF(B'+(rr+1)+'<>"",ROW()-1,"")'});
-put(rr,1,{t:'s',v:String(r.idItem||'')});
-put(rr,2,{t:'s',v:String(r.nama||'')});
-put(rr,3,{t:'s',v:r.spec==null?'':String(r.spec)});
-put(rr,4,{t:'s',v:String(r.user||'')});
-put(rr,5,{t:'s',v:String(r.bc||'')});
-put(rr,6,{t:'s',v:String(r.vendor||'')});
-put(rr,7,{t:'s',v:String(r.noReferensi||'')});
-var sv=xlSerial(r.receivedDate);if(sv!==null)put(rr,8,{t:'n',v:sv,z:'m/d/yy'});else put(rr,8,{t:'s',v:String(r.receivedDate||'')});
-put(rr,9,{t:'s',v:String(r.rak||'')});
-put(rr,10,{t:'n',v:+r.qtyIn||0});
-put(rr,11,{t:'s',v:String(r.unit||'')});
-var sumOut=0;
-sheetData.dateColumns.forEach(function(d,k){var q=r.keluarPerTanggal[d];if(q!==undefined&&q>0){put(rr,12+k,{t:'n',v:q});sumOut+=q;}});
-put(rr,ncol-1,noDateCols?{t:'n',f:'IF(ISNUMBER('+kref+'),'+kref+',0)'}:{t:'n',f:'IF(ISNUMBER('+kref+'),'+kref+',0)-SUM(M'+(rr+1)+':'+penCol+(rr+1)+')'});
-if(Math.abs((+r.qtyIn||0)-sumOut-(+r.stokAkhir||0))>1e-9)mismatchRows++;
-});
-ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:sheetData.rows.length,c:ncol-1}});
-ws['!cols']=headers.map(function(h,c){return {wch:c<12?(c===2?34:12):12.5};});
-var safeName=String(sheetData.kategori).replace(/[:\\\/\?\*\[\]]/g,'').substring(0,31)||'Lainnya';
-XLSX.utils.book_append_sheet(wb,ws,safeName);
-});
-var fname='Tools & Spare Part Inventory '+new Date().toISOString().slice(0,10).replace(/-/g,'.')+'.xlsx';
-XLSX.writeFile(wb,fname);
-sbar.className='sbar s-ok show';
-sbar.innerHTML='Export berhasil: '+xe(fname)+' ('+xe(String(res.sheets.length))+' sheet kategori — format sama dgn kartu stok: kolom No. & Stok Akhir pakai rumus, tanggal asli Excel)'+(mismatchRows?' · ⚠ '+xe(String(mismatchRows))+' baris Qty In−Σkeluar ≠ saldo FIFO (data historis nyeleneh)':'');
-btn.disabled=false;
-}).catch(function(e){sbar.className='sbar s-err show';sbar.innerHTML='Gagal: '+xe(friendlyErr(e));btn.disabled=false;});
+var from=document.getElementById('exp-date-from').value;var to=document.getElementById('exp-date-to').value;
+try{checkUrl();}catch(e){var sbar=document.getElementById('sbar-export');sbar.className='sbar s-err show';sbar.innerHTML=xe(friendlyErr(e));return;}
+return RdiExport.lengkap(from,to);
+}
+function doExportExcelSemua(){
+try{checkUrl();}catch(e){var sbar=document.getElementById('sbar-export');sbar.className='sbar s-err show';sbar.innerHTML=xe(friendlyErr(e));return;}
+return RdiExport.lengkap('','');
 }
 function showScanStep(name){document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});document.getElementById('step-'+name).classList.add('active');var subBar=document.getElementById('trx-submit-bar');if(subBar)subBar.style.display=(name==='transaksi')?'block':'none';if(name!=='transaksi')stopInlineScannerRak();updateTrxProgress(name);}
 function updateTrxProgress(name){var stepOf={input:1,transaksi:2,cekstok:2,result:3};var current=stepOf[name]||1;for(var i=1;i<=3;i++){var el=document.getElementById('trxprog-'+i);if(!el)continue;el.classList.remove('active','done');if(i<current)el.classList.add('done');else if(i===current)el.classList.add('active');}
@@ -3923,7 +3894,7 @@ if(document.getElementById('rak-label-sheet').classList.contains('show')){closeR
 if(document.getElementById('modal-config').classList.contains('show')){hideConfig();return;}
 if(document.getElementById('modal-user').classList.contains('show')){hideUserModal();return;}
 closeTopOverlay();});
-var _overlayCloseMap={'modal-filter':'closeFilterSheet','modal-sort':'closeSortSheet','modal-hist-card-detail':'closeHistCardDetail','modal-aset-aksi':'closeAsetAksiModal','modal-aset-tambah-unit':'closeAsetTambahUnitModal','modal-aset-tambah-item':'closeAsetTambahItemModal','modal-aset-cp':'closeAsetCpModal','modal-aset-performa-vendor':'closeAsetPerformaVendorModal','modal-admin-tools':'hideAdminTools','modal-config':'hideConfig','modal-user':'hideUserModal','modal-export-excel':'closeExportExcelModal','modal-export-qr':'closeExportQRModal'};
+var _overlayCloseMap={'modal-filter':'closeFilterSheet','modal-sort':'closeSortSheet','modal-hist-card-detail':'closeHistCardDetail','modal-aset-aksi':'closeAsetAksiModal','modal-aset-tambah-unit':'closeAsetTambahUnitModal','modal-aset-tambah-item':'closeAsetTambahItemModal','modal-aset-cp':'closeAsetCpModal','modal-aset-performa-vendor':'closeAsetPerformaVendorModal','modal-admin-tools':'hideAdminTools','modal-config':'hideConfig','modal-user':'hideUserModal','modal-import-excel':'closeImportXlModal','modal-export-excel':'closeExportExcelModal','modal-export-qr':'closeExportQRModal'};
 function closeTopOverlay(){var vis=document.querySelectorAll('.modal-overlay.show');var el=null,zTop=-1;for(var i=0;i<vis.length;i++){var e=vis[i],id=e.id;if(!id||!_overlayCloseMap[id])continue;var zi=parseInt(window.getComputedStyle(e).zIndex,10)||0;if(zi>=zTop){zTop=zi;el=e;}}if(!el)return;var fn=window[_overlayCloseMap[el.id]];if(typeof fn==='function')fn();}
 document.addEventListener('click',function(e){var t=e.target;if(t&&t.classList&&t.classList.contains('modal-overlay'))closeTopOverlay();});
 document.addEventListener('focusin',function(e){var el=e.target;if(el.tagName!=='INPUT'&&el.tagName!=='SELECT'&&el.tagName!=='TEXTAREA')return;var scrollParent=el.closest('.edit-sheet-body, .item-detail-body');if(!scrollParent)return;setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'center'});},300);});/* #1 collapsing chrome: satu listener untuk SEMUA section (listener lama hanya
@@ -3940,7 +3911,7 @@ window.addEventListener('scroll',function(){
 // ===== SECTION: BOOT SPLASH =====
 var _bootSplashStart=Date.now();function hideBootSplash(){var el=document.getElementById('boot-splash');if(!el)return;el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},560);}
 window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0)switchTab(h);});window.addEventListener('DOMContentLoaded',function(){applyTheme();var dataReady;if(!hasValidSession()){showLoginGate();dataReady=Promise.resolve();}else{hideLoginGate();if(VIEWER_MODE)document.body.classList.add('viewer-mode');dataReady=startAppAfterAuth();}
-var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.closeItemDetail=closeItemDetail;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
+var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.closeItemDetail=closeItemDetail;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.doExportExcelSemua=doExportExcelSemua;window.openImportXlModal=openImportXlModal;window.closeImportXlModal=closeImportXlModal;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
 
 // ===== SECTION: TAMBAH / EDIT ITEM (sheet form) =====
 function updateAddRakHint(){var qty=parseFloat(document.getElementById('add-qty').value);var rak=document.getElementById('add-rak').value.trim();var needRak=!isNaN(qty)&&qty>0;var hint=document.getElementById('add-rak-hint');var label=document.getElementById('add-rak-label');if(hint)hint.classList.toggle('u-hide',!(needRak&&!rak));if(label)label.textContent=needRak?'Rak / Lokasi Awal *':'Rak / Lokasi Awal';}
@@ -4975,17 +4946,31 @@ window.removeManualRakLabel=removeManualRakLabel;
 <datalist id="dl-rak-item"></datalist>
 <datalist id="dl-vendor"></datalist>
 <datalist id="dl-kategori"></datalist>
-<div class="modal-overlay" id="modal-export-excel" role="dialog" aria-modal="true" aria-label="Export Excel Lengkap">
+<div class="modal-overlay" id="modal-import-excel" role="dialog" aria-modal="true" aria-label="Import Excel (Merge)">
   <div class="modal">
+    <div class="modal-head"><h3>Import Excel (Merge)</h3><button class="sheet-close" onclick="closeImportXlModal()" aria-label="Tutup">&times;</button></div>
+    <div class="modal-body">
+      <p class="field-hint" style="margin-bottom:14px">Upload file "Tools &amp; Spare Part Inventory ….xlsx". Aplikasi hanya MENAMBAH item &amp; transaksi yang belum ada (tidak menimpa/menghapus); upload ulang file yang sama aman. Ada pratinjau dulu sebelum data ditulis.</p>
+      <input type="file" id="import-xl-file" aria-label="Pilih file Excel untuk import" accept=".xlsx,.xlsm" style="display:none" onchange="importXlOnFile(this)">
+      <button class="btn btn-primary" onclick="importXlPick()">Pilih File</button>
+      <div id="import-xl-box" style="width:100%;margin-top:10px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeImportXlModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-export-excel" role="dialog" aria-modal="true" aria-label="Export Excel Lengkap">  <div class="modal">
     <div class="modal-head"><h3>Export Excel Lengkap</h3><button class="sheet-close" onclick="closeExportExcelModal()" aria-label="Tutup">&times;</button></div>
     <div class="modal-body">
-      <p class="field-hint" style="margin-bottom:14px">Kartu stok per-batch (format seperti file lama), dikelompokkan per kategori. Kosongkan tanggal untuk semua riwayat.</p>
+      <p class="field-hint" style="margin-bottom:14px">Kartu stok per-batch (format file acuan: header berwarna, belang baris, kolom No. &amp; Stok Akhir ber-rumus, tanggal asli Excel). Dengan rentang tanggal: kolom tanggal dibatasi filter. <b>Export Semua</b>: seluruh riwayat, tanpa filter.</p>
       <div class="field-group"><label class="field-label" for="exp-date-from">Dari Tanggal (opsional)</label><input type="date" id="exp-date-from"></div>
       <div class="field-group"><label class="field-label" for="exp-date-to">Sampai Tanggal (opsional)</label><input type="date" id="exp-date-to"></div>
       <div id="sbar-export" class="sbar" role="status" aria-live="polite"></div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeExportExcelModal()">Batal</button>
+      <button class="btn" onclick="doExportExcelSemua()">Export Semua</button>
       <button class="btn btn-primary" id="btn-do-export" onclick="doExportExcelLengkap()">Export</button>
     </div>
   </div>
