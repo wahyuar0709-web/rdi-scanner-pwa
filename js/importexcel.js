@@ -170,14 +170,17 @@
     return '<div style="font-size:12px;color:' + col + ';margin:6px 0">' + esc(text) + '</div>';
   }
   function pick() { var f = document.getElementById('import-xl-file'); if (f) { f.value = ''; f.click(); } }
+  /* UX 2026-10-28: modal import ditandai aria-busy selama file diproses/disubmit (High guideline "loading indicators") */
+  function setImportBusy(on) { var m = document.getElementById('modal-import-excel'); if (m) { if (on) m.setAttribute('aria-busy', 'true'); else m.removeAttribute('aria-busy'); } }
   function onFile(input) {
     var file = input && input.files && input.files[0];
     if (!file) return;
-    if (typeof root.XLSX === 'undefined') { setBox(msg('err', 'Library Excel belum termuat (butuh internet sekali). Coba lagi sebentar.')); return; }
-    if (typeof root.gasPost !== 'function') { setBox(msg('err', 'Aplikasi belum siap. Muat ulang halaman.')); return; }
+    setImportBusy(true);
+    if (typeof root.XLSX === 'undefined') { setImportBusy(false); setBox(msg('err', 'Library Excel belum termuat (butuh internet sekali). Coba lagi sebentar.')); return; }
+    if (typeof root.gasPost !== 'function') { setImportBusy(false); setBox(msg('err', 'Aplikasi belum siap. Muat ulang halaman.')); return; }
     setBox(msg('info', 'Membaca ' + file.name + '…'));
     var fr = new FileReader();
-    fr.onerror = function () { setBox(msg('err', 'Gagal membaca file.')); };
+    fr.onerror = function () { setImportBusy(false); setBox(msg('err', 'Gagal membaca file.')); };
     /* Variabel modul */
     function txtToday() { var t = new Date(); return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()); }
     /* Simpan salinan sheet "Master Code" dari file yang diimpor supaya Export Excel bisa menyertakannya */
@@ -191,16 +194,16 @@
     fr.onload = function () {
       var parsed, wb2;
       try { wb2 = root.XLSX.read(new Uint8Array(fr.result), { type: 'array' }); parsed = parseWorkbook(root.XLSX, wb2); }
-      catch (e) { setBox(msg('err', 'File bukan Excel yang valid: ' + (e && e.message ? e.message : e))); return; }
-      if (!parsed.entries.length) { setBox(msg('err', 'Tidak ada baris transaksi yang terbaca. Pastikan format kolom sesuai (Material code, Material name, Qty In, tanggal…, Stok Akhir).')); return; }
+      catch (e) { setImportBusy(false); setBox(msg('err', 'File bukan Excel yang valid: ' + (e && e.message ? e.message : e))); return; }
+      if (!parsed.entries.length) { setImportBusy(false); setBox(msg('err', 'Tidak ada baris transaksi yang terbaca. Pastikan format kolom sesuai (Material code, Material name, Qty In, tanggal…, Stok Akhir).')); return; }
       /* CACHE MASTER CODE (dipakai sheet Master Code di Export Excel); bila gagal -> dilewati */
       try { simpanMasterCode(wb2); } catch (e) { /* tetap lanjut */ }
       state = { file: file.name, parsed: parsed };
       setBox(msg('info', 'Memeriksa ke server (belum ada data yang diubah)…'));
       root.gasPost({ action: 'importExcel', mode: 'dry', items: parsed.items, entries: parsed.entries }).then(function (res) {
-        if (!res || res.status !== 'ok') { setBox(msg('err', (res && res.message) || 'Pemeriksaan gagal.')); return; }
+        if (!res || res.status !== 'ok') { setImportBusy(false); setBox(msg('err', (res && res.message) || 'Pemeriksaan gagal.')); return; }
         state.dry = res; renderPreview();
-      }).catch(function (e) { setBox(msg('err', 'Gagal menghubungi server: ' + (e && e.message ? e.message : 'network'))); });
+      }).catch(function (e) { setImportBusy(false); setBox(msg('err', 'Gagal menghubungi server: ' + (e && e.message ? e.message : 'network'))); });
     };
     fr.readAsArrayBuffer(file);
   }
@@ -229,24 +232,27 @@
     if (nothing) h += msg('ok', 'Tidak ada yang perlu ditambah — data aplikasi sudah sesuai Excel.');
     else h += '<button class="btn btn-sm" id="import-xl-apply" onclick="importXlApply(this)">Terapkan Import</button>';
     setBox(h);
+    setImportBusy(false); /* pratinjau sudah tampil — modal tidak lagi "sibuk" */
   }
   function apply(btn) {
     if (!state || !state.dry) return;
     var d = state.dry;
     if (!confirm('Tambahkan ' + d.itemsNew + ' item baru, ' + d.masukAdd + ' MASUK dan ' + d.keluarAdd + ' KELUAR ke spreadsheet? Backup Transaksi_Log dibuat otomatis. Jangan scan transaksi selama proses berjalan.')) return;
+    setImportBusy(true);
     btn.disabled = true;
     var entries = state.parsed.entries, items = state.parsed.items, total = Math.max(1, Math.ceil(entries.length / CHUNK)), k = 0, sum = { masuk: 0, keluar: 0, items: 0, skip: 0 };
     function step() {
       setBox(msg('info', 'Mengimpor bagian ' + (k + 1) + ' dari ' + total + '…'));
       var body = { action: 'importExcel', mode: 'commit', entries: entries.slice(k * CHUNK, (k + 1) * CHUNK), items: k === 0 ? items : [], backup: k === 0, final: k === total - 1 };
       root.gasPost(body).then(function (res) {
-        if (!res || res.status !== 'ok') { setBox(msg('err', 'Berhenti di bagian ' + (k + 1) + '/' + total + ': ' + ((res && res.message) || 'error') + '. Aman diulang — data yang sudah masuk tidak akan digandakan.')); return; }
+        if (!res || res.status !== 'ok') { setImportBusy(false); setBox(msg('err', 'Berhenti di bagian ' + (k + 1) + '/' + total + ': ' + ((res && res.message) || 'error') + '. Aman diulang — data yang sudah masuk tidak akan digandakan.')); return; }
         sum.masuk += res.masukAdd; sum.keluar += res.keluarAdd; sum.items += res.itemsNew; sum.skip += res.alreadyExist;
         k++;
         if (k < total) { step(); return; }
         setBox(msg('ok', 'Selesai: ' + sum.items + ' item baru, ' + sum.masuk + ' MASUK, ' + sum.keluar + ' KELUAR ditambahkan; ' + sum.skip + ' sudah ada. Saldo sudah dihitung ulang' + (res.backupSheet ? ' · backup: ' + res.backupSheet : '') + '.'));
+        setImportBusy(false);
         if (typeof root.loadData === 'function') { try { root.loadData(); } catch (e) {} }
-      }).catch(function (e) { setBox(msg('err', 'Gagal di bagian ' + (k + 1) + '/' + total + ': ' + (e && e.message ? e.message : 'network') + '. Aman diulang.')); });
+      }).catch(function (e) { setImportBusy(false); setBox(msg('err', 'Gagal di bagian ' + (k + 1) + '/' + total + ': ' + (e && e.message ? e.message : 'network') + '. Aman diulang.')); });
     }
     step();
   }

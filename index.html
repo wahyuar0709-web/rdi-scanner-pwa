@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.36">
+<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.37">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,11 +33,11 @@
      sekaligus dapat di-impor ulang.   -->
 <script src="./js/exceljs.min.js" defer></script>
 <script src="./js/exportexcel.js" defer></script>
-<title>RDI Indirect Scanner v15.36 - PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v15.37 - PT Rayard Deli Indonesia</title>
 <!-- F5-UI-ARIAHIDDEN: penanda batch aria-hidden (lihat PLAN §1.4 UI-11) -->
 <style>
 /* ===================================================================
-   RDI INDIRECT SCANNER — STYLESHEET (v15.36)
+   RDI INDIRECT SCANNER — STYLESHEET (v15.37)
    File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
    =================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:hidden}:root{--badge-blue-text:#0057C2;--badge-blue-bg:#EAF3FF;--badge-blue-border:#0A84FF;--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;--bg:#F1F4F9;--bg2:#FFFFFF;--surface:#FFFFFF;--surface2:#F6F8FB;--surface3:#E9EEF5;--glass:rgba(15,23,42,.045);--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.16);--border3:rgba(15,23,42,.26);--text:#0F172A;--text2:#475569;--text3:#5A6A81;--neutral-50:#F8FAFC;--neutral-100:#EEF2F7;--neutral-200:#E2E8F0;--neutral-300:#CBD5E1;--neutral-400:#7E8DA2;--neutral-500:#64748B;--neutral-600:#475569;--neutral-700:#334155;--neutral-800:#1E293B;--neutral-900:#0F172A;--amber:#B45309;--amber-dim:rgba(180,83,9,.12);--amber-border:rgba(180,83,9,.4);--green:#15803D;--green-dim:rgba(21,128,61,.1);--green-border:rgba(21,128,61,.32);--green-text:#166534;--red:#b91c1c;--red-dim:rgba(185,28,28,.08);--red-border:rgba(185,28,28,.32);--red-text:#991b1b;--blue:#0A84FF;--blue-dim:rgba(10,132,255,.10);--blue-border:rgba(10,132,255,.30);--blue-text:#0A63D6;--navy:#0067E2;--navy2:#0060DF;--brand-1:#0057C2;--brand-2:#0060DF;--grad-brand:linear-gradient(135deg,var(--brand-1) 0%,var(--brand-2) 100%);--action:#0067E2;--action-dark:#0047B0;--action-light:#0A6FD6;--grad-action:linear-gradient(135deg,var(--action),var(--action-dark));--grad-action-hover:linear-gradient(135deg,var(--action-light),var(--action));--badge-amber-text:#78350F;--badge-amber-bg:#FEF7EC;--badge-amber-border:#D97706;--r:var(--br-12);--rl:var(--br-16);--rxl:var(--br-24);
@@ -856,7 +856,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.36</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.37</span>
   <div class="topbar-online" id="dot-online" role="status" aria-live="polite" aria-label="Status koneksi internet" title="Terhubung ke internet"></div>
   <span class="viewer-badge" style="display:none;font-size:12px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:var(--action);color:#fff;white-space:nowrap;flex-shrink:0">LIHAT SAJA</span>
   <span class="user-badge" id="user-badge-topbar" onclick="showUserModal()" role="button" tabindex="0" aria-label="Buka menu pengguna" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showUserModal()}">
@@ -1167,7 +1167,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <label class="field-label" for="qty-input">Jumlah (Qty)</label>
         <div class="qty-wrap">
           <button class="qty-btn" onclick="adjustQty(-1)" aria-label="Kurangi jumlah">−</button>
-          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1" oninput="saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly()">
+          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1" data-err-msg="Qty harus lebih dari 0" oninput="saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly()">
           <button class="qty-btn" onclick="adjustQty(1)" aria-label="Tambah jumlah">+</button>
         </div>
         <div id="qty-anomaly-warning" style="display:none;margin-top:6px;padding:var(--space-1) var(--sp-10);border-radius:var(--r);background:var(--amber-dim);border:1px solid var(--amber-border);color:var(--amber);font-size:12px;line-height:1.4"></div>
@@ -1200,7 +1200,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
             </button>
           </div>
           <div class="id-input-wrap">
-            <input type="text" id="rak-input" aria-label="Nomor rak" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" style="text-transform:uppercase"
+            <input type="text" id="rak-input" aria-label="Nomor rak" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" data-err-msg="Lokasi RAK wajib diisi" style="text-transform:uppercase"
               oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection()">
             <button class="btn btn-navy btn-scan-toggle u-btn-44" id="btn-scan-rak" onclick="toggleInlineScannerRak()"
               title="Scan QR label rak" type="button">
@@ -2743,7 +2743,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
       <div id="sbar-user" class="sbar" role="alert" aria-live="assertive"></div>
       <div class="field-group">
         <label class="field-label" for="user-name-input">Nama Operator</label>
-        <input type="text" id="user-name-input" placeholder="Masukkan nama operator" maxlength="40">
+        <input type="text" id="user-name-input" placeholder="Masukkan nama operator" maxlength="40" data-err-msg="Nama operator tidak boleh kosong">
         <div class="field-hint">Nama ini akan tercatat di setiap transaksi yang dilakukan</div>
       </div>
       <div class="field-group">
@@ -2769,11 +2769,11 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
 <script>
 // ===================================================================
-// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.36)
+// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.37)
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.36';var APP_BUILD_DATE='2026-10-28';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.37';var APP_BUILD_DATE='2026-10-28';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -3920,7 +3920,11 @@ function updateAddRakHint(){var qty=parseFloat(document.getElementById('add-qty'
    itu tidak ikut dan sheet akan tertarik di tengah animasi. */
 function closeSheet(overlayId,sheetId){document.getElementById(overlayId).classList.remove('show');document.getElementById(sheetId).classList.remove('show');}
 function closeAddSheet(){closeSheet('add-overlay','add-sheet');}
-function flagFieldError(fieldId){var el=document.getElementById(fieldId);if(!el)return;el.style.borderColor='var(--red-border,#e74c3c)';el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){el.focus();},300);/* AUDIT FIX F-14 (v14.90): kalau flagFieldError dipanggil berkali-kali sebelum user sempat mengetik, listener 'input' lama dilepas dulu supaya tidak menumpuk. */if(el._clearErrHandler)el.removeEventListener('input',el._clearErrHandler);el._clearErrHandler=function clearErr(){el.style.borderColor='';el.removeEventListener('input',clearErr);el._clearErrHandler=null;};el.addEventListener('input',el._clearErrHandler,{once:true});}
+/* FIX UX 2026-10-28: error per-field inline (guideline "error placement" High):
+   garis merah saja tidak cukup untuk screen reader — tiap field invalid dapat
+   <p role="alert"> tepat di bawahnya + aria-invalid + aria-describedby, disambung
+   ke input, dan dibersihkan saat user mengetik. Status sbar tetap dipakai caller. */
+function flagFieldError(fieldId){var el=document.getElementById(fieldId);if(!el)return;el.style.borderColor='var(--red-border,#e74c3c)';el.setAttribute('aria-invalid','true');var errId=fieldId+'-field-err';el.setAttribute('aria-describedby',errId);var wrapGroup=el.closest?el.closest('.field-group, .qty-wrap'):null;var anchor=wrapGroup||el; /* node error taruh SETELAH pembungkusnya (qty-wrap / field-group), bukan di dalamnya */var old=document.getElementById(errId);if(old)old.remove();var msg=document.createElement('p');msg.id=errId;msg.setAttribute('role','alert');msg.style.cssText='margin:6px 0 0;font-size:12px;color:var(--red-text,#e74c3c);font-weight:600';msg.textContent=(el.getAttribute('data-err-msg')||'Isi kolom ini untuk melanjutkan');if(anchor.nextSibling)anchor.parentNode.insertBefore(msg,anchor.nextSibling);else anchor.parentNode.appendChild(msg);el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){el.focus();},300);/* AUDIT FIX F-14 (v14.90): kalau flagFieldError dipanggil berkali-kali sebelum user sempat mengetik, listener 'input' lama dilepas dulu supaya tidak menumpuk. */if(el._clearErrHandler)el.removeEventListener('input',el._clearErrHandler);el._clearErrHandler=function clearErr(){el.style.borderColor='';el.removeAttribute('aria-invalid');var m=document.getElementById(errId);if(m)m.remove();el.removeEventListener('input',clearErr);el._clearErrHandler=null;};el.addEventListener('input',el._clearErrHandler,{once:true});}
 function saveAddItem(){var nama=document.getElementById('add-nama').value.trim();var qty=document.getElementById('add-qty').value;var rakAwal=document.getElementById('add-rak').value.trim();if(!nama){showStatus('sbar-add','s-warn',IC.info+' Nama material wajib diisi');flagFieldError('add-nama');return;}
 if(qty===''||isNaN(qty)||parseFloat(qty)<0){showStatus('sbar-add','s-warn',IC.info+' Qty awal wajib diisi (angka ≥ 0)');flagFieldError('add-qty');return;}
 if(parseFloat(qty)>0&&!rakAwal){showStatus('sbar-add','s-warn',IC.info+' Rak/Lokasi wajib diisi kalau ada qty awal');flagFieldError('add-rak');return;}
@@ -4821,7 +4825,7 @@ window.removeManualRakLabel=removeManualRakLabel;
     <input type="hidden" id="edit-item-id">
     <div class="edit-field">
       <label for="edit-nama">Nama Material</label>
-      <input type="text" id="edit-nama" placeholder="Nama material...">
+      <input type="text" id="edit-nama" placeholder="Nama material..." data-err-msg="Nama material wajib diisi">
     </div>
     <div class="edit-field">
       <label for="edit-spec">Spesifikasi</label>
@@ -4876,7 +4880,7 @@ window.removeManualRakLabel=removeManualRakLabel;
   <div class="edit-sheet-body">
     <div class="edit-field">
       <label for="add-nama">Nama Material *</label>
-      <input type="text" id="add-nama" placeholder="Nama material...">
+      <input type="text" id="add-nama" placeholder="Nama material..." data-err-msg="Nama material wajib diisi">
     </div>
     <div class="edit-field">
       <label for="add-spec">Spesifikasi</label>
@@ -4884,7 +4888,7 @@ window.removeManualRakLabel=removeManualRakLabel;
     </div>
     <div class="edit-field">
       <label for="add-qty">Qty Awal *</label>
-      <input type="number" inputmode="decimal" id="add-qty" min="0" placeholder="0" oninput="updateAddRakHint()">
+      <input type="number" inputmode="decimal" id="add-qty" min="0" placeholder="0" data-err-msg="Qty awal wajib diisi (angka ≥ 0)" oninput="updateAddRakHint()">
     </div>
     <div class="edit-field">
       <label for="add-unit">Satuan</label>
@@ -4893,7 +4897,7 @@ window.removeManualRakLabel=removeManualRakLabel;
     <div class="edit-field-hint" style="font-size:12px;color:var(--text3);margin:2px 0 -4px;display:flex;align-items:center;gap:var(--space-half)"><svg class="u-flex-none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg> 3 field di bawah ini hanya berlaku untuk stok awal (dicatat sbg transaksi MASUK pertama) — kedatangan berikutnya diinput lewat menu Transaksi.</div>
     <div class="edit-field">
       <label id="add-rak-label" for="add-rak">Rak / Lokasi Awal</label>
-      <input type="text" id="add-rak" list="dl-rak" placeholder="Contoh: A-01, B-03..." oninput="updateAddRakHint()">
+      <input type="text" id="add-rak" list="dl-rak" placeholder="Contoh: A-01, B-03..." data-err-msg="Rak/Lokasi wajib diisi kalau ada qty awal" oninput="updateAddRakHint()">
       <!-- PP-06 fix (Audit UX v14.70, Medium): aturan "Rak wajib jika Qty>0" dulu baru
            terlihat setelah gagal submit (lihat saveAddItem). Sekarang field-hint muncul
            preventif begitu Qty Awal diisi > 0, sebelum operator sempat tap Simpan. -->

@@ -174,9 +174,14 @@
   /* ================= jalur utama ================= */
   function lengkap(from, to) {
     var sbar = document.getElementById('sbar-export'), btn = document.getElementById('btn-do-export');
+    /* UX 2026-10-28 (High guideline "loading indicators"): area aktif ditandai aria-busy
+       selama proses export, supaya screen reader tidak membacakan status parsial. */
+    var modal = document.getElementById('modal-export-excel');
+    function setBusy(on) { if (modal) { if (on) modal.setAttribute('aria-busy', 'true'); else modal.removeAttribute('aria-busy'); } }
     if (!root.ExcelJS) { if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Library ExcelJS belum termuat (butuh internet sekali). Coba lagi sebentar.'; } return Promise.resolve(); }
     if (typeof root.gasGet !== 'function') { if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Aplikasi belum siap. Muat ulang halaman.'; } return Promise.resolve(); }
     if (btn) btn.disabled = true;
+    setBusy(true);
     if (sbar) { sbar.className = 'sbar s-info show'; sbar.innerHTML = 'Mengambil & menyimulasikan data (FIFO)...'; }
     var params = { action: 'getExportData' };
     if (from) params.dateFrom = from;
@@ -200,10 +205,12 @@
         if (total.mismatchRows) warn += ' · ⚠ ' + total.mismatchRows + ' baris Qty In−Σkeluar ≠ saldo FIFO (data historis nyeleneh)';
         if (sbar) { sbar.className = 'sbar s-ok show'; sbar.innerHTML = 'Export berhasil: ' + fname.replace(/[<>&]/g, '') + ' (' + res.sheets.length + ' sheet kategori · ' + total.baris + ' baris, kolom No. & Stok Akhir pakai rumus) · ' + warn; }
         if (btn) btn.disabled = false;
+        setBusy(false);
       });
     }).catch(function (e) {
       if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Gagal: ' + String((e && e.message) || e).replace(/[<>&]/g, ''); }
       if (btn) btn.disabled = false;
+      setBusy(false);
     });
   }
 
