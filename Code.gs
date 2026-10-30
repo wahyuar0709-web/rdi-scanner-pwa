@@ -303,7 +303,7 @@
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
 var API_VERSION = 'v5.28';   // + kontrak `uncertain` (DBG-02), safeCell_ per kolom (SEC-03/04), backup import unik (DBG-04), rate limit token (SEC-02)
-var API_BUILD   = '2026-10-15.2';   // BUG-1b: normalisasi RAK di recalculateAllSaldoLocked_ (lupa di §19.9)   // BUG-1/BUG-2 (§19.9) + BUG-2c. Kontrak API TIDAK berubah -> API_VERSION sengaja tidak dinaikkan. Build naik supaya healthCheck bisa membuktikan kode mana yang live.
+var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
