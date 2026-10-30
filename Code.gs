@@ -1475,7 +1475,11 @@ function doPost(e) {
     if (action === 'archiveItem')   return corsOutput(archiveItem(body));
     if (action === 'addMasterValue') return corsOutput(addMasterValue(body));
     if (action === 'adminTool')     return corsOutput(runAdminToolAPI(body.fn, body));
-    if (action === 'importExcel')   return corsOutput(importExcel(body));   // v5.27
+    if (action === 'importExcel')   return corsOutput(importExcel(body));
+
+    /* FASE 1 POC: proxy Gemini untuk baca Surat Jalan */
+    if (action === 'aiBacaSJ')      return corsOutput(aiBacaSJ(body));
+    if (action === 'simpanKeyAI')   return corsOutput(simpanKeyAI(body));   // v5.27
 
     // v5.20 — modul Aset Sirkulasi
     if (action === 'addAsetItem')   return corsOutput(addAsetItem(body));
@@ -4766,5 +4770,92 @@ function importExcel(body) {
     // masuk; client tidak boleh menganggap import gagal total lalu mengulang import
     // yang sama sehingga baris Transaksi_Log jadi ganda.
     return genericError_('importExcel', true);
+  }
+}
+
+/* =====================================================================
+   FASE 1 POC (2026-10-29): baca Surat Jalan via Gemini AI.
+   - Key disimpan di Script Properties (GAS), TIDAK di frontend.
+   - Fungsi ini hanyalah PROXY AI: baca foto -> kembalikan JSON terstruktur.
+   - Tidak menyentuh logika stok/transaksi. Konfirmasi semua oleh operator.
+   ===================================================================== */
+
+function simpanKeyAI(body) {
+  try {
+    var key = body && body.apiKey ? String(body.apiKey).trim() : '';
+    if (!key) return { status: 'error', message: 'API key kosong.' };
+    PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', key);
+    return { status: 'ok', message: 'Gemini API key tersimpan.' };
+  } catch (err) {
+    return { status: 'error', message: 'simpanKeyAI: ' + (err && err.message ? err.message : err) };
+  }
+}
+
+function aiBacaSJ(body) {
+  try {
+    var key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+    if (!key) {
+      return { status: 'error', message: 'AI belum dikonfigurasi. Simpan Gemini API key di menu Admin terlebih dahulu.' };
+    }
+    var imageBase64 = body && body.imageBase64 ? String(body.imageBase64) : '';
+    if (!imageBase64) {
+      return { status: 'error', message: 'Foto Surat Jalan kosong.' };
+    }
+    var prompt = 'Baca dokumen Surat Jalan ini. Ekstrak: no surat jalan, tanggal dokumen, dan setiap baris item (kode/nomor item, nama material, spesifikasi, jumlah, satuan). Salin persis seperti tertulis. Kembalikan JSON sesuai skema.';
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    var payload = {
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
+          { text: prompt }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            no_surat_jalan: { type: 'STRING' },
+            tanggal_dokumen: { type: 'STRING' },
+            items: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  kode: { type: 'STRING' },
+                  nama: { type: 'STRING' },
+                  spec: { type: 'STRING' },
+                  qty: { type: 'STRING' },
+                  satuan: { type: 'STRING' }
+                },
+                required: ['kode', 'nama', 'spec', 'qty', 'satuan']
+              }
+            }
+          },
+          required: ['no_surat_jalan', 'tanggal_dokumen', 'items']
+        }
+      }
+    };
+    var res = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'x-goog-api-key': key },
+      muteHttpExceptions: true,
+      payload: JSON.stringify(payload)
+    });
+    var code = res.getResponseCode();
+    if (code !== 200) {
+      return { status: 'error', message: 'Gemini HTTP ' + code + ': ' + res.getContentText().slice(0, 300) };
+    }
+    var parsed = JSON.parse(res.getContentText());
+    var parts = parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts ? parsed.candidates[0].content.parts : [];
+    var text = parts.map(function (p) { return p.text || ''; }).join('');
+    var out;
+    try { out = JSON.parse(text); } catch (e) {
+      return { status: 'error', message: 'AI tidak mengembalikan JSON yang valid: ' + e.message + ' (awal: ' + text.slice(0, 120) + ')' };
+    }
+    return { status: 'ok', data: out };
+  } catch (err) {
+    return { status: 'error', message: 'aiBacaSJ: ' + (err && err.message ? err.message : err) };
   }
 }

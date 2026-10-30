@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.37">
+<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.38">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,11 +33,11 @@
      sekaligus dapat di-impor ulang.   -->
 <script src="./js/exceljs.min.js" defer></script>
 <script src="./js/exportexcel.js" defer></script>
-<title>RDI Indirect Scanner v15.37 - PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v15.38 - PT Rayard Deli Indonesia</title>
 <!-- F5-UI-ARIAHIDDEN: penanda batch aria-hidden (lihat PLAN §1.4 UI-11) -->
 <style>
 /* ===================================================================
-   RDI INDIRECT SCANNER — STYLESHEET (v15.37)
+   RDI INDIRECT SCANNER — STYLESHEET (v15.38)
    File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
    =================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:hidden}:root{--badge-blue-text:#0057C2;--badge-blue-bg:#EAF3FF;--badge-blue-border:#0A84FF;--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;--bg:#F1F4F9;--bg2:#FFFFFF;--surface:#FFFFFF;--surface2:#F6F8FB;--surface3:#E9EEF5;--glass:rgba(15,23,42,.045);--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.16);--border3:rgba(15,23,42,.26);--text:#0F172A;--text2:#475569;--text3:#5A6A81;--neutral-50:#F8FAFC;--neutral-100:#EEF2F7;--neutral-200:#E2E8F0;--neutral-300:#CBD5E1;--neutral-400:#7E8DA2;--neutral-500:#64748B;--neutral-600:#475569;--neutral-700:#334155;--neutral-800:#1E293B;--neutral-900:#0F172A;--amber:#B45309;--amber-dim:rgba(180,83,9,.12);--amber-border:rgba(180,83,9,.4);--green:#15803D;--green-dim:rgba(21,128,61,.1);--green-border:rgba(21,128,61,.32);--green-text:#166534;--red:#b91c1c;--red-dim:rgba(185,28,28,.08);--red-border:rgba(185,28,28,.32);--red-text:#991b1b;--blue:#0A84FF;--blue-dim:rgba(10,132,255,.10);--blue-border:rgba(10,132,255,.30);--blue-text:#0A63D6;--navy:#0067E2;--navy2:#0060DF;--brand-1:#0057C2;--brand-2:#0060DF;--grad-brand:linear-gradient(135deg,var(--brand-1) 0%,var(--brand-2) 100%);--action:#0067E2;--action-dark:#0047B0;--action-light:#0A6FD6;--grad-action:linear-gradient(135deg,var(--action),var(--action-dark));--grad-action-hover:linear-gradient(135deg,var(--action-light),var(--action));--badge-amber-text:#78350F;--badge-amber-bg:#FEF7EC;--badge-amber-border:#D97706;--r:var(--br-12);--rl:var(--br-16);--rxl:var(--br-24);
@@ -856,7 +856,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.37</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.38</span>
   <div class="topbar-online" id="dot-online" role="status" aria-live="polite" aria-label="Status koneksi internet" title="Terhubung ke internet"></div>
   <span class="viewer-badge" style="display:none;font-size:12px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:var(--action);color:#fff;white-space:nowrap;flex-shrink:0">LIHAT SAJA</span>
   <span class="user-badge" id="user-badge-topbar" onclick="showUserModal()" role="button" tabindex="0" aria-label="Buka menu pengguna" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showUserModal()}">
@@ -1062,6 +1062,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <div class="hist-view-toggle" style="margin-bottom:12px">
           <button class="hist-view-btn active u-flex-cc-g5" id="modebtn-transaksi" onclick="setScanMode('transaksi')"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Transaksi</button>
           <button class="hist-view-btn u-flex-cc-g5" id="modebtn-cekstok" onclick="setScanMode('cekstok')"><svg aria-hidden="true" class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Cek Stok</button>
+          <button class="hist-view-btn u-flex-cc-g5 btn-amber" id="modebtn-sj" onclick="openScanSJ()" title="Masuk barang dari foto Surat Jalan via AI"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Foto SJ</button>
         </div>
 
         <!-- Inline QR Scanner -->
@@ -1241,6 +1242,42 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
       Simpan Transaksi
     </button>
     <div id="sbar-submit" class="sbar" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- Step SJ: Masuk barang dari foto Surat Jalan via AI (FASE 1 POC) -->
+  <div class="scan-step" id="step-sj" style="display:none">
+    <div class="panel">
+      <div class="panel-head"><div><h2>Masuk dari Surat Jalan (AI)</h2></div></div>
+      <div class="panel-body">
+        <div class="field-group">
+          <label class="field-label">Foto Surat Jalan</label>
+          <input type="file" id="sj-foto" accept="image/*" capture="environment" aria-label="Pilih atau ambil foto Surat Jalan" onchange="sjFotoChange()">
+          <img id="sj-preview" class="preview" alt="Pratinjau SJ" style="margin-top:8px">
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn blue" id="sj-kirim" onclick="sjKirim()" disabled>Kirim ke AI (Gemini)</button>
+            <button class="btn" id="sj-reset" onclick="sjReset()">Ulang</button>
+          </div>
+          <div id="sj-log" class="field-hint u-mt-8" style="margin-top:4px">Belum ada foto.</div>
+        </div>
+
+        <div id="sj-hasil" class="card u-hide" style="margin-top:10px">
+          <div class="field-hint u-mb-8" style="margin-bottom:6px">No. SJ: <span id="sj-no"></span> &nbsp;|&nbsp; Tanggal: <span id="sj-tgl"></span></div>
+          <table><thead><tr><th>#</th><th>Kode dari SJ</th><th>Nama / Spec</th><th>Qty · Satuan</th><th>Aksi</th></tr></thead><tbody id="sj-tbody"></tbody></table>
+        </div>
+
+        <div id="sj-raks" class="field-group u-hide" style="margin-top:10px">
+          <label class="field-label">Rak / Lokasi untuk semua item ini <span style="color:var(--red-text,#e74c3c);font-weight:800">*wajib</span></label>
+          <input type="text" id="sj-rak" list="dl-rak" placeholder="Contoh: A-01, B-03..." aria-label="Rak atau lokasi untuk semua item" style="text-transform:uppercase" oninput="sjState.rak=this.value.trim().toUpperCase();cekSJSimpan();">
+          <button class="btn btn-navy btn-scan-toggle u-btn-44" id="btn-scan-rak-sj" onclick="toggleInlineScannerRak()" title="Scan QR rak" aria-label="Scan QR rak" type="button"><svg class="ic" aria-hidden="true"><use href="#i-qr"/></svg></button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary btn-block" id="sj-simpan" onclick="sjSimpan()" disabled>Simpan Semua ke Masuk</button>
+          <button class="btn btn-block" onclick="closeScanSJ()">Batal</button>
+        </div>
+        <div id="sj-sbar" class="sbar" role="status" aria-live="polite"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Step 2b: Hasil Cek Stok (read-only) -->
@@ -2769,11 +2806,11 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
 <script>
 // ===================================================================
-// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.37)
+// RDI INDIRECT SCANNER — APPLICATION LOGIC (v15.38)
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.37';var APP_BUILD_DATE='2026-10-28';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.38';var APP_BUILD_DATE='2026-10-30';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -3359,7 +3396,102 @@ return RdiExport.lengkap('','');
 function showScanStep(name){document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});document.getElementById('step-'+name).classList.add('active');var subBar=document.getElementById('trx-submit-bar');if(subBar)subBar.style.display=(name==='transaksi')?'block':'none';if(name!=='transaksi')stopInlineScannerRak();updateTrxProgress(name);}
 function updateTrxProgress(name){var stepOf={input:1,transaksi:2,cekstok:2,result:3};var current=stepOf[name]||1;for(var i=1;i<=3;i++){var el=document.getElementById('trxprog-'+i);if(!el)continue;el.classList.remove('active','done');if(i<current)el.classList.add('done');else if(i===current)el.classList.add('active');}
 var l1=document.getElementById('trxprog-line1'),l2=document.getElementById('trxprog-line2');if(l1)l1.classList.toggle('done',current>1);if(l2)l2.classList.toggle('done',current>2);}
-function setScanMode(mode){scanMode=mode;document.getElementById('modebtn-transaksi').classList.toggle('active',mode==='transaksi');document.getElementById('modebtn-cekstok').classList.toggle('active',mode==='cekstok');}
+function setScanMode(mode){scanMode=mode;document.getElementById('modebtn-transaksi').classList.toggle('active',mode==='transaksi');document.getElementById('modebtn-cekstok').classList.toggle('active',mode==='cekstok');document.getElementById('modebtn-sj').classList.toggle('active',mode==='sj');}
+
+/* ========== FASE 1 POC: Surat Jalan via AI ========== */
+var sjState = { items: [], selected: new Set(), noSJ: '', tgl: '', rak: '' };
+
+function openScanSJ(){setScanMode('sj');document.getElementById('step-transaksi').style.display='none';document.getElementById('step-cekstok').style.display='none';document.getElementById('step-sj').style.display='block';sjReset();}
+function closeScanSJ(){document.getElementById('step-sj').style.display='none';setScanMode('transaksi');document.getElementById('step-transaksi').style.display='block';sjState={items:[],selected:new Set(),noSJ:'',tgl:'',rak:''};document.getElementById('sj-hasil').classList.add('u-hide');document.getElementById('sj-raks').classList.add('u-hide');document.getElementById('sj-simpan').disabled=true;}
+
+function sjKirim(){
+  var btn=document.getElementById('sj-kirim');btn.disabled=true;btn.textContent='AI membaca…';
+  var b64=document.getElementById('sj-preview').src.split(',')[1];
+  gasPost({action:'aiBacaSJ',imageBase64:b64}).then(function(res){
+    btn.disabled=false;btn.textContent='Kirim ke AI (Gemini)';
+    if(res.status!=='ok'){document.getElementById('sj-log').textContent='Gagal: '+String(res.message||res);return;}
+    var d=res.data||{};sjState.noSJ=String(d.no_surat_jalan||'').trim();sjState.tgl=String(d.tanggal_dokumen||'').trim();
+    sjState.items=(d.items||[]).map(function(it,i){
+      return {id:i+1,kode:String(it.kode||'').trim(),nama:String(it.nama||'').trim(),spec:String(it.spec||'').trim(),qty:String(it.qty||'').trim(),satuan:String(it.satuan||'').trim(),pilih:false,pilihTipe:'none',pilihId:'',pilihNama:'',viaAddSheet:false,rak:''};
+    });
+    document.getElementById('sj-no').textContent=sjState.noSJ||'(kosong)';document.getElementById('sj-tgl').textContent=sjState.tgl||'(kosong)';
+    renderSJTabel();document.getElementById('sj-hasil').classList.remove('u-hide');
+    document.getElementById('sj-log').textContent=sjState.items.length+' item terbaca. Pilih aksi tiap baris, lalu isi RAK.';
+  }).catch(function(e){btn.disabled=false;btn.textContent='Kirim ke AI (Gemini)';document.getElementById('sj-log').textContent='Jaringan error: '+String(e.message||e);});
+}
+function sjReset(){
+  document.getElementById('sj-foto').value='';document.getElementById('sj-preview').src='';document.getElementById('sj-preview').style.display='none';
+  document.getElementById('sj-kirim').disabled=true;document.getElementById('sj-hasil').classList.add('u-hide');
+  document.getElementById('sj-raks').classList.add('u-hide');document.getElementById('sj-simpan').disabled=true;
+  document.getElementById('sj-log').textContent='Belum ada foto.';document.getElementById('sj-no').textContent='';document.getElementById('sj-tgl').textContent='';
+  sjState={items:[],selected:new Set(),noSJ:'',tgl:'',rak:''};
+}
+
+function renderSJTabel(){
+  var tb=document.getElementById('sj-tbody');tb.innerHTML='';
+  var master=daftarMasterList();
+  sjState.items.forEach(function(it){
+    var tr=document.createElement('tr');
+    var best='',bs=0;master.forEach(function(mc){var s=skor(it.kode,mc);if(s>bs){bs=s;best=mc;}});
+    var cocok=bs>=75;
+    var opsi='';
+    if(cocok)opsi='<option value="master|'+best+'">Cocok Master: '+best+'</option>';
+    opsi+='<option value="new">+ Tambah item baru (prefill)</option>';
+    opsi+='<option value="skip">- Lewati baris ini</option>';
+    tr.innerHTML='<td>'+it.id+'</td><td><code>'+xe(it.kode||'—')+'</code></td><td>'+xe(it.nama||'—')+'<br><span class="dim" style="font-size:11px">'+xe(it.spec||'')+'</span></td><td>'+xe(it.qty||'—')+' <span class="dim">'+xe(it.satuan||'')+'</span></td><td><select class="sel" onchange="sjPilih('+it.id+',this.value)">'+opsi+'</select></td>';
+    tb.appendChild(tr);
+  });
+}
+function sjPilih(id,val){
+  var it=sjState.items.find(function(x){return x.id===id;});
+  if(val==='skip'){it.pilih=false;it.pilihTipe='none';it.pilihId='';it.pilihNama='';it.viaAddSheet=false;}
+  else if(val.startsWith('master|')){it.pilih=true;it.pilihTipe='master';it.pilihId=val.slice(7);it.pilihNama='';it.viaAddSheet=false;}
+  else if(val==='new'){it.pilih=true;it.pilihTipe='new';it.pilihId='';it.pilihNama='';it.viaAddSheet=true;
+    window.openAddSheet();
+    document.getElementById('add-nama').value=it.nama||'';
+    document.getElementById('add-spec').value=it.spec||'';
+    document.getElementById('add-qty').value=it.qty||'1';
+    document.getElementById('add-unit').value=it.satuan||'';
+    document.getElementById('add-po').value=sjState.noSJ||'';
+    document.getElementById('add-vendor').value='';
+    document.getElementById('add-rak').value='';
+    updateAddRakHint();
+  }
+  cekSJSimpan();
+}
+function cekSJSimpan(){
+  var ada=false;sjState.items.forEach(function(it){if(it.pilih&&it.pilihTipe!=='none')ada=true;});
+  document.getElementById('sj-simpan').disabled=!ada||!sjState.rak;
+}
+function sjSimpan(){
+  var btn=document.getElementById('sj-simpan');btn.disabled=true;btn.textContent='Menyimpan…';
+  var i=0,ok=0,gagal='';
+  function next(){
+    while(i<sjState.items.length&&!(sjState.items[i].pilih&&sjState.items[i].pilihTipe!=='none'&&!sjState.items[i].viaAddSheet))i++;
+    if(i>=sjState.items.length){btn.disabled=false;btn.textContent='Simpan Semua ke Masuk';document.getElementById('sj-sbar').className='sbar s-ok show';document.getElementById('sj-sbar').textContent='Selesai: '+ok+' item masuk, '+gagal.split(';').filter(Boolean).length+' gagal.';return;}
+    var it=sjState.items[i++];var itemId=it.pilihTipe==='master'?it.pilihId:null;
+    gasPost({action:'postTransaksi',itemId:itemId||'',jenis:'MASUK',qty:parseInt(it.qty||'1')||1,rak:sjState.rak,vendor:it.pilihNama||'',noReferensi:sjState.noSJ,keterangan:'SJ via AI:'+xe(it.nama||'')+(it.spec?' ['+it.spec+']':''),requestId:genRequestId()}).then(function(res){
+      if(res.status==='ok')ok++;else gagal+='baris '+it.id+': '+String(res.message||res)+';';
+      next();
+    }).catch(function(e){gagal+='baris '+it.id+': '+String(e.message||e)+';';next();});
+  }next();
+}
+function daftarMasterList(){return (allRows||[]).map(function(r){return String(r.id||'').trim();}).filter(function(s){return s.length>=3;});}
+function skor(a,b){if(!a)return 0;if(a===b)return 100;return Math.round(100*(1-(jarakLev(a,b)/Math.max(a.length,b.length))));}
+function jarakLev(a,b){if(a===b)return 0;var m=a.length,n=b.length,prev=new Array(n+1),cur,i,j;for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur=[i];for(j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}return prev[n];}
+function sjFotoChange(){
+  var inp=document.getElementById('sj-foto');var f=inp.files&&inp.files[0];if(!f)return;
+  var img=new Image();img.onload=function(){
+    var MAX=1600,r=Math.min(1,MAX/Math.max(img.width,img.height));
+    var cv=document.createElement('canvas');cv.width=Math.round(img.width*r);cv.height=Math.round(img.height*r);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    document.getElementById('sj-preview').src=cv.toDataURL('image/jpeg',0.9);
+    document.getElementById('sj-preview').style.display='block';
+    document.getElementById('sj-kirim').disabled=false;
+    document.getElementById('sj-log').textContent='Foto siap ('+cv.width+'x'+cv.height+' px). Kirim ke AI.';
+  };img.src=URL.createObjectURL(f);
+}
+window.openScanSJ=openScanSJ;window.closeScanSJ=closeScanSJ;window.sjKirim=sjKirim;window.sjReset=sjReset;window.sjSimpan=sjSimpan;window.sjFotoChange=sjFotoChange;window.sjPilih=sjPilih;window.cekSJSimpan=cekSJSimpan;
 function populateCekStok(item){document.getElementById('cek-id').textContent=item.id||'—';document.getElementById('cek-nama').textContent=item.nama||'—';document.getElementById('cek-spec').textContent=item.spec||'—';document.getElementById('cek-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('cek-vendor').textContent=(item.minStock!=null?item.minStock:'—')+' '+(item.unit||'');document.getElementById('cek-user').textContent=item.user||'—';document.getElementById('cek-unit').textContent=item.unit||'—';document.getElementById('cek-unit2').textContent=item.unit||'—';document.getElementById('cek-saldo').textContent=item.saldo!=null?item.saldo:'—';}
 function goTransaksiFromCekStok(){if(!currentItem)return;populatePreview(currentItem);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');}
 function saveTransaksiDraft(){if(!currentItem)return;try{var qty=document.getElementById('qty-input').value,rak=document.getElementById('rak-input').value,vendor=document.getElementById('vendor-input').value,noref=document.getElementById('noref-input').value,ket=document.getElementById('ket-input').value;var prev=null;try{prev=JSON.parse(localStorage.getItem('rdi_trx_draft')||'null');}catch(e){}
@@ -3864,7 +3996,7 @@ navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{idea
 function scanFrameRak(){var video=document.getElementById('qr-video-rak');var canvas=document.getElementById('qr-canvas-rak');var label=document.getElementById('qr-label-rak');if(!video||video.readyState<2){_scanRafRak=requestAnimationFrame(scanFrameRak);return;}
 var now=performance.now();/* PERF 2026-10-16: throttle 80->160 ms (6 fps) disamakan dgn scanner utama (fix v14.99). */if(!window._lastScanAtRak)window._lastScanAtRak=0;if(now-window._lastScanAtRak<160){_scanRafRak=requestAnimationFrame(scanFrameRak);return;}
 window._lastScanAtRak=now;/* AUDIT FIX F-07 (v14.90): guard sama seperti scanFrame() utama. */try{if(typeof jsQR==='undefined'){label.textContent='Modul scanner QR gagal dimuat. Cek koneksi internet lalu muat ulang halaman.';label.classList.add('detected');return;}
-var ctx=canvas.getContext('2d');var vw=video.videoWidth,vh=video.videoHeight;var maxDim=480;var scale=Math.min(1,maxDim/Math.max(vw,vh));canvas.width=Math.round(vw*scale);canvas.height=Math.round(vh*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});if(code){_buzz(25);var rak=code.data.trim().toUpperCase();label.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Rak terdeteksi: '+xe(rak);label.classList.add('detected');stopInlineScannerRak();document.getElementById('rak-input').value=rak;saveTransaksiDraft();markRakChipSelection();return;}
+var ctx=canvas.getContext('2d');var vw=video.videoWidth,vh=video.videoHeight;var maxDim=480;var scale=Math.min(1,maxDim/Math.max(vw,vh));canvas.width=Math.round(vw*scale);canvas.height=Math.round(vh*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);var code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});if(code){_buzz(25);var rak=code.data.trim().toUpperCase();label.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Rak terdeteksi: '+xe(rak);label.classList.add('detected');stopInlineScannerRak();/* FASE 1 POC: dari step-sj, hasil scan rak diarahkan ke sj-rak */if(document.getElementById('step-sj')&&document.getElementById('step-sj').style.display==='block'){document.getElementById('sj-rak').value=rak;sjState.rak=rak;cekSJSimpan();}else{document.getElementById('rak-input').value=rak;saveTransaksiDraft();markRakChipSelection();}return;}
 }catch(scanErr){console.error('scanFrameRak error:',scanErr);}
 _scanRafRak=requestAnimationFrame(scanFrameRak);}
 function stopInlineScannerRak(){if(_scanRafRak){cancelAnimationFrame(_scanRafRak);_scanRafRak=null;}
