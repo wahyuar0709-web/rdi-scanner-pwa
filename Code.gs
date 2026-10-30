@@ -1479,7 +1479,7 @@ function doPost(e) {
 
     /* FASE 1 POC: proxy Gemini untuk baca Surat Jalan */
     if (action === 'aiBacaSJ')      return corsOutput(aiBacaSJ(body));
-    if (action === 'simpanKeyAI')   return corsOutput(simpanKeyAI(body));   // v5.27
+    if (action === 'simpanKeyAI')   return corsOutput(simpanKeyAI(body));   // FASE 1 POC foto SJ
 
     // v5.20 — modul Aset Sirkulasi
     if (action === 'addAsetItem')   return corsOutput(addAsetItem(body));
