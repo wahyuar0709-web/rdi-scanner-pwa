@@ -1267,7 +1267,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
         <div id="sj-raks" class="field-group u-hide" style="margin-top:10px">
           <label class="field-label">Rak / Lokasi untuk semua item ini <span style="color:var(--red-text,#e74c3c);font-weight:800">*wajib</span></label>
-          <input type="text" id="sj-rak" list="dl-rak" placeholder="Contoh: A-01, B-03..." aria-label="Rak atau lokasi untuk semua item" style="text-transform:uppercase" oninput="sjState.rak=this.value.trim().toUpperCase();cekSJSimpan();">
+          <input type="text" id="sj-rak" list="dl-rak" placeholder="Contoh: A-01, B-03..." aria-label="Rak atau lokasi untuk semua item" style="text-transform:uppercase" oninput="sjRakInput(this)">
           <button class="btn btn-navy btn-scan-toggle u-btn-44" id="btn-scan-rak-sj" onclick="toggleInlineScannerRak()" title="Scan QR rak" aria-label="Scan QR rak" type="button"><svg class="ic" aria-hidden="true"><use href="#i-qr"/></svg></button>
         </div>
 
@@ -3468,12 +3468,13 @@ function sjPilih(id,val){
   cekSJSimpan();
 }
 function cekSJSimpan(){
-  var ada=0,sb=0;
-  sjState.items.forEach(function(it){if(it.pilih&&it.pilihTipe!=='none')ada++;else sb++;});
+  var ada=0,sb=0,add=0;
+  sjState.items.forEach(function(it){if(it.pilih&&it.pilihTipe!=='none'&&!it.viaAddSheet)ada++;else if(it.pilih&&it.viaAddSheet)add++;else sb++;});
   document.getElementById('sj-simpan').disabled=!ada||!sjState.rak;
   var cnt=document.getElementById('sj-count');
   if(sjState.items.length){cnt.classList.remove('u-hide');
     cnt.textContent='Siap simpan: '+ada+' dari '+sjState.items.length+' baris'
+      +(add?' (via add-sheet: '+add+')':'')
       +(sb?' (lewati: '+sb+')':'')
       +(!sjState.rak?' — isi RAK dulu':'');
   } else cnt.classList.add('u-hide');
@@ -3499,7 +3500,7 @@ function sjSimpan(){
     }).catch(function(e){gagal+='baris '+it.id+': '+String(e.message||e)+';';next();});
   }next();
 }
-function daftarMasterList(){return (allRows||[]).map(function(r){return String(r.id||'').trim();}).filter(function(s){return s.length>=3;});}
+function daftarMasterList(){/* FIX L2 (2026-10-30): fallback window.allRows - byte I tunggal dulu; var IIFE kosong saat data belum load selesai meski window export sudah di-sync syncMinStockMap(). Normal: keduanya sama (referensi array). */var rows=(allRows&&allRows.length)?allRows:(window.allRows||[]);return rows.map(function(r){return String(r.id||'').trim();}).filter(function(s){return s.length>=3;});}
 function skor(a,b){if(!a)return 0;if(a===b)return 100;return Math.round(100*(1-(jarakLev(a,b)/Math.max(a.length,b.length))));}
 function jarakLev(a,b){if(a===b)return 0;var m=a.length,n=b.length,prev=new Array(n+1),cur,i,j;for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur=[i];for(j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}return prev[n];}
 function sjFotoChange(){
@@ -3514,7 +3515,8 @@ function sjFotoChange(){
     document.getElementById('sj-log').textContent='Foto siap ('+cv.width+'x'+cv.height+' px). Kirim ke AI.';
   };img.src=URL.createObjectURL(f);
 }
-window.openScanSJ=openScanSJ;window.closeScanSJ=closeScanSJ;window.sjKirim=sjKirim;window.sjReset=sjReset;window.sjSimpan=sjSimpan;window.sjFotoChange=sjFotoChange;window.sjPilih=sjPilih;window.cekSJSimpan=cekSJSimpan;
+function sjRakInput(inp){/* FIX L2 (2026-10-31): oninput inline langsung menyentuh sjState (var internal IIFE) → ReferenceError di setiap ketikan, sjState.rak tidak pernah terisi, tombol Simpan tidak pernah aktif. Dipindah ke fungsi global berclosure (tahan reassign sjState). */sjState.rak=inp.value.trim().toUpperCase();cekSJSimpan();}
+window.openScanSJ=openScanSJ;window.closeScanSJ=closeScanSJ;window.sjKirim=sjKirim;window.sjReset=sjReset;window.sjSimpan=sjSimpan;window.sjFotoChange=sjFotoChange;window.sjPilih=sjPilih;window.cekSJSimpan=cekSJSimpan;window.sjRakInput=sjRakInput;
 function populateCekStok(item){document.getElementById('cek-id').textContent=item.id||'—';document.getElementById('cek-nama').textContent=item.nama||'—';document.getElementById('cek-spec').textContent=item.spec||'—';document.getElementById('cek-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('cek-vendor').textContent=(item.minStock!=null?item.minStock:'—')+' '+(item.unit||'');document.getElementById('cek-user').textContent=item.user||'—';document.getElementById('cek-unit').textContent=item.unit||'—';document.getElementById('cek-unit2').textContent=item.unit||'—';document.getElementById('cek-saldo').textContent=item.saldo!=null?item.saldo:'—';}
 function goTransaksiFromCekStok(){if(!currentItem)return;populatePreview(currentItem);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');}
 function saveTransaksiDraft(){if(!currentItem)return;try{var qty=document.getElementById('qty-input').value,rak=document.getElementById('rak-input').value,vendor=document.getElementById('vendor-input').value,noref=document.getElementById('noref-input').value,ket=document.getElementById('ket-input').value;var prev=null;try{prev=JSON.parse(localStorage.getItem('rdi_trx_draft')||'null');}catch(e){}
