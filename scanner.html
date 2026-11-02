@@ -118,7 +118,7 @@ var btnTorch=document.getElementById('btn-torch');
 // Ambil caller dari URL param
 var urlParams=new URLSearchParams(window.location.search);
 var caller=urlParams.get('caller')||'scanner';
-// FIX: origin harus location.origin sendiri — jangan percaya param URL (spoofable),
+// FIX: origin harus location.origin sendiri - jangan percaya param URL (spoofable),
 // dan jangan pernah postMessage ke '*'.
 var parentOrigin=location.origin;
 var didSend=false;
@@ -151,7 +151,7 @@ function sendResult(rawValue){
 
 function closeScanner(){
   stopCamera();
-  // FIX: window.close() sering diblokir jika tidak dibuka script — fallback history.
+  // FIX: window.close() sering diblokir jika tidak dibuka script - fallback history.
   window.close();
   setTimeout(function(){
     if(!window.closed){
@@ -249,7 +249,7 @@ async function initCamera(){
   }
 
   cam.srcObject=stream;
-  // FIX: cam.play() bisa reject (autoplay policy) — jangan diam-diam gagal
+  // FIX: cam.play() bisa reject (autoplay policy) - jangan diam-diam gagal
   cam.play().catch(function(){ setStatus('Tekan ▶ untuk mulai preview kamera','scanning'); });
 
   var track=stream.getVideoTracks()[0];

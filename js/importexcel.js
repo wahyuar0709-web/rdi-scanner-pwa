@@ -176,7 +176,15 @@
     var file = input && input.files && input.files[0];
     if (!file) return;
     setImportBusy(true);
-    if (typeof root.XLSX === 'undefined') { setImportBusy(false); setBox(msg('err', 'Library Excel belum termuat (butuh internet sekali). Coba lagi sebentar.')); return; }
+    if (typeof root.XLSX === 'undefined') {
+    if (typeof root.loadExcelLib === 'function') {
+      setImportBusy(true);
+      setBox(msg('info', 'Menyiapkan library Excel...'));
+      root.loadExcelLib('xlsx').then(function () { setImportBusy(false); onFile(input); }, function () { setImportBusy(false); setBox(msg('err', 'Library Excel gagal dimuat. Periksa koneksi lalu coba lagi.')); });
+      return;
+    }
+    setImportBusy(false); setBox(msg('err', 'Library Excel belum termuat.')); return;
+  }
     if (typeof root.gasPost !== 'function') { setImportBusy(false); setBox(msg('err', 'Aplikasi belum siap. Muat ulang halaman.')); return; }
     setBox(msg('info', 'Membaca ' + file.name + '…'));
     var fr = new FileReader();

@@ -178,7 +178,14 @@
        selama proses export, supaya screen reader tidak membacakan status parsial. */
     var modal = document.getElementById('modal-export-excel');
     function setBusy(on) { if (modal) { if (on) modal.setAttribute('aria-busy', 'true'); else modal.removeAttribute('aria-busy'); } }
-    if (!root.ExcelJS) { if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Library ExcelJS belum termuat (butuh internet sekali). Coba lagi sebentar.'; } return Promise.resolve(); }
+    if (!root.ExcelJS) {
+      if (typeof root.loadExcelLib === 'function') {
+        if (sbar) { sbar.className = 'sbar s-info show'; sbar.innerHTML = 'Menyiapkan library Excel...'; }
+        return root.loadExcelLib('exceljs').then(function () { return lengkap(from, to); }, function () { if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Library ExcelJS gagal dimuat. Periksa koneksi lalu coba lagi.'; } return Promise.resolve(); });
+      }
+      if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Library ExcelJS belum termuat.'; }
+      return Promise.resolve();
+    }
     if (typeof root.gasGet !== 'function') { if (sbar) { sbar.className = 'sbar s-err show'; sbar.innerHTML = 'Aplikasi belum siap. Muat ulang halaman.'; } return Promise.resolve(); }
     if (btn) btn.disabled = true;
     setBusy(true);

@@ -49,7 +49,7 @@
 //     UOM). setupMasterListSheets() tetap ada tapi sekarang jadi tool
 //     RESYNC opsional (menyisir ulang vendor/rak dari data transaksi).
 //  CHANGELOG v5.3 (Verifikasi kompatibilitas dgn redesain Input Transaksi
-//  frontend v13.0–v13.3 — TIDAK ADA perubahan logic backend):
+//  frontend v13.0–v13.3 - TIDAK ADA perubahan logic backend):
 //   - getItemById() sudah mengirim item.saldo & item.rakBreakdown ([{rak,qty}])
 //     -> dipakai langsung oleh preview saldo real-time & chip lokasi rak cepat
 //        di frontend, tanpa perlu endpoint/kolom baru.
@@ -59,7 +59,7 @@
 //   - Dicek: tidak ada field baru yang dibutuhkan frontend yang belum
 //     tersedia di response manapun. File ini aman dipakai apa adanya
 //     sebagai backend utk kartu-stok-pro-x v13.3.
-//  CHANGELOG v5.4 (Perbaikan performa — laporan "aplikasi lambat"):
+//  CHANGELOG v5.4 (Perbaikan performa - laporan "aplikasi lambat"):
 //   - updateSaldo() & updateRakSaldo() DULU scan ULANG SELURUH Transaksi_Log
 //     setiap kali ada 1 transaksi baru (postTransaksi) -- artinya makin banyak
 //     transaksi menumpuk dari waktu ke waktu, makin lambat SETIAP transaksi
@@ -142,7 +142,7 @@
 //  migrasi manual. getSheetData()/getItemById() sekarang menyertakan field
 //  status ('Aktif'/'Arsip'); postTransaksi() menolak transaksi baru utk item
 //  berstatus 'Arsip' (defense-in-depth -- frontend juga sudah menyaring).
-//  CHANGELOG v5.12 (Fix CRITICAL — Audit Phase 1 finding F-01: silent saldo
+//  CHANGELOG v5.12 (Fix CRITICAL - Audit Phase 1 finding F-01: silent saldo
 //  update failure): updateSaldo()/updateRakSaldo() DULU membungkus isinya
 //  dengan try/catch yang HANYA console.log() kalau gagal (tidak throw, tidak
 //  lapor balik) -- postTransaksi() tetap appendRow ke Transaksi_Log lalu
@@ -162,7 +162,7 @@
 //     sebelumnya, klien baru bisa opsional cek saldoSyncOk untuk tampilkan
 //     warning ke user.
 //
-//  CHANGELOG v5.13 (Fix HIGH — Audit Final F-02, F-03, G-02, G-03):
+//  CHANGELOG v5.13 (Fix HIGH - Audit Final F-02, F-03, G-02, G-03):
 //   - F-02 (password Viewer_Accounts plaintext): sekarang disimpan "salt$hashSHA256".
 //     Akun lama otomatis dimigrasi ke hash begitu login sukses sekali (tidak perlu
 //     migrasi manual). setupViewerAccountsSheet() bikin akun contoh dengan hash.
@@ -172,7 +172,7 @@
 //     keduanya punya nol call site sejak gate tulis pindah ke
 //     checkEditorSession_(). Satu-satunya sumber akun editor sekarang sheet
 //     RDI_Accounts (username+password+role), dan auth.nama berasal dari sana.
-//   - G-02 (item yatim — punya transaksi/saldo tapi tidak ada di Master_Item):
+//   - G-02 (item yatim - punya transaksi/saldo tapi tidak ada di Master_Item):
 //     postTransaksi() SUDAH lama mewajibkan getItemById() sukses dulu (jalur normal
 //     app tidak bisa bikin item yatim baru). Ditambah adminTool baru findOrphanItems
 //     utk DETEKSI item yatim dari data lama/migrasi (perbaikannya tetap manual --
@@ -188,7 +188,7 @@
 //     bisa diklik dari tombol Admin Database di aplikasi. Sekalian nambah dedup
 //     case-insensitive ("Acme" & "ACME" jadi 1 entri) yang dulu tidak ada.
 //
-//  CHANGELOG v5.14 (Fix CRITICAL — Audit Final G-01: ID collision):
+//  CHANGELOG v5.14 (Fix CRITICAL - Audit Final G-01: ID collision):
 //   - Ditambah adminTool 'findIdCollisions': deteksi ID_Item yang dipakai >1 baris
 //     Master_Item berbeda (2 barang beda ditempel 1 ID yang sama). Untuk tiap ID
 //     yang collide, dihitung juga breakdown Nama_Item di Transaksi_Log + flag
@@ -209,7 +209,7 @@
 //     menentukan barang mana dapat ID baru, tool ini cuma mengeksekusi perpindahan
 //     data dengan aman (fail-safe kalau ambigu) begitu keputusan itu dibuat.
 //
-//  CHANGELOG v5.15 (Fix MEDIUM — Audit Final F-06: magic number kolom):
+//  CHANGELOG v5.15 (Fix MEDIUM - Audit Final F-06: magic number kolom):
 //   - Ditambah konstanta COL_MASTER/COL_TRX/COL_SALDO/COL_RAK_SALDO/COL_ACC/
 //     COL_VIEWER_ACC (0-based, lihat definisi di atas SHEET_*) -- menggantikan
 //     ~114 titik akses r[7], row[9], dst yang sebelumnya hardcoded tanpa nama.
@@ -235,7 +235,7 @@
 //     identik sebelum/sesudah (70 fungsi, 500/500 { }). Ini refactor MURNI
 //     penamaan -- tidak ada perubahan logika, urutan baca, atau nilai literal.
 //
-//  CHANGELOG v5.16 (Fix MEDIUM — Audit Final F-04: LockService global):
+//  CHANGELOG v5.16 (Fix MEDIUM - Audit Final F-04: LockService global):
 //   - postTransaksi() dulu memegang LockService.getScriptLock() SELAMA SELURUH
 //     proses (append Transaksi_Log + update 2 sheet saldo) -- artinya transaksi
 //     ITEM A ikut menunggu transaksi ITEM B selesai walau dua-duanya tidak
@@ -249,7 +249,7 @@
 //     "server sibuk" (sama seperti perilaku lama), bukan diam-diam lanjut tanpa
 //     proteksi. Tidak ada perubahan pada urutan validasi/appendRow/update saldo.
 //
-//  CHANGELOG v5.17 (Fix LOW — Audit Final F-07: full-scan per item):
+//  CHANGELOG v5.17 (Fix LOW - Audit Final F-07: full-scan per item):
 //   - getHistory()/getStockLedger() dulu baca getRange(2,1,lastRow-1,13).getValues()
 //     -- SELURUH Transaksi_Log, semua 13 kolom, semua baris -- lalu filter per itemId
 //     di JS loop. Padahal biasanya cuma sebagian kecil baris yang cocok utk 1 item.
@@ -263,7 +263,7 @@
 //     indeks bawaan) -- ini bukan O(1) lookup, tapi tetap perbaikan nyata dibanding
 //     baca 13 kolom penuh utk tiap baris yang ternyata tidak cocok.
 //
-//  CHANGELOG v5.22 (Export Excel — ganti ke format PERSIS meniru file lama
+//  CHANGELOG v5.22 (Export Excel - ganti ke format PERSIS meniru file lama
 //  "Tools & Spare Part Inventory ....xlsx", per-batch + simulasi FIFO):
 //   - getExportData(dateFrom, dateTo) DIROMBAK dari versi v5.21 (2-sheet
 //     generik) menjadi meniru struktur ASLI file referensi user: satu
@@ -289,7 +289,7 @@
 //
 // ============================================================
 
-//  CHANGELOG v5.27 (Impor Excel kartu stok — mode MERGE idempotent):
+//  CHANGELOG v5.27 (Impor Excel kartu stok - mode MERGE idempotent):
 //   - action 'importExcel' (editor saja, lewat gate checkEditorSession_ di doPost). Frontend (js/importexcel.js)
 //     membaca "Tools & Spare Part Inventory ....xlsx" lalu mengirim {items, entries}; backend TIDAK pernah
 //     menimpa/menghapus data: hanya menambah item yang belum ada di Master_Item dan transaksi yang belum ada
@@ -312,10 +312,10 @@ var SHEET_KATEGORI  = 'Master_Kategori';
 var SHEET_UOM       = 'Master_UOM';
 var SHEET_VENDOR    = 'Master_Vendor';
 var SHEET_RAK       = 'Master_Rak';
-var SHEET_SYNC_ERRORS = 'Sync_Errors'; // v5.12 (fix F-01) — log kegagalan updateSaldo/updateRakSaldo yg dulu hilang di console.log
+var SHEET_SYNC_ERRORS = 'Sync_Errors'; // v5.12 (fix F-01) - log kegagalan updateSaldo/updateRakSaldo yg dulu hilang di console.log
 var SHEET_VIEWER_ACCOUNTS = 'Viewer_Accounts'; // Username | Password | Nama | Aktif
 
-// v5.20 — Modul Aset Sirkulasi (alat yg keluar-pakai-kembali-diasah-pakai lagi,
+// v5.20 - Modul Aset Sirkulasi (alat yg keluar-pakai-kembali-diasah-pakai lagi,
 // bukan barang habis pakai). Lihat desain: "Desain Modul Aset Sirkulasi".
 var SHEET_ASET_ITEM = 'Aset_Item'; // jenis alat (mirip Master_Item, tapi utk barang sirkulasi)
 var SHEET_ASET_UNIT = 'Aset_Unit'; // satu baris = satu unit fisik alat
@@ -345,7 +345,7 @@ var COL_TRX    = { TIMESTAMP:0, ID:1, NAMA:2, SPEC:3, JENIS:4, QTY:5, RAK:6, VEN
 var COL_SALDO  = { ID:0, NAMA:1, UNIT:2, TOTAL_MASUK:3, TOTAL_KELUAR:4, SALDO_AKHIR:5 }; // Stok_Saldo (6 kolom)
 var COL_RAK_SALDO   = { ID:0, RAK:1, QTY:2 }; // Stok_Per_Rak (3 kolom)
 var COL_VIEWER_ACC  = { USERNAME:0, PASSWORD:1, NAMA:2, AKTIF:3 }; // Viewer_Accounts (4 kolom)
-/* ===== F5-AUTH (2026-09-27, PLAN §14) — unified accounts: satu identitas per orang =====
+/* ===== F5-AUTH (2026-09-27, PLAN §14) - unified accounts: satu identitas per orang =====
  * Sheet RDI_Accountsmenggantikan Viewer_Accounts + Editor_Accounts: satu login (username+password)
  * untuk editor DAN viewer, peran dibawa di dalam token yang ditandatangani HMAC.
  * Alasan (bukti L3): jalur kunci tunggal_shared + ALLOW_EDITOR_KEY_FALLBACK=TRUE membuat
@@ -356,7 +356,7 @@ var COL_ACC = { USERNAME:0, NAMA:1, PASSWORD:2, ROLE:3, AKTIF:4, PASSWORD_VERSIO
 var AUTH_TOKEN_TTL_MS = 6*60*60*1000;   // 6 jam = batas maksimum CacheService (21600s)
 var MSG_BAD_CREDENTIALS = 'Username atau password salah.';
 
-// v5.20 — kolom modul Aset Sirkulasi
+// v5.20 - kolom modul Aset Sirkulasi
 var COL_ASET_ITEM = { NO:0, KODE_ALAT:1, NAMA_ALAT:2, BRAND:3, CUTTING_TOOL:4, MATERIAL:5,
   SPESIFIKASI:6, MESIN_DEFAULT:7, KODE_MESIN_DEFAULT:8, BERAT_KG:9, UOM:10, RAK_PENYIMPANAN:11,
   VENDOR_ASAH_DEFAULT:12, RATA2_PEMAKAIAN_30HARI:13, LEAD_TIME_ASAH_RATARATA:14,
@@ -419,7 +419,7 @@ function constantTimeEquals_(a, b) {
   return diff === 0;
 }
 
-// FIX TINGGI: safeCell — cegah formula injection saat user text ditulis ke Sheet.
+// FIX TINGGI: safeCell - cegah formula injection saat user text ditulis ke Sheet.
 // Nilai yang diawali = + - @ \t \r di-prepend apostrophe agar Sheets memperlakukan sebagai teks.
 function safeCell_(value) {
   if (value == null) return value;
@@ -455,22 +455,22 @@ function textMarkerStrip_(v) {
   return t;
 }
 
-// FIX TINGGI: pesan error generik — jangan bocorkan err.message (bisa memuat path/sheet internals) ke client
+// FIX TINGGI: pesan error generik - jangan bocorkan err.message (bisa memuat path/sheet internals) ke client
 //
 // KONTRAK `uncertain` (2026-10-13, DBG-02):
 //   Error terbagi dua jenis yang konsekuensinya SANGAT BERBEDA di sisi client,
 //   dan sebelum ini keduanya dilabeli `status:'error'` yang sama:
 //
-//   (a) PENOLAKAN DEFINITIF — validasi gagal, stok tidak cukup, item arsip, lock
+//   (a) PENOLAKAN DEFINITIF - validasi gagal, stok tidak cukup, item arsip, lock
 //       timeout. Tidak ada yang tertulis. Client BOLEH membuang entri outbox.
 //
-//   (b) KEGAGALAN AMBIGU — exception yang terjadi SETELAH baris/rows sudah ditulis
+//   (b) KEGAGALAN AMBIGU - exception yang terjadi SETELAH baris/rows sudah ditulis
 //       ke sheet. Client TIDAK BOLEH membuang entri: kalau ternyata server sempat
 //       commit, membuang antrean = transaksi hilang diam-diam, lalu operator
 //       mengulang input = DUPLIKAT di ledger.
 //
 //   Karena itu pemanggil yang tahu "sudah ditulis atau belum" wajib mengetik
-//   uncertain:true. Tanpa flag ini client hanya menebak dari teks pesan — dan
+//   uncertain:true. Tanpa flag ini client hanya menebak dari teks pesan - dan
 //   menebak di sini berarti data hilang ATAU dobel.
 function genericError_(fnName, uncertain) {
   var r = { status: 'error', message: 'Terjadi kesalahan pada ' + fnName + '. Coba lagi atau hubungi admin.' };
@@ -479,7 +479,7 @@ function genericError_(fnName, uncertain) {
 }
 
 // ============================================================
-//  EDITOR KEY — proteksi utk aksi TULIS (v5.5, diperluas v5.6)
+//  EDITOR KEY - proteksi utk aksi TULIS (v5.5, diperluas v5.6)
 //  Semua aksi di doPost (postTransaksi, addItem, updateItem, addMasterValue,
 //  adminTool) WAJIB kirim editorKey yang cocok dgn Script Property EDITOR_KEY.
 //  Sejak v5.6, doGet JUGA wajib login (editorKey ATAU viewerToken) -- lihat
@@ -547,7 +547,7 @@ function getViewerSecret() {
   return s;
 }
 function makeViewerToken(username, nama, pv) {
-  // FIX: TTL 6 jam — batas maks CacheService (21600s). Sebelumnya 12 jam, denylist
+  // FIX: TTL 6 jam - batas maks CacheService (21600s). Sebelumnya 12 jam, denylist
   // logout hanya bertahan 6 jam → token curi bisa hidup lagi sisa 6 jam setelah logout.
   var expiry = Date.now() + 6*60*60*1000;
   var jti = Utilities.getUuid(); // unique token id utk denylist/revoke
@@ -556,7 +556,7 @@ function makeViewerToken(username, nama, pv) {
   var sigB64 = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(payloadB64, getViewerSecret()));
   return payloadB64 + '.' + sigB64;
 }
-// FIX HIGH: fingerprint singkat dari hash password — berubah ⇒ sesi lama harus mati
+// FIX HIGH: fingerprint singkat dari hash password - berubah ⇒ sesi lama harus mati
 // (dipakai saat kolom passwordVersion di sheet belum ada).
 function passwordPv_(stored) {
   try {
@@ -570,7 +570,7 @@ function passwordPv_(stored) {
     return hex.slice(0, 16);
   } catch(e) { return ''; }
 }
-// FIX HIGH: endpoint logout/revoke — tulis jti ke denylist cache (TTL = sisa umur token,
+// FIX HIGH: endpoint logout/revoke - tulis jti ke denylist cache (TTL = sisa umur token,
 // maks 6 jam / batas CacheService). Tanpa ini, logout di frontend hanya membersihkan
 // sessionStorage dan token curi tetap valid di server sampai expired.
 function apiViewerLogout(body) {
@@ -608,7 +608,7 @@ function checkAnyAccess(params) {
   }
   return { ok:false, message:'Sesi belum login atau sudah habis. Silakan login ulang.' };
 }
-// FIX TINGGI: rate-limit login viewer — 5 gagal / username / 15 menit
+// FIX TINGGI: rate-limit login viewer - 5 gagal / username / 15 menit
 function rateLimitViewerLogin_(username) {
   var cache = CacheService.getScriptCache();
   var key = 'login_fail_' + String(username||'').toLowerCase();
@@ -630,8 +630,8 @@ function clearViewerLoginFail_(username) {
 }
 /* FIX SEC-05 (2026-10-13): rate limit login dulunya HANYA per-username (5 gagal/15 menit).
    Verifikasi password menjalankan KDF 5.000 iterasi Utilities.computeDigest yang
-   masing-masingnya adalah jembatan ke server Apps Script, jadi setiap percobaan login —
-   sukses maupun gagal, username ada atau tidak — membakar kuota eksekusi yang sama.
+   masing-masingnya adalah jembatan ke server Apps Script, jadi setiap percobaan login -
+   sukses maupun gagal, username ada atau tidak - membakar kuota eksekusi yang sama.
    Dengan limiter per-username saja, penyerang cukup forgiven N username berbeda untuk
    menjalankan N x 4 percobaan tanpa pernah menyentuh pembatas mana pun. Itu self-DoS:
    kuota harian dipakai habis dan login operator yang sah ikut gagal.
@@ -639,7 +639,7 @@ function clearViewerLoginFail_(username) {
    dicek SEBELUM KDF dijalankan (bukan sesudah). Nilai default 60 memberi ruang ~3x untuk
    shift change gudang; bisa diubah lewat Script Property LOGIN_RATE_GLOBAL_MAX.
    Catatan jujur: biaya "~0,68 ms per iterasi" adalah angka dari komentar kode (diukur di
-   produksi saat setupAccount 2026-09-27), BUKAN benchmark ulang saya — jadi angka "~3,4 dtk
+   produksi saat setupAccount 2026-09-27), BUKAN benchmark ulang saya - jadi angka "~3,4 dtk
    per percobaan"pun turunan, bukan hasil ukur saya sendiri. Yang diukur langsung oleh fix
    ini hanyalah: tidak ada lagi jalur tanpa pembatas. */
 var LOGIN_RATE_GLOBAL_MAX_DEFAULT = 60;
@@ -714,7 +714,7 @@ function verifyPasswordHash_(password, stored) {
 // sheet dalam bentuk hash -- tidak perlu admin migrasi manual satu-satu.
 
 /* ============================================================
- *  F5-AUTH — fungsi inti unified accounts
+ *  F5-AUTH - fungsi inti unified accounts
  * ============================================================ */
 function parseAktif_(v) {
   if (v === true) return true;
@@ -722,7 +722,7 @@ function parseAktif_(v) {
   return s === 'TRUE' || s === 'YA' || s === '1' || s === 'AKTIF';
 }
 /* ============================================================
- *  BE-03 — AUDIT LOG
+ *  BE-03 - AUDIT LOG
  * ============================================================ */
 var SHEET_AUDIT_LOG = 'Audit_Log';
 var AUDIT_MAX_ROWS = 5000;   // batas baris; yang paling lama dipotong
@@ -813,7 +813,7 @@ function ensureAccountsSheet_() {
   return sh;
 }
 /* FAIL-CLOSED: sheet hilang atau kosong = TIDAK ADA akun. Tidak pernah otomatis jatuh ke
- * kunci tunggal legacy — itu hanya boleh hidup lewat ALLOW_LEGACY_SINGLE_KEY=TRUE. */
+ * kunci tunggal legacy - itu hanya boleh hidup lewat ALLOW_LEGACY_SINGLE_KEY=TRUE. */
 function getAccountsSheet_() {
   try {
     var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ACCOUNTS);
@@ -864,7 +864,7 @@ function dummyHash_() {
   if (!DUMMY_HASH_CACHE_) DUMMY_HASH_CACHE_ = makeSaltedPasswordHash_('dummy-constant-time-padding');
   return DUMMY_HASH_CACHE_;
 }
-/* Payload token: username|nama|expiry|jti|pv|role — 5 field pertama identik format lama
+/* Payload token: username|nama|expiry|jti|pv|role - 5 field pertama identik format lama
  * sehingga token viewer yang sudah berlaku tetap bisa diverifikasi (backward compatible). */
 function makeAuthToken_(username, nama, pv, role) {
   var expiry = Date.now() + AUTH_TOKEN_TTL_MS;
@@ -1273,7 +1273,7 @@ function checkViewerCredentials(username, password) {
 
       var storedPw = String(rows[i][COL_VIEWER_ACC.PASSWORD]||'');
       // FIX F3-01: fingerprint PV harus dihitung dari nilai yang AKAN tersimpan di sheet
-      // (hash baru setelah migrasi), bukan plaintext lama — kalau tidak, token dari
+      // (hash baru setelah migrasi), bukan plaintext lama - kalau tidak, token dari
       // login migrasi langsung ditolak verifyViewerToken (passwordVersion mismatch).
       var pwForPv = storedPw;
       // FIX SEDANG: tolak password default GANTI-PASSWORD-INI (hash maupun plaintext)
@@ -1309,7 +1309,7 @@ function checkViewerCredentials(username, password) {
       }
       return { ok:true, username:u, nama: String(rows[i][COL_VIEWER_ACC.NAMA]||'') || u, passwordVersion: passwordVersion };
     }
-    // FIX TINGGI: pesan generik — jangan bocorkan "username tidak ditemukan" vs "password salah"
+    // FIX TINGGI: pesan generik - jangan bocorkan "username tidak ditemukan" vs "password salah"
     return { ok:false, message:'Username atau password salah.' };
   } catch(e) { return { ok:false, message:'Username atau password salah.' }; }
 }
@@ -1331,7 +1331,7 @@ function setupViewerAccountsSheet() {
 }
 
 // ============================================================
-//  doGet — handle GET requests dari PWA
+//  doGet - handle GET requests dari PWA
 // ============================================================
 function doGet(e) {
   try {
@@ -1339,14 +1339,14 @@ function doGet(e) {
     var action = params.action || '';
     var id     = params.id || '';
 
-    // healthCheck (lihat doPost) — juga di GET supaya bisa diperiksa tanpa POST.
+    // healthCheck (lihat doPost) - juga di GET supaya bisa diperiksa tanpa POST.
     if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
 
     /* F5-AUTH (2026-09-27): jalur kredensial via HEADER DIHAPUS dengan bukti, bukan asumsi.
      * L3 nyata (tests/tools/l3_cred_probe.js): `X-Editor-Key` (huruf besar) DAN
      * `x-editor-key` (huruf kecil) keduanya ditolak produksi, sementara `editorKey` di body
      * membaca data. Apps Script web app tidak mengekspos custom request header ke
-     * e.allHeaders — jadi blok lama ini DEAD CODE dan "perbaikannya" (BE-07) tidak pernah
+     * e.allHeaders - jadi blok lama ini DEAD CODE dan "perbaikannya" (BE-07) tidak pernah
      * memberi perlindungan apa pun (SEC-06 di PLAN §1.4).
      * Sekarang kredensial hanya datang di BODY POST (client js/outbox.js sudah begitu),
      * sehingga rahasia tidak pernah berada di URL maupun header. */
@@ -1368,14 +1368,14 @@ function doGet(e) {
     if (action === 'getLedger') return corsOutput(getStockLedger(id));
     if (action === 'getRakBreakdownAll') return corsOutput(getAllRakBreakdown());
 
-    // v5.22 — export Excel lengkap (kartu stok per-batch FIFO, per kategori)
+    // v5.22 - export Excel lengkap (kartu stok per-batch FIFO, per kategori)
     // FIX SEDANG: export hanya utk role editor (bukan viewer)
     if (action === 'getExportData') {
       if (auth.role !== 'editor') return corsOutput({ status:'error', message:'Export hanya untuk editor.' });
       return corsOutput(getExportData(params.dateFrom, params.dateTo));
     }
 
-    // v5.20 — modul Aset Sirkulasi (read-only, tanpa editorKey, konsisten dgn pola di atas)
+    // v5.20 - modul Aset Sirkulasi (read-only, tanpa editorKey, konsisten dgn pola di atas)
     if (action === 'getAsetItemList')   return corsOutput(getAsetItemList());
     if (action === 'getAsetUnitList')   return corsOutput(getAsetUnitList(params.kodeAlat));
     if (action === 'getAsetUnitById')   return corsOutput(getAsetUnitById(id));
@@ -1394,7 +1394,7 @@ function doGet(e) {
 }
 
 // ============================================================
-//  doPost — handle POST requests dari PWA (transaksi)
+//  doPost - handle POST requests dari PWA (transaksi)
 // ============================================================
 function doPost(e) {
   try {
@@ -1403,18 +1403,18 @@ function doPost(e) {
 
     // healthCheck (2026-09-27): verifikasi versi deploy TANPA kredensial & tanpa akses data.
     // Hanya mengembalikan nama + versi + tanggal build. Dipakai tests/tools/l3_baseline_probe.js
-    // untuk membuktikan perubahan benar-benar sudah LIVE (atau belum) — bukan guess.
+    // untuk membuktikan perubahan benar-benar sudah LIVE (atau belum) - bukan guess.
     if (action === 'healthCheck') return corsOutput({ status:'ok', api:'RDI Kartu Stok', version:API_VERSION, builtAt:API_BUILD });
 
     // F5-AUTH: SATU endpoint login untuk editor & viewer (peran dibawa di token).
-    // Endpoint ini tentu tidak digate auth — justru ia yang memberi akses.
+    // Endpoint ini tentu tidak digate auth - justru ia yang memberi akses.
     if (action === 'login') return corsOutput(apiLogin(body));
     if (action === 'viewerLogin') return corsOutput(apiLogin(body));   // alias lama (kompatibilitas)
-    // FIX HIGH: logout/revoke — jangan digate auth; cukup token yang mau dicabut.
+    // FIX HIGH: logout/revoke - jangan digate auth; cukup token yang mau dicabut.
     if (action === 'logout' || action === 'viewerLogout') return corsOutput(apiLogout(body));
 
     // FIX KRITIS: dukung aksi BACA via POST (gasGet baru mengirim kredensial di body,
-    // bukan query string) — checkAnyAccess dengan editorKey/viewerToken dari body.
+    // bukan query string) - checkAnyAccess dengan editorKey/viewerToken dari body.
     var READ_ACTIONS = {
       getData:1, getItem:1, getHistory:1, getAllHistory:1, generateId:1,
       getDashboard:1, getMasterLists:1, getLedger:1, getRakBreakdownAll:1,
@@ -1461,7 +1461,7 @@ function doPost(e) {
     var auth = checkEditorSession_(body);
     if (!auth.ok) return corsOutput({ status:'error', message: auth.message, needLogin:true });
     // BE-03: catat SETIAP write yang lolos gate, terikat ke identitas orang (bukan "Admin").
-    // Dicatat di sini — satu titik, otomatis berlaku untuk semua action tulis. Penolakan tidak
+    // Dicatat di sini - satu titik, otomatis berlaku untuk semua action tulis. Penolakan tidak
     // dicatat di sini agar tidak bisa dipakai membanjiri sheet oleh penyerang.
     logAudit_(auth, action, body, 'ok');
     // FIX F5-AUTH: `auth.nama` berasal dari lookup RDI_Accounts (username+password)
@@ -1481,7 +1481,7 @@ function doPost(e) {
     if (action === 'aiBacaSJ')      return corsOutput(aiBacaSJ(body));
     if (action === 'simpanKeyAI')   return corsOutput(simpanKeyAI(body));   // FASE 1 POC foto SJ
 
-    // v5.20 — modul Aset Sirkulasi
+    // v5.20 - modul Aset Sirkulasi
     if (action === 'addAsetItem')   return corsOutput(addAsetItem(body));
     if (action === 'addAsetUnit')   return corsOutput(addAsetUnit(body));
     if (action === 'recordAsetMovement') return corsOutput(recordAsetMovement(body));
@@ -1498,7 +1498,7 @@ function doPost(e) {
 //  GENERATE ID: RDI-YYYY-XXX (ID_Item tetap di KOLOM 2)
 // ============================================================
 // ============================================================
-//  MIGRATE ADD ID — isi ID_Item yang masih kosong di Master_Item
+//  MIGRATE ADD ID - isi ID_Item yang masih kosong di Master_Item
 //  dgn ID baru format RDI-YYYY-XXX (lanjut dari nomor tertinggi
 //  yg sudah ada, TIDAK menimpa ID yang sudah terisi).
 //  JALANKAN MANUAL kapan saja dari Apps Script (aman diulang --
@@ -1593,7 +1593,7 @@ function generateID() {
 //  qty = saldo TOTAL live (dari Stok_Saldo), rakSummary = breakdown
 //  per lokasi (dari Stok_Per_Rak), bukan lagi 1 kolom RAK statis.
 // ============================================================
-// Vendor & No SJ/PO TERAKHIR per item (dari transaksi MASUK paling baru) — dipakai kartu cetak & CSV export,
+// Vendor & No SJ/PO TERAKHIR per item (dari transaksi MASUK paling baru) - dipakai kartu cetak & CSV export,
 // karena warehouse tetap butuh info ini sekilas walau sekarang datanya per transaksi, bukan statis di item.
 // ============================================================
 // AUDIT FIX T-16/T-17 (v5.19): getLastVendorRefMap() dan getDashboard() dulu
@@ -1710,7 +1710,7 @@ function getSheetData() {
         spec: String(r[COL_MASTER.SPEC]||''),
         user: String(r[COL_MASTER.USER]||''),
         bc: String(r[COL_MASTER.BC]||''),
-        rak: rakMap[idKey] || '—',          // ringkasan multi-rak, bukan 1 lokasi
+        rak: rakMap[idKey] || '-',          // ringkasan multi-rak, bukan 1 lokasi
         qty: String(sf.saldo),
         unit: String(r[COL_MASTER.UNIT]||''),
         kategori: String(r[COL_MASTER.KATEGORI]||''),
@@ -1900,7 +1900,7 @@ function archiveItem(body) {
 }
 
 // ============================================================
-//  GET ITEM BY ID — identitas + saldo total + breakdown per rak
+//  GET ITEM BY ID - identitas + saldo total + breakdown per rak
 // ============================================================
 function getItemById(itemId) {
   try {
@@ -1946,7 +1946,7 @@ function getItemById(itemId) {
   }
 }
 
-// ── Saldo TOTAL + kumulatif Masuk/Keluar (semua rak digabung) — dari Stok_Saldo ──────
+// ── Saldo TOTAL + kumulatif Masuk/Keluar (semua rak digabung) - dari Stok_Saldo ──────
 // PERF v5.4: dulu getSaldoMap() & getTotalMasukKeluarMap() baca sheet Stok_Saldo TERPISAH
 // (2x getRange/getValues utk data yg sama persis). Sekarang 1x baca, dipakai bareng.
 function getSaldoFullMap() {
@@ -1976,7 +1976,7 @@ function getSaldoMap() {
   return map;
 }
 
-// ── Breakdown saldo PER RAK — dari Stok_Per_Rak ─────────────
+// ── Breakdown saldo PER RAK - dari Stok_Per_Rak ─────────────
 function getRakBreakdown(itemId) {
   var out = [];
   try {
@@ -2025,7 +2025,7 @@ function getRakSummaryMap() {
 //  vendor & noReferensi (No SJ/PO) dicatat per transaksi di sini.
 // ============================================================
 // ============================================================
-//  PER-ITEM MUTEX (Audit F-04, Medium) — postTransaksi dulu pakai
+//  PER-ITEM MUTEX (Audit F-04, Medium) - postTransaksi dulu pakai
 //  LockService.getScriptLock() dipegang SELAMA SELURUH proses (append log +
 //  update 2 sheet saldo), artinya transaksi ITEM A ikut nunggu transaksi
 //  ITEM B selesai walau dua-duanya sama sekali tidak berkaitan -- di volume
@@ -2080,7 +2080,7 @@ function postTransaksi(params) {
   // balik, frontend retry dgn body identik) dari jadi transaksi dobel. Ini menambal itu,
   // TANPA ubah signature/API/urutan validasi -- kalau requestId kosong (klien lama), perilaku
   // persis sama seperti sebelumnya.
-  // FIX SEDANG: requestId di-hash dgn body transaksi — retry dengan body berbeda
+  // FIX SEDANG: requestId di-hash dgn body transaksi - retry dengan body berbeda
   // tidak akan collide di cache (mencegah "silent" return hasil request lain).
   var requestId = String(params.requestId||'').trim();
   var cache     = requestId ? CacheService.getScriptCache() : null;
@@ -2371,13 +2371,13 @@ function updateRakSaldo(itemId, rak, jenis, qty) {
     if (foundRow>0) sh.getRange(foundRow,1,1,3).setValues([rowData]);
     else sh.appendRow(rowData);
   } catch(e) {
-    // FIX v5.12 (F-01): sama seperti updateSaldo — lempar balik, jangan cuma console.log.
+    // FIX v5.12 (F-01): sama seperti updateSaldo - lempar balik, jangan cuma console.log.
     throw new Error('updateRakSaldo gagal utk item ' + itemId + ' rak ' + rak + ': ' + e.message);
   }
 }
 
 // ============================================================
-//  LOG SYNC ERROR (baru — v5.12, fix F-01)
+//  LOG SYNC ERROR (baru - v5.12, fix F-01)
 //  Dulu kegagalan updateSaldo/updateRakSaldo hanya console.log (hilang,
 //  tidak ada yang lihat di production). Sekarang dicatat ke sheet supaya
 //  admin bisa lihat & tindak lanjuti (jalankan recalculateAllSaldo utk
@@ -2601,7 +2601,7 @@ function addItem(body) {
 }
 
 // ============================================================
-//  v5.22 — EXPORT EXCEL LENGKAP (format "kartu stok" lama, per-batch,
+//  v5.22 - EXPORT EXCEL LENGKAP (format "kartu stok" lama, per-batch,
 //  dikelompokkan per Kategori -- meniru struktur file lama
 //  "Tools & Spare Part Inventory ....xlsx": tiap SHEET = 1 kategori,
 //  tiap BARIS = 1 batch kedatangan (bukan 1 baris per item), dgn
@@ -2841,14 +2841,14 @@ function setupSheets() {
     rakSld.setFrozenRows(1);
   }
 
-  // Sheet master-list (dropdown) — dulu terpisah di setupMasterListSheets(), kini disatukan
+  // Sheet master-list (dropdown) - dulu terpisah di setupMasterListSheets(), kini disatukan
   // di sini supaya SATU kali jalan setupSheets() sudah membuat SEMUA sheet yang dipakai aplikasi.
   ensureMasterListSheet(SHEET_KATEGORI, ['Tool','Consumable','Sparepart','Raw Material']);
   ensureMasterListSheet(SHEET_UOM,      ['Pcs','Set','Unit','Box','Kg','Liter']);
   ensureMasterListSheet(SHEET_VENDOR,   []); // tidak ada default universal, diisi manual/otomatis dari transaksi
   ensureMasterListSheet(SHEET_RAK,      []); // tidak ada default universal, diisi manual/otomatis dari transaksi
 
-  // v5.20 — sheet utk modul Aset Sirkulasi (alat keluar-pakai-kembali-diasah-pakai lagi)
+  // v5.20 - sheet utk modul Aset Sirkulasi (alat keluar-pakai-kembali-diasah-pakai lagi)
   setupAsetSheets();
 
   SpreadsheetApp.getUi().alert(
@@ -2860,7 +2860,7 @@ function setupSheets() {
 }
 
 // ============================================================
-//  v5.20 — SETUP SHEET UTK MODUL ASET SIRKULASI
+//  v5.20 - SETUP SHEET UTK MODUL ASET SIRKULASI
 //  Dipanggil dari setupSheets() supaya satu kali klik setup tetap
 //  membuat SEMUA sheet (termasuk yang lama) sekaligus.
 //  Aman dijalankan berulang: kalau sheet & header sudah sesuai,
@@ -2910,7 +2910,7 @@ function setupAsetSheets() {
 }
 
 // ============================================================
-//  v5.20 — HELPER: generate Unit_ID berikutnya utk satu Kode_Alat
+//  v5.20 - HELPER: generate Unit_ID berikutnya utk satu Kode_Alat
 //  Format: {Kode_Alat}-{nomor urut 3 digit}, mis. Hau-SB-02-014
 //  Dipanggil DI DALAM lock (lihat addAsetUnit) supaya tidak ada
 //  2 request yang dapat nomor urut sama saat bersamaan.
@@ -2937,13 +2937,13 @@ function generateAsetUnitId_(kodeAlat) {
 }
 
 // ============================================================
-//  v5.20 — HELPER: generate ID_Transaksi berikutnya utk Aset_Movement_Log
+//  v5.20 - HELPER: generate ID_Transaksi berikutnya utk Aset_Movement_Log
 //  (nomor urut global, sederhana: lastRow-1 sheet log + 1). Dipanggil
 //  DI DALAM lock yang sama dengan appendRow-nya (lihat addAsetUnit /
 //  recordAsetMovement nanti) supaya tidak dobel.
 // ============================================================
 function generateAsetLogTrxId_() {
-  // FIX RENDAH: sequence lebih aman — cari max numeric id di kolom pertama (bukan lastRow,
+  // FIX RENDAH: sequence lebih aman - cari max numeric id di kolom pertama (bukan lastRow,
   // yang bisa bolong kalau ada baris terhapus), + Properties counter sbg fallback.
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_ASET_LOG);
@@ -2967,7 +2967,7 @@ function generateAsetLogTrxId_() {
 }
 
 // ============================================================
-//  v5.20 — ADD ASET ITEM (jenis alat baru, mis. "Hau-SB-02")
+//  v5.20 - ADD ASET ITEM (jenis alat baru, mis. "Hau-SB-02")
 //  body: { kodeAlat, namaAlat, brand, cuttingTool, material, spesifikasi,
 //          mesinDefault, kodeMesinDefault, beratKg, uom, rakPenyimpanan,
 //          vendorAsahDefault, safetyStock, reorderPoint, minStock }
@@ -3001,7 +3001,7 @@ function addAsetItem(body) {
       var newNo = last < 2 ? 1 : last;
       var rowData = [
         newNo, safeCell_(kodeAlat),
-        /* FIX BE-05 (2026-09-27): formula-injection guard — input user diawali = + - @ menjadi formula di Sheets. */
+        /* FIX BE-05 (2026-09-27): formula-injection guard - input user diawali = + - @ menjadi formula di Sheets. */
         safeCell_(String(body.namaAlat || '')), safeCell_(String(body.brand || '')),
         safeCell_(String(body.cuttingTool || '')), safeCell_(String(body.material || '')),
         safeCell_(String(body.spesifikasi || '')), safeCell_(String(body.mesinDefault || '')),
@@ -3025,7 +3025,7 @@ function addAsetItem(body) {
 }
 
 // ============================================================
-//  v5.20 — ADD ASET UNIT (tambah unit fisik baru utk satu Kode_Alat,
+//  v5.20 - ADD ASET UNIT (tambah unit fisik baru utk satu Kode_Alat,
 //  mis. beli 5 saw blade baru dari jenis yg sudah terdaftar)
 //  body: { kodeAlat, jumlah, tanggalMasuk, admin, verifiedAdmin }
 //  Efek: N baris baru di Aset_Unit (Status_Unit=GUDANG) + N baris
@@ -3112,7 +3112,7 @@ function addAsetUnit(body) {
 }
 
 // ============================================================
-//  v5.20 — HELPER: cari baris unit di Aset_Unit berdasarkan Unit_ID
+//  v5.20 - HELPER: cari baris unit di Aset_Unit berdasarkan Unit_ID
 //  Return null kalau tidak ketemu, atau { rowNumber, values } (rowNumber = 1-based, sesuai sheet)
 // ============================================================
 function findAsetUnitRow_(unitId) {
@@ -3130,7 +3130,7 @@ function findAsetUnitRow_(unitId) {
 }
 
 // ============================================================
-//  v5.20 — HELPER: ambil nomor counter siklus asah dari Cycle_ID
+//  v5.20 - HELPER: ambil nomor counter siklus asah dari Cycle_ID
 //  mis. "Hau-SB-02-006-02" -> 2. Default 1 kalau format tidak cocok
 //  (mis. unit lama/data belum lengkap).
 // ============================================================
@@ -3140,7 +3140,7 @@ function parseCounterFromCycleId_(cycleId) {
 }
 
 // ============================================================
-//  v5.20 — RECORD ASET MOVEMENT (inti logika: validasi state machine
+//  v5.20 - RECORD ASET MOVEMENT (inti logika: validasi state machine
 //  + update Aset_Unit + append Aset_Movement_Log)
 //  body: { unitId, activity, kodeMesin, vendor, keterangan, admin, verifiedAdmin }
 //
@@ -3248,7 +3248,7 @@ function recordAsetMovement(body) {
 }
 
 // ============================================================
-//  v5.20 — HELPER: hitung status kondisi stok (AMAN/KRITIS/HABIS)
+//  v5.20 - HELPER: hitung status kondisi stok (AMAN/KRITIS/HABIS)
 //  berdasarkan qty siap pakai vs safety stock. Dihitung on-demand
 //  setiap request, TIDAK disimpan sbg kolom statis di sheet manapun,
 //  supaya tidak pernah basi (lihat desain §4).
@@ -3260,7 +3260,7 @@ function computeStatusKondisi(siapPakai, safetyStock) {
 }
 
 // ============================================================
-//  v5.20 — HELPER: scan Aset_Unit sekali, hasilkan agregat per Kode_Alat
+//  v5.20 - HELPER: scan Aset_Unit sekali, hasilkan agregat per Kode_Alat
 //  { kodeAlat: { total, gudang, dipakai, tumpul, diasah, scrap } }
 //  Dipakai bersama oleh getAsetItemList() & getAsetDashboard() supaya
 //  tidak scan sheet yang sama 2x dalam 1 request.
@@ -3290,7 +3290,7 @@ function getAsetUnitAggregates_() {
 }
 
 // ============================================================
-//  v5.20 — GET ASET ITEM LIST (dashboard per jenis alat + status kondisi)
+//  v5.20 - GET ASET ITEM LIST (dashboard per jenis alat + status kondisi)
 //  Return: daftar jenis alat, tiap baris sudah dilengkapi agregat
 //  qty per status + status kondisi (AMAN/KRITIS/HABIS).
 // ============================================================
@@ -3340,7 +3340,7 @@ function getAsetItemList() {
 }
 
 // ============================================================
-//  v5.20 — GET ASET UNIT LIST (semua unit fisik utk satu Kode_Alat)
+//  v5.20 - GET ASET UNIT LIST (semua unit fisik utk satu Kode_Alat)
 // ============================================================
 function getAsetUnitList(kodeAlat) {
   try {
@@ -3377,7 +3377,7 @@ function getAsetUnitList(kodeAlat) {
 }
 
 // ============================================================
-//  v5.20 — GET ASET UNIT BY ID (detail satu unit)
+//  v5.20 - GET ASET UNIT BY ID (detail satu unit)
 // ============================================================
 function getAsetUnitById(unitId) {
   try {
@@ -3403,7 +3403,7 @@ function getAsetUnitById(unitId) {
 }
 
 // ============================================================
-//  v5.20 — GET ASET MOVEMENT LOG (riwayat pergerakan 1 unit, terbaru dulu)
+//  v5.20 - GET ASET MOVEMENT LOG (riwayat pergerakan 1 unit, terbaru dulu)
 //  limit: opsional, default 50
 // ============================================================
 function getAsetMovementLog(unitId, limit) {
@@ -3445,7 +3445,7 @@ function getAsetMovementLog(unitId, limit) {
 }
 
 // ============================================================
-//  v5.20 — GET ASET DASHBOARD (KPI global, setara "KPI CUTTING TOOL"
+//  v5.20 - GET ASET DASHBOARD (KPI global, setara "KPI CUTTING TOOL"
 //  di contoh referensi: total, siap pakai, dipakai, tunggu asah,
 //  diasah, + jumlah item berstatus kritis/habis)
 // ============================================================
@@ -3486,7 +3486,7 @@ function getAsetDashboard() {
 }
 
 // ============================================================
-//  v5.20 — HELPER: kelompokkan Aset_Movement_Log per Cycle_ID
+//  v5.20 - HELPER: kelompokkan Aset_Movement_Log per Cycle_ID
 //  jadi "siklus asah" (view terhitung, TIDAK disimpan sbg sheet
 //  fisik -- lihat desain §1.4, supaya tidak ada data yg desync dari log).
 //  kodeAlatFilter opsional: kalau diisi, hanya siklus milik Kode_Alat itu.
@@ -3531,7 +3531,7 @@ function getAsetKontrolAsahCycles_(kodeAlatFilter) {
 }
 
 // ============================================================
-//  v5.20 — GET KONTROL ASAH (analitik lead time per siklus asah,
+//  v5.20 - GET KONTROL ASAH (analitik lead time per siklus asah,
 //  setara sheet "Kontrol Asah" di contoh referensi)
 //  kodeAlat: opsional, filter satu jenis alat saja.
 // ============================================================
@@ -3570,7 +3570,7 @@ function getKontrolAsah(kodeAlat) {
 }
 
 // ============================================================
-//  v5.20 — GET PERFORMA VENDOR (rata-rata & maksimum lead time asah
+//  v5.20 - GET PERFORMA VENDOR (rata-rata & maksimum lead time asah
 //  per vendor, setara sheet "Performa Vendor" di contoh referensi)
 // ============================================================
 function getAsetPerformaVendor() {
@@ -3606,7 +3606,7 @@ function getAsetPerformaVendor() {
 }
 
 // ============================================================
-//  v5.20 — GET ASET ELIGIBLE UNITS (satu sumber kebenaran utk flow
+//  v5.20 - GET ASET ELIGIBLE UNITS (satu sumber kebenaran utk flow
 //  "Catat Pergerakan" di frontend: kasih HANYA unit yang statusnya
 //  valid utk aksi tertentu, pakai ASET_TRANSITION_RULES yang SAMA
 //  dengan yang dipakai recordAsetMovement() -- supaya aturan tidak
@@ -3678,7 +3678,7 @@ function migrateToMultiRakSchema() {
   var master = ss.getSheetByName(SHEET_MASTER);
   if (!master) { SpreadsheetApp.getUi().alert('❌ Sheet Master_Item tidak ditemukan.'); return; }
 
-  // FIX SEDANG: guard — migrasi legacy hanya bila belum pernah jalan & Master belum skema baru
+  // FIX SEDANG: guard - migrasi legacy hanya bila belum pernah jalan & Master belum skema baru
   var props = PropertiesService.getScriptProperties();
   if (props.getProperty('MIGRATED_MULTI_RAK') === 'TRUE') {
     SpreadsheetApp.getUi().alert('ℹ️ Migrasi multi-rak sudah pernah dijalankan. Dibatalkan.');
@@ -3771,7 +3771,7 @@ function migrateToMultiRakSchema() {
 // (SpreadsheetApp.getUi() akan ERROR kalau dipanggil dari request web app / API,
 // makanya tidak boleh ada di dalam core-nya.)
 function recalculateAllSaldoCore() {
-  // FIX TINGGI: script lock — cegah race dengan postTransaksi/updateSaldo yang juga menulis sheet
+  // FIX TINGGI: script lock - cegah race dengan postTransaksi/updateSaldo yang juga menulis sheet
   var recalcLock = LockService.getScriptLock();
   var lockOk = false;
   try { recalcLock.waitLock(30000); lockOk = true; }
@@ -3836,7 +3836,7 @@ function recalculateAllSaldoLocked_() {
     var t  = totals[id] || { masuk:0, keluar:0 };
     out.push([id, it.nama, it.unit, t.masuk, t.keluar, t.masuk - t.keluar]);
   });
-  /* FIX BE-04 (2026-09-27): dulu clearContents() lalu tulis ulang — pembaca konkuren bisa melihat Stok_Saldo KOSONG/PARSIAL di tengah rebuild. Sekarang: tulis nilai baru di ATAS nilai lama (satu setValues), lalu potong baris sisa (truncate) — tidak ada jendela kosong, dan jauh lebih cepat di Sheet. */
+  /* FIX BE-04 (2026-09-27): dulu clearContents() lalu tulis ulang - pembaca konkuren bisa melihat Stok_Saldo KOSONG/PARSIAL di tengah rebuild. Sekarang: tulis nilai baru di ATAS nilai lama (satu setValues), lalu potong baris sisa (truncate) - tidak ada jendela kosong, dan jauh lebih cepat di Sheet. */
   saldo.getRange(1,1,1,6).setValues([[
     'ID_Item','Nama Material','Unit','Total_Masuk','Total_Keluar','Saldo_Akhir'
   ]]).setBackground('#1a7a4a').setFontColor('#ffffff').setFontWeight('bold');
@@ -3880,7 +3880,7 @@ function apiRecalculateAllSaldo() {
 }
 
 // ============================================================
-//  FIND ORPHAN ITEMS (Audit G-02) — item punya Transaksi_Log/Stok_Saldo
+//  FIND ORPHAN ITEMS (Audit G-02) - item punya Transaksi_Log/Stok_Saldo
 //  tapi TIDAK punya baris di Master_Item -- jadi "hilang" dari UI walau
 //  datanya masih ada di sheet lain. Catatan: postTransaksi() sejak lama
 //  sudah mewajibkan getItemById() sukses dulu sebelum simpan transaksi
@@ -3938,7 +3938,7 @@ function apiFindOrphanItems() {
 }
 
 // ============================================================
-//  FIND DUPLICATE ITEMS (Audit G-03) — baris Master_Item dgn Nama Material
+//  FIND DUPLICATE ITEMS (Audit G-03) - baris Master_Item dgn Nama Material
 //  + Spesifikasi identik (trim+uppercase) tapi ID_Item beda-beda. Hanya
 //  DETEKSI, bukan auto-merge -- menggabungkan 2 ID jadi 1 berarti harus
 //  mindahin/nyatuin riwayat transaksi & saldo mereka juga, itu keputusan
@@ -3984,7 +3984,7 @@ function apiFindDuplicateItems() {
 }
 
 // ============================================================
-//  FIND ID COLLISIONS (Audit G-01, CRITICAL) — >1 baris Master_Item
+//  FIND ID COLLISIONS (Audit G-01, CRITICAL) - >1 baris Master_Item
 //  berbagi SATU ID_Item yang sama (2 barang beda ditempel di ID yang
 //  sama, biasanya human error input/migrasi). BEDA dari G-03 (baris
 //  kembar -- Nama+Spek sama, ID beda): di sini ID-nya yang sama, tapi
@@ -4052,7 +4052,7 @@ function apiFindIdCollisions() {
     if (!r.count) return { status:'ok', message:'Tidak ada ID collision ditemukan di Master_Item.', count:0, collisions:[] };
     return {
       status:'ok',
-      message: r.count+' ID collision ditemukan (1 ID_Item dipakai >1 barang berbeda) — CRITICAL, saldo item-item ini tidak bisa dipercaya sampai dipisah. Cek splitSafe per collision: true = bisa dipisah otomatis via resolveIdCollision berdasarkan Nama_Item; false = ada transaksi yang tidak cocok nama manapun, wajib direview manual dulu.',
+      message: r.count+' ID collision ditemukan (1 ID_Item dipakai >1 barang berbeda) - CRITICAL, saldo item-item ini tidak bisa dipercaya sampai dipisah. Cek splitSafe per collision: true = bisa dipisah otomatis via resolveIdCollision berdasarkan Nama_Item; false = ada transaksi yang tidak cocok nama manapun, wajib direview manual dulu.',
       count:r.count, collisions:r.collisions
     };
   } catch(err) {
@@ -4062,7 +4062,7 @@ function apiFindIdCollisions() {
 }
 
 // ============================================================
-//  RESOLVE ID COLLISION (Audit G-01) — pisahkan SATU barang (dikenali
+//  RESOLVE ID COLLISION (Audit G-01) - pisahkan SATU barang (dikenali
 //  dari Nama Material persis) yang nyasar berbagi ID dgn barang lain,
 //  ke ID baru. Baris Master_Item-nya dipindah, dan SEMUA baris
 //  Transaksi_Log dgn ID_Item lama + Nama_Item yang cocok persis (trim+
@@ -4083,7 +4083,7 @@ function resolveIdCollisionCore(oldId, namaToMove, newId, dryRun) {
   var namaKey = String(namaToMove||'').trim().toUpperCase();
   if (!oldId || !namaKey) return { ok:false, message:'oldId dan namaToMove wajib diisi.' };
 
-  // FIX SEDANG: script lock — cegah race collision-resolve dengan addItem/generateID
+  // FIX SEDANG: script lock - cegah race collision-resolve dengan addItem/generateID
   var colLock = LockService.getScriptLock();
   var lockOk = false;
   try { colLock.waitLock(30000); lockOk = true; }
@@ -4187,7 +4187,7 @@ function runAdminToolAPI(fn, body) {
 }
 
 // ============================================================
-//  STOCK LEDGER FORMAL — replay Transaksi_Log vs cache Stok_Saldo
+//  STOCK LEDGER FORMAL - replay Transaksi_Log vs cache Stok_Saldo
 //  Opening balance selalu 0 (semua stok, termasuk yg pertama kali,
 //  sekarang tercatat sbg transaksi MASUK -- tidak ada lagi angka
 //  statis "qty awal" yg tersembunyi di Master_Item).
@@ -4269,7 +4269,7 @@ function getStockLedger(itemId) {
 }
 
 // ============================================================
-//  MASTER LIST (Kategori/UOM/Vendor/Rak) — dropdown terpusat
+//  MASTER LIST (Kategori/UOM/Vendor/Rak) - dropdown terpusat
 // ============================================================
 function getMasterLists() {
   try {
@@ -4422,7 +4422,7 @@ function apiResyncMasterLists() {
     var r = setupMasterListSheetsCore();
     return {
       status:'ok',
-      message:'Resync master list selesai — Vendor: '+r.vendor+', Rak: '+r.rak+', Unit: '+r.uom+', Kategori: '+r.kategori+'.',
+      message:'Resync master list selesai - Vendor: '+r.vendor+', Rak: '+r.rak+', Unit: '+r.uom+', Kategori: '+r.kategori+'.',
       vendor:r.vendor, rak:r.rak, uom:r.uom, kategori:r.kategori
     };
   } catch(err) {
@@ -4432,7 +4432,7 @@ function apiResyncMasterLists() {
 }
 
 // ============================================================
-//  FIND ROW INDEX (helper — PHASE 0 audit P3: konsolidasi duplicate logic)
+//  FIND ROW INDEX (helper - PHASE 0 audit P3: konsolidasi duplicate logic)
 //  Dulu pola "getValues() lalu loop for cari row yang cocok" ditulis ulang
 //  scara terpisah di updateSaldo, updateRakSaldo, dan getStockLedger --
 //  masing-masing identik persis kecuali kolom & jumlah kriteria yang
@@ -4478,7 +4478,7 @@ function findRowIndexLoose(data, matchers) {
 }
 
 // ============================================================
-//  ROW LOOKUP BY COLUMN VALUE (Audit F-07, Low) — getHistory/getStockLedger dulu
+//  ROW LOOKUP BY COLUMN VALUE (Audit F-07, Low) - getHistory/getStockLedger dulu
 //  membaca SELURUH Transaksi_Log (semua 13 kolom, semua baris) ke memory Apps
 //  Script lalu filter per-item di JS, padahal biasanya cuma sebagian kecil baris
 //  yang cocok untuk 1 itemId. Sekarang: scan HANYA kolom ID_Item (1 kolom, bukan
@@ -4565,7 +4565,7 @@ function fmtDateTime(val) {
 
 
 // ============================================================
-//  v5.27 — IMPOR EXCEL (mode MERGE idempotent). Lihat CHANGELOG v5.27.
+//  v5.27 - IMPOR EXCEL (mode MERGE idempotent). Lihat CHANGELOG v5.27.
 // ============================================================
 var IMPORT_MAX_ITEMS_        = 3000;
 var IMPORT_MAX_ENTRIES_DRY_  = 8000;

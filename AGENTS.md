@@ -152,3 +152,15 @@ Every audit finding must contain:
 8. **Verification status** — one of the allowed statuses plus the highest level actually executed
 
 Do not silently fix findings during a read-only audit. Report first; apply fixes only when the user has moved the session into an explicit fix/edit scope.
+
+<!-- antislop:start -->
+## antislop
+
+Untuk pekerjaan UI, copy, aksesibilitas, atau komentar kode, baca core antislop lalu patuhi Delivery Gate sebelum menyerahkan hasil.
+
+- Core (skill DSH): `~/.agents/skills/antislop/SKILL.md`
+- Arah desain proyek: `DESIGN.md` (wajib dibaca sebelum mengubah tampilan)
+- Sub-skill (antislop-ui, antislop-copywriting, antislop-human, antislop-layoutmobile, antislop-code) belum terpasang di mesin ini. Jangan mengunduhnya otomatis.
+- Mode pemakaian: baca preferensi global di `%APPDATA%\antislop\settings.json`. Urutan: instruksi eksplisit sesi, lalu preferensi global, lalu tanya.
+- Audit terakhir: `anti-slop/audit-001-2026-11-01.md`, `anti-slop/audit-002-2026-11-01.md`, dan `anti-slop/audit-003-2026-11-01.md`.
+<!-- antislop:end -->
