@@ -1,4 +1,4 @@
-﻿# DESIGN.md - RDI Indirect Scanner
+# DESIGN.md - RDI Indirect Scanner
 
 Dokumen arah desain. Isinya mendeskripsikan apa yang SUDAH dipakai aplikasi (v15.39),
 bukan mengganti arah. Dibuat 2026-11-01 dari audit antislop 001.
