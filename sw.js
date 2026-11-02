@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v53'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v54'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   // HTML / navigasi → NETWORK-FIRST dgn BATAS WAKTU (PERF 2026-10-16).
-  // Dulu: navigasi SELALU menunggu jaringan selesai — di WiFi lambat itu
+  // Dulu: navigasi SELALU menunggu jaringan selesai, di WiFi lambat itu
   // menahan boot beberapa detik. Sekarang: kalau jaringan belum selesai
   // dalam 2,5 dtk TAPI ada versi cache → sajikan cache dulu (boot instan);
   // unduhan jaringan tetap jalan di background dan memperbarui cache,
@@ -58,7 +58,7 @@ self.addEventListener('fetch', e => {
   if (e.request.mode === 'navigate' || (e.request.headers.get('accept') || '').includes('text/html')) {
     const net = fetch(e.request)
       .then(res => {
-        // hanya cache res.ok — res 4xx/5xx jangan masuk cache
+        // hanya cache res.ok, sebab res 4xx/5xx jangan masuk cache
         if (res && res.ok) {
           const copy = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});

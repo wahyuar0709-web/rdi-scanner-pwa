@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scan QR – Kartu Stok RDI</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -40,7 +40,7 @@ body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-seri
 
 .ft{background:#0f172a;padding:14px 16px;display:flex;gap:10px;align-items:center;
     border-top:1px solid #1e293b;flex-shrink:0}
-.status{flex:1;font-size:12px;color:#64748b;line-height:1.4}
+.status{flex:1;font-size:12px;color:#94a3b8;line-height:1.4}
 .status.ok{color:#4ade80;font-weight:600}
 .status.err{color:#f87171}
 .status.scanning{color:#60a5fa}
@@ -57,7 +57,11 @@ body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-seri
 .spin{width:40px;height:40px;border:3px solid #1e293b;border-top-color:#3b82f6;
       border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loader p{font-size:13px;color:#64748b}
+@media (prefers-reduced-motion: reduce){
+  /* Henti animasi non-esensial (garis pindai). Spinner tetap: fungsional, menandai proses berjalan. */
+  .scanline{animation:none;top:45%}
+}
+.loader p{font-size:13px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -98,7 +102,7 @@ body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-seri
 
 <div class="ft">
   <div class="status scanning" id="status">Menginisialisasi kamera…</div>
-  <button class="btn btn-torch" id="btn-torch" style="display:none" onclick="toggleTorch()" aria-label="Nyalakan/matikan lampu obor">🔦</button>
+  <button class="btn btn-torch" id="btn-torch" style="display:none" onclick="toggleTorch()" aria-label="Nyalakan/matikan lampu obor">Lampu</button>
   <button class="btn btn-close" onclick="closeScanner()">✕ Tutup</button>
 </div>
 
@@ -142,7 +146,7 @@ function sendResult(rawValue){
   var id=String(rawValue||'').split('|')[0].trim().toUpperCase();
   foundBadge.textContent='✓ '+id;
   foundEl.classList.add('show');
-  setStatus('✅ Ditemukan: '+id,'ok');
+  setStatus('Ditemukan: '+id,'ok');
 
   postToOpener({type:'QR_RESULT',id:id,caller:caller});
 
@@ -240,7 +244,7 @@ async function initCamera(){
     catch(err){
       if(i===constraints.length-1){
         loaderMsg.textContent='Kamera tidak dapat dibuka.';
-        setStatus('❌ '+(err.name==='NotAllowedError'
+        setStatus((err.name==='NotAllowedError'
           ?'Izin kamera ditolak. Buka Pengaturan browser → izinkan kamera.'
           :'Kamera tidak tersedia: '+err.message),'err');
         return;
@@ -278,7 +282,7 @@ async function initCamera(){
 window.addEventListener('DOMContentLoaded',function(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
     loaderMsg.textContent='Browser tidak mendukung kamera.';
-    setStatus('❌ Butuh HTTPS dan browser modern','err');
+    setStatus('Butuh HTTPS dan browser modern','err');
     return;
   }
   initCamera();
