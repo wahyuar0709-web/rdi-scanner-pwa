@@ -162,5 +162,5 @@ Untuk pekerjaan UI, copy, aksesibilitas, atau komentar kode, baca core antislop 
 - Arah desain proyek: `DESIGN.md` (wajib dibaca sebelum mengubah tampilan)
 - Sub-skill (antislop-ui, antislop-copywriting, antislop-human, antislop-layoutmobile, antislop-code) belum terpasang di mesin ini. Jangan mengunduhnya otomatis.
 - Mode pemakaian: baca preferensi global di `%APPDATA%\antislop\settings.json`. Urutan: instruksi eksplisit sesi, lalu preferensi global, lalu tanya.
-- Audit terakhir: `anti-slop/audit-001-2026-11-01.md`, `anti-slop/audit-002-2026-11-01.md`, dan `anti-slop/audit-003-2026-11-01.md`.
+- Audit terakhir: `anti-slop/audit-001-2026-11-01.md`, `anti-slop/audit-002-2026-11-01.md`, `anti-slop/audit-003-2026-11-01.md`, dan `anti-slop/audit-004-2026-11-02.md` (uji live backend).
 <!-- antislop:end -->
