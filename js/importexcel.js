@@ -1,12 +1,22 @@
-/* importexcel.js — v5.27 IMPOR EXCEL (mode MERGE idempotent)
+/* importexcel.js — v5.28 IMPOR EXCEL (mode MERGE idempotent)
  * Membaca file "Tools & Spare Part Inventory ....xlsx" (format kartu stok per-batch: 1 baris = 1 batch
  * kedatangan, kolom tanggal = qty KELUAR, kolom terakhir "Stok Akhir") lalu mengubahnya jadi:
  *   items   : identitas barang (hanya yang BELUM ada di Master_Item yang akan dibuat — item lama tidak ditimpa)
  *   entries : transaksi MASUK/KELUAR unik + jumlah kembar (n), dipakai backend untuk merge idempotent.
  * Bagian PARSER murni (tanpa DOM) supaya bisa dites di Node. Bagian UI hanya jalan di browser.
  * Aturan yang disetujui user: rak kosong -> "-", tanggal terima kosong -> tanggal kolom pertama yang terisi.
- * Kolom tanggal yang mencurigakan (header tak terbaca / di masa depan / urutan mundur) DILEWATI dan dilaporkan,
- * bukan ditebak — perbaiki di Excel lalu upload ulang (merge idempotent, jadi aman diulang). */
+ * v5.28 auto-repair (deterministik, selalu dilaporkan di pratinjau, tidak pernah diam-diam):
+ *   1) kode material dirapikan — karakter di luar ID_RE dibuang lalu tepi dirapikan; hasil kosong -> dilewati;
+ *   2) angka paham format mil "1.000,5" (koma desimal, titik ribuan);
+ *   3) header tanggal salah ketik ("25-Agu-252", "19/08/20262", tahun +1..) DITJAHIT dari jangkar tetangga:
+ *      dipakai hanya bila KARTU satu-satunya kandidat hari/bulan yang sama masuk interval jangkar kiri–kanan
+ *      dan <= hari ini; ambigu / tanpa jangkar -> tetap dilewati;
+ *   4) kolom dengan tanggal sah tetapi urutan tidak menaik tetap IKUT (tanggal header sah — urutan kolom bukan data);
+ *   5) baris tanpa kode material (tapi punya Nama) -> kode sementara "AUTO-<hash8 dtd Nama|Spesifikasi>":
+ *      deterministik, jadi impor ulang file yang sama menghasilkan kode yang sama (idempotent). Saat Excel
+ *      memberi kode asli, baris itu menjelma item berkode asli; item AUTO lama tidak ditimpa (backend by
+ *      design tidak pernah menimpa item lama).
+ * Merge idempotent, aman diulang. */
 (function (root) {
   'use strict';
 
@@ -37,7 +47,12 @@
   function num(v) {
     if (typeof v === 'number') return isFinite(v) ? v : null;
     if (v === null || v === undefined) return null;
-    var s = String(v).trim().replace(',', '.');
+    var s = String(v).trim();
+    if (!s) return null;
+    var c = (s.match(/,/g) || []).length, t = (s.match(/\./g) || []).length;
+    if (c > 0 && t > 0) s = s.replace(/\./g, '').replace(/,/g, '.'); // "1.000,5" -> 1000.5
+    else if (c === 1) s = s.replace(',', '.');                      // "1,5" -> 1.5
+    else if (t > 1) s = s.replace(/\./g, '');                       // "1.000.000" -> 1000000
     return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null;
   }
   function txt(v) { return v === null || v === undefined ? '' : String(v).trim(); }
@@ -56,6 +71,72 @@
   };
   var KAT = { 'tools': 'Tools', 'spare part': 'Spare Part', 'sparepart': 'Spare Part', 'indirect': 'Indirect', 'consumable': 'Consumable' };
 
+  /* Kode sementara utk baris tanpa kode material. Deterministik dari Nama+Spesifikasi
+   * supaya impor ulang menghasilkan kode yang sama (kunci idempotent tidak berubah).
+   * "FIXED DRILL" diimpor ulang selalu -> AUTO-<hex8> yang sama. */
+  function autoCodeTemp(name, spec) {
+    var s = (txt(name) + '|' + txt(spec)).toUpperCase();
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return 'AUTO-' + ('0000000' + h.toString(16).toUpperCase()).slice(-8);
+  }
+
+  /* ---------- auto-repair (deterministik) ---------- */
+
+  var MON3 = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7, agu: 8, agt: 8, ags: 8, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, des: 12, dec: 12 };
+
+  /* Rapikan kode material: karakter di luar ID_RE diganti spasi, tepi & spasi ganda dirapikan.
+   * "MRO-01-08-[..]" -> "MRO-01-08". Hasil kosong -> null (dilewati). */
+  function repairCode(raw) {
+    var s = txt(raw).toUpperCase().replace(/[^A-Z0-9\-_.\/ ]/g, ' ');
+    s = s.replace(/[^A-Z0-9]+$/, '').replace(/^[^A-Z0-9]+/, '').replace(/\s+/g, ' ').trim();
+    s = s.replace(/[\-_.\/ ]+$/, '').replace(/^[\-_.\/ ]+/, '').trim();
+    return (s && ID_RE.test(s)) ? s : null;
+  }
+
+  /* Bagian hari/bulan/tahun-selap dari header tanggal. -> {d, m, ys} atau null.
+   * Mendukung "25/08/2025", "25/08/20262", "25-Agu-252", "7/10/2026". */
+  function headerParts(raw) {
+    if (raw === null || raw === undefined) return null;
+    var s = String(raw instanceof Date ? ymd(raw.getFullYear(), raw.getMonth() + 1, raw.getDate()) : raw).trim();
+    if (!s) return null;
+    var m = /^(\d{1,2})[\/\-\. ](\d{1,2})[\/\-\. ](\d{1,5})$/.exec(s);
+    if (m) return { d: +m[1], m: +m[2], ys: m[3] };
+    m = /^(\d{1,2})[ \-\.][ ]*([A-Za-z]{3,4})[ \-\.][ ]*(\d{1,5})$/.exec(s);
+    if (m && MON3[m[2].toLowerCase().slice(0, 3)]) return { d: +m[1], m: MON3[m[2].toLowerCase().slice(0, 3)], ys: m[3] };
+    return null;
+  }
+
+  /* Kandidat tanggal utk header rusak di antara jangkar tetangga.
+   * Hanya dianggap jahit bila kembali TEPAT SATU kandidat: hari-bulan (sama) bernilai sah,
+   * <= today, dan masuk interval jangkar kiri (dA) — kanan (dB). Kalau >1 kandidat -> ambigu. */
+  function repairCandidates(p, dA, dB, today) {
+    if (!p || (dA === null && dB === null)) return [];
+    var yMin = dA === null ? null : +dA.slice(0, 4);
+    var yMax = dB === null ? null : +dB.slice(0, 4);
+    if (yMin !== null && yMax !== null) { if (yMin > yMax) { var q = yMin; yMin = yMax; yMax = q; } }
+    else if (yMin === null) { yMin = yMax - 1; }
+    else { yMax = Math.min(+today.slice(0, 4), yMin + 1); }
+    var yrs = {};
+    for (var y = Math.max(2000, yMin); y <= Math.min(2100, yMax); y++) yrs[y] = true;
+    var ys = p.ys;
+    if (ys) { /* bacaan eksplisit dari string asal (bisa salah ketik) ikut ditawarkan */
+      if (ys.length >= 4) yrs[+ys.slice(0, 4)] = true;
+      else if (ys.length === 3) { yrs[2000 + +ys.slice(0, 2)] = true; yrs[2000 + +ys.slice(1, 3)] = true; }
+      else yrs[2000 + +ys] = true;
+    }
+    var out = [], seen = {};
+    for (var k in yrs) {
+      var yy = +k;
+      if (yy < 2000 || yy > 2100 || !validYMD(yy, p.m, p.d)) continue;
+      var c = ymd(yy, p.m, p.d);
+      if (c > today) continue;
+      if ((dA !== null && c < dA) || (dB !== null && c > dB)) continue;
+      if (!seen[c]) { seen[c] = true; out.push(c); }
+    }
+    return out;
+  }
+
   function processSheet(sh, today, acc) {
     var rows = sh.rows || [];
     if (!rows.length) return;
@@ -65,24 +146,43 @@
     var endCol = cm.last !== undefined ? cm.last : H.length;
     var firstDate = (cm.unit !== undefined ? cm.unit : cm.qin) + 1;
     var kategori = KAT[norm(sh.name)] || txt(sh.name);
-    var rep = { name: sh.name, rows: 0, masuk: 0, keluar: 0, fallbackDate: 0, rakDefault: 0, skippedCols: [], skippedRows: 0, mismatch: [], badCells: 0, keluarSebelumMasuk: 0 };
+    var rep = { name: sh.name, rows: 0, masuk: 0, keluar: 0, fallbackDate: 0, rakDefault: 0, skippedCols: [], skippedRows: 0, mismatch: [], badCells: 0, keluarSebelumMasuk: 0, fixedDateCols: [], fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: [] };
 
-    // 1) klasifikasi kolom tanggal
-    var cols = [], prev = null;
+    // 1) klasifikasi kolom tanggal + perbaikan otomatis dengan jangkar tetangga
+    var jDate = {}; // kolom -> 'yyyy-MM-dd' (sah / sudah dijahit)
     for (var j = firstDate; j < endCol; j++) {
-      var raw = H[j], d = parseDate(raw), reason = '';
-      if (d === null) reason = 'header tanggal tidak terbaca';
-      else if (d > today) reason = 'tanggal di masa depan';
-      else if (prev && d < prev) reason = 'urutan tanggal mundur';
+      var d0 = parseDate(H[j]);
+      if (d0 !== null && d0 <= today) jDate[j] = d0;
+    }
+    var lastOk = null; // tanggal kolom sah terakhir di KIRI (posisi)
+    for (j = firstDate; j < endCol; j++) {
+      if (jDate[j]) {
+        if (lastOk !== null && jDate[j] < lastOk) rep.reorderedCols++; // sah tapi tidak menaik — tetap ikut, dilaporkan
+        lastOk = jDate[j];
+        continue;
+      }
+      var d0b = parseDate(H[j]);
+      var reason = d0b === null ? 'header tanggal tidak terbaca' : 'tanggal di masa depan';
+      var parts = (d0b === null || d0b > today) ? headerParts(H[j]) : null;
+      if (parts) {
+        var dB = null;
+        for (var k = j + 1; k < endCol; k++) if (jDate[k]) { dB = jDate[k]; break; }
+        var cands = repairCandidates(parts, lastOk, dB, today);
+        if (cands.length === 1) {
+          jDate[j] = cands[0];
+          rep.fixedDateCols.push({ col: colLetter(j), header: txt(H[j]), ke: cands[0] });
+          continue;
+        }
+      }
       var cells = 0;
       for (var i = 1; i < rows.length; i++) { var cv = rows[i] && rows[i][j]; if (cv !== null && cv !== undefined && cv !== '') cells++; }
-      if (reason) { if (cells > 0) rep.skippedCols.push({ col: colLetter(j), header: txt(raw), cells: cells, reason: reason }); continue; }
-      prev = d;
-      cols.push({ j: j, d: d });
+      if (cells > 0) rep.skippedCols.push({ col: colLetter(j), header: txt(H[j]), cells: cells, reason: reason });
     }
+    var cols = [];
+    for (j = firstDate; j < endCol; j++) if (jDate[j]) cols.push({ j: j, d: jDate[j] });
     var earliest = cols.length ? cols[0].d : today;
     cols.forEach(function (c) { if (c.d < earliest) earliest = c.d; });
-    var skipIdx = {}; // kolom dilewati -> untuk menghitung dampaknya ke Stok Akhir
+    var skipIdx = {}; // kolom bermasalah (dilewati) -> untuk menghitung dampaknya ke Stok Akhir
     for (var jj = firstDate; jj < endCol; jj++) skipIdx[jj] = true;
     cols.forEach(function (c) { delete skipIdx[c.j]; });
 
@@ -91,8 +191,16 @@
       var r = rows[i2] || [];
       var code = txt(r[cm.code]).toUpperCase(), name = txt(r[cm.name]);
       if (!code && !name) continue;
-      if (!code) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode material kosong, dilewati'); continue; }
-      if (!ID_RE.test(code)) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode "' + code.substring(0, 40) + '" tidak valid (hanya A-Z, 0-9, - _ . / dan spasi) — baris dilewati, perbaiki kode di Excel'); continue; }
+      if (!code) {
+        /* kode kosong tapi nama ada -> kode sementara AUTO-<hash> (dilaporkan di pratinjau) */
+        code = autoCodeTemp(name, cm.spec !== undefined ? txt(r[cm.spec]) : '');
+        rep.autoCodeRows.push({ row: i2 + 1, id: code, nama: name });
+      }
+      if (!ID_RE.test(code)) {
+        var fixed = repairCode(code);
+        if (fixed) { code = fixed; rep.fixedCodeRows++; } // dirapikan otomatis & dilaporkan di pratinjau
+        else { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode "' + code.substring(0, 40) + '" tidak valid dan tak bisa dirapikan — dilewati'); continue; }
+      }
       var qin = num(r[cm.qin]);
       if (!(qin > 0)) { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ' (' + code + '): Qty In tidak valid, dilewati'); continue; }
       rep.rows++;
@@ -143,8 +251,8 @@
       var k = entryKey(e);
       if (map[k]) map[k].n++; else { e.n = 1; map[k] = e; entries.push(e); }
     });
-    var tot = { masuk: 0, keluar: 0, rows: 0, mismatch: 0, skippedCols: 0 };
-    acc.sheets.forEach(function (s) { tot.masuk += s.masuk; tot.keluar += s.keluar; tot.rows += s.rows; tot.mismatch += s.mismatch.length; tot.skippedCols += s.skippedCols.length; });
+    var tot = { masuk: 0, keluar: 0, rows: 0, mismatch: 0, skippedCols: 0, fixedDateCols: 0, fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: 0 };
+    acc.sheets.forEach(function (s) { tot.masuk += s.masuk; tot.keluar += s.keluar; tot.rows += s.rows; tot.mismatch += s.mismatch.length; tot.skippedCols += s.skippedCols.length; tot.fixedDateCols += s.fixedDateCols.length; tot.fixedCodeRows += s.fixedCodeRows; tot.reorderedCols += s.reorderedCols; tot.autoCodeRows += s.autoCodeRows.length; });
     return { items: Object.keys(acc.items).map(function (k) { return acc.items[k]; }), entries: entries, report: { sheets: acc.sheets, warnings: acc.warnings, totals: tot, uniqueEntries: entries.length } };
   }
 
@@ -155,7 +263,7 @@
     return parseSheets(sheets, opts);
   }
 
-  var api = { parseDate: parseDate, entryKey: entryKey, parseSheets: parseSheets, parseWorkbook: parseWorkbook };
+  var api = { parseDate: parseDate, entryKey: entryKey, parseSheets: parseSheets, parseWorkbook: parseWorkbook, repairCode: repairCode, headerParts: headerParts, repairCandidates: repairCandidates, autoCodeTemp: autoCodeTemp };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.RdiImportParser = api;
 
@@ -224,6 +332,14 @@
     h += 'Akan ditambah: <b>' + d.masukAdd + '</b> MASUK + <b>' + d.keluarAdd + '</b> KELUAR · Sudah ada (dilewati): <b>' + d.alreadyExist + '</b>';
     h += '</div>';
     var warn = [];
+    var fix = [];
+    rep.sheets.forEach(function (s) {
+      s.fixedDateCols.forEach(function (c) { fix.push(s.name + ' kolom ' + c.col + ' header "' + c.header + '" dijahit jadi ' + c.ke + ' (dari jangkar tetangga)'); });
+      if (s.fixedCodeRows) fix.push(s.name + ': ' + s.fixedCodeRows + ' kode material dirapikan otomatis (karakter tidak sah dibuang)');
+      s.autoCodeRows.slice(0, 20).forEach(function (a) { fix.push(s.name + ' baris ' + a.row + ': kode kosong -> sementara ' + a.id + ' ("' + a.nama + '"); isi kode asli di Excel nanti agar item berkode asli terbentuk'); });
+      if (s.autoCodeRows.length > 20) fix.push(s.name + ': … dan ' + (s.autoCodeRows.length - 20) + ' baris lain berkode sementara');
+      if (s.reorderedCols) fix.push(s.name + ': ' + s.reorderedCols + ' kolom tanggal urutannya tidak menaik — tetap dipakai (tanggal header sah)');
+    });
     rep.sheets.forEach(function (s) {
       if (s.fallbackDate) warn.push(s.name + ': ' + s.fallbackDate + ' baris tanpa tanggal terima (diisi tanggal kolom pertama yang terisi)');
       if (s.rakDefault) warn.push(s.name + ': ' + s.rakDefault + ' baris tanpa RAK (diisi "-")');
@@ -233,6 +349,12 @@
       if (s.badCells) warn.push(s.name + ': ' + s.badCells + ' sel qty keluar tidak valid (dilewati)');
     });
     rep.warnings.slice(0, 30).forEach(function (w) { warn.push(w); });
+    if (fix.length) {
+      h += '<div style="font-size:12px;color:var(--green-text,#2ecc71);margin:8px 0;max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' +
+        '<div style="font-weight:700;margin-bottom:4px">Perbaikan otomatis (' + rep.totals.fixedDateCols + ' header tanggal, ' + rep.totals.fixedCodeRows + ' kode dirapikan, ' + rep.totals.autoCodeRows + ' kode sementara):</div>' +
+        fix.slice(0, 30).map(function (w) { return '<div style="margin-bottom:4px">' + esc(w) + '</div>'; }).join('') +
+        (fix.length > 30 ? '<div>… dan ' + (fix.length - 30) + ' lagi</div>' : '') + '</div>';
+    }
     if (d.dupNameSpec && d.dupNameSpec.length) warn.push(d.dupNameSpec.length + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
     if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + d.unknownIds.slice(0, 5).join(', '));
     if (warn.length) h += '<div style="font-size:12px;color:var(--text3);margin:8px 0;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' + warn.map(function (w) { return '<div style="margin-bottom:4px">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
