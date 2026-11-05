@@ -277,6 +277,18 @@
     var col = kind === 'err' ? 'var(--red-text,#ff6b6b)' : kind === 'ok' ? 'var(--green-text,#2ecc71)' : 'var(--text2)';
     return '<div style="font-size:12px;color:' + col + ';margin:6px 0">' + esc(text) + '</div>';
   }
+  /* Indikator kerja: ring berputar + (bila ada pct) bar progres tipis.
+   * Animasi fungsional (loading), bukan dekorasi; berhenti saat prefers-reduced-motion. */
+  function busyMsg(text, pct) {
+    var bar = typeof pct === 'number'
+      ? '<div style="height:4px;border-radius:999px;background:var(--bg,#F1F4F9);margin-top:6px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:var(--brand-1,#0057C2);border-radius:999px;transition:width 150ms ease"></div></div>'
+      : '';
+    return '<style>@keyframes rdiImportSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.rdi-spin{animation:none}}</style>' +
+      '<div role="status" style="display:flex;align-items:center;gap:10px;margin:6px 0">' +
+      '<span class="rdi-spin" aria-hidden="true" style="width:18px;height:18px;flex:none;border:2px solid var(--brand-1-dim,#c7d7f5);border-top-color:var(--brand-1,#0057C2);border-radius:999px;display:inline-block;animation:rdiImportSpin .9s linear infinite"></span>' +
+      '<div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text2,#475569)">' + esc(text) + '</div>' + bar + '</div>' +
+      '</div>';
+  }
   function pick() { var f = document.getElementById('import-xl-file'); if (f) { f.value = ''; f.click(); } }
   /* UX 2026-10-28: modal import ditandai aria-busy selama file diproses/disubmit (High guideline "loading indicators") */
   function setImportBusy(on) { var m = document.getElementById('modal-import-excel'); if (m) { if (on) m.setAttribute('aria-busy', 'true'); else m.removeAttribute('aria-busy'); } }
@@ -287,14 +299,14 @@
     if (typeof root.XLSX === 'undefined') {
     if (typeof root.loadExcelLib === 'function') {
       setImportBusy(true);
-      setBox(msg('info', 'Menyiapkan library Excel...'));
+      setBox(busyMsg('Menyiapkan library Excel...'));
       root.loadExcelLib('xlsx').then(function () { setImportBusy(false); onFile(input); }, function () { setImportBusy(false); setBox(msg('err', 'Library Excel gagal dimuat. Periksa koneksi lalu coba lagi.')); });
       return;
     }
     setImportBusy(false); setBox(msg('err', 'Library Excel belum termuat.')); return;
   }
     if (typeof root.gasPost !== 'function') { setImportBusy(false); setBox(msg('err', 'Aplikasi belum siap. Muat ulang halaman.')); return; }
-    setBox(msg('info', 'Membaca ' + file.name + '…'));
+    setBox(busyMsg('Membaca ' + file.name + '...'));
     var fr = new FileReader();
     fr.onerror = function () { setImportBusy(false); setBox(msg('err', 'Gagal membaca file.')); };
     /* Variabel modul */
@@ -315,7 +327,7 @@
       /* CACHE MASTER CODE (dipakai sheet Master Code di Export Excel); bila gagal -> dilewati */
       try { simpanMasterCode(wb2); } catch (e) { /* tetap lanjut */ }
       state = { file: file.name, parsed: parsed };
-      setBox(msg('info', 'Memeriksa ke server (belum ada data yang diubah)…'));
+      setBox(busyMsg('Memeriksa ke server (belum ada data yang diubah)...'));
       root.gasPost({ action: 'importExcel', mode: 'dry', items: parsed.items, entries: parsed.entries }).then(function (res) {
         if (!res || res.status !== 'ok') { setImportBusy(false); setBox(msg('err', (res && res.message) || 'Pemeriksaan gagal.')); return; }
         state.dry = res; renderPreview();
@@ -372,7 +384,7 @@
     btn.disabled = true;
     var entries = state.parsed.entries, items = state.parsed.items, total = Math.max(1, Math.ceil(entries.length / CHUNK)), k = 0, sum = { masuk: 0, keluar: 0, items: 0, skip: 0 };
     function step() {
-      setBox(msg('info', 'Mengimpor bagian ' + (k + 1) + ' dari ' + total + '…'));
+      setBox(busyMsg('Mengimpor bagian ' + (k + 1) + ' dari ' + total + '...', Math.round(k / total * 100)));
       var body = { action: 'importExcel', mode: 'commit', entries: entries.slice(k * CHUNK, (k + 1) * CHUNK), items: k === 0 ? items : [], backup: k === 0, final: k === total - 1 };
       root.gasPost(body).then(function (res) {
         if (!res || res.status !== 'ok') { setImportBusy(false); setBox(msg('err', 'Berhenti di bagian ' + (k + 1) + '/' + total + ': ' + ((res && res.message) || 'error') + '. Aman diulang — data yang sudah masuk tidak akan digandakan.')); return; }
