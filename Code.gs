@@ -302,7 +302,8 @@
 //
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.28';   // + kontrak `uncertain` (DBG-02), safeCell_ per kolom (SEC-03/04), backup import unik (DBG-04), rate limit token (SEC-02)
+var API_VERSION = 'v5.29';   // v5.29: dedup sadar teks (IMP-01/02), nameMismatch (IMP-03), ID>40 ditolak (IMP-06)
+var API_BUILD   = '2026-11-11.1';   // v5.29 perbaikan hasil uji impor 10 skema (IMP-01..06)3/04), backup import unik (DBG-04), rate limit token (SEC-02)
 var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
@@ -4588,6 +4589,36 @@ function importValidYmd_(s) {
 function importKey_(id, jenis, dateStr, qty, ref) {
   return id + '|' + jenis + '|' + dateStr + '|' + (Math.round(qty * 1000) / 1000) + '|' + (jenis === 'MASUK' ? String(ref||'').trim().replace(/^'/, '').toUpperCase() : '');   // safeCell_ menambah "'" di depan teks berawalan = + - @
 }
+// v5.29 IMP-01/IMP-02: normalisasi timestamp & qty dari Transaksi_Log untuk kunci dedup.
+// Baris log bisa tersimpan dengan timestamp TEKS "dd/MM/yyyy..." atau qty teks "5,5"
+// (edit manual / alat lain). Dulu dedup buta terhadapnya (bukan Date -> dilewati,
+// parseFloat("5,5") -> 5) sehingga impor ulang file yang sama MENGGANDAKAN baris.
+function importTsYmd_(ts, tz) {
+  if (ts instanceof Date) {
+    try { return String(Utilities.formatDate(ts, tz, 'yyyy-MM-dd')).substring(0, 10); } catch (e) { return ''; }
+  }
+  var s = String(ts === null || ts === undefined ? '' : ts).trim();
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T].*)?$/.exec(s);
+  if (m) {
+    var y = +m[3], mo = +m[2], d = +m[1];
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    return (mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d)
+      ? y + '-' + (mo < 10 ? '0' : '') + mo + '-' + (d < 10 ? '0' : '') + d : '';
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) { var dp = importValidYmd_(s.substring(0, 10)); return dp ? s.substring(0, 10) : ''; }
+  return '';
+}
+function importQtyNum_(q) {
+  if (typeof q === 'number') return isFinite(q) ? q : 0;
+  var s = String(q === null || q === undefined ? '' : q).trim();
+  if (!s) return 0;
+  var c = (s.match(/,/g) || []).length, t = (s.match(/\./g) || []).length;
+  if (c > 0 && t > 0) s = s.replace(/\./g, '').replace(/,/g, '.');   // "1.000,5" -> 1000.5
+  else if (c === 1) s = s.replace(',', '.');                        // "5,5" -> 5.5
+  else if (t > 1) s = s.replace(/\./g, '');                         // "1.000.000" -> 1000000
+  var f = parseFloat(s);
+  return isFinite(f) ? f : 0;
+}
 function importStr_(v, max) { return String(v === null || v === undefined ? '' : v).trim().substring(0, max); }
 
 function importValidate_(body) {
@@ -4602,6 +4633,8 @@ function importValidate_(body) {
   var cleanItems = [], seen = {};
   for (var i = 0; i < items.length; i++) {
     var it = items[i] || {};
+    var rawId = String(it.id == null ? '' : it.id).trim();
+    if (rawId.length > 40) return { error: 'ID item terlalu panjang (maks 40 karakter) pada item ke-' + (i + 1) + ': "' + rawId.substring(0, 50) + '"' };
     var id = importStr_(it.id, 40).toUpperCase();
     if (!idRe.test(id)) return { error: 'ID item tidak valid pada item ke-' + (i + 1) + ': "' + id.substring(0, 40) + '"' };
     if (seen[id]) continue;
@@ -4612,6 +4645,8 @@ function importValidate_(body) {
   var cleanEntries = [];
   for (var j = 0; j < entries.length; j++) {
     var e = entries[j] || {};
+    var rawEid = String(e.id == null ? '' : e.id).trim();
+    if (rawEid.length > 40) return { error: 'ID item terlalu panjang (maks 40 karakter) pada transaksi ke-' + (j + 1) + ': "' + rawEid.substring(0, 50) + '"' };
     var eid = importStr_(e.id, 40).toUpperCase();
     if (!idRe.test(eid)) return { error: 'ID item tidak valid pada transaksi ke-' + (j + 1) + ': "' + eid.substring(0, 40) + '"' };
     var jenis = importStr_(e.j, 10).toUpperCase();
@@ -4629,6 +4664,12 @@ function importValidate_(body) {
 
 function importExcel(body) {
   try {
+    /* CHANGELOG v5.29 (perbaikan hasil uji 10 skema 2026-11-11):
+       - IMP-01: dedup mengenali timestamp Transaksi_Log berbentuk TEKS "dd/MM/yyyy" (importTsYmd_).
+       - IMP-02: dedup mengenali qty tersimpan sebagai teks "5,5" / "1.000,5" (importQtyNum_).
+       - IMP-03: hasil dry menambah nameMismatch (nama Excel beda dgn Master_Item utk ID sama).
+       - IMP-04: dupNameSpecCount/unknownCount dilaporkan utk pratinjau & konfirmasi UI.
+       - IMP-06: ID >40 karakter kini DITOLAK, bukan dipangkas diam-diam. */
     var v = importValidate_(body || {});
     if (v.error) return { status: 'error', message: v.error };
     var commit = v.mode === 'commit';
@@ -4655,9 +4696,17 @@ function importExcel(body) {
           nameSpec[(info[id].nama + '|' + info[id].spec).toLowerCase()] = id;
         });
       }
-      var newItems = [], dupNameSpec = [];
+      var newItems = [], dupNameSpec = [], nameMismatch = [];
       v.items.forEach(function (it) {
-        if (info[it.id]) { itemsExisting++; return; }
+        if (info[it.id]) {
+          itemsExisting++;
+          // v5.29 IMP-03: item lama tapi nama di Excel beda -> sinyal kuat kolisi repairCode
+          // (dua kode berbeda dirapikan ke ID sama) atau drift nama; dilaporkan di pratinjau.
+          var nmA = String(info[it.id].nama || '').trim().toLowerCase();
+          var nmB = String(it.nama || '').trim().toLowerCase();
+          if (nmB && nmA !== nmB) nameMismatch.push({ id: it.id, excel: it.nama, master: info[it.id].nama });
+          return;
+        }
         newItems.push(it);
         var k = (it.nama + '|' + it.spec).toLowerCase();
         if (nameSpec[k]) dupNameSpec.push({ id: it.id, existingId: nameSpec[k], nama: it.nama });
@@ -4675,13 +4724,16 @@ function importExcel(body) {
           var id = String(row[COL_TRX.ID] || '').trim().toUpperCase();
           if (!id || !idsNeeded[id]) return;
           var ts = row[COL_TRX.TIMESTAMP];
-          if (!(ts instanceof Date)) return;
           var jenis = String(row[COL_TRX.JENIS] || '').toUpperCase();
-          var qty = parseFloat(row[COL_TRX.QTY]) || 0;
-          var k = importKey_(id, jenis, String(Utilities.formatDate(ts, tz, 'yyyy-MM-dd')).substring(0, 10), qty, row[COL_TRX.NO_REF]);
+          var qty = importQtyNum_(row[COL_TRX.QTY]);       // v5.29 IMP-02: qty teks "5,5" tetap dikenali
+          var d10 = importTsYmd_(ts, tz);                  // v5.29 IMP-01: timestamp teks tetap dikenali
+          if (!d10) return;
+          var k = importKey_(id, jenis, d10, qty, row[COL_TRX.NO_REF]);
           have[k] = (have[k] || 0) + 1;
-          if (!hist[id]) hist[id] = [];
-          hist[id].push({ ts: ts.getTime(), s: jenis === 'MASUK' ? qty : (jenis === 'KELUAR' ? -qty : 0) });
+          if (ts instanceof Date) {                        // saldo berjalan hanya utk ts Date asli
+            if (!hist[id]) hist[id] = [];
+            hist[id].push({ ts: ts.getTime(), s: jenis === 'MASUK' ? qty : (jenis === 'KELUAR' ? -qty : 0) });
+          }
         });
       }
 
@@ -4695,7 +4747,9 @@ function importExcel(body) {
       });
       var result = { status: 'ok', mode: v.mode, itemsNew: newItems.length, itemsExisting: itemsExisting,
         masukAdd: masukAdd, keluarAdd: keluarAdd, alreadyExist: alreadyExist,
-        dupNameSpec: dupNameSpec.slice(0, 10), unknownIds: Object.keys(unknown).slice(0, 10) };
+        dupNameSpec: dupNameSpec.slice(0, 10), dupNameSpecCount: dupNameSpec.length,
+        nameMismatch: nameMismatch.slice(0, 10), nameMismatchCount: nameMismatch.length,
+        unknownIds: Object.keys(unknown).slice(0, 10), unknownCount: Object.keys(unknown).length };
       if (!commit) return result;
 
       // --- 4) COMMIT ---

@@ -1,4 +1,4 @@
-/* importexcel.js — v5.28 IMPOR EXCEL (mode MERGE idempotent)
+/* importexcel.js — v5.29 IMPOR EXCEL (mode MERGE idempotent)
  * Membaca file "Tools & Spare Part Inventory ....xlsx" (format kartu stok per-batch: 1 baris = 1 batch
  * kedatangan, kolom tanggal = qty KELUAR, kolom terakhir "Stok Akhir") lalu mengubahnya jadi:
  *   items   : identitas barang (hanya yang BELUM ada di Master_Item yang akan dibuat — item lama tidak ditimpa)
@@ -16,7 +16,12 @@
  *      deterministik, jadi impor ulang file yang sama menghasilkan kode yang sama (idempotent). Saat Excel
  *      memberi kode asli, baris itu menjelma item berkode asli; item AUTO lama tidak ditimpa (backend by
  *      design tidak pernah menimpa item lama).
- * Merge idempotent, aman diulang. */
+ * Merge idempotent, aman diulang.
+ * v5.29 (hasil uji 10 skema 2026-11-11):
+ *   6) kode hasil rapikan yang bertabrakan (2 kode berbeda -> 1 kode) DIKUMPULKAN
+ *      dan dilaporkan per kode (collisions) — cegah stok menumpuk diam-diam;
+ *   7) header tanggal yang terdeteksi SETELAH kolom "Stok Akhir" dilaporkan
+ *      (lateDateCols) — dulu diabaikan seluruhnya tanpa jejak. */
 (function (root) {
   'use strict';
 
@@ -146,7 +151,16 @@
     var endCol = cm.last !== undefined ? cm.last : H.length;
     var firstDate = (cm.unit !== undefined ? cm.unit : cm.qin) + 1;
     var kategori = KAT[norm(sh.name)] || txt(sh.name);
-    var rep = { name: sh.name, rows: 0, masuk: 0, keluar: 0, fallbackDate: 0, rakDefault: 0, skippedCols: [], skippedRows: 0, mismatch: [], badCells: 0, keluarSebelumMasuk: 0, fixedDateCols: [], fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: [] };
+    var rep = { name: sh.name, rows: 0, masuk: 0, keluar: 0, fallbackDate: 0, rakDefault: 0, skippedCols: [], skippedRows: 0, mismatch: [], badCells: 0, keluarSebelumMasuk: 0, fixedDateCols: [], fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: [], collapsedCodes: [], lateDateCols: [] };
+
+    /* v5.29 P3 (IMP-05): header tanggal SETELAH "Stok Akhir" tidak pernah dibaca
+       (endCol berhenti di Stok Akhir). Laporkan supaya layout aneh tidak
+       membuang data diam-diam. Tidak mengubah semantik data. */
+    if (cm.last !== undefined) {
+      for (var jx = cm.last + 1; jx < H.length; jx++) {
+        if (parseDate(H[jx]) !== null || headerParts(H[jx])) rep.lateDateCols.push({ col: colLetter(jx), header: txt(H[jx]) });
+      }
+    }
 
     // 1) klasifikasi kolom tanggal + perbaikan otomatis dengan jangkar tetangga
     var jDate = {}; // kolom -> 'yyyy-MM-dd' (sah / sudah dijahit)
@@ -198,7 +212,12 @@
       }
       if (!ID_RE.test(code)) {
         var fixed = repairCode(code);
-        if (fixed) { code = fixed; rep.fixedCodeRows++; } // dirapikan otomatis & dilaporkan di pratinjau
+        if (fixed) {
+          code = fixed; rep.fixedCodeRows++;
+          /* v5.29 P2 (IMP-03): raw kode hasil rapikan dikumpulkan per kode hasil —
+             dua kode berbeda yang jatuh ke satu kode = sinyal stok menumpuk diam-diam. */
+          if (rep.collapsedCodes.length < 50) rep.collapsedCodes.push({ raw: txt(r[cm.code]).trim(), ke: code, nama: name });
+        }
         else { rep.skippedRows++; acc.warnings.push(sh.name + ' baris ' + (i2 + 1) + ': kode "' + code.substring(0, 40) + '" tidak valid dan tak bisa dirapikan — dilewati'); continue; }
       }
       var qin = num(r[cm.qin]);
@@ -251,8 +270,8 @@
       var k = entryKey(e);
       if (map[k]) map[k].n++; else { e.n = 1; map[k] = e; entries.push(e); }
     });
-    var tot = { masuk: 0, keluar: 0, rows: 0, mismatch: 0, skippedCols: 0, fixedDateCols: 0, fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: 0 };
-    acc.sheets.forEach(function (s) { tot.masuk += s.masuk; tot.keluar += s.keluar; tot.rows += s.rows; tot.mismatch += s.mismatch.length; tot.skippedCols += s.skippedCols.length; tot.fixedDateCols += s.fixedDateCols.length; tot.fixedCodeRows += s.fixedCodeRows; tot.reorderedCols += s.reorderedCols; tot.autoCodeRows += s.autoCodeRows.length; });
+    var tot = { masuk: 0, keluar: 0, rows: 0, mismatch: 0, skippedCols: 0, fixedDateCols: 0, fixedCodeRows: 0, reorderedCols: 0, autoCodeRows: 0, collapsedCodes: 0, lateDateCols: 0 };
+    acc.sheets.forEach(function (s) { tot.masuk += s.masuk; tot.keluar += s.keluar; tot.rows += s.rows; tot.mismatch += s.mismatch.length; tot.skippedCols += s.skippedCols.length; tot.fixedDateCols += s.fixedDateCols.length; tot.fixedCodeRows += s.fixedCodeRows; tot.reorderedCols += s.reorderedCols; tot.autoCodeRows += s.autoCodeRows.length; tot.collapsedCodes += s.collapsedCodes.length; tot.lateDateCols += s.lateDateCols.length; });
     return { items: Object.keys(acc.items).map(function (k) { return acc.items[k]; }), entries: entries, report: { sheets: acc.sheets, warnings: acc.warnings, totals: tot, uniqueEntries: entries.length } };
   }
 
@@ -351,6 +370,14 @@
       s.autoCodeRows.slice(0, 20).forEach(function (a) { fix.push(s.name + ' baris ' + a.row + ': kode kosong -> sementara ' + a.id + ' ("' + a.nama + '"); isi kode asli di Excel nanti agar item berkode asli terbentuk'); });
       if (s.autoCodeRows.length > 20) fix.push(s.name + ': … dan ' + (s.autoCodeRows.length - 20) + ' baris lain berkode sementara');
       if (s.reorderedCols) fix.push(s.name + ': ' + s.reorderedCols + ' kolom tanggal urutannya tidak menaik — tetap dipakai (tanggal header sah)');
+      /* v5.29 IMP-03: kolisi kode hasil rapikan — dimerahkan per kode hasil */
+      var colByKe = {};
+      s.collapsedCodes.forEach(function (c) { (colByKe[c.ke] = colByKe[c.ke] || []).push(c); });
+      Object.keys(colByKe).forEach(function (ke) {
+        var raws = colByKe[ke].map(function (c) { return c.raw; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+        fix.push(s.name + ': ' + colByKe[ke].length + ' baris kode "' + raws.join('", "') + '" dirapikan menjadi "' + ke + '" — PASTIKAN itu memang item yang sama (stok bisa menumpuk di satu kode)');
+      });
+      if (s.lateDateCols.length) warn.push(s.name + ': ' + s.lateDateCols.length + ' kolom tanggal terdeteksi SETELAH "Stok Akhir" dan DILEWATI (' + s.lateDateCols.slice(0, 3).map(function (c) { return c.col + ' "' + c.header + '"'; }).join(', ') + (s.lateDateCols.length > 3 ? ', …' : '') + ') — pastikan "Stok Akhir" di kolom paling kanan');
     });
     rep.sheets.forEach(function (s) {
       if (s.fallbackDate) warn.push(s.name + ': ' + s.fallbackDate + ' baris tanpa tanggal terima (diisi tanggal kolom pertama yang terisi)');
@@ -367,8 +394,9 @@
         fix.slice(0, 30).map(function (w) { return '<div style="margin-bottom:4px">' + esc(w) + '</div>'; }).join('') +
         (fix.length > 30 ? '<div>… dan ' + (fix.length - 30) + ' lagi</div>' : '') + '</div>';
     }
-    if (d.dupNameSpec && d.dupNameSpec.length) warn.push(d.dupNameSpec.length + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
-    if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + d.unknownIds.slice(0, 5).join(', '));
+    if (d.dupNameSpec && d.dupNameSpec.length) warn.push((d.dupNameSpecCount || d.dupNameSpec.length) + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
+    if (d.nameMismatch && d.nameMismatch.length) warn.push((d.nameMismatchCount || d.nameMismatch.length) + ' item: NAMA di Excel beda dengan Master_Item untuk ID yang sama (contoh: ' + d.nameMismatch.slice(0, 3).map(function (x) { return x.id + ': "' + String(x.excel).substring(0, 25) + '" ≠ "' + String(x.master).substring(0, 25) + '"'; }).join(' | ') + ') — cek kemungkinan kode dirapikan menabrak item lama');
+    if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + (d.unknownCount || d.unknownIds.length) + ' ID (contoh: ' + d.unknownIds.slice(0, 5).join(', ') + ')');
     if (warn.length) h += '<div style="font-size:12px;color:var(--text3);margin:8px 0;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--br-9);padding:8px 10px">' + warn.map(function (w) { return '<div style="margin-bottom:4px">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
     var nothing = !d.itemsNew && !d.masukAdd && !d.keluarAdd;
     if (nothing) h += msg('ok', 'Tidak ada yang perlu ditambah — data aplikasi sudah sesuai Excel.');
@@ -380,6 +408,11 @@
     if (!state || !state.dry) return;
     var d = state.dry;
     if (!confirm('Tambahkan ' + d.itemsNew + ' item baru, ' + d.masukAdd + ' MASUK dan ' + d.keluarAdd + ' KELUAR ke spreadsheet? Backup Transaksi_Log dibuat otomatis. Jangan scan transaksi selama proses berjalan.')) return;
+    /* v5.29 IMP-04: dupNameSpec kini butuh konfirmasi kedua (dulu hanya peringatan teks) */
+    if (d.dupNameSpec && d.dupNameSpec.length) {
+      var exDup = d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + ' ≈ ' + x.existingId; }).join(', ');
+      if (!confirm('PERINGATAN DOBEL: ' + (d.dupNameSpecCount || d.dupNameSpec.length) + '+ item baru Nama+Spesifikasi sama dengan item lama ber-ID lain (' + exDup + '). Lanjutkan tetap? Item ganda bisa terbentuk.')) { setImportBusy(false); btn.disabled = false; return; }
+    }
     setImportBusy(true);
     btn.disabled = true;
     var entries = state.parsed.entries, items = state.parsed.items, total = Math.max(1, Math.ceil(entries.length / CHUNK)), k = 0, sum = { masuk: 0, keluar: 0, items: 0, skip: 0 };

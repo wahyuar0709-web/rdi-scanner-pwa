@@ -33,3 +33,8 @@ tests/l1/*.json
 # ...kecuali fixture yang memang harus ikut versi (gate cache service worker)
 !tests/l1/sw_shell_manifest.json
 tests/l2/*.json
+
+# hasil clasp pull: file backend aplikasi LAIN yang ikut tersimpan di project
+# Apps Script scanner (Config.js menunjuk spreadsheet 1TQd2aUE... = Monitoring
+# Tool). Tidak dipakai repo ini; hanya appsscript.json yang ikut versi.
+src/

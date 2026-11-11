@@ -11,3 +11,5 @@
 
 # satu-satunya file backend yang memang milik Apps Script project
 !Code.gs
+
+!appsscript.json
