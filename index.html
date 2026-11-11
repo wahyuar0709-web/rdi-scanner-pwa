@@ -1907,6 +1907,12 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
           <option value="A5">A5 (2/hal)</option>
         </select>
         </span>
+        <span id="saldo-mode-wrap">
+        <select class="sel" id="cetak-saldo-mode" style="width:auto;font-size:12px" aria-label="Sumber stok pada kartu">
+          <option value="terbaru">Stok Terbaru</option>
+          <option value="pertama">Pertama Datang</option>
+        </select>
+        </span>
         <span id="label-tpl-wrap" style="display:none">
         <select class="sel" id="label-tpl" style="width:auto;font-size:12px" onchange="updateCetakCount()" aria-label="Template label">
           <option value="4x6">Label 4<svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>6 (24/hal)</option>
@@ -3809,15 +3815,39 @@ function goScanFromHistory(){if(!histCurrentItem)return;switchTab('scanner');doc
 function doCetak(){generateOutput('print');}
 function printSingleItem(idx){cetakSelectedIds.clear();cetakSelectedIds.add(idx);_cetakKeepSel=true;switchTab('cetak');renderCetakList();_cetakKeepSel=false;updateCetakCount();doCetak();}
 function doDownload(){generateOutput('download');}
-var _cetakMode='kartu';function setCetakMode(mode){var prevMode=_cetakMode;_cetakMode=mode;var nav=document.getElementById('cetak-mode-nav');if(nav)Array.prototype.forEach.call(nav.querySelectorAll('.dash-subtab-btn'),function(b){b.classList.toggle('active',b.getAttribute('data-mode')===mode);});var psWrap=document.getElementById('paper-size-wrap');if(psWrap)psWrap.style.display=(mode==='label')?'none':'';var ltWrap=document.getElementById('label-tpl-wrap');if(ltWrap)ltWrap.style.display=(mode==='label')?'':'none';var title=document.getElementById('cetak-subpage-title');if(title)title.textContent=(mode==='label')?'Cetak Label Barang':'Cetak Kartu Stok';updateCetakCount();if(prevMode!==mode&&cetakSelectedIds.size>0)cetakNotice(cetakSelectedIds.size+' item dipilih dipakai untuk mode '+(mode==='label'?'Label':'Kartu Stok')+'.','info',4000);}
+var _cetakMode='kartu';function setCetakMode(mode){var prevMode=_cetakMode;_cetakMode=mode;var nav=document.getElementById('cetak-mode-nav');if(nav)Array.prototype.forEach.call(nav.querySelectorAll('.dash-subtab-btn'),function(b){b.classList.toggle('active',b.getAttribute('data-mode')===mode);});var psWrap=document.getElementById('paper-size-wrap');if(psWrap)psWrap.style.display=(mode==='label')?'none':'';var ltWrap=document.getElementById('label-tpl-wrap');if(ltWrap)ltWrap.style.display=(mode==='label')?'':'none';var smWrap=document.getElementById('saldo-mode-wrap');if(smWrap)smWrap.style.display=(mode==='label')?'none':'';var title=document.getElementById('cetak-subpage-title');if(title)title.textContent=(mode==='label')?'Cetak Label Barang':'Cetak Kartu Stok';updateCetakCount();if(prevMode!==mode&&cetakSelectedIds.size>0)cetakNotice(cetakSelectedIds.size+' item dipilih dipakai untuk mode '+(mode==='label'?'Label':'Kartu Stok')+'.','info',4000);}
 function generateOutput(mode){var pSize=document.getElementById('paper-size').value;var items=allRows.filter(function(r){return cetakSelectedIds.has(r._idx);});if(!items.length){cetakNotice('Pilih minimal 1 item dulu - tap baris daftar untuk mencentang.','warn');return;}
-var copies=parseInt((document.getElementById('cetak-copies')||{value:'1'}).value,10)||1;if(copies<1)copies=1;if(copies>100)copies=100;var expanded=items;var out=[];for(var ci=0;ci<copies;ci++)out=out.concat(items);expanded=out;
+var copies=parseInt((document.getElementById('cetak-copies')||{value:'1'}).value,10)||1;if(copies<1)copies=1;if(copies>100)copies=100;
+/* REVISI 2026-11-05 (opsi stok saat cetak kartu):
+   - 'terbaru'  : data segar diambil dari server SAAT klik cetak (dulu = data load terakhir, basi).
+   - 'pertama'  : kartu mulai dari kedatangan pertama (getLedger per item, dipakai utk kartu manual baru).
+   Label mode tidak memakai stok -> dua-duanya dilewati.
+   Popup dibuka SINKRON dulu (biar tidak diblokir popup blocker), teks memuat ditulis, data diambil async. */
+var saldoMode='';
+if(_cetakMode!=='label'){saldoMode=(document.getElementById('cetak-saldo-mode')||{value:'terbaru'}).value;}
+var expanded=[];for(var ci=0;ci<copies;ci++)expanded=expanded.concat(items);
 var tplId=(document.getElementById('label-tpl')||{value:'4x6'}).value;
 if(mode==='download'&&_cetakMode==='label'){downloadLabelPDF(expanded,tplId);return;}
 var w=window.open('','_blank');if(!w){cetakNotice('Popup diblokir browser. Izinkan popup untuk domain ini lalu coba lagi.','err',7000);return;}
+if(_cetakMode!=='label'){try{w.document.write('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Memuat…</title></head><body style="font-family:Arial,sans-serif;padding:24px;color:#333"><p id="cetak-load">Memuat data stok…</p></body></html>');w.document.close();}catch(e){}}
+var pesan='Menyiapkan '+items.length+' item…';
+if(saldoMode==='terbaru')pesan='Mengambil stok terbaru dari server…('+items.length+' item)';
+else if(saldoMode==='pertama')pesan='Mencari kedatangan pertama…('+items.length+' item)';
+cetakNotice(pesan,'info',12000);
+var siapData; // Promise: selesai = item terpilih sudah siap dicetak
+if(saldoMode==='terbaru'){
+  siapData=Promise.all([gasGet({action:'getData'})]).then(function(res){var fresh=new Map();(res[0].rows||[]).forEach(function(r){if(r.id)fresh.set(String(r.id).toUpperCase(),r);});var ada=0;items.forEach(function(it){var f=fresh.get(String(it.id||'').toUpperCase());if(!f)return;ada++;Object.assign(it,{qty:f.qty,totalMasuk:f.totalMasuk,totalKeluar:f.totalKeluar,vendor:f.vendor,noReferensi:f.noReferensi,rak:f.rak,tglMasukTerakhir:f.tglMasukTerakhir});});return ada;}).then(function(ada){if(ada>0)cetakNotice('Stok diperbarui: '+ada+' dari '+items.length+' item.','ok',2600);else {cetakNotice('Data stok terbaru tidak tersedia (offline?) - cetak dengan data yang dimuat.','warn',5000);}return true;} ,function(){cetakNotice('Gagal ambil stok terbaru (offline?) - cetak dengan data yang dimuat.','warn',5000);return true;});
+}else if(saldoMode==='pertama'){
+  var ids=[];items.forEach(function(it){var k=String(it.id||'').toUpperCase();if(k&&ids.indexOf(k)<0)ids.push(k);});
+  siapData=Promise.all(ids.map(function(id){return gasGet({action:'getLedger',id:id}).then(function(res){var ent=(res&&res.entries)||[];var pertama=null;ent.forEach(function(e){if(String(e.jenis||'').toUpperCase()!=='MASUK')return;var d=parseDDMY(e.timestamp);if(d){if(!pertama||d<pertama._d){pertama=e;pertama._d=d;}}else if(!pertama)pertama=e;});if(!pertama)return null;var out={id:id,qty:+(pertama.qty||0),tgl:String(pertama.timestamp||'').split(' ')[0]};return out;},function(){return null;});})).then(function(list){var map=new Map();list.forEach(function(x){if(x&&x.id)map.set(x.id,x);});items.forEach(function(it){var f=map.get(String(it.id||'').toUpperCase());if(!f){it._ketRow1='Saldo saat cetak (pertama datang tidak ditemukan)';return;}it.qty=f.qty;it.totalMasuk=f.qty;it.totalKeluar=0;it._tglRow1=f.tgl;it._ketRow1='Pertama datang';});if(map.size>0)cetakNotice('Saldo awal (pertama datang) siap: '+map.size+' dari '+items.length+' item.','ok',2600);else cetakNotice('Riwayat kedatangan tidak tersedia (offline?) - cetak dengan data yang dimuat.','warn',5000);return true;},function(){cetakNotice('Gagal ambil riwayat kedatangan (offline?) - cetak dengan data yang dimuat.','warn',5000);return true;});
+}else siapData=Promise.resolve(true);
+siapData.then(function(){if(_cetakMode!=='label'&&w.closed){cetakNotice('Popup ditutup sebelum cetak.','warn',4000);return;}
 if(typeof cetakFillPopup==='function'&&typeof labelOpenHTML==='function'&&typeof printOpenHTML==='function'){cetakFillPopup(w,mode,pSize,tplId,expanded);return;}
 var html=(_cetakMode==='label')?buildLabelHTML(expanded,mode,tplId):buildPrintHTML(expanded,mode,pSize);
-w.document.write(html);w.document.close();}
+w.document.write(html);w.document.close();});
+}
+/* helper tanggal utk rute "pertama datang": "dd/MM/yyyy[ HH:mm[:ss]]" -> serial hari */
+function parseDDMY(s){var m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s||'').trim());if(!m)return 0;return ((+m[3]-1900)*372)+((+m[2])*37)+(+m[1]);}
 /* FIX 2026-10-19 (RC-B/RC-C): popup cetak diisi PER HALAMAN + banner progres, dan PDF
    kartu diraster per halaman (bukan satu canvas raksasa yang jadi kosong >14 halaman).
    Diukur di tests/tools/cetak_perf_probe.js. Jalur sinkron lama tetap jadi fallback

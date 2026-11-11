@@ -96,12 +96,14 @@ t('XSS-5: js/cetak.js printPageHTML()/kartu() memakai ex()', /\bex\(/.test(print
 const pdf = bodyOf(cetak, 'buildLabelPDFDoc');
 t('XSS-6: buildLabelPDFDoc (jsPDF vektor) tidak memakai innerHTML/document.write', !/innerHTML|document\.write/.test(pdf));
 
-/* 5. document.write hanya untuk window cetak — 5 situs terverifikasi:
-      L3477 window cetak lain, L3691 printRakLabels, L3791 generateOutput (fallback),
-      L3805 + L3807 cetakFillPopup (head + fallback tanpa DOM). Semua menulis ke
-      window hasil window.open('','_blank'), bukan ke dokumen aplikasi. */
+/* 5. document.write hanya untuk window cetak — 6 situs terverifikasi:
+      L3477 window cetak lain, L3691 printRakLabels, generateOutput (fallback
+      + halaman "Memuat data stok…" liter statis, revisi 2026-11-05),
+      cetakFillPopup (head + fallback tanpa DOM). Semua menulis ke
+      window hasil window.open('','_blank'), bukan ke dokumen aplikasi,
+      dan tak satu pun memuat data pengguna (statis, tanpa escaper). */
 const writes = (html.match(/document\.write\(/g) || []).length;
-t('XSS-7: document.write hanya di window cetak (5 situs)', writes === 5, 'jumlah=' + writes);
+t('XSS-7: document.write hanya di window cetak (6 situs)', writes === 6, 'jumlah=' + writes);
 
 /* 6. vendor lokal & tanpa eval */
 ['jsQR.min.js', 'qrcode.min.js', 'js/jspdf.min.js'].forEach(f => {

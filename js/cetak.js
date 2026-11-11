@@ -196,7 +196,7 @@ function kartu(item,idx){if(!item)return'<div class="kartu kartu-empty"></div>';
 +'<div class="sc keluar"><span class="sl">Total Keluar</span><span class="sv">'+ex(item.totalKeluar||0)+'</span></div>'
 +'<div class="sc saldo"><span class="sl">Stok Saldo</span><span class="sv">'+ex(item.qty)+'</span></div></div>'
 +'<div class="tt"><div class="thr"><div class="th">No.</div><div class="th">Tanggal</div><div class="th">Masuk</div><div class="th">Keluar</div><div class="th">Saldo</div><div class="th last">Keterangan</div></div>'
-+'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(tgl)+'</div><div class="td"></div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">Saldo saat cetak</div></div>'+rows+'</div></div>'
++'<div class="tbd"><div class="tr ftr"><div class="td no">1</div><div class="td">'+ex(item._tglRow1||tgl)+'</div><div class="td"></div><div class="td"></div><div class="td blu">'+ex(item.qty)+'</div><div class="td last">'+ex(item._ketRow1||'Saldo saat cetak')+'</div></div>'+rows+'</div></div>'
 +'<div class="kf"><div class="kfl">Cetak: '+tgl+' | Form: WH-KS-001</div><div class="kfr">Vendor Terakhir: '+ex(item.vendor||'—')+'</div><div class="kfv">v5.0</div></div>'
 +'</div>';}
 return'<div class="page'+(isLast?' last-page':'')+'">'+chunk.map(function(item,i){return kartu(item,i);}).join('')+'</div>';}
