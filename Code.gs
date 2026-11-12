@@ -302,8 +302,8 @@
 //
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.29';   // v5.29: dedup sadar teks (IMP-01/02), nameMismatch (IMP-03), ID>40 ditolak (IMP-06)
-var API_BUILD   = '2026-11-11.1';   // v5.29 perbaikan hasil uji impor 10 skema (IMP-01..06)3/04), backup import unik (DBG-04), rate limit token (SEC-02)
+var API_VERSION = 'v5.30';   // v5.30: auto-match item sementara (promote/alias) saat impor Excel
+var API_BUILD   = '2026-11-12.1';   // v5.30 IMP-10/IMP-11: Nama+Spec AUTO-* dicocokkan, bukan dobel input3/04), backup import unik (DBG-04), rate limit token (SEC-02)
 var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
@@ -4619,6 +4619,24 @@ function importQtyNum_(q) {
   var f = parseFloat(s);
   return isFinite(f) ? f : 0;
 }
+// v5.30 IMP-10: ganti ID_Item di Stok_Saldo & Stok_Per_Rak (dipakai saat import bertahap,
+// karena rebuild penuh hanya terjadi pada chunk final).
+function renameSaldoIds_(map) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  [SHEET_SALDO, SHEET_RAK_SALDO].forEach(function (nm) {
+    var sh = ss.getSheetByName(nm);
+    if (!sh) return;
+    var last = sh.getLastRow();
+    if (last < 2) return;
+    var col = sh.getRange(2, 1, last - 1, 1).getValues();
+    var edits = [];
+    for (var i = 0; i < col.length; i++) {
+      var id = String(col[i][0] || '').trim().toUpperCase();
+      if (map[id]) edits.push([i + 2, map[id]]);
+    }
+    edits.forEach(function (e) { sh.getRange(e[0], 1, 1, 1).setValue(e[1]); });
+  });
+}
 function importStr_(v, max) { return String(v === null || v === undefined ? '' : v).trim().substring(0, max); }
 
 function importValidate_(body) {
@@ -4670,6 +4688,14 @@ function importExcel(body) {
        - IMP-03: hasil dry menambah nameMismatch (nama Excel beda dgn Master_Item utk ID sama).
        - IMP-04: dupNameSpecCount/unknownCount dilaporkan utk pratinjau & konfirmasi UI.
        - IMP-06: ID >40 karakter kini DITOLAK, bukan dipangkas diam-diam. */
+    /* CHANGELOG v5.30 (auto-match item sementara, 2026-11-12):
+       - IMP-10 (PROMOTE): item baru berkode ASLI yang Nama+Spec-nya cocok dengan item
+         master berkode sementara AUTO-* -> ID item lama DIUPDATE ke kode asli
+         (Master_Item + Transaksi_Log + Stok_Saldo/Stok_Per_Rak), bukan item baru.
+       - IMP-11 (ALIAS): item baru berkode AUTO-* yang Nama+Spec-nya sudah ada di
+         master -> transaksi dialihkan ke kode master, item AUTO tidak dibuat.
+       - Entry identik dalam batch (hasil alias) digabung dengan menjumlah n.
+       - Pratinjau melaporkan autoPromote/autoAlias; commit butuh konfirmasi UI. */
     var v = importValidate_(body || {});
     if (v.error) return { status: 'error', message: v.error };
     var commit = v.mode === 'commit';
@@ -4687,17 +4713,27 @@ function importExcel(body) {
       var tz = importTz_();
       // --- 1) Master_Item yang sudah ada ---
       var mLast = master.getLastRow();
-      var info = {}, nameSpec = {}, itemsExisting = 0;
+      var info = {}, nameSpec = {}, itemsExisting = 0, archived = {}, mrow = {};
       if (mLast >= 2) {
-        master.getRange(2, 1, mLast - 1, 9).getValues().forEach(function (r) {
+        master.getRange(2, 1, mLast - 1, 10).getValues().forEach(function (r, i) {
           var id = String(r[COL_MASTER.ID] || '').trim().toUpperCase();
           if (!id) return;
           info[id] = { nama: String(r[COL_MASTER.NAMA] || ''), spec: String(r[COL_MASTER.SPEC] || '') };
           nameSpec[(info[id].nama + '|' + info[id].spec).toLowerCase()] = id;
+          if (String(r[COL_MASTER.STATUS] || '').trim().toLowerCase() === 'arsip') archived[id] = true;
+          mrow[id] = i + 2;
         });
       }
-      var newItems = [], dupNameSpec = [], nameMismatch = [];
+      /* v5.30 IMP-10/IMP-11 AUTO MATCH: pencocokan Nama+Spesifikasi.
+         - PROMOTE: item baru berkode ASLI cocok dgn item master berkode sementara
+           AUTO-* -> ID item lama DIUPDATE ke kode asli (master + log + saldo ikut),
+           BUKAN dibuat item baru. Ini kasus: Excel lama tanpa kode -> AUTO-<hash>;
+           Excel berikutnya membawa kode asli -> jangan jadi dobel input.
+         - ALIAS: item baru berkode AUTO-* tapi Nama+Spec sudah ada di master ->
+           transaksinya dialihkan ke kode master; item AUTO tidak dibuat. */
+      var newItems = [], dupNameSpec = [], nameMismatch = [], autoPromote = [], autoAlias = [];
       v.items.forEach(function (it) {
+        var k = (it.nama + '|' + it.spec).toLowerCase();
         if (info[it.id]) {
           itemsExisting++;
           // v5.29 IMP-03: item lama tapi nama di Excel beda -> sinyal kuat kolisi repairCode
@@ -4707,32 +4743,58 @@ function importExcel(body) {
           if (nmB && nmA !== nmB) nameMismatch.push({ id: it.id, excel: it.nama, master: info[it.id].nama });
           return;
         }
+        if (!/^AUTO-/.test(it.id) && nameSpec[k] && /^AUTO-/.test(nameSpec[k]) && !archived[nameSpec[k]]) {
+          autoPromote.push({ autoId: nameSpec[k], newId: it.id, nama: it.nama });
+          nameSpec[k] = it.id;   // pasangan lain dgn Nama+Spec sama -> dupNameSpec, bukan promote ganda
+          return;
+        }
+        if (/^AUTO-/.test(it.id) && nameSpec[k]) {
+          autoAlias.push({ autoId: it.id, toId: nameSpec[k], nama: it.nama });
+          return;
+        }
         newItems.push(it);
-        var k = (it.nama + '|' + it.spec).toLowerCase();
         if (nameSpec[k]) dupNameSpec.push({ id: it.id, existingId: nameSpec[k], nama: it.nama });
+        else nameSpec[k] = it.id;
       });
       var known = {}; Object.keys(info).forEach(function (k) { known[k] = true; });
       newItems.forEach(function (it) { known[it.id] = true; });
+      autoPromote.forEach(function (p) { known[p.newId] = true; });
+      var idAlias = {};
+      autoAlias.forEach(function (a) { idAlias[a.autoId] = a.toId; });
       var unknown = {}, entries = [];
-      v.entries.forEach(function (e) { if (known[e.id]) entries.push(e); else unknown[e.id] = true; });
+      v.entries.forEach(function (e) {
+        var rid = idAlias[e.id] || e.id;
+        if (known[rid]) { e.id = rid; entries.push(e); } else unknown[rid] = true;
+      });
+      // v5.30: entry identik (id|jenis|tgl|qty|ref|rak sama, hasil alias dalam batch yang
+      // sama) digabung dgn menjumlah n -- total baris TIDAK berubah, rak berbeda tak tersentuh.
+      var seenE = {};
+      entries = entries.filter(function (e) {
+        var ek = e.id + '|' + e.j + '|' + e.dp.y + '-' + e.dp.m + '-' + e.dp.d + '|' + e.q + '|' + e.ref + '|' + e.rak;
+        if (seenE[ek]) { seenE[ek].n += e.n; return false; }
+        seenE[ek] = e; return true;
+      });
 
       // --- 2) Transaksi_Log yang sudah ada (hitung multiset kunci + riwayat per item utk saldo berjalan) ---
       var idsNeeded = {}; entries.forEach(function (e) { idsNeeded[e.id] = true; });
+      // v5.30: baris log ber-ID sementara yang akan di-promote dihitung atas nama kode barunya
+      var promAlias = {}; autoPromote.forEach(function (p) { idsNeeded[p.autoId] = true; promAlias[p.autoId] = p.newId; });
       var have = {}, hist = {}, tLast = trx.getLastRow();
       if (tLast >= 2) {
         trx.getRange(2, 1, tLast - 1, 13).getValues().forEach(function (row) {
           var id = String(row[COL_TRX.ID] || '').trim().toUpperCase();
           if (!id || !idsNeeded[id]) return;
+          var rid = promAlias[id] || id;                   // v5.30: AUTO -> kode asli
           var ts = row[COL_TRX.TIMESTAMP];
           var jenis = String(row[COL_TRX.JENIS] || '').toUpperCase();
           var qty = importQtyNum_(row[COL_TRX.QTY]);       // v5.29 IMP-02: qty teks "5,5" tetap dikenali
           var d10 = importTsYmd_(ts, tz);                  // v5.29 IMP-01: timestamp teks tetap dikenali
           if (!d10) return;
-          var k = importKey_(id, jenis, d10, qty, row[COL_TRX.NO_REF]);
+          var k = importKey_(rid, jenis, d10, qty, row[COL_TRX.NO_REF]);
           have[k] = (have[k] || 0) + 1;
           if (ts instanceof Date) {                        // saldo berjalan hanya utk ts Date asli
-            if (!hist[id]) hist[id] = [];
-            hist[id].push({ ts: ts.getTime(), s: jenis === 'MASUK' ? qty : (jenis === 'KELUAR' ? -qty : 0) });
+            if (!hist[rid]) hist[rid] = [];
+            hist[rid].push({ ts: ts.getTime(), s: jenis === 'MASUK' ? qty : (jenis === 'KELUAR' ? -qty : 0) });
           }
         });
       }
@@ -4749,6 +4811,8 @@ function importExcel(body) {
         masukAdd: masukAdd, keluarAdd: keluarAdd, alreadyExist: alreadyExist,
         dupNameSpec: dupNameSpec.slice(0, 10), dupNameSpecCount: dupNameSpec.length,
         nameMismatch: nameMismatch.slice(0, 10), nameMismatchCount: nameMismatch.length,
+        autoPromote: autoPromote.slice(0, 10), autoPromoteCount: autoPromote.length,
+        autoAlias: autoAlias.slice(0, 10), autoAliasCount: autoAlias.length,
         unknownIds: Object.keys(unknown).slice(0, 10), unknownCount: Object.keys(unknown).length };
       if (!commit) return result;
 
@@ -4782,6 +4846,27 @@ function importExcel(body) {
         });
         master.getRange(mLast + 1, 1, mrows.length, 9).setValues(mrows);
         newItems.forEach(function (it) { info[it.id] = { nama: it.nama, spec: it.spec }; });
+      }
+      // --- v5.30 IMP-10: eksekusi PROMOTE (ID item sementara -> kode asli) ---
+      // Master_Item kolom ID + Transaksi_Log kolom ID_Item diganti; Stok_Saldo &
+      // Stok_Per_Rak: rebuild penuh saat final, atau rename langsung saat import bertahap.
+      if (autoPromote.length) {
+        var promMap = {}; autoPromote.forEach(function (p) { promMap[p.autoId] = p.newId; });
+        autoPromote.forEach(function (p) { info[p.newId] = info[p.autoId] || { nama: p.nama, spec: '' }; });
+        autoPromote.forEach(function (p) {
+          var mr = mrow[p.autoId];
+          if (mr) master.getRange(mr, COL_MASTER.ID + 1, 1, 1).setValue(p.newId);
+        });
+        if (tLast >= 2) {
+          var idColAll = trx.getRange(2, COL_TRX.ID + 1, tLast - 1, 1).getValues();
+          var renames = [];
+          for (var ir = 0; ir < idColAll.length; ir++) {
+            var ridNow = String(idColAll[ir][0] || '').trim().toUpperCase();
+            if (promMap[ridNow]) renames.push([ir + 2, promMap[ridNow]]);
+          }
+          renames.forEach(function (rn) { trx.getRange(rn[0], COL_TRX.ID + 1, 1, 1).setValue(rn[1]); });
+        }
+        if (!v.final) renameSaldoIds_(promMap);
       }
       if (toAdd.length) {
         var admin = String(body.verifiedAdmin || body.admin || 'Impor Excel');

@@ -1,4 +1,4 @@
-/* importexcel.js — v5.29 IMPOR EXCEL (mode MERGE idempotent)
+/* importexcel.js — v5.30 IMPOR EXCEL (mode MERGE idempotent)
  * Membaca file "Tools & Spare Part Inventory ....xlsx" (format kartu stok per-batch: 1 baris = 1 batch
  * kedatangan, kolom tanggal = qty KELUAR, kolom terakhir "Stok Akhir") lalu mengubahnya jadi:
  *   items   : identitas barang (hanya yang BELUM ada di Master_Item yang akan dibuat — item lama tidak ditimpa)
@@ -17,6 +17,9 @@
  *      memberi kode asli, baris itu menjelma item berkode asli; item AUTO lama tidak ditimpa (backend by
  *      design tidak pernah menimpa item lama).
  * Merge idempotent, aman diulang.
+ * v5.30: AUTO MATCH backend (promote/alias) — kode sementara AUTO-* dicocokkan
+ *   dengan Nama+Spesifikasi item master; pratinjau menampilkan autoPromote/autoAlias
+ *   dan commit butuh konfirmasi khusus untuk promote.
  * v5.29 (hasil uji 10 skema 2026-11-11):
  *   6) kode hasil rapikan yang bertabrakan (2 kode berbeda -> 1 kode) DIKUMPULKAN
  *      dan dilaporkan per kode (collisions) — cegah stok menumpuk diam-diam;
@@ -394,6 +397,8 @@
         fix.slice(0, 30).map(function (w) { return '<div style="margin-bottom:4px">' + esc(w) + '</div>'; }).join('') +
         (fix.length > 30 ? '<div>… dan ' + (fix.length - 30) + ' lagi</div>' : '') + '</div>';
     }
+    if (d.autoPromote && d.autoPromote.length) fix.push('AUTO MATCH: ' + (d.autoPromoteCount || d.autoPromote.length) + ' item sementara akan DI-UPDATE ke kode aslinya dari Excel (contoh: ' + d.autoPromote.slice(0, 3).map(function (x) { return x.autoId + ' → ' + x.newId; }).join(', ') + ') — riwayat transaksinya ikut pindah ke kode baru, bukan dibuat item baru');
+    if (d.autoAlias && d.autoAlias.length) fix.push('AUTO MATCH: ' + (d.autoAliasCount || d.autoAlias.length) + ' kode sementara dialihkan ke item master yang sudah ada (contoh: ' + d.autoAlias.slice(0, 3).map(function (x) { return x.autoId + ' → ' + x.toId; }).join(', ') + ')');
     if (d.dupNameSpec && d.dupNameSpec.length) warn.push((d.dupNameSpecCount || d.dupNameSpec.length) + '+ item baru punya Nama+Spesifikasi sama dengan item lama ber-ID lain (contoh: ' + d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + '≈' + x.existingId; }).join(', ') + ') — cek kemungkinan duplikat');
     if (d.nameMismatch && d.nameMismatch.length) warn.push((d.nameMismatchCount || d.nameMismatch.length) + ' item: NAMA di Excel beda dengan Master_Item untuk ID yang sama (contoh: ' + d.nameMismatch.slice(0, 3).map(function (x) { return x.id + ': "' + String(x.excel).substring(0, 25) + '" ≠ "' + String(x.master).substring(0, 25) + '"'; }).join(' | ') + ') — cek kemungkinan kode dirapikan menabrak item lama');
     if (d.unknownIds && d.unknownIds.length) warn.push('Transaksi untuk item tak dikenal dilewati: ' + (d.unknownCount || d.unknownIds.length) + ' ID (contoh: ' + d.unknownIds.slice(0, 5).join(', ') + ')');
@@ -408,6 +413,11 @@
     if (!state || !state.dry) return;
     var d = state.dry;
     if (!confirm('Tambahkan ' + d.itemsNew + ' item baru, ' + d.masukAdd + ' MASUK dan ' + d.keluarAdd + ' KELUAR ke spreadsheet? Backup Transaksi_Log dibuat otomatis. Jangan scan transaksi selama proses berjalan.')) return;
+    /* v5.30 IMP-10: promote mengganti ID item lama di master & riwayat — butuh konfirmasi sendiri */
+    if (d.autoPromote && d.autoPromote.length) {
+      var exP = d.autoPromote.slice(0, 3).map(function (x) { return x.autoId + ' → ' + x.newId; }).join(', ');
+      if (!confirm('AUTO MATCH: ' + (d.autoPromoteCount || d.autoPromote.length) + ' item sementara akan DI-UPDATE ke kode aslinya (' + exP + '). ID lama di Master_Item & riwayat transaksi diganti kode baru. Lanjutkan?')) { setImportBusy(false); btn.disabled = false; return; }
+    }
     /* v5.29 IMP-04: dupNameSpec kini butuh konfirmasi kedua (dulu hanya peringatan teks) */
     if (d.dupNameSpec && d.dupNameSpec.length) {
       var exDup = d.dupNameSpec.slice(0, 3).map(function (x) { return x.id + ' ≈ ' + x.existingId; }).join(', ');

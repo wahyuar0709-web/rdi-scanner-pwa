@@ -97,5 +97,85 @@ function kit(extraMaster, extraTrx) {
   t('IMP-03: parser mengumpulkan kolisi kode hasil rapikan (2 raw -> 1 kode)', s.collapsedCodes.length === 2 && ke.length === 2 && out.items.length === 1, JSON.stringify(s.collapsedCodes));
 })();
 
+(function imp10_promote_dan_commit() {
+  /* kasus user: Excel lama tanpa kode -> AUTO-<hash>; Excel berikutnya kode asli ->
+     harus UPDATE item lama, bukan item baru (dobel input). */
+  const k = kit(
+    [[1, 'AUTO-948FFE61', 'Sticker Felt bludru brand 3M', '3cmx3meter', '', '', 'Roll', 'Indirect', 0]],
+    [['01/11/2026 12:00', 'AUTO-948FFE61', 'Sticker Felt bludru brand 3M', '3cmx3meter', 'MASUK', 3, '-', 'DMN', 'RDI-2610-DMN003', 0, 3, 'IMPOR-EXCEL Indirect', 'lama']]
+  );
+  const ctx = loadCodeGS({ spreadsheet: k });
+  const dry = ctx.importExcel({ mode: 'dry', items: [{ id: 'MRO-01-08-247', nama: 'Sticker Felt bludru brand 3M', spec: '3cmx3meter', unit: 'Roll', bc: 'Non BC', kategori: 'Indirect' }],
+    entries: [{ id: 'MRO-01-08-247', j: 'MASUK', d: '2026-11-01', q: 3, ref: 'RDI-2610-DMN003', rak: '-', ven: 'DMN', n: 1 }] });
+  t('IMP-10 dry: autoPromote terdeteksi (AUTO -> kode asli)', dry.status === 'ok' && dry.autoPromoteCount === 1 && dry.autoPromote[0].autoId === 'AUTO-948FFE61' && dry.autoPromote[0].newId === 'MRO-01-08-247', JSON.stringify(dry));
+  t('IMP-10 dry: masukAdd 0 (dedup kena, bukan dobel)', dry.masukAdd === 0 && dry.alreadyExist === 1, JSON.stringify(dry));
+  const com = ctx.importExcel({ mode: 'commit', items: [{ id: 'MRO-01-08-247', nama: 'Sticker Felt bludru brand 3M', spec: '3cmx3meter', unit: 'Roll', bc: 'Non BC', kategori: 'Indirect' }],
+    entries: [{ id: 'MRO-01-08-247', j: 'MASUK', d: '2026-11-01', q: 3, ref: 'RDI-2610-DMN003', rak: '-', ven: 'DMN', n: 1 }], final: true });
+  const mrows = k.getSheetByName('Master_Item').getDataRange().getValues();
+  const hasAuto = mrows.some(r => String(r[1]) === 'AUTO-948FFE61');
+  const hasReal = mrows.some(r => String(r[1]) === 'MRO-01-08-247');
+  const trxRows = k.getSheetByName('Transaksi_Log').getDataRange().getValues();
+  const logIds = trxRows.slice(1).map(r => String(r[1]));
+  t('IMP-10 commit: ID lama diganti kode asli di master, item baru TIDAK dibuat', com.status === 'ok' && !hasAuto && hasReal && com.itemsNew === 0, JSON.stringify(com));
+  t('IMP-10 commit: riwayat log ikut ke kode baru (masih 1 baris MASUK)', logIds.every(x => x === 'MRO-01-08-247') && logIds.length === 1, JSON.stringify(logIds));
+})();
+
+(function imp10_promote_item_arsip_tidak_dipromote() {
+  const k = kit(
+    [[1, 'AUTO-AAA', 'Item X', 'S1', '', '', 'Pcs', 'Indirect', 0, 'Arsip'],
+     [2, 'AUTO-BBB', 'Item X', 'S1', '', '', 'Pcs', 'Indirect', 0, 'Aktif']],
+    []
+  );
+  const ctx = loadCodeGS({ spreadsheet: k });
+  const dry = ctx.importExcel({ mode: 'dry', items: [{ id: 'MRO-99-01', nama: 'Item X', spec: 'S1' }], entries: [] });
+  t('IMP-10: item AUTO yang diarsipkan TIDAK dipromote (yang aktif yang dipakai)', dry.status === 'ok' && dry.autoPromoteCount === 1 && dry.autoPromote[0].autoId === 'AUTO-BBB', JSON.stringify(dry));
+})();
+
+(function imp11_alias() {
+  /* impor file LAMA lagi: baris tanpa kode -> AUTO-*, padahal master sudah punya kode asli */
+  const k = kit(
+    [[1, 'MRO-01-08-247', 'Sticker Felt bludru brand 3M', '3cmx3meter', '', 'Non BC', 'Roll', 'Indirect', 0]],
+    [['01/11/2026 12:00', 'MRO-01-08-247', 'Sticker Felt bludru brand 3M', '3cmx3meter', 'MASUK', 3, '-', 'DMN', 'RDI-2610-DMN003', 0, 3, 'IMPOR-EXCEL Indirect', 'lama']]
+  );
+  const ctx = loadCodeGS({ spreadsheet: k });
+  const dry = ctx.importExcel({ mode: 'dry', items: [{ id: 'AUTO-948FFE61', nama: 'Sticker Felt bludru brand 3M', spec: '3cmx3meter', unit: 'Roll', kategori: 'Indirect' }],
+    entries: [{ id: 'AUTO-948FFE61', j: 'MASUK', d: '2026-11-01', q: 3, ref: 'RDI-2610-DMN003', rak: '-', ven: 'DMN', n: 1 }] });
+  t('IMP-11 dry: AUTO dialihkan ke kode master, tidak jadi item baru', dry.status === 'ok' && dry.autoAliasCount === 1 && dry.autoAlias[0].toId === 'MRO-01-08-247' && dry.itemsNew === 0, JSON.stringify(dry));
+  t('IMP-11 dry: transaksi dedup kena lewat kode master -> 0 ditambah', dry.masukAdd === 0 && dry.alreadyExist === 1 && dry.unknownCount === 0, JSON.stringify(dry));
+})();
+
+(function imp10_alias_dalam_batch_gabung_identik() {
+  /* Excel berisi item sama 2 baris: 1 tanpa kode (AUTO), 1 berkode asli, batch sama.
+     Aturan "1 baris = 1 batch": total baris DIPERTAHANKAN (n dijumlah), hanya id-nya
+     yang menyatu ke kode asli -- tidak ada data yang hilang atau berlipat. */
+  const k = kit([], []);
+  const ctx = loadCodeGS({ spreadsheet: k });
+  const com = ctx.importExcel({ mode: 'commit',
+    items: [
+      { id: 'MRO-01-08-249', nama: 'Item Z', spec: 'S9', unit: 'Pcs', kategori: 'Indirect' },
+      { id: 'AUTO-DEADBEEF', nama: 'Item Z', spec: 'S9', unit: 'Pcs', kategori: 'Indirect' },
+    ],
+    entries: [
+      { id: 'MRO-01-08-249', j: 'MASUK', d: '2026-11-01', q: 3, ref: 'R-1', rak: '-', n: 1 },
+      { id: 'AUTO-DEADBEEF', j: 'MASUK', d: '2026-11-01', q: 3, ref: 'R-1', rak: '-', n: 1 },
+    ], final: true });
+  const rows = k.getSheetByName('Transaksi_Log').getDataRange().getValues().slice(1);
+  t('IMP-10: AUTO+asli dalam batch sama menyatu ke kode asli, total 2 baris dipertahankan', com.status === 'ok' && com.masukAdd === 2 && rows.length === 2 && com.itemsNew === 1 && rows.every(r => String(r[1]) === 'MRO-01-08-249'), JSON.stringify(com));
+})();
+
+(function imp10_promote_harus_sah_saldo_berjalan() {
+  /* riwayat lama item AUTO harus dihitung sebagai kode baru saat menulis Saldo_Sebelum/Sesudah */
+  const k = kit(
+    [[1, 'AUTO-CAFEBABE', 'Item W', 'S2', '', '', 'Pcs', 'Indirect', 0]],
+    [[new Date(2026, 10, 1, 12, 0, 0), 'AUTO-CAFEBABE', 'Item W', 'S2', 'MASUK', 10, '-', '', '', 0, 10, 'IMPOR-EXCEL', 'lama']]
+  );
+  const ctx = loadCodeGS({ spreadsheet: k });
+  const com = ctx.importExcel({ mode: 'commit', items: [{ id: 'MRO-01-08-250', nama: 'Item W', spec: 'S2', unit: 'Pcs', kategori: 'Indirect' }],
+    entries: [{ id: 'MRO-01-08-250', j: 'MASUK', d: '2026-11-05', q: 2, ref: 'R-2', rak: '-', n: 1 }], final: true });
+  const trx = k.getSheetByName('Transaksi_Log').getDataRange().getValues();
+  const baru = trx.find(r => String(r[1]) === 'MRO-01-08-250' && String(r[4]) === 'MASUK' && +r[5] === 2);
+  t('IMP-10: saldo berjalan menyambung riwayat lama (sebelum=10, sesudah=12)', com.status === 'ok' && baru && +baru[9] === 10 && +baru[10] === 12, JSON.stringify(trx.slice(1)));
+})();
+
 console.log('\nimport_excel_gaps: ' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);
