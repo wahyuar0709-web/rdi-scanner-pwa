@@ -105,7 +105,8 @@ t('BUG1-6: proteksi formula saat MENULIS tetap ada (rowData)',
   /var rowData = \[itemId, safeCell_\(rak\), newQty\];/.test(gs),
   'proteksi formula tidak boleh hilang hanya karena lookup diubah');
 t('BUG1-7: perbandingan saldo rak di postTransaksi ternormalisasi',
-  /var rakKeyTrim = textMarkerStrip_\(rak\);[\s\S]{0,160}textMarkerStrip_\(rb\.rak\)===rakKeyTrim/.test(gs));
+  /* v5.31: rak cek utk jenis PINDAH = rakAsal (ekspresi diperluas, normalisasi textMarkerStrip_ tetap wajib). */
+  /var rakKeyTrim = textMarkerStrip_\((?:rak|jenis==='PINDAH' \? rakAsal : rak)\);[\s\S]{0,160}textMarkerStrip_\(rb\.rak\)===rakKeyTrim/.test(gs));
 t('BUG1-8: Transaksi_Log tetap memakai safeCell_(rak)',
   /jenis, qty, safeCell_\(rak\), safeCell_\(vendor\)/.test(gs));
 t('BUG1-9: findRowIndex ASLI tidak diubah (hanya varian baru yang ditambahkan)',
@@ -244,8 +245,8 @@ const LOCK = [
   ['LOCK-5: --br-16 tetap 16px (gate cetak_bar_layout)', /--br-16:16px/.test(html)],
   ['LOCK-6: sw.js CACHE bernama rdi-stok-v<N> (nilai pasti dijaga sw_shell_cache_gate)', /CACHE = 'rdi-stok-v\d+'/.test(sw)],
   ['LOCK-7: sw.js precache tetap 16 aset terakhir', /'\.\/js\/html2pdf\.bundle\.min\.js'/.test(sw)],
-  ['LOCK-8: API_VERSION masih v5.30', /API_VERSION = 'v5\.30'/.test(gs)],
-  ['LOCK-9: API_BUILD = 2026-11-12.1 (v5.30: auto-match item sementara)', /API_BUILD\s*=\s*'2026-11-12\.1'/.test(gs)],
+  ['LOCK-8: API_VERSION masih v5.31', /API_VERSION = 'v5\.31'/.test(gs)],
+  ['LOCK-9: API_BUILD = 2026-11-12.2 (v5.31: jenis PINDAH revisi rak)', /API_BUILD\s*=\s*'2026-11-12\.2'/.test(gs)],
   ['LOCK-10: kontrak uncertain masih ada di postTransaksi', /genericError_\('postTransaksi', true\)/.test(gs)],
   ['LOCK-11: genericError_ ASLI tidak diubah',
     /function genericError_\(fnName, uncertain\)\s*\{\s*var r = \{ status: 'error', message: 'Terjadi kesalahan pada '/.test(gs)],

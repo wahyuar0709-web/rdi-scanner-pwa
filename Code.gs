@@ -302,8 +302,8 @@
 //
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.30';   // v5.30: auto-match item sementara (promote/alias) saat impor Excel
-var API_BUILD   = '2026-11-12.1';   // v5.30 IMP-10/IMP-11: Nama+Spec AUTO-* dicocokkan, bukan dobel input3/04), backup import unik (DBG-04), rate limit token (SEC-02)
+var API_VERSION = 'v5.31';   // v5.31: jenis transaksi PINDAH (revisi posisi rak pasca-masuk)
+var API_BUILD   = '2026-11-12.2';   // v5.31: postTransaksi PINDAH + recount Stok_Per_Rak rak asal/tujuan input3/04), backup import unik (DBG-04), rate limit token (SEC-02)
 var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
@@ -747,7 +747,7 @@ function auditSummary_(action, body) {
     if (val === null || val === '') return;
     parts.push(k + '=' + val);
   }
-  if (action === 'postTransaksi') { add('itemId', body.itemId || body.id); add('jenis', body.jenis); add('qty', body.qty); add('rak', body.rak); add('vendor', body.vendor); add('requestId', body.requestId); }
+  if (action === 'postTransaksi') { add('itemId', body.itemId || body.id); add('jenis', body.jenis); add('qty', body.qty); add('rak', body.rak); add('rakAsal', body.rakAsal); add('vendor', body.vendor); add('requestId', body.requestId); }
   else if (action === 'addItem' || action === 'updateItem' || action === 'archiveItem') { add('id', body.id); add('nama', body.nama); }
   else if (action === 'addMasterValue') { add('field', body.field); add('value', body.value); }
   else if (action === 'importExcel') { add('mode', body.mode); add('items', Array.isArray(body.items) ? body.items.length : 0); add('entries', Array.isArray(body.entries) ? body.entries.length : 0); }
@@ -2093,6 +2093,9 @@ function postTransaksi(params) {
         String(params.jenis||'').toUpperCase(),
         String(params.qty||''),
         String(params.rak||'').trim().toUpperCase(),
+        // v5.31 PINDAH: rakAsal ikut ditandatangani supaya retry dgn asal berbeda
+        // tidak collide di cache idempotensi.
+        String(params.rakAsal||'').trim().toUpperCase(),
         String(params.vendor||'').trim(),
         String(params.noReferensi||'').trim(),
         String(params.keterangan||'')
@@ -2152,12 +2155,27 @@ function postTransaksi(params) {
     // sebelumnya -- itu batas maksimal yang bisa diverifikasi tanpa akun per-orang.
     var admin       = String(params.verifiedAdmin || params.admin || 'Admin');
 
-    if (jenis!=='MASUK'&&jenis!=='KELUAR') return { status:'error', message:'Jenis harus MASUK atau KELUAR' };
+    if (jenis!=='MASUK'&&jenis!=='KELUAR'&&jenis!=='PINDAH') return { status:'error', message:'Jenis harus MASUK, KELUAR, atau PINDAH' };
     if (qty<=0) return { status:'error', message:'Qty harus lebih dari 0' };
     if (!rak) return { status:'error', message:'RAK/lokasi wajib diisi' };
     // Normalisasi rak: trim + uppercase saja. TIDAK ada whitelist Master_Rak yang
     // ditegakkan (lihat normalizeRak_) - dipakai demi kompatibilitas data lama.
     rak = normalizeRak_(rak);
+
+    // v5.31 PINDAH: pindah stok antar rak DALAM satu item. params.rak = rak
+    // TUJUAN, params.rakAsal = rak ASAL. Total saldo item TIDAK berubah
+    // (tidak ada updateSaldo) -- hanya distribusi Stok_Per_Rak.
+    var rakAsal = normalizeRak_(params.rakAsal||'');
+    if (jenis==='PINDAH' && !rakAsal) return { status:'error', message:'Rak asal wajib diisi untuk PINDAH' };
+    if (jenis==='PINDAH' && rakAsal===rak) return { status:'error', message:'Rak tujuan harus berbeda dari rak asal' };
+
+    // v5.31 PINDAH: rak asal tercatat di Keterangan "PINDAH DARI: <asal>" (format tetap
+    // yang di-parse recalculateAllSaldoLocked_ saat rebuild Stok_Per_Rak); keterangan
+    // user (kalau ada) menyusul setelah '|'. safeCell_ dipanggil di sini, bukan di
+    // appendRow -- gate HAPA/SEC-D7 memantau jarak safeCell_ pertama dalam postTransaksi.
+    var ketLog = keterangan;
+    if (jenis==='PINDAH') ketLog = 'PINDAH DARI: ' + rakAsal + (keterangan ? ' | ' + keterangan : '');
+    ketLog = safeCell_(ketLog);
 
     var itemResult = getItemById(itemId);
     if (itemResult.status!=='ok') return itemResult;
@@ -2171,13 +2189,14 @@ function postTransaksi(params) {
 
     var saldoSebelumTotal = item.saldo;
     var saldoSebelumRak = 0;
-        var rakKeyTrim = textMarkerStrip_(rak);
+        // v5.31 PINDAH: cek kecukupan stok di rak ASAL, bukan rak tujuan.
+        var rakKeyTrim = textMarkerStrip_(jenis==='PINDAH' ? rakAsal : rak);
     item.rakBreakdown.forEach(function(rb){ if(textMarkerStrip_(rb.rak)===rakKeyTrim) saldoSebelumRak = rb.qty; });
 
-    if (jenis==='KELUAR' && qty>saldoSebelumRak)
-      return { status:'error', message:'Stok di rak '+rak+' tidak cukup. Saldo rak ini: '+saldoSebelumRak+' '+item.unit };
+    if ((jenis==='KELUAR'||jenis==='PINDAH') && qty>saldoSebelumRak)
+      return { status:'error', message:'Stok di rak '+rakKeyTrim+' tidak cukup. Saldo rak ini: '+saldoSebelumRak+' '+item.unit };
 
-    var saldoSesudahTotal = jenis==='MASUK' ? saldoSebelumTotal+qty : saldoSebelumTotal-qty;
+    var saldoSesudahTotal = jenis==='MASUK' ? saldoSebelumTotal+qty : (jenis==='KELUAR' ? saldoSebelumTotal-qty : saldoSebelumTotal);
 
     var ss  = SpreadsheetApp.getActiveSpreadsheet();
     var trx = ss.getSheetByName(SHEET_TRANSAKSI);
@@ -2186,7 +2205,7 @@ function postTransaksi(params) {
     trx.appendRow([
       new Date(), itemId, safeCell_(item.nama), safeCell_(item.spec||''),
       jenis, qty, safeCell_(rak), safeCell_(vendor), safeCell_(noReferensi),
-      saldoSebelumTotal, saldoSesudahTotal, safeCell_(keterangan), safeCell_(admin)
+      saldoSebelumTotal, saldoSesudahTotal, ketLog, safeCell_(admin)
     ]);
     // AUDIT FIX T-16/T-17 (v5.19): invalidasi cache getCachedTrxLogRawRows_() supaya
     // getLastVendorRefMap()/getDashboard() berikutnya tidak memakai data yg sudah
@@ -2214,17 +2233,34 @@ function postTransaksi(params) {
     }
     try {
       if (saldoLockOk) {
-        try {
-          updateSaldo(itemId, item.nama, item.unit, jenis, qty);
-        } catch(e) {
-          saldoSyncOk = false;
-          saldoSyncError += e.message + '. ';
-        }
-        try {
-          updateRakSaldo(itemId, rak, jenis, qty);
-        } catch(e) {
-          saldoSyncOk = false;
-          saldoSyncError += e.message + '. ';
+        if (jenis==='PINDAH') {
+          // v5.31 PINDAH: total saldo item TIDAK berubah -- TIDAK ada updateSaldo.
+          // Distribusi rak: asal -qty (delta KELUAR), tujuan +qty (delta MASUK).
+          try {
+            updateRakSaldo(itemId, rakAsal, 'KELUAR', qty);
+          } catch(e) {
+            saldoSyncOk = false;
+            saldoSyncError += e.message + '. ';
+          }
+          try {
+            updateRakSaldo(itemId, rak, 'MASUK', qty);
+          } catch(e) {
+            saldoSyncOk = false;
+            saldoSyncError += e.message + '. ';
+          }
+        } else {
+          try {
+            updateSaldo(itemId, item.nama, item.unit, jenis, qty);
+          } catch(e) {
+            saldoSyncOk = false;
+            saldoSyncError += e.message + '. ';
+          }
+          try {
+            updateRakSaldo(itemId, rak, jenis, qty);
+          } catch(e) {
+            saldoSyncOk = false;
+            saldoSyncError += e.message + '. ';
+          }
         }
       }
     } finally {
@@ -2240,6 +2276,7 @@ function postTransaksi(params) {
         : 'Transaksi tersimpan di Transaksi_Log, TAPI Stok_Saldo/Stok_Per_Rak GAGAL disinkronkan. Hubungi admin utk jalankan Kalkulasi Ulang Stok.',
       saldoSebelum:saldoSebelumTotal, saldoSesudah:saldoSesudahTotal,
       unit:item.unit, namaItem:item.nama, rak:rak,
+      rakAsal: jenis==='PINDAH' ? rakAsal : '',
       saldoSyncOk: saldoSyncOk
     };
     if (!saldoSyncOk) result.saldoSyncWarning = saldoSyncError;
@@ -3808,7 +3845,9 @@ function recalculateAllSaldoLocked_() {
   var totals = {};       // id -> {masuk, keluar}
   var rakTotals = {};    // "id|rak" -> {masuk, keluar}
   if (trx && trx.getLastRow() >= 2) {
-    var tData = trx.getRange(2,1,trx.getLastRow()-1,7).getValues(); // s/d kolom 7 (RAK)
+    // v5.31: baca s/d kolom 12 (KETERANGAN) -- baris PINDAH menyimpan rak asal
+    // di keterangan "PINDAH DARI: X" yang harus terbaca saat rebuild Stok_Per_Rak.
+    var tData = trx.getRange(2,1,trx.getLastRow()-1,12).getValues(); // s/d kolom 12 (KETERANGAN)
     tData.forEach(function(row){
       var id    = String(row[COL_TRX.ID]||'').trim().toUpperCase();
       var jenis = String(row[COL_TRX.JENIS]||'').toUpperCase();
@@ -3821,11 +3860,24 @@ function recalculateAllSaldoLocked_() {
       if (!id) return;
       if (!totals[id]) totals[id] = { masuk:0, keluar:0 };
       if (jenis==='MASUK') totals[id].masuk += qty; else if (jenis==='KELUAR') totals[id].keluar += qty;
+      // v5.31 PINDAH: TIDAK menyentuh totals (Total_Masuk/Keluar tetap).
+      // Rak: tujuan (kolom RAK) +qty, asal (parse Keterangan "PINDAH DARI: X") -qty.
+      // Baris PINDAH tanpa asal yg bisa di-parse = dilewati (tidak menggelembungkan rak tujuan).
+      if (jenis==='PINDAH') {
+        var mAsal = String(row[COL_TRX.KETERANGAN]||'').match(/^PINDAH DARI:\s*(.+?)(?:\s*\||$)/i);
+        if (!mAsal) { console.warn('recalculateAllSaldoLocked_: baris PINDAH tanpa rak asal, dilewati (item ' + id + ')'); return; }
+        var rakAsal = textMarkerStrip_(mAsal[1]).trim().toUpperCase();
+        if (!rak || rakAsal===rak) return;
+        var keyAsal = id+'|'+rakAsal;
+        if (!rakTotals[keyAsal]) rakTotals[keyAsal] = { id:id, rak:rakAsal, masuk:0, keluar:0 };
+        rakTotals[keyAsal].keluar += qty;
+      }
 
       if (rak) {
         var key = id+'|'+rak;
         if (!rakTotals[key]) rakTotals[key] = { id:id, rak:rak, masuk:0, keluar:0 };
         if (jenis==='MASUK') rakTotals[key].masuk += qty; else if (jenis==='KELUAR') rakTotals[key].keluar += qty;
+        else if (jenis==='PINDAH') rakTotals[key].masuk += qty; // PINDAH: kolom RAK = rak tujuan
       }
     });
   }
