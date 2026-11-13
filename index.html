@@ -3999,7 +3999,7 @@ function buildCardHtml(rows){return rows.map(function(r){var saldo=parseInt(r.qt
 +'<div class="ilc3-strip '+stripCls+'"></div>'
 +'<div class="ilc3-main">'
 +'<div class="ilc3-info">'
-+'<div class="ilc3-nama" data-tt="'+xe(r.nama)+'">'+xe(r.nama)+(arsip?' <span style="font-size:12px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--br-10);padding:var(--sp-1) var(--sp-6);vertical-align:middle"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> ARSIP</span>':'')+'</div>'
++'<div class="ilc3-nama">'+xe(r.nama)+(arsip?' <span style="font-size:12px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--br-10);padding:var(--sp-1) var(--sp-6);vertical-align:middle"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> ARSIP</span>':'')+'</div>'
 +(r.spec?'<div class="ilc3-spec">'+xe(r.spec)+'</div>':'')
 +'<div class="ilc3-tags">'
 +(r.rak&&r.rak!=='-'?'<span class="ilc3-rak"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>'+xe(rakDisplay(r.rak))+'</span>':'')
