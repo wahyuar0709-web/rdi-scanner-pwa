@@ -110,6 +110,7 @@ body.light .user-badge{ background:rgba(0,0,0,.18); color:rgba(255,255,255,.95);
 .brand-topstrip{position:fixed;top:0;left:0;right:0;height:4px;z-index:20001;background:var(--grad-brand)}
 .boot-splash-progress{width:120px;height:3px;border-radius:var(--br-999);background:rgba(255,255,255,.1);overflow:hidden;margin-top:8px;animation:bootTextIn .5s cubic-bezier(.4,0,.2,1) .42s both}
 .boot-splash-progress-bar{width:40%;height:100%;border-radius:var(--br-999);background:linear-gradient(90deg,transparent,var(--amber),#fff,var(--amber),transparent);animation:bootProgressSlide 1.4s cubic-bezier(.45,0,.55,1) infinite}
+.boot-splash-user{min-height:15px;color:rgba(255,255,255,.65);font-size:11px;letter-spacing:.3px;margin-top:6px;animation:bootTextIn .5s cubic-bezier(.4,0,.2,1) .55s both}
 @keyframes bootProgressSlide{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
 /* Target sentuh minimum 44x44. Area sentuh diperbesar dengan margin
    negatif supaya tata letak visual tetap persis seperti sebelumnya - hanya
@@ -834,6 +835,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
   <div class="boot-splash-title">RDI Indirect Scanner</div>
   <div class="boot-splash-sub">PT Rayard Deli Indonesia</div>
   <div class="boot-splash-progress"><div class="boot-splash-progress-bar"></div></div>
+  <div class="boot-splash-user" id="boot-splash-user" role="status" aria-live="polite"></div>
 </div>
 
 <!-- LOGIN GATE - identitas visual RDI (dark theme, sama dengan isi app).
@@ -2049,6 +2051,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <span>Keluar (Editor)</span>
       </button>
     </div>
+    <div class="u-caption-8" id="sheet-version-label" style="text-align:center;margin-top:var(--sp-6)"></div>
 </div>
 </div>
 
@@ -2922,7 +2925,7 @@ function submitViewerLogin(){
         document.body.classList.add('viewer-mode');
       }
       if(res.nama){currentUser={name:res.nama,dept:currentUser.dept||''};localStorage.setItem('rdi_user',JSON.stringify(currentUser));
-        var unameEl=document.getElementById('topbar-username');if(unameEl)unameEl.textContent=res.nama;}
+        var unameEl=document.getElementById('topbar-username');if(unameEl)unameEl.textContent=res.nama;initVersionLabels();}
       hideLoginGate();
       startAppAfterAuth().then(function(){_applyHashTab();});
     })
@@ -2965,6 +2968,10 @@ var chipsWrap=document.getElementById('active-filter-chips');var chips=[];if(_ac
 /* pure helpers moved → js/format.js (F4.5) */
 var currentItem=null,currentJenis=null;var scanMode='transaksi';var histCurrentItem=null,histAllRows=[];var currentUser;try{currentUser=JSON.parse(localStorage.getItem('rdi_user')||'{"name":"Admin Warehouse","dept":"Gudang"}');}
 catch(e){currentUser={name:'Admin Warehouse',dept:'Gudang'};}
+/* v15.39+: nama operator tampil di boot splash saat loading & topbar; caption
+   versi di menu Lainnya ikut memuat nama operator (initVersionLabels). */
+function updateOperatorLabels(){var n=(currentUser&&currentUser.name)||'';var s=document.getElementById('boot-splash-user');if(s)s.textContent=n?('Operator: '+n):'';var u=document.getElementById('topbar-username');if(u)u.textContent=n||'Admin';}
+updateOperatorLabels();
 var minStockMap={};function syncMinStockMap(){minStockMap={};allRows.forEach(function(r){if(r.id)minStockMap[r.id]=parseInt(r.minStock||0)||0;});/* BUGFIX (Edit Item langsung menutup, tidak membuka form): allRows/minStockMap di-reassign ke objek BARU tiap load data, jadi referensi window.allRows/window.minStockMap yang di-export sekali saat boot jadi basi (selalu kosong). openEditSheet() & applyEditItemLocally() ada di IIFE terpisah yang fallback ke window.allRows saat lookup -- tanpa resync ini mereka selalu gagal nemu item (r undefined) dan diam-diam return, sheet edit tidak pernah kebuka. */window.allRows=allRows;window.minStockMap=minStockMap;}
 
 // ===== SECTION: MASTER LISTS (uom, rak, vendor, kategori) & USER PROFILE =====
@@ -2973,11 +2980,11 @@ function fillDatalist(id,values){var dl=document.getElementById(id);if(!dl||!val
 function registerMasterValueIfNew(type,value){value=String(value||'').trim();if(!value)return;gasPost({action:'addMasterValue',type:type,value:value}).catch(function(){});}
 function initUser(){document.getElementById('topbar-username').textContent=currentUser.name||'Admin';}
 function fmtBuildDate(){var p=String(APP_BUILD_DATE||'').split('-');var b=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];return p.length===3&&p[0]&&p[1]&&p[2]?parseInt(p[2],10)+' '+b[parseInt(p[1],10)-1]+' '+p[0]:APP_BUILD_DATE;}
-function initVersionLabels(){var verTopbar=document.getElementById('topbar-version-label');var verSheet=document.getElementById('sheet-version-label');if(verTopbar)verTopbar.textContent=APP_VERSION;if(verSheet)verSheet.textContent=APP_VERSION+' · '+fmtBuildDate();document.title=document.title.replace(/v[\d.]+/,APP_VERSION);}
+function initVersionLabels(){var verTopbar=document.getElementById('topbar-version-label');var verSheet=document.getElementById('sheet-version-label');if(verTopbar)verTopbar.textContent=APP_VERSION;if(verSheet)verSheet.textContent=APP_VERSION+' · '+fmtBuildDate()+' · Operator: '+((currentUser&&currentUser.name)||'-');document.title=document.title.replace(/v[\d.]+/,APP_VERSION);}
 function showUserModal(){hideStatus('sbar-user');stopInlineScanner();stopInlineScannerHist();document.getElementById('user-name-input').value=currentUser.name||'';document.getElementById('user-dept-input').value=currentUser.dept||'';var m=document.getElementById('modal-user');m.classList.add('show');modalFocusOpen(m);}
 function hideUserModal(){var m=document.getElementById('modal-user');m.classList.remove('show');modalFocusClose(m);}
 function saveUser(){var name=document.getElementById('user-name-input').value.trim();var dept=document.getElementById('user-dept-input').value;if(!name){showStatus('sbar-user','s-err',IC.err+' Nama operator tidak boleh kosong.');flagFieldError('user-name-input');return;}hideStatus('sbar-user');
-currentUser={name:name,dept:dept};localStorage.setItem('rdi_user',JSON.stringify(currentUser));document.getElementById('topbar-username').textContent=name;hideUserModal();}
+currentUser={name:name,dept:dept};localStorage.setItem('rdi_user',JSON.stringify(currentUser));document.getElementById('topbar-username').textContent=name;initVersionLabels();hideUserModal();}
 function getAdminLabel(){return currentUser.dept?currentUser.name+' ('+currentUser.dept+')':currentUser.name;}
 function _outboxPendingCount(){try{return (window.readOutbox&&window.readOutbox().length)||0;}catch(e){return 0;}}
 function updateOutboxBadge(){var el=document.getElementById('offline-banner');if(!el)return;var on=navigator.onLine,n=_outboxPendingCount(),cls,html;
