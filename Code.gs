@@ -304,7 +304,6 @@
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
 var API_VERSION = 'v5.32';   // v5.32: fallback lokasi -- KELUAR/PINDAH item tanpa rekaman rak validasi saldo total
 var API_BUILD   = '2026-11-16';   // v5.32: validasi fallback + skip tulis Stok_Per_Rak utk lokasi tak terekam + rebuild buang entri rak keluar-saja
-var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
