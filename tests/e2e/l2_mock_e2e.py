@@ -263,11 +263,11 @@ def main():
         # 5. Menu Lainnya: caption versi + operator (visibilitas di HP)
         page.click('#tab-more')
         page.wait_for_function(
-            "((document.getElementById('sheet-version-label')||{}).textContent||'').includes('v15.39')",
+            "((document.getElementById('sheet-version-label')||{}).textContent||'').includes('v15.40')",
             timeout=8000)
         cap = page.text_content('#sheet-version-label') or ''
-        step('L2-13 caption Lainnya: "v15.39" + "Operator: Wahyu"',
-             lambda: expect('v15.39' in cap and 'Operator: Wahyu' in cap, 'cap=' + cap))
+        step('L2-13 caption Lainnya: "v15.40" + "Operator: Wahyu"',
+             lambda: expect('v15.40' in cap and 'Operator: Wahyu' in cap, 'cap=' + cap))
         page.screenshot(path=SHOT + r'\l2_lainnya_caption.png')
 
         # 6. Transaksi MASUK via scanner (input manual ID, tanpa kamera)

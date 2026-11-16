@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.39">
+<meta name="apple-mobile-web-app-title" content="RDI Indirect Scanner v15.40">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,11 +52,11 @@ function loadExcelLib(name) {
 }
 window.loadExcelLib = loadExcelLib;
 </script>
-<title>RDI Indirect Scanner v15.39 - PT Rayard Deli Indonesia</title>
+<title>RDI Indirect Scanner v15.40 - PT Rayard Deli Indonesia</title>
 <!-- F5-UI-ARIAHIDDEN: penanda batch aria-hidden (lihat PLAN §1.4 UI-11) -->
 <style>
 /* ===================================================================
-   RDI INDIRECT SCANNER - STYLESHEET (v15.39)
+   RDI INDIRECT SCANNER - STYLESHEET (v15.40)
    File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
    =================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overflow-x:hidden}:root{--badge-blue-text:#0057C2;--badge-blue-bg:#EAF3FF;--badge-blue-border:#0A84FF;--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;--bg:#F1F4F9;--bg2:#FFFFFF;--surface:#FFFFFF;--surface2:#F6F8FB;--surface3:#E9EEF5;--glass:rgba(15,23,42,.045);--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.16);--border3:rgba(15,23,42,.26);--text:#0F172A;--text2:#475569;--text3:#5A6A81;--neutral-50:#F8FAFC;--neutral-100:#EEF2F7;--neutral-200:#E2E8F0;--neutral-300:#CBD5E1;--neutral-400:#7E8DA2;--neutral-500:#64748B;--neutral-600:#475569;--neutral-700:#334155;--neutral-800:#1E293B;--neutral-900:#0F172A;--amber:#B45309;--amber-dim:rgba(180,83,9,.12);--amber-border:rgba(180,83,9,.4);--green:#15803D;--green-dim:rgba(21,128,61,.1);--green-border:rgba(21,128,61,.32);--green-text:#166534;--red:#b91c1c;--red-dim:rgba(185,28,28,.08);--red-border:rgba(185,28,28,.32);--red-text:#991b1b;--blue:#0A84FF;--blue-dim:rgba(10,132,255,.10);--blue-border:rgba(10,132,255,.30);--blue-text:#0A63D6;--navy:#0067E2;--navy2:#0060DF;--brand-1:#0057C2;--brand-2:#0060DF;--grad-brand:linear-gradient(135deg,var(--brand-1) 0%,var(--brand-2) 100%);--action:#0067E2;--action-dark:#0047B0;--action-light:#0A6FD6;--grad-action:linear-gradient(135deg,var(--action),var(--action-dark));--grad-action-hover:linear-gradient(135deg,var(--action-light),var(--action));--badge-amber-text:#78350F;--badge-amber-bg:#FEF7EC;--badge-amber-border:#D97706;--r:var(--br-12);--rl:var(--br-16);--rxl:var(--br-24);
@@ -881,7 +881,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
     <div class="topbar-title">PT Rayard Deli Indonesia</div>
     <div class="topbar-sub">Spare Part · Tools · Indirect</div>
   </div>
-  <span class="topbar-ver" id="topbar-version-label">v15.39</span>
+  <span class="topbar-ver" id="topbar-version-label">v15.40</span>
   <div class="topbar-online" id="dot-online" role="status" aria-live="polite" aria-label="Status koneksi internet" title="Terhubung ke internet"></div>
   <span class="viewer-badge" style="display:none;font-size:12px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:var(--action);color:#fff;white-space:nowrap;flex-shrink:0">LIHAT SAJA</span>
   <span class="user-badge" id="user-badge-topbar" onclick="showUserModal()" role="button" tabindex="0" aria-label="Buka menu pengguna" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showUserModal()}">
@@ -2850,11 +2850,11 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
 <script>
 // ===================================================================
-// RDI INDIRECT SCANNER - APPLICATION LOGIC (v15.39)
+// RDI INDIRECT SCANNER - APPLICATION LOGIC (v15.40)
 // File tunggal: cari "SECTION" via Ctrl+F / grep untuk lompat cepat.
 // ===================================================================
 (function(){'use strict';function _skipRenderIfSameSig(el,sig){if(!el)return false;if(el.getAttribute('data-render-sig')===sig)return true;el.setAttribute('data-render-sig',sig);return false;}
-var APP_VERSION='v15.39';var APP_BUILD_DATE='2026-10-30';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
+var APP_VERSION='v15.40';var APP_BUILD_DATE='2026-11-16';(function(){var originalGetContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options){if(type==='2d')options=Object.assign({willReadFrequently:true},options||{});return originalGetContext.call(this,type,options);};})();(function(){var pop=null,forEl=null;function hideTT(){if(pop){pop.remove();pop=null;forEl=null;}}
 
 // ===== SECTION: TOOLTIP HELPER =====
 function showTT(el){hideTT();var text=el.getAttribute('data-tt');if(!text)return;pop=document.createElement('div');pop.className='tt-popup';pop.textContent=text;document.body.appendChild(pop);forEl=el;var r=el.getBoundingClientRect();var pw=pop.offsetWidth,ph=pop.offsetHeight;var left=Math.min(Math.max(8,r.left),window.innerWidth-pw-8);var top=r.top-ph-8;if(top<8)top=r.bottom+8;pop.style.left=left+'px';pop.style.top=top+'px';clearTimeout(showTT._t);showTT._t=setTimeout(hideTT,4000);}
@@ -2968,7 +2968,7 @@ var chipsWrap=document.getElementById('active-filter-chips');var chips=[];if(_ac
 /* pure helpers moved → js/format.js (F4.5) */
 var currentItem=null,currentJenis=null;var scanMode='transaksi';var histCurrentItem=null,histAllRows=[];var currentUser;try{currentUser=JSON.parse(localStorage.getItem('rdi_user')||'{"name":"Admin Warehouse","dept":"Gudang"}');}
 catch(e){currentUser={name:'Admin Warehouse',dept:'Gudang'};}
-/* v15.39+: nama operator tampil di boot splash saat loading & topbar; caption
+/* v15.40+: nama operator tampil di boot splash saat loading & topbar; caption
    versi di menu Lainnya ikut memuat nama operator (initVersionLabels). */
 function updateOperatorLabels(){var n=(currentUser&&currentUser.name)||'';var s=document.getElementById('boot-splash-user');if(s)s.textContent=n?('Operator: '+n):'';var u=document.getElementById('topbar-username');if(u)u.textContent=n||'Admin';}
 updateOperatorLabels();
@@ -3756,15 +3756,22 @@ _pindahItem=it;
 updatePindahQtyMax();
 document.getElementById('pindah-overlay').classList.add('show');document.getElementById('pindah-sheet').classList.add('show');}
 function openPindahFromCekStok(){if(!currentItem){showStatus('sbar-lookup','s-warn',IC.info+' Scan item dulu');return;}openPindahSheet();}
-/* v5.31: pintu masuk Pindah Rak dari sheet Edit Item -- ambil item (rakBreakdown
-   hanya ada di hasil getItem, tidak di baris tabel master) lalu buka modal dgn
-   item itu, TANPA menyentuh currentItem milik alur scanner. */
+/* v5.31: pintu masuk Pindah Rak dari sheet Edit Item. PERF FIX v15.40: dulu SELALU
+   fetch getItem ke GAS (tanpa timeout) -> jaringan lambat membuat "Mengambil data item..."
+   menggantung lama. Data yang dibutuhkan sudah tersedia lokal: baris item di allRows
+   dan breakdown rak di _rakBreakdownMap (termuat oleh katalog). getItem hanya fallback,
+   dengan timeout 20 dtk (aksi baca, aman dipotong -- tidak ada risiko data). */
 function openPindahFromEdit(){var id=(document.getElementById('edit-item-id')||{}).value||'';if(!id){showStatus('sbar-edit','s-warn',IC.info+' Item belum terpilih');return;}
+var _up=String(id).toUpperCase(),_row=null;for(var _i=0;_i<allRows.length;_i++){if(String(allRows[_i].id||'').toUpperCase()===_up){_row=allRows[_i];break;}}
+var _rb=(_rakBreakdownMap&&_rakBreakdownMap[_up])||[];
+if(_row&&_rb.length){window.closeEditSheet();openPindahSheet(Object.assign({},_row,{rakBreakdown:_rb.slice()}));return;}
 window.closeEditSheet();
 showStatus('sbar-load','s-info',IC.load+' Mengambil data item...');
-gasGet({action:'getItem',id:id}).then(function(res){
+var _done=false;
+gasGet({action:'getItem',id:id}).then(function(res){if(_done)return;_done=true;
 if(!res||res.status!=='ok'){showStatus('sbar-load','s-err',IC.err+' '+xe((res&&res.message)||'Gagal mengambil data item'));return;}
-openPindahSheet(res.item);}).catch(function(err){showStatus('sbar-load','s-err',IC.err+' '+xe(friendlyErr(err)));});}
+openPindahSheet(res.item);}).catch(function(err){if(_done)return;_done=true;showStatus('sbar-load','s-err',IC.err+' '+xe(friendlyErr(err)));});
+setTimeout(function(){if(_done)return;_done=true;showStatus('sbar-load','s-err',IC.err+' Waktu tunggu habis. Cek koneksi lalu coba lagi.');},20000);}
 function closePindahSheet(){var sheet=document.getElementById('pindah-sheet');var overlay=document.getElementById('pindah-overlay');stopInlineScannerRak();sheet.classList.add('closing');overlay.classList.add('closing');setTimeout(function(){sheet.classList.remove('show','closing');overlay.classList.remove('show','closing');},window.motionMs('--dur-sheet-out',220));}
 function updatePindahQtyMax(){var sel=document.getElementById('pindah-asal');var rb=(_pindahItem&&_pindahItem.rakBreakdown)||[];var found=rb.find(function(r){return r.rak===sel.value;});var max=found?(parseInt(found.qty)||0):0;document.getElementById('pindah-asal-info').textContent='Sisa stok di rak '+(xe(sel.value)||'-')+': '+max+' '+xe((_pindahItem&&_pindahItem.unit)||'');var q=document.getElementById('pindah-qty');q.setAttribute('max',max);if((parseInt(q.value)||0)>max)q.value=max>0?max:1;}
 function submitPindahRak(){if(!_pindahItem)return;var asal=document.getElementById('pindah-asal').value;var tujuan=document.getElementById('pindah-tujuan').value.trim().toUpperCase();var qty=parseInt(document.getElementById('pindah-qty').value)||0;var bar=document.getElementById('pindah-sbar');var btn=document.getElementById('btn-pindah-submit');
