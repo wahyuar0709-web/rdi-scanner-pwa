@@ -141,5 +141,95 @@ function ctxFor(kit) {
   t('addItem tanpa nama ditolak', d && d.status === 'error', JSON.stringify(d).slice(0, 80));
 })();
 
+/* ---------- 5. v5.32 fallback lokasi: item tanpa/parsial rekaman rak ---------- */
+(function () {
+  // MRO-02 = item "fallback": stok 10 dari MASUK lama tanpa RAK (data migrasi),
+  // Stok_Saldo konsisten dengan log, TIDAK ada baris Stok_Per_Rak.
+  const kit = buildKitchen();
+  kit.getSheetByName('Transaksi_Log').getRange(2, 1, 1, 13).setValues([['2026-01-01', 'MRO-02', 'V-Belt B50', 'Belt', 'MASUK', 10, '', '', '', '', 10, 'stok awal migrasi', 'b']]);
+  kit.getSheetByName('Stok_Saldo').getRange(2, 1, 1, 6).setValues([['MRO-02', 'V-Belt B50', 'Pcs', 10, 0, 10]]);
+  const ctx = ctxFor(kit);
+
+  const ok = ctx.postTransaksi({ itemId: 'MRO-02', jenis: 'KELUAR', qty: 4, rak: 'F-01', admin: 'b', requestId: 'fb1' });
+  t('fallback: KELUAR item tanpa rekaman rak DITERIMA (validasi saldo total)', ok && ok.status === 'ok', JSON.stringify(ok).slice(0, 120));
+  t('fallback: Stok_Saldo MRO-02 turun 10 -> 6', (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-02') || [])[5] === 6, JSON.stringify(sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-02')));
+  t('fallback: TIDAK menulis Stok_Per_Rak', sheetRows(kit, 'Stok_Per_Rak').length === 0, JSON.stringify(sheetRows(kit, 'Stok_Per_Rak')));
+  const lg = sheetRows(kit, 'Transaksi_Log');
+  t('fallback: log mencatat rak yang diketik operator', lg.length === 2 && String(lg[1][6]) === 'F-01', JSON.stringify(lg[1] || []).slice(0, 130));
+
+  const over = ctx.postTransaksi({ itemId: 'MRO-02', jenis: 'KELUAR', qty: 99, rak: 'F-01', admin: 'b', requestId: 'fb2' });
+  t('fallback: KELUAR melebihi saldo total DITOLAK', over && over.status === 'error' && /tidak cukup/i.test(over.message || ''), JSON.stringify(over).slice(0, 110));
+
+  const pin = ctx.postTransaksi({ itemId: 'MRO-02', jenis: 'PINDAH', qty: 2, rak: 'G-02', rakAsal: 'F-01', admin: 'b', requestId: 'fb3' });
+  t('fallback: PINDAH dari rak tak terekam DITERIMA', pin && pin.status === 'ok', JSON.stringify(pin).slice(0, 120));
+  const rakRows = sheetRows(kit, 'Stok_Per_Rak');
+  t('fallback PINDAH: rak tujuan terekam (G-02 = 2), rak asal tidak dibuat', rakRows.length === 1 && String(rakRows[0][1]) === 'G-02' && Number(rakRows[0][2]) === 2, JSON.stringify(rakRows));
+  t('fallback PINDAH: total saldo item tidak berubah (6)', (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-02') || [])[5] === 6, '');
+
+  const salBefore = (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-02') || []).slice(3).map(Number);
+  const rakBefore = {};
+  sheetRows(kit, 'Stok_Per_Rak').forEach(r => { rakBefore[String(r[0]) + '|' + String(r[1])] = Number(r[2]) || 0; });
+  ctx.recalculateAllSaldoLocked_();
+  const salAfter = (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-02') || []).slice(3).map(Number);
+  const rakAfter = {};
+  sheetRows(kit, 'Stok_Per_Rak').forEach(r => { rakAfter[String(r[0]) + '|' + String(r[1])] = Number(r[2]) || 0; });
+  t('fallback: rebuild Stok_Saldo identik dengan incremental', JSON.stringify(salBefore) === JSON.stringify(salAfter), 'inc=' + JSON.stringify(salBefore) + ' rb=' + JSON.stringify(salAfter));
+  t('fallback: rebuild Stok_Per_Rak identik dengan incremental (tanpa baris negatif)', JSON.stringify(rakBefore) === JSON.stringify(rakAfter), 'inc=' + JSON.stringify(rakBefore) + ' rb=' + JSON.stringify(rakAfter));
+})();
+
+(function () {
+  // item "parsial": MASUK A-01 10 terekam + 5 unit migrasi tanpa rak -> total 15, breakdown 10
+  const kit = buildKitchen();
+  const ctx = ctxFor(kit);
+  ctx.postTransaksi({ itemId: 'MRO-03', jenis: 'MASUK', qty: 10, rak: 'A-01', admin: 'b', requestId: 'p0' });
+  kit.getSheetByName('Transaksi_Log').getRange(3, 1, 1, 13).setValues([['2026-01-01', 'MRO-03', 'O-ring 20', 'Seal', 'MASUK', 5, '', '', '', '', 5, 'stok migrasi tanpa rak', 'b']]);
+  kit.getSheetByName('Stok_Saldo').getRange(2, 1, 1, 6).setValues([['MRO-03', 'O-ring 20', 'Pcs', 15, 0, 15]]);
+
+  const ok = ctx.postTransaksi({ itemId: 'MRO-03', jenis: 'KELUAR', qty: 4, rak: 'B-02', admin: 'b', requestId: 'p1' });
+  t('parsial: KELUAR dari rak tak terekam DITERIMA (sisa tak terekam cukup)', ok && ok.status === 'ok', JSON.stringify(ok).slice(0, 120));
+  let rakRows = sheetRows(kit, 'Stok_Per_Rak');
+  t('parsial: rak B-02 tidak dibuat, A-01 tetap 10', rakRows.length === 1 && String(rakRows[0][1]) === 'A-01' && Number(rakRows[0][2]) === 10, JSON.stringify(rakRows));
+  t('parsial: saldo total 15 -> 11', (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-03') || [])[5] === 11, '');
+
+  const ok2 = ctx.postTransaksi({ itemId: 'MRO-03', jenis: 'KELUAR', qty: 3, rak: 'A-01', admin: 'b', requestId: 'p2' });
+  t('parsial: KELUAR dari rak TEREKAM tetap jalan (saldo rak cukup)', ok2 && ok2.status === 'ok', JSON.stringify(ok2).slice(0, 120));
+  rakRows = sheetRows(kit, 'Stok_Per_Rak');
+  t('parsial: A-01 turun 10 -> 7', rakRows.length === 1 && Number(rakRows[0][2]) === 7, JSON.stringify(rakRows));
+
+  const over = ctx.postTransaksi({ itemId: 'MRO-03', jenis: 'KELUAR', qty: 8, rak: 'A-01', admin: 'b', requestId: 'p3' });
+  t('parsial: KELUAR melebihi saldo rak TEREKAM tetap DITOLAK (strict)', over && over.status === 'error' && /tidak cukup/i.test(over.message || ''), JSON.stringify(over).slice(0, 110));
+
+  const rakBefore = {};
+  sheetRows(kit, 'Stok_Per_Rak').forEach(r => { rakBefore[String(r[0]) + '|' + String(r[1])] = Number(r[2]) || 0; });
+  const salBefore = (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-03') || []).slice(3).map(Number);
+  ctx.recalculateAllSaldoLocked_();
+  const rakAfter = {};
+  sheetRows(kit, 'Stok_Per_Rak').forEach(r => { rakAfter[String(r[0]) + '|' + String(r[1])] = Number(r[2]) || 0; });
+  const salAfter = (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-03') || []).slice(3).map(Number);
+  t('parsial: rebuild Stok_Saldo identik dengan incremental', JSON.stringify(salBefore) === JSON.stringify(salAfter), 'inc=' + JSON.stringify(salBefore) + ' rb=' + JSON.stringify(salAfter));
+  t('parsial: rebuild Stok_Per_Rak identik dengan incremental', JSON.stringify(rakBefore) === JSON.stringify(rakAfter), 'inc=' + JSON.stringify(rakBefore) + ' rb=' + JSON.stringify(rakAfter));
+})();
+
+(function () {
+  // item dengan baris rak "-" negatif (sampah rebuild lama): KELUAR dari "-" harus bisa
+  // dan rebuild harus MEMBUANG baris negatif itu, bukan menambah baris baru.
+  const kit = buildKitchen();
+  kit.getSheetByName('Transaksi_Log').getRange(2, 1, 1, 13).setValues([['2026-01-01', 'MRO-01', 'Bearing 6205', 'Bearing', 'MASUK', 8, '', '', '', '', 8, 'stok awal migrasi', 'b']]);
+  kit.getSheetByName('Stok_Saldo').getRange(2, 1, 1, 6).setValues([['MRO-01', 'Bearing 6205', 'Pcs', 8, 0, 8]]);
+  kit.getSheetByName('Stok_Per_Rak').getRange(2, 1, 1, 3).setValues([['MRO-01', '-', -5]]);
+  const ctx = ctxFor(kit);
+
+  const ok = ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'KELUAR', qty: 3, rak: '-', admin: 'b', requestId: 'n1' });
+  t('negatif "-": KELUAR dari rak placeholder DITERIMA (validasi total)', ok && ok.status === 'ok', JSON.stringify(ok).slice(0, 120));
+  t('negatif "-": Stok_Saldo 8 -> 5', (sheetRows(kit, 'Stok_Saldo').find(r => String(r[0]) === 'MRO-01') || [])[5] === 5, '');
+  t('negatif "-": baris lama tidak disentuh incremental (masih -5)', JSON.stringify(sheetRows(kit, 'Stok_Per_Rak')) === JSON.stringify([['MRO-01', '-', -5]]), JSON.stringify(sheetRows(kit, 'Stok_Per_Rak')));
+
+  ctx.recalculateAllSaldoLocked_();
+  const rakRows = sheetRows(kit, 'Stok_Per_Rak');
+  t('negatif "-": rebuild MEMBUANG baris keluar-saja (tidak ada baris negatif baru)', rakRows.length === 0, JSON.stringify(rakRows));
+  const lg = sheetRows(kit, 'Transaksi_Log');
+  t('negatif "-": log tetap mencatat RAK "-" (safeCell_ menambah apostrof)', lg.length === 2 && String(lg[1][6]) === "'-", JSON.stringify(lg[1] || []).slice(0, 130));
+})();
+
 console.log('---- gs_stok_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

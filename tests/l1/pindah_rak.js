@@ -1,4 +1,4 @@
-/* L1 pindah_rak — v5.31: jenis transaksi PINDAH (revisi posisi rak pasca-masuk).
+/* L1 pindah_rak — v5.32: jenis transaksi PINDAH (revisi posisi rak pasca-masuk).
  * Eksekusi postTransaksi() + recalculateAllSaldoCore() sungguhan dari Code.gs
  * lewat harness gs_harness (dapur Master_Item + Transaksi_Log + Stok_Saldo + Stok_Per_Rak).
  * Skenario:
@@ -163,12 +163,12 @@ function seed(kit, ctx) {
   t('Pindah parsial: total tetap 50/0/50', JSON.stringify(saldoOf(kit, 'MRO-01')) === JSON.stringify({ masuk: 50, keluar: 0, saldo: 50 }), JSON.stringify(saldoOf(kit, 'MRO-01')));
 })();
 
-/* ---------- 9. LOCK versi: API_VERSION/API_BUILD v5.31 ---------- */
+/* ---------- 9. LOCK versi: API_VERSION/API_BUILD v5.32 ---------- */
 const fs = require('fs');
 const path = require('path');
 const gs = fs.readFileSync(path.join(__dirname, '..', '..', 'Code.gs'), 'utf8');
-t('LOCK-P1: API_VERSION = v5.31', /var API_VERSION = 'v5\.31'/.test(gs));
-t('LOCK-P2: API_BUILD = 2026-11-12.2', /var API_BUILD\s*=\s*'2026-11-12\.2'/.test(gs));
+t('LOCK-P1: API_VERSION = v5.32', /var API_VERSION = 'v5.32'/.test(gs));
+t('LOCK-P2: API_BUILD = 2026-11-16', /var API_BUILD\s*=\s*'2026-11-16'/.test(gs));
 t('LOCK-P3: postTransaksi menerima PINDAH', /jenis!=='MASUK'&&jenis!=='KELUAR'&&jenis!=='PINDAH'/.test(gs));
 t('LOCK-P4: recount parse format PINDAH DARI:', /PINDAH DARI:/.test(gs));
 

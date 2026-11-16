@@ -302,8 +302,8 @@
 //
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
-var API_VERSION = 'v5.31';   // v5.31: jenis transaksi PINDAH (revisi posisi rak pasca-masuk)
-var API_BUILD   = '2026-11-12.2';   // v5.31: postTransaksi PINDAH + recount Stok_Per_Rak rak asal/tujuan input3/04), backup import unik (DBG-04), rate limit token (SEC-02)
+var API_VERSION = 'v5.32';   // v5.32: fallback lokasi -- KELUAR/PINDAH item tanpa rekaman rak validasi saldo total
+var API_BUILD   = '2026-11-16';   // v5.32: validasi fallback + skip tulis Stok_Per_Rak utk lokasi tak terekam + rebuild buang entri rak keluar-saja
 var API_BUILD   = '2026-10-30.1';   // Fase 1 POC: proxy Gemini (aiBacaSJ + simpanKeyAI). Kontrak API tidak berubah -> API_VERSION tetap v5.28; build naik supaya healthCheck bisa membuktikan kode mana yang live.
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
@@ -2193,8 +2193,28 @@ function postTransaksi(params) {
         var rakKeyTrim = textMarkerStrip_(jenis==='PINDAH' ? rakAsal : rak);
     item.rakBreakdown.forEach(function(rb){ if(textMarkerStrip_(rb.rak)===rakKeyTrim) saldoSebelumRak = rb.qty; });
 
-    if ((jenis==='KELUAR'||jenis==='PINDAH') && qty>saldoSebelumRak)
-      return { status:'error', message:'Stok di rak '+rakKeyTrim+' tidak cukup. Saldo rak ini: '+saldoSebelumRak+' '+item.unit };
+    /* v5.32 FALLBACK LOKASI: banyak item lama tidak punya baris Stok_Per_Rak sama sekali
+       (log MASUK lama tanpa RAK -- 360 item berstok, bukti audit 2026-11-16) atau
+       breakdown-nya tidak menutup saldo total (baris rak "-" negatif hasil KELUAR
+       placeholder, 124 baris). Validasi per-rak kaku membuat KELUAR/PINDAH item itu
+       selalu ditolak ("Saldo rak ini: 0"). Aturan: kalau breakdown rak TIDAK menutup
+       saldo total DAN rak asal/tujuan tidak punya saldo tercatat (>0), validasi
+       terhadap saldo TOTAL -- sisa stok yang lokasinya belum terekam boleh diambil
+       dari lokasi yang operator ketik. Item dengan data rak lengkap tetap divalidasi
+       per-rak seperti biasa. Penulisan Stok_Per_Rak mengikuti (lihat blok update). */
+    var _breakdownSum = 0;
+    item.rakBreakdown.forEach(function(rb){ _breakdownSum += parseFloat(rb.qty)||0; });
+    var _rakLengkap = Math.abs(_breakdownSum - saldoSebelumTotal) < 0.001;
+    var _ambilDariSisa = (jenis==='KELUAR'||jenis==='PINDAH') && !_rakLengkap && saldoSebelumRak <= 0;
+
+    if (jenis==='KELUAR'||jenis==='PINDAH') {
+      if (_ambilDariSisa) {
+        if (qty>saldoSebelumTotal)
+          return { status:'error', message:'Stok tidak cukup. Saldo item: '+saldoSebelumTotal+' '+item.unit+' (lokasi rak item ini belum terekam)' };
+      } else if (qty>saldoSebelumRak) {
+        return { status:'error', message:'Stok di rak '+rakKeyTrim+' tidak cukup. Saldo rak ini: '+saldoSebelumRak+' '+item.unit };
+      }
+    }
 
     var saldoSesudahTotal = jenis==='MASUK' ? saldoSebelumTotal+qty : (jenis==='KELUAR' ? saldoSebelumTotal-qty : saldoSebelumTotal);
 
@@ -2237,7 +2257,10 @@ function postTransaksi(params) {
           // v5.31 PINDAH: total saldo item TIDAK berubah -- TIDAK ada updateSaldo.
           // Distribusi rak: asal -qty (delta KELUAR), tujuan +qty (delta MASUK).
           try {
-            updateRakSaldo(itemId, rakAsal, 'KELUAR', qty);
+            // v5.32: rak asal tanpa saldo tercatat (_ambilDariSisa) -> tidak ada baris
+            // yg valid utk didekrement; recalculate membuang entri rak keluar-saja,
+            // jadi jalur incremental & rebuild tetap menghasilkan Stok_Per_Rak sama.
+            if (!_ambilDariSisa) updateRakSaldo(itemId, rakAsal, 'KELUAR', qty);
           } catch(e) {
             saldoSyncOk = false;
             saldoSyncError += e.message + '. ';
@@ -2256,7 +2279,9 @@ function postTransaksi(params) {
             saldoSyncError += e.message + '. ';
           }
           try {
-            updateRakSaldo(itemId, rak, jenis, qty);
+            // v5.32: KELUAR dari rak tanpa saldo tercatat -> skip tulis (lihat _ambilDariSisa);
+            // MASUK tetap menulis -- itu jalur lokasi item mulai terekam.
+            if (!(jenis==='KELUAR' && _ambilDariSisa)) updateRakSaldo(itemId, rak, jenis, qty);
           } catch(e) {
             saldoSyncOk = false;
             saldoSyncError += e.message + '. ';
@@ -3898,9 +3923,16 @@ function recalculateAllSaldoLocked_() {
   truncateSheetRows_(saldo, out.length + 1);
 
   // Rebuild Stok_Per_Rak (per lokasi)
+  /* v5.32 FALLBACK LOKASI: entri rak yang HANYA berisi KELUAR (tanpa MASUK/PINDAH-masuk
+     sama sekali) dibuang -- itu jejak KELUAR item yg lokasinya belum terekam
+     (postTransaksi fallback tidak menulis Stok_Per_Rak). Tanpa ini rebuild melahirkan
+     baris rak NEGATIF (produksi 2026-11-16: 124 baris "-" negatif) dan Stok_Per_Rak
+     jadi beda dari jalur incremental. Entri dgn masuk>0 tetap ditulis: minus di situ
+     berarti korupsi data asli yang harus terlihat. */
   var rakOut = [];
   Object.keys(rakTotals).forEach(function(key){
     var t = rakTotals[key];
+    if (t.masuk === 0 && t.keluar > 0) return;
     rakOut.push([t.id, t.rak, t.masuk - t.keluar]);
   });
   rakSld.getRange(1,1,1,3).setValues([['ID_Item','RAK','Qty']])
