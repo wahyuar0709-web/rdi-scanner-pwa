@@ -303,7 +303,7 @@
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
 var API_VERSION = 'v5.32';   // v5.32: fallback lokasi -- KELUAR/PINDAH item tanpa rekaman rak validasi saldo total
-var API_BUILD   = '2026-11-16.1';   // v5.32: validasi fallback + skip tulis Stok_Per_Rak utk lokasi tak terekam + rebuild buang entri rak keluar-saja
+var API_BUILD   = '2026-11-16.2';   // v5.32.2: getStockLedger tidak lagi menghitung baris PINDAH sebagai keluar (alarm palsu rekonsiliasi)
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -4331,8 +4331,14 @@ function getStockLedger(itemId) {
       });
     }
 
+    // v5.32.2 FIX: dulu semua non-MASUK dihitung -qty, jadi baris PINDAH
+    // (saldo total tidak berubah) ikut dikurangkan -> rekonsiliasi detail item
+    // selalu alarm palsu "diff -qty" setelah PINDAH. PINDAH menyumbang 0.
     var computedClosing = 0;
-    entries.forEach(function(e){ computedClosing += (e.jenis.toUpperCase()==='MASUK' ? e.qty : -e.qty); });
+    entries.forEach(function(e){
+      var j = e.jenis.toUpperCase();
+      computedClosing += (j==='MASUK' ? e.qty : (j==='KELUAR' ? -e.qty : 0));
+    });
 
     var cachedClosing = 0;
     var saldoMap = getSaldoMap();

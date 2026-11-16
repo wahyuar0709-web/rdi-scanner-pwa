@@ -187,6 +187,16 @@ function makeSheet(name, initial) {
     getMaxColumns: () => (data[0] ? data[0].length : 0),
     getDataRange: () => makeRange(data, 0, 0, data.length, (data[0] || []).length),
     getRange(a, b, c, d) {
+      /* 2026-11-16: dukung A1-notation string ("A2:M5") -- dipakai getRowsByNumbers_
+       * (getHistory/getStockLedger). Tanpa ini stub mengembalikan data salah diam-diam. */
+      if (typeof a === 'string' && b === undefined) {
+        const m = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(a.replace(/\$/g, '').trim());
+        if (m) {
+          const col = s => { let n = 0; for (const ch of s) n = n * 26 + (ch.charCodeAt(0) - 64); return n; };
+          const c1 = col(m[1]), c2 = col(m[3]);
+          return makeRange(data, Number(m[2]) - 1, c1 - 1, Number(m[4]) - Number(m[2]) + 1, c2 - c1 + 1);
+        }
+      }
       if (b === undefined) {
         // getRange(nRows) atau getRange(nRows, nCols)
         const nr = a, nc = c !== undefined ? c : (data[0] ? data[0].length : 0);

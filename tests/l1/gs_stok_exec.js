@@ -231,5 +231,21 @@ function ctxFor(kit) {
   t('negatif "-": log tetap mencatat RAK "-" (safeCell_ menambah apostrof)', lg.length === 2 && String(lg[1][6]) === "'-", JSON.stringify(lg[1] || []).slice(0, 130));
 })();
 
+/* ---------- 6. v5.32.2 getStockLedger: baris PINDAH tidak dikurangkan dari total ---------- */
+(function () {
+  // Rekonsiliasi detail item (NEPEL case 2026-11-16): MASUK 5 lalu PINDAH 1
+  // -> computedClosing harus 5 (PINDAH menyumbang 0), bukan 4.
+  const kit = buildKitchen();
+  const ctx = ctxFor(kit);
+  ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'MASUK', qty: 5, rak: 'A-01', admin: 'b', requestId: 'lg0' });
+  const pin = ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'PINDAH', qty: 1, rak: 'B-02', rakAsal: 'A-01', admin: 'b', requestId: 'lg1' });
+  t('ledger: PINDAH 1 berhasil (prasyarat)', pin && pin.status === 'ok', JSON.stringify(pin).slice(0, 100));
+
+  const lg = ctx.getStockLedger('MRO-01');
+  t('ledger: computedClosing 5 (PINDAH TIDAK dikurangkan)', lg && lg.computedClosing === 5, 'computed=' + (lg && lg.computedClosing));
+  t('ledger: reconciled true (tanpa alarm palsu)', lg && lg.reconciled === true, JSON.stringify({ cached: lg && lg.cachedClosing, diff: lg && lg.diff }));
+  t('ledger: entries mencatat 2 transaksi', lg && lg.entries && lg.entries.length === 2, '');
+})();
+
 console.log('---- gs_stok_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);
