@@ -246,7 +246,7 @@ const LOCK = [
   ['LOCK-6: sw.js CACHE bernama rdi-stok-v<N> (nilai pasti dijaga sw_shell_cache_gate)', /CACHE = 'rdi-stok-v\d+'/.test(sw)],
   ['LOCK-7: sw.js precache tetap 16 aset terakhir', /'\.\/js\/html2pdf\.bundle\.min\.js'/.test(sw)],
   ['LOCK-8: API_VERSION masih v5.32', /API_VERSION = 'v5.32'/.test(gs)],
-  ['LOCK-9: API_BUILD = 2026-11-16 (v5.32: jenis PINDAH revisi rak)', /API_BUILD\s*=\s*'2026-11-16'/.test(gs)],
+  ['LOCK-9: API_BUILD = 2026-11-16.1 (v5.32: jenis PINDAH revisi rak)', /API_BUILD\s*=\s*'2026-11-16\.1'/.test(gs)],
   ['LOCK-10: kontrak uncertain masih ada di postTransaksi', /genericError_\('postTransaksi', true\)/.test(gs)],
   ['LOCK-11: genericError_ ASLI tidak diubah',
     /function genericError_\(fnName, uncertain\)\s*\{\s*var r = \{ status: 'error', message: 'Terjadi kesalahan pada '/.test(gs)],
