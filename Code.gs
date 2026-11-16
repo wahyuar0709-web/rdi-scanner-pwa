@@ -303,7 +303,7 @@
 /* Versi API backend. Dinaikkan tiap ada perubahan perilaku yang bisa dirasakan client
    ATAU perubahan keamanan (lihat PLAN.md §1.4). Dipakai juga oleh endpoint healthCheck. */
 var API_VERSION = 'v5.32';   // v5.32: fallback lokasi -- KELUAR/PINDAH item tanpa rekaman rak validasi saldo total
-var API_BUILD   = '2026-11-16.2';   // v5.32.2: getStockLedger tidak lagi menghitung baris PINDAH sebagai keluar (alarm palsu rekonsiliasi)
+var API_BUILD   = '2026-11-16.3';   // v5.32.3: kanonisasi rak (varian spasi digabung ke nama terekam) + ketLog PINDAH dibangun setelah kanonisasi
 var SHEET_MASTER    = 'Master_Item';
 var SHEET_TRANSAKSI = 'Transaksi_Log';
 var SHEET_SALDO     = 'Stok_Saldo';
@@ -2168,6 +2168,12 @@ function postTransaksi(params) {
     if (jenis==='PINDAH' && !rakAsal) return { status:'error', message:'Rak asal wajib diisi untuk PINDAH' };
     if (jenis==='PINDAH' && rakAsal===rak) return { status:'error', message:'Rak tujuan harus berbeda dari rak asal' };
 
+    var itemResult = getItemById(itemId);
+    if (itemResult.status!=='ok') return itemResult;
+    var item = itemResult.item;
+
+    var item = itemResult.item; rak=(jenis==='PINDAH')?_kanonikRak(item,rak):rak; if(jenis==='PINDAH') rakAsal=_kanonikRak(item,rakAsal);
+
     // v5.31 PINDAH: rak asal tercatat di Keterangan "PINDAH DARI: <asal>" (format tetap
     // yang di-parse recalculateAllSaldoLocked_ saat rebuild Stok_Per_Rak); keterangan
     // user (kalau ada) menyusul setelah '|'. safeCell_ dipanggil di sini, bukan di
@@ -2175,10 +2181,6 @@ function postTransaksi(params) {
     var ketLog = keterangan;
     if (jenis==='PINDAH') ketLog = 'PINDAH DARI: ' + rakAsal + (keterangan ? ' | ' + keterangan : '');
     ketLog = safeCell_(ketLog);
-
-    var itemResult = getItemById(itemId);
-    if (itemResult.status!=='ok') return itemResult;
-    var item = itemResult.item;
 
     // PP-02: item yang sudah diarsipkan tidak boleh ditransaksikan lagi (MASUK maupun KELUAR) --
     // harus diaktifkan kembali dulu dari halaman detail item.
@@ -2343,6 +2345,20 @@ function postTransaksi(params) {
 // whitelist sungguhan: return error di sini, dan perbarui komentar pemanggil.
 function normalizeRak_(rawRak) {
   return String(rawRak || '').trim().toUpperCase();
+}
+
+// v5.32.3 KANONIK RAK: lokasi fisik yang sama sering diketik beda spasi
+// ("3 - J" vs "3 -J"). Kalau rak yang diketik berbenturan dengan TEPAT SATU
+// nama rak terekam item ini (ignore spasi), pakai bentuk terekam.
+function _kanonikRak(item, typed){
+  var k = String(typed||'').replace(/\s+/g,'').toUpperCase();
+  if (!k) return typed;
+  var hits = [];
+  item.rakBreakdown.forEach(function(rb){
+    var nm = textMarkerStrip_(rb.rak);
+    if (String(nm||'').replace(/\s+/g,'').toUpperCase() === k) hits.push(nm);
+  });
+  return hits.length===1 ? hits[0] : typed;
 }
 
 // ============================================================

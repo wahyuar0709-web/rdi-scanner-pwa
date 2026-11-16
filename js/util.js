@@ -36,6 +36,6 @@ function ex(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&
 
 function qrImgSrc(text,px){try{if(typeof qrcode==='function'){var q=qrcode(0,'M');q.addData(String(text||''));q.make();return q.createDataURL(Math.max(4,px||120),2);}}catch(e){}return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';}
 
-function rakDisplay(v){if(!v)return v;var s=String(v).trim();var m=s.replace(/\s*:\s*\d+(\.\d+)?\s*$/,'').trim();return m||s;}
+function rakDisplay(v){if(!v)return v;var s=String(v).trim();var m=s.replace(/\s*:\s*\d+(\.\d+)?(?=\s*,|$)/g,'').replace(/\s*,\s*,/g,',').replace(/\s*,\s*$/,'').trim();return m||s;}
 
 function buildQrPayload(id,nama,rak){var qrID=id&&String(id).trim()!==''?String(id).trim():'';return qrID+'|'+nama+'|'+(rak||'');}

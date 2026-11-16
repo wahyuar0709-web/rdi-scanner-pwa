@@ -247,5 +247,32 @@ function ctxFor(kit) {
   t('ledger: entries mencatat 2 transaksi', lg && lg.entries && lg.entries.length === 2, '');
 })();
 
+/* ---------- 7. v5.32.3 kanonisasi rak: varian spasi digabung, bukan baris baru ---------- */
+(function () {
+  const kit = buildKitchen();
+  const ctx = ctxFor(kit);
+  ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'MASUK', qty: 10, rak: 'A-01', admin: 'b', requestId: 'k0' });
+
+  // PINDAH dengan rak ASAL diketik varian spasi "a - 01" -> harus pakai bentuk terekam "A-01"
+  const p1 = ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'PINDAH', qty: 2, rak: 'B-02', rakAsal: 'a - 01', admin: 'b', requestId: 'k1' });
+  t('kanonik: PINDAH dgn asal varian spasi diterima', p1 && p1.status === 'ok', JSON.stringify(p1).slice(0, 110));
+  let rakRows = sheetRows(kit, 'Stok_Per_Rak');
+  t('kanonik: baris asal TIDAK berdrduplikat (A-01 satu baris = 8)', rakRows.filter(r => String(r[1]).replace(/\s+/g, '') === 'A-01').length === 1 && (rakRows.find(r => String(r[1]) === 'A-01') || [])[2] === 8, JSON.stringify(rakRows));
+  t('kanonik: keterangan log memakai bentuk kanonik', String((sheetRows(kit, 'Transaksi_Log')[1] || [])[11]).includes('PINDAH DARI: A-01'), JSON.stringify((sheetRows(kit, 'Transaksi_Log')[1] || [])[11]));
+
+  // PINDAH dengan rak TUJUAN varian yang TIDAK terekam -> tetap jadi lokasi baru apa adanya
+  const p2 = ctx.postTransaksi({ itemId: 'MRO-01', jenis: 'PINDAH', qty: 1, rak: 'c-03', rakAsal: 'A-01', admin: 'b', requestId: 'k2' });
+  t('kanonik: rak baru tanpa benturan tetap dibuat (C-03)', p2 && p2.status === 'ok' && sheetRows(kit, 'Stok_Per_Rak').some(r => String(r[1]) === 'C-03'), JSON.stringify(sheetRows(kit, 'Stok_Per_Rak')));
+
+  // ambigu: dua baris terekam berbenturan ignore-spasi -> pakai bentuk yang diketik (tidak menebak)
+  const kit2 = buildKitchen();
+  const ctx2 = ctxFor(kit2);
+  ctx2.postTransaksi({ itemId: 'MRO-01', jenis: 'MASUK', qty: 5, rak: 'A-01', admin: 'b', requestId: 'k3' });
+  kit2.getSheetByName('Stok_Per_Rak').getRange(3, 1, 1, 3).setValues([['MRO-01', 'A- 01', 3]]); // simulasi varian lama
+  const p3 = ctx2.postTransaksi({ itemId: 'MRO-01', jenis: 'KELUAR', qty: 1, rak: 'a-01', admin: 'b', requestId: 'k4' });
+  const rk2 = sheetRows(kit2, 'Stok_Per_Rak');
+  t('kanonik: benturan ganda -> bentuk diketik dipakai (A- 01 tetap 3, tidak digabung)', p3 && p3.status === 'ok' && rk2.length === 2 && (rk2.find(r => String(r[1]) === 'A-01') || [])[2] === 4 && (rk2.find(r => String(r[1]) === 'A- 01') || [])[2] === 3, JSON.stringify(rk2));
+})();
+
 console.log('---- gs_stok_exec: ' + pass + ' PASS / ' + fail + ' FAIL ----');
 process.exit(fail ? 1 : 0);

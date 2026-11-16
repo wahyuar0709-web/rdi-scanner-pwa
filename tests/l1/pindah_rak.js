@@ -168,7 +168,7 @@ const fs = require('fs');
 const path = require('path');
 const gs = fs.readFileSync(path.join(__dirname, '..', '..', 'Code.gs'), 'utf8');
 t('LOCK-P1: API_VERSION = v5.32', /var API_VERSION = 'v5.32'/.test(gs));
-t('LOCK-P2: API_BUILD = 2026-11-16.2', /var API_BUILD\s*=\s*'2026-11-16\.2'/.test(gs));
+t('LOCK-P2: API_BUILD = 2026-11-16.3', /var API_BUILD\s*=\s*'2026-11-16\.3'/.test(gs));
 t('LOCK-P3: postTransaksi menerima PINDAH', /jenis!=='MASUK'&&jenis!=='KELUAR'&&jenis!=='PINDAH'/.test(gs));
 t('LOCK-P4: recount parse format PINDAH DARI:', /PINDAH DARI:/.test(gs));
 
