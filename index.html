@@ -2274,7 +2274,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit Item
       </button>
-      <button class="btn btn-secondary btn-lg" onclick="openPindahRakFromDetail()">
+      <button class="btn btn-secondary btn-lg" id="idd-btn-pindah-force">
         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
         Pindah Rak
       </button>
@@ -3427,7 +3427,10 @@ function doExportQR(){
       var srcUrl=qrImgSrc(payload,160);
       return '<div class="qcell"><img src="'+srcUrl+'" width="140" height="140" alt="QR '+ex(r.id||'')+'" data-qr="'+ex(payload)+'"><div class="qid">'+xe(r.id||'-')+'</div><div class="qnm">'+xe(r.nama||'')+'</div><div class="qrk">'+xe(r.rak||'')+'</div></div>';
     }).join('');
-    var html='<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>QR Massal RDI '+dateTag+'</title><style>body{font-family:system-ui,sans-serif;margin:16px}h1{font-size:16px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}.qcell{border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center}.qcell img{image-rendering:pixelated}.qid{font-weight:700;font-size:13px;margin-top:6px}.qnm{font-size:12px;color:#444}.qrk{font-size:12px;color:#888}@media print{button{display:none}}</style></head><body><h1>Export QR Massal - '+rows.length+' item - '+dateTag+'</h1><div class="grid">'+cards+'</div><button onclick="window.print()">Print</button></body></html>';
+    var html='<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>QR Massal RDI '+dateTag+'</title><style>body{font-family:system-ui,sans-serif;margin:16px}h1{font-size:16px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}.qcell{border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center}.qcell img{image-rendering:pixelated}.qid{font-weight:700;font-size:13px;margin-top:6px}.qnm{font-size:12px;color:#444}.qrk{font-size:12px;color:#888}@media print{button{display:none}}</style></head><body><h1>Export QR Massal - '+rows.length+' item - '+dateTag+'</h1><div class="grid">'+cards+'</div><button onclick="window.print()">Print</button><script>
+document.getElementById('idd-btn-pindah-force').addEventListener('click', openPindahRakFromDetail);
+</script>
+</body></html>';
     var w=window.open('','_blank');
     if(!w){if(sbar){sbar.className='sbar s-err show';sbar.innerHTML=xe('Popup diblokir browser.');}if(btn)btn.disabled=false;return;}
     w.document.write(html);w.document.close();
@@ -3928,7 +3931,10 @@ var expanded=[];for(var ci=0;ci<copies;ci++)expanded=expanded.concat(items);
 var tplId=(document.getElementById('label-tpl')||{value:'4x6'}).value;
 if(mode==='download'&&_cetakMode==='label'){downloadLabelPDF(expanded,tplId);return;}
 var w=window.open('','_blank');if(!w){cetakNotice('Popup diblokir browser. Izinkan popup untuk domain ini lalu coba lagi.','err',7000);return;}
-if(_cetakMode!=='label'){try{w.document.write('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Memuat…</title></head><body style="font-family:Arial,sans-serif;padding:24px;color:#333"><p id="cetak-load">Memuat data stok…</p></body></html>');w.document.close();}catch(e){}}
+if(_cetakMode!=='label'){try{w.document.write('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Memuat…</title></head><body style="font-family:Arial,sans-serif;padding:24px;color:#333"><p id="cetak-load">Memuat data stok…</p><script>
+document.getElementById('idd-btn-pindah-force').addEventListener('click', openPindahRakFromDetail);
+</script>
+</body></html>');w.document.close();}catch(e){}}
 var pesan='Menyiapkan '+items.length+' item…';
 if(saldoMode==='terbaru')pesan='Mengambil stok terbaru dari server…('+items.length+' item)';
 else if(saldoMode==='pertama')pesan='Mencari kedatangan pertama…('+items.length+' item)';
@@ -5365,5 +5371,8 @@ window.removeManualRakLabel=removeManualRakLabel;
     </div>
   </div>
 </div>
+<script>
+document.getElementById('idd-btn-pindah-force').addEventListener('click', openPindahRakFromDetail);
+</script>
 </body>
 </html>
