@@ -33,8 +33,8 @@ ROWS = [
 ]
 
 RAK_ROWS = [
-    {'id': 'AUTO-BBA70602', 'rak': 'A-01', 'qty': 3},
     {'id': 'AUTO-BBA70602', 'rak': 'C-05', 'qty': 2},
+    {'id': 'AUTO-BBA70602', 'rak': 'A-01', 'qty': 3},
     {'id': 'BRG-002', 'rak': 'B-02', 'qty': 1},
 ]
 
@@ -211,6 +211,22 @@ def main():
         page.keyboard.press('Escape')
         page.wait_for_selector('#item-detail-sheet.show', state='detached', timeout=8000)
         step('L2-05 Escape menutup detail item', None)
+
+        # 3b. Tombol Pindah Rak LANGSUNG dari footer detail (keluhan user 2026-11-19).
+        # Fixture sengaja menaruh rak qty TERBESAR di urutan kedua: qty default harus
+        # diambil dari rak terpilih (A-01, sisa 3), bukan dari elemen pertama array.
+        page.locator('.ilc3-id').first.click()
+        page.wait_for_selector('#item-detail-sheet.show', timeout=8000)
+        page.locator('#item-detail-sheet button', has_text='Pindah Rak').first.click()
+        page.wait_for_selector('#pindah-sheet.show', timeout=8000)
+        pq = page.input_value('#pindah-qty')
+        pa = page.input_value('#pindah-asal')
+        step('L2-05b tombol Pindah Rak di detail: modal terbuka, qty=max rak asal (3)',
+             lambda: expect(pq == '3' and pa == 'A-01', 'qty=' + pq + ' asal=' + pa))
+        page.keyboard.press('Escape')
+        page.wait_for_selector('#item-detail-sheet.show', state='detached', timeout=8000)
+        page.keyboard.press('Escape')
+        page.wait_for_selector('#pindah-sheet.show', state='detached', timeout=8000)
 
         # 4. Edit Item -> Pindah Rak (pintu masuk baru)
         page.locator('.ilc3-id').first.click()

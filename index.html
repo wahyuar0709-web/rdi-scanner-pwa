@@ -3751,10 +3751,10 @@ w.document.write(buildRakLabelHTML(raks));w.document.close();closeRakLabelSheet(
 var _pindahItem=null;function openPindahSheet(item){var bar=document.getElementById('pindah-sbar');var it=item||currentItem;if(!it){bar.textContent='Scan item dulu di tab Scanner, lalu buka Pindah Rak.';return;}
 if(_isArsip(it)){bar.textContent='Item ini sudah diarsipkan. Aktifkan kembali dulu dari halaman detail item.';return;}
 var rb=it.rakBreakdown||[];if(!rb.length){bar.textContent='Item ini belum punya stok di rak mana pun. Lakukan transaksi MASUK dulu.';return;}
-var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rb.slice().sort(function(a,b){return b.qty-a.qty;}).map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(r.qty)+' '+xe(it.unit||'')+'</option>';}).join('');
+var rbs=rb.slice().sort(function(a,b){return b.qty-a.qty;});var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rbs.map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(r.qty)+' '+xe(it.unit||'')+'</option>';}).join('');
 document.getElementById('pindah-item').value=(it.id||'')+' · '+(it.nama||'');
 document.getElementById('pindah-tujuan').value='';
-document.getElementById('pindah-qty').value=(rb[0].qty>0?rb[0].qty:1);
+document.getElementById('pindah-qty').value=(rbs[0].qty>0?rbs[0].qty:1);
 bar.textContent='';
 _pindahItem=it;
 updatePindahQtyMax();
