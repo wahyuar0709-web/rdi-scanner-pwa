@@ -3761,11 +3761,25 @@ updatePindahQtyMax();
 document.getElementById('pindah-overlay').classList.add('show');document.getElementById('pindah-sheet').classList.add('show');}
 function openPindahFromCekStok(){if(!currentItem){showStatus('sbar-lookup','s-warn',IC.info+' Scan item dulu');return;}openPindahSheet();}
 function openPindahRakFromDetail(){
-  var it=allRows.find(function(r){return String(r.id||'').toUpperCase()===String(_detailItemId||'').toUpperCase();});
-  if(!it) return;
-  var rb=(_rakBreakdownMap&&_rakBreakdownMap[it.id.toUpperCase()])||[];
-  if(!rb.length) { showStatus('sbar-idd','s-warn','Item tidak punya stok rak.'); return; }
-  openPindahSheet(Object.assign({},it,{rakBreakdown:rb.slice()}));
+  var id=_detailItemId;
+  if(!id){showStatus('sbar-idd-archive','s-warn',IC.info+' Item belum terpilih');return;}
+  var _up=String(id).toUpperCase(),_row=null;
+  for(var _i=0;_i<allRows.length;_i++){if(String(allRows[_i].id||'').toUpperCase()===_up){_row=allRows[_i];break;}}
+  var _rb=(_rakBreakdownMap&&_rakBreakdownMap[_up])||[];
+  if(_row&&_rb.length){
+    openPindahSheet(Object.assign({},_row,{rakBreakdown:_rb.slice()}));
+    return;
+  }
+  showStatus('sbar-idd-archive','s-info',IC.load+' Mengambil data item...');
+  var _done=false;
+  gasPost({action:'getItem',itemId:_up})
+  .then(function(res){
+    if(_done)return;_done=true;
+    if(!res||res.status!=='ok'){showStatus('sbar-idd-archive','s-err',IC.err+' Gagal ambil data rak');return;}
+    openPindahSheet(res.item);
+  })
+  .catch(function(err){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Network error');});
+  setTimeout(function(){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Timeout');},15000);
 }
 /* v5.31: pintu masuk Pindah Rak dari sheet Edit Item. PERF FIX v15.41: dulu SELALU
    fetch getItem ke GAS (tanpa timeout) -> jaringan lambat membuat "Mengambil data item..."
