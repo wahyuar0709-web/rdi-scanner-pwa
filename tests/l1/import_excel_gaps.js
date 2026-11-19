@@ -7,7 +7,7 @@
  *   IMP-06: ID >40 karakter DITOLAK, bukan dipangkas.
  * CATATAN LEVEL: L1 (parser murni + mock Sheets). Tidak membuktikan GAS asli (L3). */
 const { loadCodeGS, makeSheet, makeSpreadsheet } = require('../tools/gs_harness.js');
-const P = require('C:/projec/rdi-scanner-pwa/js/importexcel.js');
+const P = require('../../js/importexcel.js');
 let pass = 0, fail = 0;
 function t(name, cond, detail) { if (cond) { pass++; console.log('PASS | ' + name); } else { fail++; console.log('FAIL | ' + name + (detail ? ' | ' + detail : '')); } }
 const clone = (o) => JSON.parse(JSON.stringify(o));
