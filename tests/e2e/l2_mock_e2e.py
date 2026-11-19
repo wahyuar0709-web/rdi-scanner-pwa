@@ -221,10 +221,10 @@ def main():
         page.wait_for_selector('#pindah-sheet.show', timeout=8000)
         pq = page.input_value('#pindah-qty')
         pa = page.input_value('#pindah-asal')
-        step('L2-05b tombol Pindah Rak di detail: modal terbuka, qty=max rak asal (3)',
-             lambda: expect(pq == '3' and pa == 'A-01', 'qty=' + pq + ' asal=' + pa))
-        page.keyboard.press('Escape')
-        page.wait_for_selector('#item-detail-sheet.show', state='detached', timeout=8000)
+        det_open = page.eval_on_selector('#item-detail-sheet', "el => el.classList.contains('show')")
+        step('L2-05b tombol Pindah Rak di detail: modal di atas (detail tertutup), qty=max rak asal (3)',
+             lambda: expect(pq == '3' and pa == 'A-01' and not det_open,
+                            'qty=' + pq + ' asal=' + pa + ' detailTerbuka=' + str(det_open)))
         page.keyboard.press('Escape')
         page.wait_for_selector('#pindah-sheet.show', state='detached', timeout=8000)
 

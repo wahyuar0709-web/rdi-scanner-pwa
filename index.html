@@ -3767,7 +3767,7 @@ function openPindahRakFromDetail(){
   for(var _i=0;_i<allRows.length;_i++){if(String(allRows[_i].id||'').toUpperCase()===_up){_row=allRows[_i];break;}}
   var _rb=(_rakBreakdownMap&&_rakBreakdownMap[_up])||[];
   if(_row&&_rb.length){
-    openPindahSheet(Object.assign({},_row,{rakBreakdown:_rb.slice()}));
+    closeItemDetail();openPindahSheet(Object.assign({},_row,{rakBreakdown:_rb.slice()}));
     return;
   }
   showStatus('sbar-idd-archive','s-info',IC.load+' Mengambil data item...');
@@ -3776,7 +3776,7 @@ function openPindahRakFromDetail(){
   .then(function(res){
     if(_done)return;_done=true;
     if(!res||res.status!=='ok'){showStatus('sbar-idd-archive','s-err',IC.err+' Gagal ambil data rak');return;}
-    openPindahSheet(res.item);
+    closeItemDetail();openPindahSheet(res.item);
   })
   .catch(function(err){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Network error');});
   setTimeout(function(){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Timeout');},15000);
