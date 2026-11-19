@@ -2274,6 +2274,9 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit Item
       </button>
+      <button class="btn btn-sm" id="idd-btn-move" onclick="openPindahRakFromDetail()">
+        <svg class="ic" aria-hidden="true"><use href="#i-move"/></svg> Pindah Rak
+      </button>
     <button type="button" class="btn btn-sm" id="idd-btn-archive" onclick="toggleArchiveFromDetail()"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Arsipkan Item</button>
     </div>
     <div id="sbar-idd-archive" class="sbar u-mt-8" role="status" aria-live="polite"></div>
@@ -3750,12 +3753,13 @@ var rb=it.rakBreakdown||[];if(!rb.length){bar.textContent='Item ini belum punya 
 var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rb.slice().sort(function(a,b){return b.qty-a.qty;}).map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(r.qty)+' '+xe(it.unit||'')+'</option>';}).join('');
 document.getElementById('pindah-item').value=(it.id||'')+' · '+(it.nama||'');
 document.getElementById('pindah-tujuan').value='';
-document.getElementById('pindah-qty').value=1;
+document.getElementById('pindah-qty').value=(rb[0].qty>0?rb[0].qty:1);
 bar.textContent='';
 _pindahItem=it;
 updatePindahQtyMax();
 document.getElementById('pindah-overlay').classList.add('show');document.getElementById('pindah-sheet').classList.add('show');}
 function openPindahFromCekStok(){if(!currentItem){showStatus('sbar-lookup','s-warn',IC.info+' Scan item dulu');return;}openPindahSheet();}
+function openPindahRakFromDetail(){if(_detailItemId){var _row=allRows.find(function(r){return String(r.id||'').toUpperCase()===String(_detailItemId).toUpperCase();});if(_row){var _rb=(_rakBreakdownMap&&_rakBreakdownMap[String(_detailItemId).toUpperCase()])||[];if(_rb.length){openPindahSheet(Object.assign({},_row,{rakBreakdown:_rb.slice()}));return;}}}openPindahSheet();}
 /* v5.31: pintu masuk Pindah Rak dari sheet Edit Item. PERF FIX v15.41: dulu SELALU
    fetch getItem ke GAS (tanpa timeout) -> jaringan lambat membuat "Mengambil data item..."
    menggantung lama. Data yang dibutuhkan sudah tersedia lokal: baris item di allRows
