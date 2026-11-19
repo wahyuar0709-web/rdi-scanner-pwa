@@ -2073,15 +2073,9 @@ function acquirePerItemLock_(itemId, timeoutMs) {
 //  vendor & noReferensi (No SJ/PO) dicatat per transaksi di sini.
 // ============================================================
 function postTransaksi(params) {
-  // FIX v5.8 (P0/P1 audit finding F2): frontend (gasPost di index.html) sudah kirim requestId
-  // dan meng-klaim di komentarnya bahwa backend dedup lewat CacheService berbasis requestId --
-  // tapi implementasinya belum ada. LockService di bawah cuma cegah race condition ANTAR
-  // request paralel, TIDAK cegah request retry SEKUENSIAL (mis. koneksi putus pas response
-  // balik, frontend retry dgn body identik) dari jadi transaksi dobel. Ini menambal itu,
-  // TANPA ubah signature/API/urutan validasi -- kalau requestId kosong (klien lama), perilaku
-  // persis sama seperti sebelumnya.
-  // FIX SEDANG: requestId di-hash dgn body transaksi - retry dengan body berbeda
-  // tidak akan collide di cache (mencegah "silent" return hasil request lain).
+  // v5.8 F2: requestId didedup via CacheService. LockService hanya mencegah race ANTAR
+  // request paralel, bukan retry SEKUENSIAL (response hilang lalu frontend kirim ulang).
+  // requestId kosong (klien lama) = perilaku lama, tanpa dedup.
   var requestId = String(params.requestId||'').trim();
   var cache     = requestId ? CacheService.getScriptCache() : null;
   var bodySig   = '';
@@ -2161,23 +2155,18 @@ function postTransaksi(params) {
     // ditegakkan (lihat normalizeRak_) - dipakai demi kompatibilitas data lama.
     rak = normalizeRak_(rak);
 
-    // v5.31 PINDAH: pindah stok antar rak DALAM satu item. params.rak = rak
-    // TUJUAN, params.rakAsal = rak ASAL. Total saldo item TIDAK berubah
-    // (tidak ada updateSaldo) -- hanya distribusi Stok_Per_Rak.
+    // v5.31 PINDAH: rak TUJUAN=params.rak, rak ASAL=params.rakAsal. Total saldo item
+    // TIDAK berubah (tidak ada updateSaldo) -- hanya distribusi Stok_Per_Rak.
     var rakAsal = normalizeRak_(params.rakAsal||'');
     if (jenis==='PINDAH' && !rakAsal) return { status:'error', message:'Rak asal wajib diisi untuk PINDAH' };
     if (jenis==='PINDAH' && rakAsal===rak) return { status:'error', message:'Rak tujuan harus berbeda dari rak asal' };
 
     var itemResult = getItemById(itemId);
     if (itemResult.status!=='ok') return itemResult;
-    var item = itemResult.item;
-
     var item = itemResult.item; rak=(jenis==='PINDAH')?_kanonikRak(item,rak):rak; if(jenis==='PINDAH') rakAsal=_kanonikRak(item,rakAsal);
 
-    // v5.31 PINDAH: rak asal tercatat di Keterangan "PINDAH DARI: <asal>" (format tetap
-    // yang di-parse recalculateAllSaldoLocked_ saat rebuild Stok_Per_Rak); keterangan
-    // user (kalau ada) menyusul setelah '|'. safeCell_ dipanggil di sini, bukan di
-    // appendRow -- gate HAPA/SEC-D7 memantau jarak safeCell_ pertama dalam postTransaksi.
+    // PINDAH: asal dicatat di Keterangan "PINDAH DARI: <asal>" (di-parse saat rebuild
+    // Stok_Per_Rak). safeCell_ di sini karena gate menuntut guard di awal fungsi.
     var ketLog = keterangan;
     if (jenis==='PINDAH') ketLog = 'PINDAH DARI: ' + rakAsal + (keterangan ? ' | ' + keterangan : '');
     ketLog = safeCell_(ketLog);

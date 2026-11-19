@@ -3781,6 +3781,7 @@ function openPindahRakFromDetail(){
   .catch(function(err){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Network error');});
   setTimeout(function(){if(_done)return;_done=true;showStatus('sbar-idd-archive','s-err',IC.err+' Timeout');},15000);
 }
+window.openPindahRakFromDetail = openPindahRakFromDetail;
 /* v5.31: pintu masuk Pindah Rak dari sheet Edit Item. PERF FIX v15.41: dulu SELALU
    fetch getItem ke GAS (tanpa timeout) -> jaringan lambat membuat "Mengambil data item..."
    menggantung lama. Data yang dibutuhkan sudah tersedia lokal: baris item di allRows
