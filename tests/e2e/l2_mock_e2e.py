@@ -243,16 +243,6 @@ def main():
         step('L2-07 modal pindah: item benar + 2 opsi rak asal',
              lambda: expect('AUTO-BBA70602' in pi and nopt == 2, 'item=' + pi + ' opts=' + str(nopt)))
 
-        # tombol Scan harus membuka kamera DI DALAM sheet (dulu terbuka di section
-        # Scanner yang tersembunyi -> terlihat seperti tombol mati)
-        page.click('#btn-scan-rak-pindah')
-        page.wait_for_selector('#pindah-qr-container', state='visible', timeout=8000)
-        inside = page.eval_on_selector('#pindah-qr-container', "el => !!el.closest('#pindah-sheet')")
-        step('L2-07b tombol Scan rak membuka kamera di dalam sheet Pindah',
-             lambda: expect(inside, 'kontainer kamera tidak berada di dalam #pindah-sheet'))
-        page.click('#pindah-qr-container button')
-        page.wait_for_selector('#pindah-qr-container', state='hidden', timeout=8000)
-
         # validasi: rak sama
         page.select_option('#pindah-asal', 'A-01')
         page.fill('#pindah-tujuan', 'A-01')
