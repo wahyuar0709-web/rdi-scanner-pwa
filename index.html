@@ -4157,22 +4157,6 @@ cl.innerHTML='<div style="border:1px solid var(--border);border-radius:var(--r);
 +'</div>';}).join('')
 +(rows.length>shown.length?'<div style="padding:10px 12px;border-top:1px solid var(--border);text-align:center"><div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Menampilkan '+shown.length+' dari '+rows.length+' item - Semua hanya memilih '+shown.length+' yang terlihat.</div><button class="btn btn-sm" style="width:100%" onclick="cetakShowAllRows()">Tampilkan semua ('+rows.length+')</button></div>':'')
 +'</div>';}
-</script>
-<style>
-/* FIX 2026-11-20: Tampilan daftar item cetak lebih lega (padding 16px/14px). */
-#section-cetak .cetak-item-row {
-    padding: 16px 14px;
-    border-bottom: 1px solid var(--border);
-}
-#section-cetak .cetak-item-nama {
-    font-size: 15px;
-    margin-bottom: 4px;
-}
-#section-cetak .cetak-item-stok {
-    font-size: 14px;
-}
-</style>
-<script>
 function _cetakSyncRow(idx,target){var row=null;try{row=(target&&target.closest)?target.closest('.cetak-item-row'):null;}catch(e){}var rows=row?[row]:document.querySelectorAll('#cetak-item-list .cetak-item-row[data-idx="'+idx+'"]');var sel=cetakSelectedIds.has(idx);for(var i=0;i<rows.length;i++){var cb=rows[i].querySelector('.cetak-item-cb');if(cb)cb.checked=sel;rows[i].setAttribute('aria-pressed',sel?'true':'false');}}
 function _cetakSyncRows(){var rows=document.querySelectorAll('#cetak-item-list .cetak-item-row[data-idx]');for(var i=0;i<rows.length;i++){var idx=parseInt(rows[i].getAttribute('data-idx'),10);var sel=cetakSelectedIds.has(idx);var cb=rows[i].querySelector('.cetak-item-cb');if(cb)cb.checked=sel;rows[i].setAttribute('aria-pressed',sel?'true':'false');}}
 function toggleCetakRow(event,idx){if(event)event.stopPropagation();if(cetakSelectedIds.has(idx))cetakSelectedIds.delete(idx);else cetakSelectedIds.add(idx);updateCetakCount();_cetakSyncRow(idx,event?event.target:null);}
