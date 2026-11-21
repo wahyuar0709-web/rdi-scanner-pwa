@@ -14,7 +14,7 @@ function batchStatusInfo(status){switch(status){case'processing':return{label:'D
 function canRetryBatchItem(item){return!!item&&(item.status==='failed'||item.status==='ambiguous');}
 function calcTotalPages(rows,pageSize){return Math.max(1,Math.ceil(rows.length/pageSize));}
 function _formatHistoryTime(value){var text=String(value||'').trim();var match=text.match(/^(\d{1,2})\.(\d{2})\.(\d{2})$/);return match?String(match[1]).padStart(2,'0')+':'+match[2]+':'+match[3]:text||'—';}
-function _fmtTglSingkat(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'});}
+function _fmtTglSingkat(ts){if(!ts)return'—';var d=new Date(ts);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}
 function rackHeatColor(ratio){if(ratio>0.8)return{bg:'var(--red-dim)',border:'var(--red-border)',text:'var(--red-text)'};if(ratio>0.4)return{bg:'var(--amber-dim)',border:'var(--amber-border)',text:'var(--amber)'};return{bg:'var(--green-dim)',border:'var(--green-border)',text:'var(--green-text)'};}
 function formatRakBreakdown(list){if(!list||!list.length)return'Belum ada stok di rak manapun';return list.map(function(r){return r.rak+': '+r.qty;}).join(', ');}
 function todayKeyStr(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
