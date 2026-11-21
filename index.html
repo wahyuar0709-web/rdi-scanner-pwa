@@ -79,7 +79,7 @@ window.loadExcelLib = loadExcelLib;
 --badge-aman: rgba(34, 197, 94, 0.15);
 --badge-min: rgba(245, 159, 0, 0.15);
 --badge-kri: rgba(239, 68, 68, 0.15);
-.id-search-loading{position:absolute;inset:-1px;background:rgba(10,17,32,.72);backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);border-radius:var(--r);display:none;align-items:center;justify-content:center;gap:8px;z-index:5;font-size:13px;font-weight:700;color:var(--amber);pointer-events:none;opacity:0;transition:opacity var(--dur-base) ease}
+.id-search-loading{position:absolute;inset:-1px;background:rgba(10,17,32,.72);backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);border-radius:var(--r);display:none!important;align-items:center;justify-content:center;gap:8px;z-index:5;font-size:13px;font-weight:700;color:var(--amber);pointer-events:none;opacity:0;transition:opacity var(--dur-base) ease}
 .id-search-loading.show{display:flex;opacity:1}
 .id-search-loading svg{width:18px;height:18px}
 .id-search-loading .spin{animation:spin 1s linear infinite}
@@ -1382,6 +1382,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
   <!-- Sticky submit bar: tombol Simpan selalu terjangkau tanpa scroll -->
   <div class="trx-submit-bar u-hide" id="trx-submit-bar">
+    <div id="submit-help" class="u-hide" style="color:var(--red-text);margin-bottom:8px;font-size:12px;font-weight:700">Pilih jenis transaksi (Masuk/Keluar) dulu.</div>
     <button class="btn btn-primary btn-lg btn-block" id="btn-submit" onclick="submitTransaksi()">
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       Simpan Transaksi
@@ -3717,7 +3718,7 @@ function markRakChipSelection(){var val=(document.getElementById('rak-input')||{
 function updateSaldoPreview(){var el=document.getElementById('preview-saldo-after');if(!el||!currentItem)return;if(!currentJenis){el.textContent='-';el.className='saldo-after-val';return;}
 var saldo=parseFloat(currentItem.saldo)||0;var qty=parseFloat((document.getElementById('qty-input')||{}).value)||0;var after=currentJenis==='KELUAR'?(saldo-qty):(saldo+qty);var unit=currentItem.unit||'';el.textContent=after+' '+unit;el.className='saldo-after-val '+(after<0?'warn':(currentJenis==='KELUAR'?'down':'up'));}
 /* pure helpers moved → js/format.js (F4.5) */
-function setJenis(jenis){currentJenis=jenis;document.getElementById('btn-masuk').className='jenis-btn'+(jenis==='MASUK'?' active-masuk':'');document.getElementById('btn-keluar').className='jenis-btn'+(jenis==='KELUAR'?' active-keluar':'');var card=document.getElementById('item-preview');if(card)card.className='item-card '+(jenis==='KELUAR'?'jenis-keluar':(jenis==='MASUK'?'jenis-masuk':''));var subBtn=document.getElementById('btn-submit');if(subBtn)subBtn.disabled=!jenis;updateSaldoPreview();checkTransactionAnomaly();/* FIX BUG#2 (v14.98): begitu operator memilih Jenis Transaksi (Masuk/Keluar), baru arahkan fokus+buka keyboard ke Qty supaya alurnya: pilih jenis -> isi qty. */if(jenis){setTimeout(function(){var qtyEl=document.getElementById('qty-input');if(qtyEl){qtyEl.focus();qtyEl.select();}},50);}}
+function setJenis(jenis){currentJenis=jenis;document.getElementById('btn-masuk').className='jenis-btn'+(jenis==='MASUK'?' active-masuk':'');document.getElementById('btn-keluar').className='jenis-btn'+(jenis==='KELUAR'?' active-keluar':'');var card=document.getElementById('item-preview');if(card)card.className='item-card '+(jenis==='KELUAR'?'jenis-keluar':(jenis==='MASUK'?'jenis-masuk':''));var subBtn=document.getElementById('btn-submit');if(subBtn)subBtn.disabled=!jenis;var helpEl=document.getElementById('submit-help');if(helpEl)helpEl.classList.toggle('u-hide',!!jenis);updateSaldoPreview();checkTransactionAnomaly();/* FIX BUG#2 (v14.98): begitu operator memilih Jenis Transaksi (Masuk/Keluar), baru arahkan fokus+buka keyboard ke Qty supaya alurnya: pilih jenis -> isi qty. */if(jenis){setTimeout(function(){var qtyEl=document.getElementById('qty-input');if(qtyEl){qtyEl.focus();qtyEl.select();}},50);}}
 function adjustQty(delta){var inp=document.getElementById('qty-input');inp.value=Math.max(1,(parseInt(inp.value)||0)+delta);saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly();}
 var _anomalyStats={itemId:null,avg:0,median:0,maxQty:0,loaded:false};function checkTransactionAnomaly(){if(!currentItem||!currentItem.id){hideAnomalyWarning();return;}
 var itemId=currentItem.id;if(_anomalyStats.itemId!==itemId||!_anomalyStats.loaded){hideAnomalyWarning();_anomalyStats={itemId:itemId,avg:0,median:0,maxQty:0,loaded:false};gasGet({action:'getLedger',id:itemId}).then(function(res){if(!currentItem||currentItem.id!==itemId)return;if(!res||res.status!=='ok'){_anomalyStats.loaded=true;return;}
