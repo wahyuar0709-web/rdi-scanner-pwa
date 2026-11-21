@@ -736,7 +736,23 @@ body.light .id-search-loading,html body .id-search-loading{background:rgba(243,2
   #user-badge-topbar{display:none}
   /* Judul boleh memakai lebar yang tersisa; tidak perlu ellipsis lagi
      karena tidak ada lagi tiga elemen yang rebut ruang. */
-  .topbar-title{overflow:visible;text-overflow:clip}
+  @media (max-width: 360px) {
+  .topbar-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (hover: none) {
+  :hover {
+    background-color: initial !important;
+    border-color: initial !important;
+    color: initial !important;
+    box-shadow: initial !important;
+    transform: none !important;
+  }
+}
 }
 
 /* --- 2. Badge alert di tab Lainnya --- */
