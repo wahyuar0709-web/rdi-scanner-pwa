@@ -1174,6 +1174,23 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="topbar-logo" id="topbar-logo-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="16" height="16">
+      <rect x="2" y="7" width="20" height="14" rx="2"/>
+      <path d="M8 7V5a4 4 0 018 0v2"/>
+    </svg>
+  </div>
+  <div class="topbar-id">
+    <div class="topbar-title">PT Rayard Deli Indonesia</div>
+    <div class="topbar-sub">Spare Part · Tools · Indirect</div>
+  </div>
+  <span class="topbar-ver" id="topbar-version-label">v15.41</span>
+  <div class="topbar-online" id="dot-online" role="status" aria-live="polite" aria-label="Status koneksi internet" title="Terhubung ke internet"></div>
+  <span class="viewer-badge" style="display:none;font-size:12px;font-weight:700;padding:var(--sp-2) var(--sp-6);border-radius:var(--br-4);background:var(--action);color:#fff;white-space:nowrap;flex-shrink:0">LIHAT SAJA</span>
+  <span class="user-badge" id="user-badge-topbar" onclick="showUserModal()" role="button" tabindex="0" aria-label="Buka menu pengguna" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showUserModal()}">
+    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span id="topbar-username">Admin</span>
+  </span>
+</header>
 
 <!-- Bottom Navigation Bar (3 tab: Inventory / Transaksi(scan) / History) - Menu Lainnya lengkap diakses via tombol <svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg> di header Inventory -->
 <footer class="app-footer">
