@@ -1,6 +1,6 @@
 {
-  "cache": "rdi-stok-v101",
+  "cache": "rdi-stok-v102",
   "files": 17,
-  "hash": "ab4a1aa5021aff25a95bba77a8bf2fffca719ec9e07073d014944796cb9f2a7a",
+  "hash": "ad67581a12e1253ce28dfb453d19ec28d50d9a3ee271d651f8b24c3dcef34d65",
   "note": "Regenerasi: node tests/l1/sw_shell_cache_gate.js --print"
 }
