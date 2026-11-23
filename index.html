@@ -1013,6 +1013,25 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 #item-detail-hero>*{max-width:100%;min-width:0}
 #item-detail-hero .item-detail-nama,#item-detail-hero .item-detail-spec{overflow-wrap:anywhere;word-break:normal;padding-right:0}
 #item-detail-hero .item-detail-stok-hero{align-self:flex-start}
+/* FIX UI-12: footer detail item HP 3 baris -> 2 baris (Transaksi penuh; Edit | Pindah | Arsip sebaris). Label panjang dipotong ellipsis oleh aturan #idd-btn-archive. */
+@media (max-width:640px){.item-detail-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr)}.item-detail-actions .btn:not(#idd-btn-trx){padding-left:6px;padding-right:6px}}
+@media (max-width:340px){.item-detail-actions .btn:not(#idd-btn-trx) svg{display:none}}
+/* FIX UI-13: daftar item Cetak Kartu terlalu sempit (HP 360x640 hanya 139px = <2 baris; desktop 1366x768 297px). Padding baris 16px (FIX 2026-11-20) bikin baris 78px, ditambah bar Kembali 65px & jarak mode-nav. Font tetap 15px/14px; hanya jarak vertikal dipadatkan. */
+#section-cetak .cetak-item-row{padding:10px 14px}
+#section-cetak .cetak-item-nama{margin-bottom:2px}
+#section-cetak .subpage-bar{padding-top:0;padding-bottom:0}
+#section-cetak #cetak-mode-nav{margin-bottom:6px!important}
+/* FIX UI-14: .u-hide{display:none!important} mengalahkan style.display yang diatur JS -> tombol "Simpan Transaksi" (#trx-submit-bar) tidak pernah muncul; juga #idd-low, #hfeed-pagination, #idd-hist-list, #idd-vendor-list. Kalau JS memberi display inline, u-hide tidak boleh menahannya (display:none inline tetap menyembunyikan). */
+.u-hide[style*="display: block"]{display:block!important}
+.u-hide[style*="display: flex"]{display:flex!important}
+.u-hide[style*="display: grid"]{display:grid!important}
+.u-hide[style*="display: inline-block"]{display:inline-block!important}
+.u-hide[style*="display: inline-flex"]{display:inline-flex!important}
+/* FIX UI-15: di desktop (sidebar 260px / 76px saat dipersempit) bar Simpan masih left:80px (sisa desain rail lama) -> menimpa sidebar (tombol Sempitkan & profil tertutup) */
+@media (min-width:1024px){
+  body:not(.viewer-mode) .trx-submit-bar{left:260px}
+  body:not(.viewer-mode) .rdi-sidebar.collapsed ~ .main-with-sidebar .trx-submit-bar{left:76px}
+}
 </style>
 
 </head>
