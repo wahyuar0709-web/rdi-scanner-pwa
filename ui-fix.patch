@@ -1,5 +1,5 @@
 diff --git a/index.html b/index.html
-index 4183a7e..80831ef 100644
+index 4183a7e..07c8646 100644
 --- a/index.html
 +++ b/index.html
 @@ -73,14 +73,18 @@ window.loadExcelLib = loadExcelLib;
@@ -31,7 +31,7 @@ index 4183a7e..80831ef 100644
  .rdi-sidebar-search input::placeholder{color:var(--text3)}
  .rdi-sidebar-search input:focus{outline:2px solid var(--brand-2);outline-offset:2px;border-color:var(--brand-2)}
  .rdi-sidebar-search-btn{position:absolute;left:var(--space-1);top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:16px;line-height:1}
-@@ -993,10 +997,47 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+@@ -993,10 +997,86 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
  #section-cetak .cetak-item-stok {
      font-size: 14px;
  }
@@ -48,7 +48,7 @@ index 4183a7e..80831ef 100644
 +.ilc3-fab::after{content:"";position:absolute;inset:-7px}
 +/* FIX UI-11: hero detail item berupa flex SATU BARIS padahal isinya bertumpuk (nama, spesifikasi, kode, rak, stok) -> spesifikasi pecah per huruf, chip rak terpotong, qty keluar layar */
 +#item-detail-hero{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px}
-+#item-detail-hero>*{max-width:100%;min-width:0}
++#item-detail-hero>*:not(.item-detail-close){max-width:100%;min-width:0}
 +#item-detail-hero .item-detail-nama,#item-detail-hero .item-detail-spec{overflow-wrap:anywhere;word-break:normal;padding-right:0}
 +#item-detail-hero .item-detail-stok-hero{align-self:flex-start}
 +/* FIX UI-12: footer detail item HP 3 baris -> 2 baris (Transaksi penuh; Edit | Pindah | Arsip sebaris). Label panjang dipotong ellipsis oleh aturan #idd-btn-archive. */
@@ -70,6 +70,45 @@ index 4183a7e..80831ef 100644
 +  body:not(.viewer-mode) .trx-submit-bar{left:260px}
 +  body:not(.viewer-mode) .rdi-sidebar.collapsed ~ .main-with-sidebar .trx-submit-bar{left:76px}
 +}
++/* FIX UI-16 (E2E): tabel Alert Stok & Pengaturan Min Stock lebih lebar dari layar HP -> kolom MIN, input batas minimum, dan tombol Masuk tersembunyi di balik scroll horizontal tanpa petunjuk. Di HP ubah tiap baris jadi kartu bertumpuk. */
++@media (max-width:900px){
++  .tbl-stack thead{display:none}
++  .tbl-stack,.tbl-stack tbody{display:block;width:100%}
++  .tbl-stack tr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:2px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
++  .tbl-stack td{display:block;padding:0;border:0;width:auto;text-align:left}
++  #alert-tbody td:nth-child(1),#minstock-tbody td:nth-child(1){grid-column:1;grid-row:1;font-weight:700}
++  #alert-tbody td:nth-child(2){grid-column:1;grid-row:2}
++  #alert-tbody td:nth-child(3){grid-column:1;grid-row:3;font-size:12px;color:var(--text3)}
++  #alert-tbody td:nth-child(3)::before{content:"Rak "}
++  #alert-tbody td:nth-child(4){grid-column:2;grid-row:1;text-align:right;font-weight:700}
++  #alert-tbody td:nth-child(4)::before{content:"Saldo ";font-weight:400;font-size:12px;color:var(--text3)}
++  #alert-tbody td:nth-child(5){grid-column:2;grid-row:2;text-align:right}
++  #alert-tbody td:nth-child(5)::before{content:"Min ";font-size:12px;color:var(--text3)}
++  #alert-tbody td:nth-child(6){grid-column:2;grid-row:3;text-align:right}
++  #alert-tbody td:nth-child(7){grid-column:1/-1;grid-row:4;margin-top:6px}
++  #alert-tbody td:nth-child(7) .btn{width:100%;min-height:44px}
++  #minstock-tbody td:nth-child(2){grid-column:1/-1;grid-row:2}
++  #minstock-tbody td:nth-child(3){grid-column:2;grid-row:1;text-align:right;font-weight:700}
++  #minstock-tbody td:nth-child(3)::before{content:"Saldo ";font-weight:400;font-size:12px;color:var(--text3)}
++  #minstock-tbody td:nth-child(4){grid-column:1;grid-row:3;margin-top:4px}
++  #minstock-tbody td:nth-child(4)::before{content:"Batas minimum";display:block;font-size:12px;color:var(--text3);margin-bottom:2px}
++  #minstock-tbody td:nth-child(4) .min-stock-input{width:100%;min-height:44px;text-align:left}
++  #minstock-tbody td:nth-child(5){grid-column:2;grid-row:3;align-self:end;font-size:12px;color:var(--text3)}
++  #alert-tbody td[colspan],#minstock-tbody td[colspan]{grid-column:1/-1;grid-row:auto;font-weight:400}
++}
++/* FIX UI-18 (E2E): tabel Stok Item 1050px > area 932px di laptop 1280px (1018px di 1366px) -> kolom Aksi (Edit/Transaksi per baris) tersembunyi di balik scroll horizontal. Header boleh membungkus + padding sel 8px -> muat di 1280 & 1366. */
++@media (min-width:641px){
++  #section-master th{white-space:normal;line-height:1.25;vertical-align:bottom}
++  #section-master th,#section-master td{padding-left:8px;padding-right:8px}
++}
++/* FIX UI-17 (E2E): area sentuh <44px pada kontrol yang sering dipakai di layar sentuh */
++@media (pointer:coarse){
++  .item-detail-close,.btn-opprod-toggle,.btn-rackov-toggle,.btn-sm{min-width:44px}
++  #cetak-action-bar .btn{min-height:44px}
++}
++/* FIX UI-19 (E2E): di HP 360px dua input tanggal Dari/Sampai (min-width auto bawaan date input) meluber 13px keluar layar di sheet Filter -> izinkan menyusut */
++.hist-filter-field{min-width:0}
++.hist-filter-field input[type=date]{min-width:0;width:100%;box-sizing:border-box}
  </style>
  
  </head>
@@ -79,7 +118,7 @@ index 4183a7e..80831ef 100644
  <symbol id="i-new" viewBox="0 0 24 24"><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M5.3 5.3l3.5 3.5M15.2 15.2l3.5 3.5M18.7 5.3l-3.5 3.5M8.8 15.2l-3.5 3.5"/></symbol>
  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 9v4.5M12 17.2h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
-@@ -1010,7 +1051,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+@@ -1010,7 +1090,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6M20.5 4v5h-5"/></symbol>
  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
@@ -88,7 +127,86 @@ index 4183a7e..80831ef 100644
  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
  
  <!-- BOOT SPLASH - muncul instan sebelum JS sempat cek sesi, sebelum login-gate/app tampil.
-@@ -2517,7 +2558,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+@@ -1507,7 +1587,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+         <label class="field-label" for="qty-input">Jumlah (Qty)</label>
+         <div class="qty-wrap">
+           <button class="qty-btn" onclick="adjustQty(-1)" aria-label="Kurangi jumlah">−</button>
+-          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="1" data-err-msg="Qty harus lebih dari 0" oninput="saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly()">
++          <input type="number" inputmode="decimal" class="qty-input" id="qty-input" value="1" min="0" step="any" data-err-msg="Qty harus lebih dari 0" oninput="saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly()">
+           <button class="qty-btn" onclick="adjustQty(1)" aria-label="Tambah jumlah">+</button>
+         </div>
+         <div id="qty-anomaly-warning" style="display:none;margin-top:6px;padding:var(--space-1) var(--sp-10);border-radius:var(--r);background:var(--amber-dim);border:1px solid var(--amber-border);color:var(--amber);font-size:12px;line-height:1.4"></div>
+@@ -1541,7 +1621,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+           </div>
+           <div class="id-input-wrap">
+             <input type="text" id="rak-input" aria-label="Nomor rak" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" data-err-msg="Lokasi RAK wajib diisi" style="text-transform:uppercase"
+-              oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection()">
++              oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection();updateSaldoPreview()">
+             <button class="btn btn-navy btn-scan-toggle u-btn-44" id="btn-scan-rak" onclick="toggleInlineScannerRak()"
+               title="Scan QR label rak" type="button">
+               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><line x1="16" y1="16" x2="21" y2="16"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/></svg>
+@@ -1581,6 +1661,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+   <!-- Sticky submit bar: tombol Simpan selalu terjangkau tanpa scroll -->
+   <div class="trx-submit-bar u-hide" id="trx-submit-bar">
+     <div id="submit-help" class="u-hide" style="color:var(--red-text);margin-bottom:8px;font-size:12px;font-weight:700">Pilih jenis transaksi (Masuk/Keluar) dulu.</div>
++  <div id="stock-guard-msg" class="u-hide" role="alert" style="color:var(--red-text);margin-bottom:8px;font-size:12px;font-weight:700"></div>
+     <button class="btn btn-primary btn-lg btn-block" id="btn-submit" onclick="submitTransaksi()">
+       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+       Simpan Transaksi
+@@ -1704,7 +1785,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+ 
+   <div class="hist-step active" id="hstep-input">
+     <div class="panel">
+-      <div class="panel-head"><div><h2>Cari History Transaksi</h2><p>Scan QR atau ketik ID item</p></div></div>
++      <div class="panel-head"><div><h2>Cari Riwayat Transaksi</h2><p>Scan QR atau ketik ID item</p></div></div>
+       <div class="panel-body">
+ 
+         <!-- Inline QR Scanner (History) -->
+@@ -1919,6 +2000,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+     </div>
+     <div class="modal-body" id="hist-card-detail-body"></div>
+     <div class="modal-foot">
++      <button class="btn btn-block" id="hist-koreksi-btn" onclick="koreksiFromHistCard()" style="display:none;margin-bottom:8px">Koreksi transaksi ini</button>
+       <button class="btn btn-block" onclick="closeHistCardDetail()">Tutup</button>
+     </div>
+   </div>
+@@ -2037,7 +2119,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+         <span class="chart-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+         Stok Terendah (10 Item)
+       </span>
+-      <select id="dash-lowest-cat-filter" class="sel" style="width:auto;min-width:120px;padding:var(--sp-6) 28px var(--sp-6) var(--sp-10);font-size:var(--fs-11);min-height:40px" onchange="renderLowestStockWidget()"><option value="">Semua Kategori</option></select>
++      <select id="dash-lowest-cat-filter" aria-label="Filter kategori stok terendah" class="sel" style="width:auto;min-width:120px;padding:var(--sp-6) 28px var(--sp-6) var(--sp-10);font-size:var(--fs-11);min-height:44px" onchange="renderLowestStockWidget()"><option value="">Semua Kategori</option></select>
+     </div>
+     <div class="bar-chart" id="dash-lowest"></div>
+   </div>
+@@ -2117,7 +2199,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+     </div>
+     <div class="panel-body" style="padding:0">
+       <div class="table-wrap">
+-        <table>
++        <table class="tbl-stack">
+           <thead>
+             <tr>
+               <th class="col-w120">ID Item</th>
+@@ -2141,7 +2223,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+     <div class="panel-head"><div><h2 class="u-flex-c-g7"><svg aria-hidden="true" class="u-flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan Min Stock per Item</h2><p>Set batas minimum stok untuk tiap item</p></div></div>
+     <div class="panel-body" style="padding:0">
+       <div class="table-wrap">
+-        <table>
++        <table class="tbl-stack">
+           <thead>
+             <tr>
+               <th class="col-w120">ID Item</th>
+@@ -2225,7 +2307,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+         <button class="btn btn-sm" onclick="cetakSelectAll()"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Semua</button>
+         <button class="btn btn-sm btn-danger" onclick="cetakClearAll()"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg> Hapus</button>
+         <span id="paper-size-wrap">
+-        <select class="sel" id="paper-size" style="width:auto;font-size:12px" onchange="updateCetakCount()">
++        <select class="sel" id="paper-size" aria-label="Ukuran kertas" style="width:auto;font-size:12px" onchange="updateCetakCount()">
+           <option value="A4">A4 (4/hal)</option>
+           <option value="A5">A5 (2/hal)</option>
+         </select>
+@@ -2517,7 +2599,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
      <button type="button" class="item-detail-close" onclick="closeItemDetail()" aria-label="Tutup detail item"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
      <div class="item-detail-nama" id="idd-nama" style="margin-top:0">-</div>
      <div class="item-detail-spec" id="idd-spec"></div>
@@ -97,7 +215,170 @@ index 4183a7e..80831ef 100644
        <span style="font-size:12px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Kode Barang</span>
        <div class="item-detail-id" id="idd-id" style="margin-top:0">-</div>
        <span id="idd-arsip-badge" class="u-hide" style="font-size:12px;font-weight:700;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--br-10);padding:var(--sp-2) var(--sp-7)"><svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> DIARSIPKAN</span>
-@@ -3987,7 +4028,7 @@ var histView='day';function setHistView(v){histView=v;document.getElementById('h
+@@ -2570,9 +2652,9 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
+     </button>
+     <div id="idd-hist-list" class="u-hide"><div class="empty-state u-py24 u-pad-20-0"><p>Memuat riwayat...</p></div></div>
+ 
+-    <!-- Feature #11: Vendor History -- collapsible, pola sama dengan Riwayat Transaksi di atas -->
++    <!-- Feature #11: Riwayat Vendor -- collapsible, pola sama dengan Riwayat Transaksi di atas -->
+     <button type="button" class="item-detail-section-lbl item-detail-section-toggle" id="idd-vendor-toggle" onclick="toggleVendorHistory()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;padding-bottom:4px">
+-      <span>▸ Vendor History</span>
++      <span>▸ Riwayat Vendor</span>
+       <span id="idd-vendor-count" style="font-size:12px;color:var(--text3);font-weight:400"></span>
+     </button>
+     <div id="idd-vendor-list" class="u-hide"><div class="empty-state u-py24 u-pad-20-0"><p>Memuat riwayat vendor...</p></div></div>
+@@ -3395,7 +3477,7 @@ function _beep(kind){if(!_beepPref)return;try{var AC=window.AudioContext||window
+ function _buzz(p){if(_buzzReduced)return;try{if(navigator&&typeof navigator.vibrate==='function')navigator.vibrate(p);}catch(e){}}
+ function showStatus(elId,type,html){var el=document.getElementById(elId);if(!el)return;el.className='sbar '+type+' show';/* FIX SEDANG: caller sudah xe()-escape string dinamis; fungsi ini tetap innerHTML karena IC icons = HTML. */el.innerHTML=html;}
+ function hideStatus(elId){var el=document.getElementById(elId);el.className='sbar';el.innerHTML='';}
+-var IC={ok:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',err:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',load:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>',info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'};var _tabHashNames=['scanner','dashboard','master','history','more','alert','cetak','rak','aset'];function _applyHashTab(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0&&!(document.getElementById('section-'+h)&&document.getElementById('section-'+h).classList.contains('active')))switchTab(h);}function switchTab(name,skipAutoScan){if(_tabHashNames.indexOf(name)<0){if(window.console&&console.warn)console.warn('[switchTab] nama tab tidak dikenal:',name);return;}if(_tabHashNames.indexOf(name)>=0&&location.hash!=='#'+name)history.replaceState(null,'','#'+name);
++var IC={ok:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',err:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',load:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>',info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'};var _tabHashNames=['scanner','dashboard','master','history','more','alert','cetak','rak','aset'];function _applyHashTab(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0&&!(document.getElementById('section-'+h)&&document.getElementById('section-'+h).classList.contains('active')))switchTab(h);}function switchTab(name,skipAutoScan){if(_tabHashNames.indexOf(name)<0){if(window.console&&console.warn)console.warn('[switchTab] nama tab tidak dikenal:',name);return;}if(_tabHashNames.indexOf(name)>=0&&location.hash!=='#'+name)history.replaceState(null,'','#'+name);if(name==='scanner'&&_trxResultAt&&Date.now()-_trxResultAt>60000&&document.getElementById('step-result').classList.contains('active')&&typeof scanNext==='function'){_trxResultAt=0;scanNext();}
+ /* FIX SEDANG: stop scanner SELALU saat pindah tab (bukan hanya dari scanner aktif) -
+    monyet-patch switchTab di bawah dihapus, logic pindah ke sini. */
+ stopInlineScanner();stopInlineScannerHist();stopInlineScannerRak();stopInlineScannerMaster();var wasScanner=document.getElementById('section-scanner').classList.contains('active');document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');});/* UX-04 (2026-10-14): guard hasAttribute() DIHAPUS. Sebelumnya hanya tab yang
+@@ -3474,7 +3556,7 @@ var _tableStaleRows=null;var _tableStaleStartIdx=0;/* pure helpers moved → js/
+ function _stockDotSVG(level){var c=level==='red'?'var(--red)':level==='amber'?'var(--amber)':'var(--green)';return'<svg class="stok-dot" width="9" height="9" viewBox="0 0 9 9" style="vertical-align:-1px;flex:none"><circle cx="4.5" cy="4.5" r="4.5" fill="'+c+'"/></svg>';}
+ 
+ // ===== SECTION: TABEL INVENTORY: render, stock dot, autocomplete search =====
+-function _buildTableHtml(rows,startIdx){startIdx=startIdx||0;var tb=document.getElementById('table-body');tb.innerHTML=rows.map(function(r,_rowPos){var idHtml=r.id&&r.id.trim()!==''?'<span class="id-chip">'+xe(r.id)+'</span>':'<span class="badge" style="background:var(--badge-amber-bg,#fef3c7);color:var(--badge-amber-text,#92400e)">No ID</span>';var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';var statusDot=saldo===0?_stockDotSVG('red'):(minS>0&&saldo<=minS)?_stockDotSVG('amber'):_stockDotSVG('green');var catLabel=xe(r.kategori||'-');var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));return'<tr class="u-clickable-row" style="cursor:pointer" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}">'
++function _buildTableHtml(rows,startIdx){startIdx=startIdx||0;var tb=document.getElementById('table-body');tb.innerHTML=rows.map(function(r,_rowPos){var idHtml=r.id&&r.id.trim()!==''?'<span class="id-chip">'+xe(r.id)+'</span>':'<span class="badge" style="background:var(--badge-amber-bg,#fef3c7);color:var(--badge-amber-text,#92400e)">No ID</span>';var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var alertCls=minS>0&&saldo<=minS?'style="color:var(--red);font-weight:700"':'';var statusDot=saldo===0?_stockDotSVG('red'):(minS>0&&saldo<=minS)?_stockDotSVG('amber'):_stockDotSVG('green');var catLabel=xe(r.kategori||'-');var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));return'<tr class="u-clickable-row" style="cursor:pointer" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}">'
+ +'<td class="c" style="color:var(--text3);font-size:12px">'+(startIdx+_rowPos+1)+'</td>'
+ +'<td>'+idHtml+'</td>'
+ +'<td><strong style="font-size:13px">'+xe(r.nama)+'</strong></td>'
+@@ -3540,7 +3622,7 @@ function acShow(ctx){var inputId=ctx==='scan'?'scan-id-input':'hist-id-input';va
+ var scored=[];var needFuzzy=[];allRows.forEach(function(r){if(!r.id&&!r.nama)return;var cheap=fuzzyMatch(r,q,true);if(cheap.match)scored.push({r:r,score:cheap.score});else needFuzzy.push(r);});/* PERF 2026-10-16: pass-2 fuzzy penuh dulu SINKRON atas seluruh sisa katalog tiap burst ketikan - terukur 0,3-1,8 dtk utk katalog 1-5 rb baris, memblokir main thread. Sekarang dipecah per potongan beranggaran waktu ~22 ms via setTimeout (hasil pass-1 cheap tetap tampil duluan); run-token membatalkan pass lama begitu query berubah / dropdown ditutup. */_acFuzzySeq[ctx]=(_acFuzzySeq[ctx]||0)+1;var fzRun=0;if(scored.length<8&&needFuzzy.length)fzRun=_acFuzzySeq[ctx];
+ _acRenderScored(ctx,q,scored,!!fzRun);if(fzRun)_acFuzzyAsync(ctx,q,fzRun,scored,needFuzzy);return;}function _acRenderScored(ctx,q,scored,pend,keepSel){var drop=document.getElementById(ctx==='scan'?'ac-scan':'ac-hist');if(!drop)return;scored.sort(function(a,b){return b.score-a.score;});var top=scored.slice(0,8);if(!top.length){if(pend){drop.innerHTML='<div class="ac-empty">Mencari...</div>';drop.classList.add('show');fitAcDropdown(drop);_acIdx[ctx]=-1;return;}drop.innerHTML='<div class="ac-empty">Tidak ditemukan - coba kata lain</div>';drop.classList.add('show');fitAcDropdown(drop);_acIdx[ctx]=-1;return;}
+ function hl(txt,q){if(!txt||!q)return xe(txt||'');var lo=txt.toLowerCase(),ql=q.toLowerCase();var i=lo.indexOf(ql);if(i>=0)return xe(txt.slice(0,i))+'<mark class="ac-hl">'+xe(txt.slice(i,i+q.length))+'</mark>'+xe(txt.slice(i+q.length));return xe(txt);}
+-var listHtml=top.map(function(item,i){var r=item.r;var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var idHtml=r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>';var rakHtml=(r.rak&&r.rak!=='-')?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'';var footerInfo=[r.kategori?'<span class="ilc2-cat">'+xe(r.kategori)+'</span>':'',r.user?'<span class="ilc2-meta" data-tt="'+xe(r.user)+'">'+xe(r.user)+'</span>':''].filter(Boolean).join('');return'<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xeJs(r.id||r.nama)+'\')" '
++var listHtml=top.map(function(item,i){var r=item.r;var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var idHtml=r.id?'<span class="ilc2-id">'+xe(r.id)+'</span>':'<span class="ilc2-id noid">No ID</span>';var rakHtml=(r.rak&&r.rak!=='-')?'<span class="ilc2-rak">'+xe(r.rak)+'</span>':'';var footerInfo=[r.kategori?'<span class="ilc2-cat">'+xe(r.kategori)+'</span>':'',r.user?'<span class="ilc2-meta" data-tt="'+xe(r.user)+'">'+xe(r.user)+'</span>':''].filter(Boolean).join('');return'<div class="ac-item" onmousedown="acPick(\''+ctx+'\',\''+xeJs(r.id||r.nama)+'\')" '
+ +'data-ac-i="'+i+'">'
+ +'<div class="ilc2-top" style="margin-bottom:2px">'+idHtml+rakHtml+'</div>'
+ +'<div class="ilc2-nama" style="white-space:normal">'+hl(r.nama||'',q)+'</div>'
+@@ -3570,7 +3652,7 @@ return;}else if(e.key==='Escape'){acHide(ctx);return;}
+ _acIdx[ctx]=cur;items.forEach(function(el,i){el.classList.toggle('ac-active',i===cur);});if(cur>=0&&items[cur])items[cur].scrollIntoView({block:'nearest'});}
+ function _sortCompare(a,b){/* PRIORITAS (2026-10-15): item berstok 0 selalu urut di PALING BELAKANG, apa pun arah pengurutan yang dipilih. Sengaja TIDAK dikalikan _sortDir: kalau ikut arah, memilih "stok naik" justru menaikkan stok 0 ke paling atas. Ini soal tempat, bukan soal arah. Tujuannya: item habis tidak memenuhi mata operator di bagian atas, tapi tetap ada di list dan tetap bisa dicari. */var az=(parseFloat(a.qty)||0)===0,bz=(parseFloat(b.qty)||0)===0;if(az!==bz)return az?1:-1;if(_sortField==='_idx'){var ats=_tglMasukTs(a),bts=_tglMasukTs(b);if(ats!==bts)return _sortDir*(ats-bts);return _sortDir*((a._idx||0)-(b._idx||0));}
+ if(_sortField==='qty'){var aq=parseFloat(a.qty)||0,bq=parseFloat(b.qty)||0;if(aq!==bq)return _sortDir*(aq-bq);return _sortDir*((a._idx||0)-(b._idx||0));}
+-if(_sortField==='minStock'){var am=parseInt(minStockMap[a.id]||0,10),bm=parseInt(minStockMap[b.id]||0,10);if(am!==bm)return _sortDir*(am-bm);return _sortDir*((a._idx||0)-(b._idx||0));}
++if(_sortField==='minStock'){var am=parseFloat(minStockMap[a.id]||0,10),bm=parseFloat(minStockMap[b.id]||0,10);if(am!==bm)return _sortDir*(am-bm);return _sortDir*((a._idx||0)-(b._idx||0));}
+ var av=a[_sortField]||'';var bv=b[_sortField]||'';var cmp=String(av).localeCompare(String(bv),'id');if(cmp!==0)return _sortDir*cmp;return (a._idx||0)-(b._idx||0);}
+ function _applySort(){filteredRows.sort(_sortCompare);}
+ function _doFilter(){var q=(document.getElementById('search-box').value||'').trim().toLowerCase();var catFilter=_activeCat||'';var tglDariEl=document.getElementById('flt-tgl-dari');var tglSampaiEl=document.getElementById('flt-tgl-sampai');var tglDari=tglDariEl&&tglDariEl.value?new Date(tglDariEl.value+'T00:00:00').getTime():null;var tglSampai=tglSampaiEl&&tglSampaiEl.value?new Date(tglSampaiEl.value+'T23:59:59').getTime():null;if(!q&&!catFilter&&!_activeRak&&tglDari===null&&tglSampai===null&&_showArsip){filteredRows=allRows.slice();window.filteredRows=filteredRows;_applySort();renderTable(filteredRows);_clearSearchHint();_updateFilterUI();return;}
+@@ -3582,7 +3664,7 @@ function _clearSearchHint(){var el=document.getElementById('search-hint');if(el)
+ 
+ // ===== SECTION: MIN STOCK & ALERT BADGE =====
+ function saveMinStock(id,val){val=parseInt(val)||0;if(val<0)val=0;var prev=minStockMap[id]||0;minStockMap[id]=val;var r=allRows.find(function(row){return row.id===id;});if(r)r.minStock=val;renderTable(filteredRows);updateAlertBadge();gasPost({action:'updateItem',id:id,minStock:val}).then(function(res){if(res.status!=='ok'){minStockMap[id]=prev;if(r)r.minStock=prev;renderTable(filteredRows);updateAlertBadge();showStatus('sbar-load','s-err',IC.err+' Gagal simpan min stok: '+xe(res.message||''));}}).catch(function(err){minStockMap[id]=prev;if(r)r.minStock=prev;renderTable(filteredRows);updateAlertBadge();showStatus('sbar-load','s-err',IC.err+' Gagal simpan min stok: '+xe(friendlyErr(err)));});}
+-function setDashAlert(count){var el=document.getElementById('dash-alert');if(!el)return;el.textContent=count;var card=el.closest?el.closest('.dash-card'):null;if(card)card.classList.toggle('is-clear',parseInt(count||0,10)===0);}function updateAlertBadge(){var count=allRows.filter(function(r){var min=parseInt(minStockMap[r.id]||0);return min>0&&parseInt(r.qty||0)<=min;}).length;var badge=document.getElementById('badge-alert');if(badge){if(count>0){badge.textContent=count>9?'9+':count;badge.classList.add('show');}else{badge.classList.remove('show');}}
++function setDashAlert(count){var el=document.getElementById('dash-alert');if(!el)return;el.textContent=count;var card=el.closest?el.closest('.dash-card'):null;if(card)card.classList.toggle('is-clear',parseInt(count||0,10)===0);}function updateAlertBadge(){var count=allRows.filter(function(r){var min=parseFloat(minStockMap[r.id]||0);return min>0&&parseFloat(r.qty||0)<=min;}).length;var badge=document.getElementById('badge-alert');if(badge){if(count>0){badge.textContent=count>9?'9+':count;badge.classList.add('show');}else{badge.classList.remove('show');}}
+ var qaBadge=document.getElementById('qa-alert-badge');if(qaBadge){if(count>0){qaBadge.textContent=count>9?'9+':count;qaBadge.style.display='inline';}
+ else{qaBadge.style.display='none';}}
+ var moreLabel=document.getElementById('more-alert-label');if(moreLabel)moreLabel.textContent=count>0?'Alert Stok ('+count+')':'Alert Stok';setDashAlert(count);}
+@@ -3592,8 +3674,8 @@ var _dashLastLoad=0;var DASH_CACHE_TTL=60000;/* PERF 2026-10-16: 20 dtk -> 60 dt
+ if(!allRows.length&&_dataLoading)return;_dashLastLoad=now;if(!allRows.length){gasGet({action:'getData'}).then(function(r){if(r.status==='ok'){allRows=r.rows.map(function(row,i){row._idx=i;return row;});syncMinStockMap();filteredRows=allRows.slice();window.filteredRows=filteredRows;_applySort();}
+ gasGet({action:'getDashboard'}).then(renderDashboard).catch(function(){renderDashboardLocal();});renderDashAlertWidget();}).catch(function(){renderDashboardLocal();});}else{gasGet({action:'getDashboard'}).then(renderDashboard).catch(function(){renderDashboardLocal();});renderDashAlertWidget();}
+ loadDashRecentActivity();}
+-function renderDashAlertWidget(){var box=document.getElementById('dash-alert-widget');if(!box)return;var critical=allRows.filter(function(r){var m=parseInt(minStockMap[r.id]||0);return m>0&&parseInt(r.qty||0)<=m;}).sort(function(a,b){return parseInt(a.qty||0)-parseInt(b.qty||0);}).slice(0,5);if(!critical.length){box.innerHTML='<div class="empty-state u-py24 u-pad-16-0"><p style="display:flex;align-items:center;justify-content:center;gap:var(--sp-6)"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg> Semua stok aman</p></div>';return;}
+-box.innerHTML=critical.map(function(r){var isZero=parseInt(r.qty||0)<=0;return'<div class="idd-hist-row" style="cursor:pointer" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}">'
++function renderDashAlertWidget(){var box=document.getElementById('dash-alert-widget');if(!box)return;var critical=allRows.filter(function(r){var m=parseFloat(minStockMap[r.id]||0);return m>0&&parseFloat(r.qty||0)<=m;}).sort(function(a,b){return parseFloat(a.qty||0)-parseFloat(b.qty||0);}).slice(0,5);if(!critical.length){box.innerHTML='<div class="empty-state u-py24 u-pad-16-0"><p style="display:flex;align-items:center;justify-content:center;gap:var(--sp-6)"><svg class="u-flex-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg> Semua stok aman</p></div>';return;}
++box.innerHTML=critical.map(function(r){var isZero=parseFloat(r.qty||0)<=0;return'<div class="idd-hist-row" style="cursor:pointer" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}">'
+ +'<div class="idd-hist-main" style="flex-direction:row;align-items:center;gap:var(--space-1)">'
+ +'<span class="id-chip">'+xe(r.id||'-')+'</span>'
+ +'<span style="font-size:12.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+xe(r.nama)+'</span>'
+@@ -3612,15 +3694,15 @@ box.innerHTML=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()==
+ function renderKategoriWidget(){var catCount={};allRows.forEach(function(r){var c=(r.kategori||'Lainnya').trim()||'Lainnya';catCount[c]=(catCount[c]||0)+1;});var maxCat=Math.max.apply(null,Object.values(catCount).concat([1]));document.getElementById('dash-kategori').innerHTML=Object.keys(catCount).map(function(c){var pct=Math.round(catCount[c]/maxCat*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(c)+'">'+xe(c)+'</div>'
+ +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
+ +'<div class="bar-val">'+catCount[c]+'</div></div>';}).join('');}
+-function renderDashboardLocal(){var totalItem=allRows.length;var alertCount=allRows.filter(function(r){var m=parseInt(minStockMap[r.id]||0);return m>0&&parseInt(r.qty||0)<=m;}).length;document.getElementById('dash-total').textContent=totalItem;document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent='-';document.getElementById('dash-keluar').textContent='-';setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Data lokal (dari Master Item)';renderKategoriWidget();renderLowestStockWidget();document.getElementById('dash-top5').innerHTML='<div class="u-caption-8">Perlu data history - klik Refresh untuk memuat dari GAS</div>';}
++function renderDashboardLocal(){var totalItem=allRows.length;var alertCount=allRows.filter(function(r){var m=parseFloat(minStockMap[r.id]||0);return m>0&&parseFloat(r.qty||0)<=m;}).length;document.getElementById('dash-total').textContent=totalItem;document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent='-';document.getElementById('dash-keluar').textContent='-';setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Data lokal (dari Master Item)';renderKategoriWidget();renderLowestStockWidget();document.getElementById('dash-top5').innerHTML='<div class="u-caption-8">Perlu data history - klik Refresh untuk memuat dari GAS</div>';}
+ function renderLowestStockWidget(){var target=document.getElementById('dash-lowest');if(!target)return;var catSel=document.getElementById('dash-lowest-cat-filter');var selectedCat='';if(catSel){selectedCat=catSel.value;var cats=Array.from(new Set(allRows.map(function(r){return(r.kategori||'').trim();}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'id');});var optsHtml='<option value="">Semua Kategori</option>'+cats.map(function(c){return'<option value="'+xe(c)+'">'+xe(c)+'</option>';}).join('');if(catSel.getAttribute('data-opts-sig')!==optsHtml){catSel.innerHTML=optsHtml;catSel.setAttribute('data-opts-sig',optsHtml);catSel.value=selectedCat;if(catSel.value!==selectedCat)selectedCat='';}}
+ var srcRows=selectedCat?allRows.filter(function(r){return(r.kategori||'').trim()===selectedCat;}):allRows;var _lowGroup={},_lowOrder=[];srcRows.forEach(function(r){var key=(r.id&&r.id.trim()!=='')?r.id:'__blank_'+_lowOrder.length;if(!_lowGroup[key]){_lowGroup[key]={id:r.id,nama:r.nama,unit:r.unit,qty:0};_lowOrder.push(key);}
+-_lowGroup[key].qty+=parseInt(r.qty||0);});var sorted=_lowOrder.map(function(k){return _lowGroup[k];}).sort(function(a,b){return a.qty-b.qty;}).slice(0,10);if(!sorted.length){target.innerHTML='<div class="empty-state u-py24" style="padding:12px 0"><p>Tidak ada item di kategori ini</p></div>';return;}
+-var maxQty=Math.max.apply(null,sorted.map(function(r){return parseInt(r.qty)||0;}).concat([1]));target.innerHTML=sorted.map(function(r){var q=parseInt(r.qty)||0;var pct=Math.round(q/maxQty*100)||2;var col=q===0?'keluar':q<=5?'keluar':'navy';return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(r.nama)+' ('+xe(r.id||'')+')">'+xe(r.nama||r.id)+'</div>'
++_lowGroup[key].qty+=parseFloat(r.qty||0);});var sorted=_lowOrder.map(function(k){return _lowGroup[k];}).sort(function(a,b){return a.qty-b.qty;}).slice(0,10);if(!sorted.length){target.innerHTML='<div class="empty-state u-py24" style="padding:12px 0"><p>Tidak ada item di kategori ini</p></div>';return;}
++var maxQty=Math.max.apply(null,sorted.map(function(r){return parseFloat(r.qty)||0;}).concat([1]));target.innerHTML=sorted.map(function(r){var q=parseFloat(r.qty)||0;var pct=Math.round(q/maxQty*100)||2;var col=q===0?'keluar':q<=5?'keluar':'navy';return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(r.nama)+' ('+xe(r.id||'')+')">'+xe(r.nama||r.id)+'</div>'
+ +'<div class="bar-track"><div class="bar-fill '+col+'" style="width:'+pct+'%"></div></div>'
+ +'<div class="bar-val">'+q+'</div></div>';}).join('');}
+ function renderDashboard(data){if(!data||data.status==='error'){renderDashboardLocal();return;}
+-var d=data.data||{};document.getElementById('dash-total').textContent=d.totalItem||allRows.length;document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent=d.totalMasuk||'0';document.getElementById('dash-keluar').textContent=d.totalKeluar||'0';var alertCount=allRows.filter(function(r){var m=parseInt(minStockMap[r.id]||0);return m>0&&parseInt(r.qty||0)<=m;}).length;setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Update: '+new Date().toLocaleString('id-ID');var top5=d.top5||[];var maxT=top5.length?top5[0].count:1;document.getElementById('dash-top5').innerHTML=top5.length?top5.map(function(t,i){var pct=Math.round(t.count/maxT*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(t.nama)+' ('+xe(t.id||'')+')">'+xe(t.nama||t.id)+'</div>'
++var d=data.data||{};document.getElementById('dash-total').textContent=d.totalItem||allRows.length;document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent=d.totalMasuk||'0';document.getElementById('dash-keluar').textContent=d.totalKeluar||'0';var alertCount=allRows.filter(function(r){var m=parseFloat(minStockMap[r.id]||0);return m>0&&parseFloat(r.qty||0)<=m;}).length;setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Update: '+new Date().toLocaleString('id-ID');var top5=d.top5||[];var maxT=top5.length?top5[0].count:1;document.getElementById('dash-top5').innerHTML=top5.length?top5.map(function(t,i){var pct=Math.round(t.count/maxT*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(t.nama)+' ('+xe(t.id||'')+')">'+xe(t.nama||t.id)+'</div>'
+ +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
+ +'<div class="bar-val">'+t.count+'</div></div>';}).join(''):'<div class="u-caption-8">Belum ada data transaksi</div>';renderKategoriWidget();renderLowestStockWidget();}
+ 
+@@ -3672,7 +3754,7 @@ detail.style.display='block';}
+ 
+ // ===== SECTION: LOAD ALERT (notifikasi stok) =====
+ function loadAlert(){var tbody=document.getElementById('alert-tbody');var minTbody=document.getElementById('minstock-tbody');if(!allRows.length&&_dataLoading){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><p>Memuat data dari spreadsheet...</p></div></td></tr>';minTbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><p>Memuat data...</p></div></td></tr>';return;}if(!allRows.length){var ctaAlert='<div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(loadAlert)">Muat Data Sekarang</button></div>';tbody.innerHTML='<tr><td colspan="7">'+ctaAlert+'</td></tr>';minTbody.innerHTML='<tr><td colspan="5">'+ctaAlert+'</td></tr>';return;}
+-var alerts=allRows.filter(function(r){var min=parseInt(minStockMap[r.id]||0);return min>0&&parseInt(r.qty||0)<=min;});tbody.innerHTML=alerts.length?alerts.map(function(r){var saldo=parseInt(r.qty||0);var min=parseInt(minStockMap[r.id]||0);var kritis=saldo===0;var statusHtml=kritis?'<span class="badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">HABIS</span>':'<span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fcd34d">RENDAH</span>';return'<tr>'
++var alerts=allRows.filter(function(r){var min=parseFloat(minStockMap[r.id]||0);return min>0&&parseFloat(r.qty||0)<=min;});tbody.innerHTML=alerts.length?alerts.map(function(r){var saldo=parseFloat(r.qty||0);var min=parseFloat(minStockMap[r.id]||0);var kritis=saldo===0;var statusHtml=kritis?'<span class="badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">HABIS</span>':'<span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fcd34d">RENDAH</span>';return'<tr>'
+ +'<td><span class="id-chip">'+xe(r.id)+'</span></td>'
+ +'<td><strong>'+xe(r.nama)+'</strong></td>'
+ +'<td class="u-tc">'+xe(r.rak||'-')+'</td>'
+@@ -3769,7 +3851,7 @@ function doExportExcelSemua(){
+ try{checkUrl();}catch(e){var sbar=document.getElementById('sbar-export');sbar.className='sbar s-err show';sbar.innerHTML=xe(friendlyErr(e));return;}
+ return RdiExport.lengkap('','');
+ }
+-function showScanStep(name){document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});document.getElementById('step-'+name).classList.add('active');var subBar=document.getElementById('trx-submit-bar');if(subBar)subBar.style.display=(name==='transaksi')?'block':'none';if(name!=='transaksi')stopInlineScannerRak();updateTrxProgress(name);}
++var _trxResultAt=0;function showScanStep(name){if(name==='result')_trxResultAt=Date.now();if(name==='input'){_koreksiPrefix='';_koreksiPending=null;}document.querySelectorAll('.scan-step').forEach(function(el){el.classList.remove('active');});document.getElementById('step-'+name).classList.add('active');var subBar=document.getElementById('trx-submit-bar');if(subBar)subBar.style.display=(name==='transaksi')?'block':'none';if(name!=='transaksi')stopInlineScannerRak();updateTrxProgress(name);}
+ function updateTrxProgress(name){var stepOf={input:1,transaksi:2,cekstok:2,result:3};var current=stepOf[name]||1;for(var i=1;i<=3;i++){var el=document.getElementById('trxprog-'+i);if(!el)continue;el.classList.remove('active','done');if(i<current)el.classList.add('done');else if(i===current)el.classList.add('active');}
+ var l1=document.getElementById('trxprog-line1'),l2=document.getElementById('trxprog-line2');if(l1)l1.classList.toggle('done',current>1);if(l2)l2.classList.toggle('done',current>2);}
+ function setScanMode(mode){scanMode=mode;document.getElementById('modebtn-transaksi').classList.toggle('active',mode==='transaksi');document.getElementById('modebtn-cekstok').classList.toggle('active',mode==='cekstok');document.getElementById('modebtn-sj').classList.toggle('active',mode==='sj');}
+@@ -3868,7 +3950,7 @@ function sjSimpan(){
+     }
+     var it=sjState.items[i++];var itemId=it.pilihTipe==='master'?it.pilihId:null;
+     diproses++;btn.textContent='Menyimpan '+diproses+'…';
+-    gasPost({action:'postTransaksi',itemId:itemId||'',jenis:'MASUK',qty:parseInt(it.qty||'1')||1,rak:sjState.rak,vendor:it.pilihNama||'',noReferensi:sjState.noSJ,keterangan:'SJ via AI:'+xe(it.nama||'')+(it.spec?' ['+it.spec+']':''),requestId:genRequestId()}).then(function(res){
++    gasPost({action:'postTransaksi',itemId:itemId||'',jenis:'MASUK',qty:parseQty(it.qty||'1')||1,rak:sjState.rak,vendor:it.pilihNama||'',noReferensi:sjState.noSJ,keterangan:'SJ via AI:'+xe(it.nama||'')+(it.spec?' ['+it.spec+']':''),requestId:genRequestId()}).then(function(res){
+       if(res.status==='ok')ok++;else gagal+='baris '+it.id+': '+String(res.message||res)+';';
+       next();
+     }).catch(function(e){gagal+='baris '+it.id+': '+String(e.message||e)+';';next();});
+@@ -3912,7 +3994,7 @@ var id=raw;if(allRows.length){var exactRow=allRows.find(function(r){return(r.id|
+ if(exactRow&&_isArsip(exactRow)&&scanMode!=='cekstok'){showStatus('sbar-lookup','s-warn',IC.info+' Item ini sudah diarsipkan dan tidak bisa ditransaksikan. Aktifkan kembali dulu dari halaman detail item.');return;}}
+ document.getElementById('scan-id-input').value=id;var btn=document.getElementById('btn-lookup');var inputEl=document.getElementById('scan-id-input');var loadingEl=document.getElementById('id-search-loading-scan');btn.disabled=true;btn.innerHTML=IC.load+' Mencari...';inputEl.disabled=true;if(loadingEl)loadingEl.classList.add('show');showStatus('sbar-lookup','s-info',IC.load+' Mencari <strong>'+xe(id)+'</strong>...');gasGet({action:'getItem',id:id}).then(function(result){btn.disabled=false;btn.innerHTML='Cari';inputEl.disabled=false;if(loadingEl)loadingEl.classList.remove('show');if(result.status==='error'){_buzz([30,70,30]);_beep('err');showStatus('sbar-lookup','s-err',IC.err+' '+xe(result.message));return;}
+ currentItem=result.item;currentRequestId=null;_buzz(35);_beep('ok');hideStatus('sbar-lookup');if(scanMode==='cekstok'){populateCekStok(result.item);showScanStep('cekstok');return;}
+-populatePreview(result.item);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');/* FIX BUG#2 (v14.98): dulu auto-focus langsung ke qty-input di sini, sehingga operator diarahkan mengisi QTY sebelum memilih Jenis Transaksi (Masuk/Keluar). Sekarang arahkan perhatian ke toggle Jenis Transaksi dulu; fokus ke Qty baru terjadi otomatis setelah operator memilih jenis (lihat setJenis()). */setTimeout(function(){var jt=document.getElementById('jenis-toggle-label');if(jt)jt.scrollIntoView({behavior:'smooth',block:'start'});},50);}).catch(function(err){btn.disabled=false;btn.innerHTML='Cari';inputEl.disabled=false;if(loadingEl)loadingEl.classList.remove('show');showStatus('sbar-lookup','s-err',IC.err+' '+xe(friendlyErr(err)));});}
++populatePreview(result.item);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');_applyPendingKoreksi();/* FIX BUG#2 (v14.98): dulu auto-focus langsung ke qty-input di sini, sehingga operator diarahkan mengisi QTY sebelum memilih Jenis Transaksi (Masuk/Keluar). Sekarang arahkan perhatian ke toggle Jenis Transaksi dulu; fokus ke Qty baru terjadi otomatis setelah operator memilih jenis (lihat setJenis()). */setTimeout(function(){var jt=document.getElementById('jenis-toggle-label');if(jt)jt.scrollIntoView({behavior:'smooth',block:'start'});},50);}).catch(function(err){btn.disabled=false;btn.innerHTML='Cari';inputEl.disabled=false;if(loadingEl)loadingEl.classList.remove('show');showStatus('sbar-lookup','s-err',IC.err+' '+xe(friendlyErr(err)));});}
+ 
+ // ===== SECTION: TRANSAKSI: preview, rak chip, saldo, submit =====
+ function populatePreview(item){document.getElementById('preview-id').textContent=item.id||'-';document.getElementById('preview-nama').textContent=item.nama||'-';document.getElementById('preview-spec').textContent=item.spec||'-';document.getElementById('preview-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('preview-vendor').textContent='Lihat riwayat transaksi';document.getElementById('preview-user').textContent=item.user||'-';document.getElementById('preview-unit').textContent=item.unit||'-';document.getElementById('preview-unit2').textContent=item.unit||'-';document.getElementById('preview-saldo').textContent=item.saldo!=null?item.saldo:'-';var rakInput=document.getElementById('rak-input');var rakDl=document.getElementById('dl-rak-item');if(rakInput&&item.rakBreakdown&&item.rakBreakdown.length){var sorted=item.rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});rakInput.value=sorted[0].rak;if(rakDl)rakDl.innerHTML=sorted.map(function(r){return'<option value="'+xe(r.rak)+'">';}).join('');rakInput.setAttribute('list','dl-rak-item');}else if(rakInput){rakInput.value='';rakInput.setAttribute('list','dl-rak');}
+@@ -3920,29 +4002,20 @@ renderRakChips(item.rakBreakdown);updateSaldoPreview();checkTransactionAnomaly()
+ function renderRakChips(rakBreakdown){var box=document.getElementById('rak-chips');if(!box)return;if(!rakBreakdown||!rakBreakdown.length){box.innerHTML='';return;}
+ var sorted=rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});box.innerHTML=sorted.map(function(r){return'<button type="button" class="rak-chip" onclick="selectRakChip(\''+xeJs(r.rak)+'\')">'+xe(r.rak)+' · '+xe(r.qty)+'</button>';}).join('');markRakChipSelection();}
+ function selectRakChip(rak){var rakInput=document.getElementById('rak-input');if(rakInput){rakInput.value=(rak||'').toUpperCase();saveTransaksiDraft();}
+-markRakChipSelection();}
++markRakChipSelection();updateSaldoPreview();}
+ function markRakChipSelection(){var val=(document.getElementById('rak-input')||{}).value||'';document.querySelectorAll('#rak-chips .rak-chip').forEach(function(chip){chip.classList.toggle('selected',chip.textContent.split(' · ')[0].toUpperCase()===val.toUpperCase());});}
+-function updateSaldoPreview(){var el=document.getElementById('preview-saldo-after');if(!el||!currentItem)return;if(!currentJenis){el.textContent='-';el.className='saldo-after-val';return;}
+-var saldo=parseFloat(currentItem.saldo)||0;var qty=parseFloat((document.getElementById('qty-input')||{}).value)||0;var after=currentJenis==='KELUAR'?(saldo-qty):(saldo+qty);var unit=currentItem.unit||'';el.textContent=after+' '+unit;el.className='saldo-after-val '+(after<0?'warn':(currentJenis==='KELUAR'?'down':'up'));}
+-/* pure helpers moved → js/format.js (F4.5) */
++function updateSaldoPreview(){var el=document.getElementById('preview-saldo-after');if(!el||!currentItem)return;if(!currentJenis){el.textContent='-';el.className='saldo-after-val';_applyStockGuard(null);return;} var saldo=parseFloat(currentItem.saldo)||0;var qty=parseQty((document.getElementById('qty-input')||{}).value);var qv=qty>0?qty:0;var after=currentJenis==='KELUAR'?(saldo-qv):(saldo+qv);var unit=currentItem.unit||'';el.textContent=fmtQty(after)+' '+unit;el.className='saldo-after-val '+(after<0?'warn':(currentJenis==='KELUAR'?'down':'up'));_applyStockGuard(stockGuard(currentJenis,qty,(document.getElementById('rak-input')||{}).value,currentItem.saldo,currentItem.rakBreakdown));evaluateAnomalyWarning();} /* Cek stok di klien (cermin Code.gs): nonaktifkan Simpan + jelaskan alasannya, tanpa menunggu putaran server. */ function _applyStockGuard(g){var msg=document.getElementById('stock-guard-msg'),btn=document.getElementById('btn-submit');var blocked=!!(g&&!g.ok);if(msg){msg.textContent=blocked?g.message+'. Jika saldo sudah berubah, tekan Ganti lalu cari item ini lagi.':'';msg.classList.toggle('u-hide',!blocked);}if(btn)btn.disabled=!currentJenis||blocked;} /* pure helpers moved → js/format.js (F4.5) */
+ function setJenis(jenis){currentJenis=jenis;document.getElementById('btn-masuk').className='jenis-btn'+(jenis==='MASUK'?' active-masuk':'');document.getElementById('btn-keluar').className='jenis-btn'+(jenis==='KELUAR'?' active-keluar':'');var card=document.getElementById('item-preview');if(card)card.className='item-card '+(jenis==='KELUAR'?'jenis-keluar':(jenis==='MASUK'?'jenis-masuk':''));var subBtn=document.getElementById('btn-submit');if(subBtn)subBtn.disabled=!jenis;var helpEl=document.getElementById('submit-help');if(helpEl)helpEl.classList.toggle('u-hide',!!jenis);updateSaldoPreview();checkTransactionAnomaly();/* FIX BUG#2 (v14.98): begitu operator memilih Jenis Transaksi (Masuk/Keluar), baru arahkan fokus+buka keyboard ke Qty supaya alurnya: pilih jenis -> isi qty. */if(jenis){setTimeout(function(){var qtyEl=document.getElementById('qty-input');if(qtyEl){qtyEl.focus();qtyEl.select();}},50);}}
+-function adjustQty(delta){var inp=document.getElementById('qty-input');inp.value=Math.max(1,(parseInt(inp.value)||0)+delta);saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly();}
+-var _anomalyStats={itemId:null,avg:0,median:0,maxQty:0,loaded:false};function checkTransactionAnomaly(){if(!currentItem||!currentItem.id){hideAnomalyWarning();return;}
+-var itemId=currentItem.id;if(_anomalyStats.itemId!==itemId||!_anomalyStats.loaded){hideAnomalyWarning();_anomalyStats={itemId:itemId,avg:0,median:0,maxQty:0,loaded:false};gasGet({action:'getLedger',id:itemId}).then(function(res){if(!currentItem||currentItem.id!==itemId)return;if(!res||res.status!=='ok'){_anomalyStats.loaded=true;return;}
+-var qtys=(res.entries||[]).map(function(e){return parseFloat(e.qty)||0;}).filter(function(q){return q>0;});if(qtys.length){var sum=0;qtys.forEach(function(q){sum+=q;});_anomalyStats.avg=sum/qtys.length;var sorted=qtys.slice().sort(function(a,b){return a-b;});var mid=Math.floor(sorted.length/2);_anomalyStats.median=sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;_anomalyStats.maxQty=sorted[sorted.length-1];}
+-_anomalyStats.loaded=true;evaluateAnomalyWarning();}).catch(function(){if(_anomalyStats.itemId===itemId)_anomalyStats.loaded=true;});return;}
++function adjustQty(delta){var inp=document.getElementById('qty-input');inp.value=fmtQty(Math.max(1,(parseQty(inp.value)||0)+delta));saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly();}
++var _anomalyStats={itemId:null,rows:[],loaded:false};function checkTransactionAnomaly(){if(!currentItem||!currentItem.id){hideAnomalyWarning();return;}
++var itemId=currentItem.id;if(_anomalyStats.itemId!==itemId||!_anomalyStats.loaded){hideAnomalyWarning();_anomalyStats={itemId:itemId,rows:[],loaded:false};gasGet({action:'getLedger',id:itemId}).then(function(res){if(!currentItem||currentItem.id!==itemId)return;if(!res||res.status!=='ok'){_anomalyStats.loaded=true;return;}
++_anomalyStats.rows=(res.entries||[]).map(function(e){return{q:e.qty,j:e.jenis};});_anomalyStats.loaded=true;evaluateAnomalyWarning();}).catch(function(){if(_anomalyStats.itemId===itemId)_anomalyStats.loaded=true;});return;}
+ evaluateAnomalyWarning();}
+-function evaluateAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(!el)return;if(!_anomalyStats.loaded||_anomalyStats.maxQty<=0){el.style.display='none';return;}
+-var qty=parseFloat(document.getElementById('qty-input').value)||0;if(qty<=0){el.style.display='none';return;}
+-var isAnomaly=(qty>3*_anomalyStats.avg)||(qty>_anomalyStats.maxQty);if(!isAnomaly){el.style.display='none';return;}
+-el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Qty jauh lebih besar dibanding histori transaksi item ini. '
+-+'(Rata-rata: '+Math.round(_anomalyStats.avg*10)/10+', Median: '+_anomalyStats.median
+-+', Terbesar sebelumnya: '+_anomalyStats.maxQty+')';el.style.display='block';}
+-function hideAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(el)el.style.display='none';}
++function evaluateAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(!el)return;if(!_anomalyStats.loaded){el.style.display='none';return;} var qty=parseQty(document.getElementById('qty-input').value);if(!(qty>0)){el.style.display='none';return;} var st=anomalyStats(_anomalyStats.rows,currentJenis);if(!isQtyAnomaly(qty,st)){el.style.display='none';return;} el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Qty jauh lebih besar dibanding '+st.n+' transaksi '+(currentJenis?currentJenis.toLowerCase():'sebelumnya')+' item ini. (Rata-rata: '+fmtQty(st.avg)+', Median: '+fmtQty(st.median)+', Terbesar sebelumnya: '+fmtQty(st.max)+')';el.style.display='block';} function hideAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(el)el.style.display='none';}
+ function submitTransaksi(){if(!currentItem){showStatus('sbar-submit','s-err',IC.err+' Tidak ada item');return;}
+ if(!currentJenis){showStatus('sbar-submit','s-warn',IC.info+' Pilih jenis transaksi (Masuk / Keluar) terlebih dahulu');return;}
+-var qty=parseInt(document.getElementById('qty-input').value)||0;if(qty<=0){showStatus('sbar-submit','s-warn',IC.info+' Qty harus lebih dari 0');flagFieldError('qty-input');return;}
+-var ket=document.getElementById('ket-input').value.trim();var rak=document.getElementById('rak-input').value.trim().toUpperCase();if(!rak){showStatus('sbar-submit','s-warn',IC.info+' Lokasi RAK wajib diisi');flagFieldError('rak-input');return;}
++var qty=parseQty(document.getElementById('qty-input').value);if(!(qty>0)){showStatus('sbar-submit','s-warn',IC.info+' Qty harus berupa angka lebih dari 0');flagFieldError('qty-input');return;}
++var ket=document.getElementById('ket-input').value.trim();var _kp=_koreksiPrefix.trim();if(_kp&&ket.indexOf(_kp)===0&&ket.slice(_kp.length).trim().length<3){showStatus('sbar-submit','s-warn',IC.info+' Isi alasan koreksi (min. 3 huruf) di kolom Keterangan');flagFieldError('ket-input');return;}var rak=document.getElementById('rak-input').value.trim().toUpperCase();if(!rak){showStatus('sbar-submit','s-warn',IC.info+' Lokasi RAK wajib diisi');flagFieldError('rak-input');return;} var _g=stockGuard(currentJenis,qty,rak,currentItem.saldo,currentItem.rakBreakdown);if(!_g.ok){showStatus('sbar-submit','s-err',IC.err+' '+xe(_g.message));flagFieldError('qty-input');return;}
+ var vendor=document.getElementById('vendor-input').value.trim();var noRef=document.getElementById('noref-input').value.trim();var btn=document.getElementById('btn-submit');btn.disabled=true;btn.innerHTML=IC.load+' Menyimpan...';showStatus('sbar-submit','s-info',IC.load+' Menyimpan transaksi...');saveTransaksiDraft();var _itemIdSubmit=currentItem.id;var payload={action:'postTransaksi',itemId:currentItem.id,jenis:currentJenis,qty:qty,rak:rak,vendor:vendor,noReferensi:noRef,keterangan:ket,admin:getAdminLabel(),requestId:currentRequestId};
+ /* FIX DBG-03 (2026-10-13): rid diambil DARI payload saat request dibuat, bukan dari
+    global `currentRequestId` yang dibaca lagi saat respons datang. Global itu di-null-kan
+@@ -3987,7 +4060,7 @@ var histView='day';function setHistView(v){histView=v;document.getElementById('h
  var histJenisFilter='ALL';function setHistJenis(v){histJenisFilter=v;['all','masuk','keluar'].forEach(function(k){document.getElementById('hstab-'+k).classList.toggle('active',v.toUpperCase()===(k==='all'?'ALL':k.toUpperCase()));});renderHistTable();}
  function renderHistTable(){var filter=histJenisFilter;var rows=filter==='ALL'?histAllRows:histAllRows.filter(function(r){return(r.jenis||'').toUpperCase()===filter;});document.getElementById('hist-count-label').textContent='Menampilkan '+rows.length+' transaksi';if(histView==='day'){renderHistDay(rows);return;}
  var tb=document.getElementById('hist-tbody');if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:var(--space-4);color:var(--text3);font-size:13px">Belum ada transaksi</td></tr>';return;}
@@ -106,7 +387,53 @@ index 4183a7e..80831ef 100644
  +'<td style="font-size:12px;color:var(--text2)">'+xe(r.timestamp)+'</td>'
  +'<td class="u-tc"><span class="'+badgeCls+'">'+badgeIc+' '+xe(r.jenis)+'</span></td>'
  +'<td style="text-align:right;font-weight:700;'+(isPindah?'color:var(--text3)':(isMasuk?'color:var(--green-text)':'color:var(--red-text)'))+'">'+xe(r.qty)+'</td>'
-@@ -4187,7 +4228,7 @@ function histFeedTotalPages(){return calcTotalPages(histFeedFiltered,HIST_PAGE_S
+@@ -4043,7 +4116,7 @@ showRakList();/* PERF 2026-10-16: pakai ulang peta rak yang sudah dimuat (dulu S
+ function getRakGroups(){var groups={};var itemById={};allRows.forEach(function(r){itemById[r.id]=r;});rakBreakdownAll.forEach(function(rb){var rak=rb.rak||'(Tanpa Rak)';var master=itemById[rb.id];if(!master)return;if(!groups[rak])groups[rak]=[];var copy=Object.assign({},master,{qty:rb.qty});groups[rak].push(copy);});return groups;}
+ function renderRakList(){var container=document.getElementById('rak-list-container');if(!allRows.length){container.innerHTML='<div class="empty-state u-py24"><p>Data belum dimuat. Buka tab <strong>Stok</strong> dulu untuk memuat data.</p></div>';return;}
+ var q=(document.getElementById('rak-search-box').value||'').toLowerCase().trim();var groups=getRakGroups();var raks=Object.keys(groups).filter(function(k){return!q||k.toLowerCase().includes(q);}).sort(function(a,b){if(a==='(Tanpa Rak)')return 1;if(b==='(Tanpa Rak)')return-1;return a.localeCompare(b,undefined,{numeric:true});});if(!raks.length){container.innerHTML='<div class="empty-state u-py24"><p>Rak tidak ditemukan</p></div>';return;}
+-container.innerHTML='<div class="rak-grid">'+raks.map(function(rak){var items=groups[rak];var lowCount=items.filter(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);return minS>0&&saldo<=minS;}).length;return'<div class="rak-card" onclick="showRakDetail(\''+xeJs(rak)+'\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();showRakDetail(\''+xeJs(rak)+'\')}">'
++container.innerHTML='<div class="rak-grid">'+raks.map(function(rak){var items=groups[rak];var lowCount=items.filter(function(r){var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);return minS>0&&saldo<=minS;}).length;return'<div class="rak-card" onclick="showRakDetail(\''+xeJs(rak)+'\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();showRakDetail(\''+xeJs(rak)+'\')}">'
+ +'<div class="rak-card-name">'+xe(rak)+'</div>'
+ +'<div class="rak-card-count">'+items.length+' item'+(lowCount>0?'<span class="rak-card-low"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> '+lowCount+'</span>':'')+'</div>'
+ +'</div>';}).join('')+'</div>';}
+@@ -4121,13 +4194,13 @@ if(!res||res.status!=='ok'){showStatus('sbar-load','s-err',IC.err+' '+xe((res&&r
+ openPindahSheet(res.item);}).catch(function(err){if(_done)return;_done=true;showStatus('sbar-load','s-err',IC.err+' '+xe(friendlyErr(err)));});
+ setTimeout(function(){if(_done)return;_done=true;showStatus('sbar-load','s-err',IC.err+' Waktu tunggu habis. Cek koneksi lalu coba lagi.');},20000);}
+ function closePindahSheet(){var sheet=document.getElementById('pindah-sheet');var overlay=document.getElementById('pindah-overlay');stopInlineScannerRak();sheet.classList.add('closing');overlay.classList.add('closing');setTimeout(function(){sheet.classList.remove('show','closing');overlay.classList.remove('show','closing');},window.motionMs('--dur-sheet-out',220));}
+-function updatePindahQtyMax(){var sel=document.getElementById('pindah-asal');var rb=(_pindahItem&&_pindahItem.rakBreakdown)||[];var found=rb.find(function(r){return r.rak===sel.value;});var max=found?(parseInt(found.qty)||0):0;document.getElementById('pindah-asal-info').textContent='Sisa stok di rak '+(xe(sel.value)||'-')+': '+max+' '+xe((_pindahItem&&_pindahItem.unit)||'');var q=document.getElementById('pindah-qty');q.setAttribute('max',max);if((parseInt(q.value)||0)>max)q.value=max>0?max:1;}
+-function submitPindahRak(){if(!_pindahItem)return;var asal=document.getElementById('pindah-asal').value;var tujuan=document.getElementById('pindah-tujuan').value.trim().toUpperCase();var qty=parseInt(document.getElementById('pindah-qty').value)||0;var bar=document.getElementById('pindah-sbar');var btn=document.getElementById('btn-pindah-submit');
++function updatePindahQtyMax(){var sel=document.getElementById('pindah-asal');var rb=(_pindahItem&&_pindahItem.rakBreakdown)||[];var found=rb.find(function(r){return r.rak===sel.value;});var max=found?(parseFloat(found.qty)||0):0;document.getElementById('pindah-asal-info').textContent='Sisa stok di rak '+(xe(sel.value)||'-')+': '+max+' '+xe((_pindahItem&&_pindahItem.unit)||'');var q=document.getElementById('pindah-qty');q.setAttribute('max',max);if((parseQty(q.value)||0)>max)q.value=max>0?max:1;}
++function submitPindahRak(){if(!_pindahItem)return;var asal=document.getElementById('pindah-asal').value;var tujuan=document.getElementById('pindah-tujuan').value.trim().toUpperCase();var qty=parseQty(document.getElementById('pindah-qty').value)||0;var bar=document.getElementById('pindah-sbar');var btn=document.getElementById('btn-pindah-submit');
+ if(!asal){bar.textContent='Pilih rak asal dulu.';return;}
+ if(!tujuan){bar.textContent='Isi rak tujuan dulu (atau scan QR rak).';return;}
+ if(tujuan===asal){bar.textContent='Rak tujuan harus berbeda dari rak asal.';return;}
+ if(qty<=0){bar.textContent='Qty harus lebih dari 0.';return;}
+-var rb=_pindahItem.rakBreakdown||[];var found=rb.find(function(r){return r.rak===asal;});var sisaAsal=found?(parseInt(found.qty)||0):0;
++var rb=_pindahItem.rakBreakdown||[];var found=rb.find(function(r){return r.rak===asal;});var sisaAsal=found?(parseFloat(found.qty)||0):0;
+ if(qty>sisaAsal){bar.textContent='Stok di rak '+xe(asal)+' hanya '+sisaAsal+' '+xe(_pindahItem.unit||'')+'.';return;}
+ var ketEl=document.getElementById('ket-input');var ket=ketEl?ketEl.value.trim():'';
+ btn.disabled=true;bar.textContent='Memindahkan...';
+@@ -4136,7 +4209,7 @@ var ridLocal=payload.requestId;
+ gasPost(payload)
+ .catch(function(err){return _errResult('Network error: '+(err&&err.message?err.message:'unknown'));})
+ .then(function(result){btn.disabled=false;
+-if(!result){bar.textContent='Respons kosong dari server. Cek History sebelum mencoba lagi.';return;}
++if(!result){bar.textContent='Respons kosong dari server. Cek Riwayat sebelum mencoba lagi.';return;}
+ if(result.status==='error'){bar.textContent=result.message||'Gagal memindahkan.';return;}
+ try{removeOutboxByRequestId(ridLocal);}catch(e){}
+ _buzz(result.status==='ok'?55:[35,60,35]);
+@@ -4145,8 +4218,8 @@ bar.textContent=result.status==='ok'
+ :'Tersimpan, tapi saldo belum sinkron — jalankan Rekalkulasi Stok di menu Admin.';
+ try{silentRefreshAfterTransaksi(_pindahItem.id,result&&result.saldoSesudah);}catch(e){}
+ setTimeout(function(){closePindahSheet();},900);})
+-.catch(function(err){btn.disabled=false;console.error('[submitPindahRak] gagal merender hasil:',err);bar.textContent='Respons sudah dikirim ke server, tapi tampilan gagal diperbarui. Cek History dulu.';});}
+-function showRakDetail(rak){var groups=getRakGroups();var items=groups[rak]||[];document.getElementById('rak-detail-title').textContent='Rak '+rak;document.getElementById('rak-detail-sub').textContent=items.length+' item ditemukan';var container=document.getElementById('rak-detail-container');if(!items.length){container.innerHTML='<div class="empty-state u-py24"><p>Tidak ada item di rak ini</p></div>';}else{container.innerHTML=items.map(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var bcBadgeCls=isBC.includes('NON')?'badge-nonbc':'badge-bc';var idHtml=r.id&&r.id.trim()!==''?'<span class="ilc-id"><svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="14" x2="13" y2="14"/></svg>'+xe(r.id)+'</span>':'<span class="ilc-id" style="background:var(--badge-amber-bg,#fef3c7);color:var(--badge-amber-text,#92400e);border-color:var(--badge-amber-border,#f59e0b)">No ID</span>';var vendorPill=r.vendor?'<span class="ilc-chip ilc-chip-vendor"><span class="ilc-chip-lbl">Vendor</span>'+xe(r.vendor)+'</span>':'';var catPill=r.kategori?'<span class="ilc-chip ilc-chip-cat">'+xe(r.kategori)+'</span>':'';var bcPill=r.bc?'<span class="badge '+bcBadgeCls+'" style="font-size:12px;padding:var(--sp-2) var(--sp-5)">'+xe(r.bc)+'</span>':'';return'<div class="item-list-card">'
++.catch(function(err){btn.disabled=false;console.error('[submitPindahRak] gagal merender hasil:',err);bar.textContent='Respons sudah dikirim ke server, tapi tampilan gagal diperbarui. Cek Riwayat dulu.';});}
++function showRakDetail(rak){var groups=getRakGroups();var items=groups[rak]||[];document.getElementById('rak-detail-title').textContent='Rak '+rak;document.getElementById('rak-detail-sub').textContent=items.length+' item ditemukan';var container=document.getElementById('rak-detail-container');if(!items.length){container.innerHTML='<div class="empty-state u-py24"><p>Tidak ada item di rak ini</p></div>';}else{container.innerHTML=items.map(function(r){var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var bcBadgeCls=isBC.includes('NON')?'badge-nonbc':'badge-bc';var idHtml=r.id&&r.id.trim()!==''?'<span class="ilc-id"><svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="14" x2="13" y2="14"/></svg>'+xe(r.id)+'</span>':'<span class="ilc-id" style="background:var(--badge-amber-bg,#fef3c7);color:var(--badge-amber-text,#92400e);border-color:var(--badge-amber-border,#f59e0b)">No ID</span>';var vendorPill=r.vendor?'<span class="ilc-chip ilc-chip-vendor"><span class="ilc-chip-lbl">Vendor</span>'+xe(r.vendor)+'</span>':'';var catPill=r.kategori?'<span class="ilc-chip ilc-chip-cat">'+xe(r.kategori)+'</span>':'';var bcPill=r.bc?'<span class="badge '+bcBadgeCls+'" style="font-size:12px;padding:var(--sp-2) var(--sp-5)">'+xe(r.bc)+'</span>':'';return'<div class="item-list-card">'
+ +'<div class="ilc-strip '+stripCls+'"></div>'
+ +'<div class="ilc-body">'
+ +'<div class="ilc-nama" data-tt="'+xe(r.nama)+'">'+xe(r.nama)+'</div>'
+@@ -4187,7 +4260,7 @@ function histFeedTotalPages(){return calcTotalPages(histFeedFiltered,HIST_PAGE_S
  function histFeedPrevPage(){if(histFeedPage>1){histFeedPage--;renderHistFeed();}}
  function histFeedNextPage(){if(histFeedPage<histFeedTotalPages()){histFeedPage++;renderHistFeed();}}
  function renderHistFeed(){var container=document.getElementById('hist-feed-container');var pagination=document.getElementById('hfeed-pagination');var countLabel=document.getElementById('hfeed-result-count');countLabel.textContent=histFeedFiltered.length+' transaksi ditemukan';if(!histFeedFiltered.length){container.innerHTML=histFeedRows.length?'<div class="empty-state u-py24"><p>Tidak ada transaksi yang cocok dengan filter</p><button class="btn btn-sm u-mt-10" onclick="resetHistFeedFilter()">Reset Filter</button></div>':'<div class="empty-state u-py24"><p>Belum ada transaksi</p><p class="u-caption-8">Muncul setelah scan QR dan simpan stok berhasil.</p><button class="btn btn-primary btn-sm" onclick="switchTab(\'scanner\')"><svg class="u-flex-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Scan Transaksi Pertama</button></div>';pagination.style.display='none';return;}
@@ -115,7 +442,51 @@ index 4183a7e..80831ef 100644
  +'<div class="hist-card-top">'
  +'<div class="hist-card-jenis">'+badge+'</div>'
  +'</div>'
-@@ -4465,7 +4506,7 @@ cl.innerHTML='<div style="border:1px solid var(--border);border-radius:var(--r);
+@@ -4222,9 +4295,9 @@ var totalPages=histFeedTotalPages();if(histFeedPage>totalPages)histFeedPage=tota
+ +'</div>';}).join('');pagination.style.display='flex';document.getElementById('hfeed-page-label').textContent='Halaman '+histFeedPage+' dari '+totalPages+' ('+(startIdx+1)+'–'+(startIdx+pageRows.length)+' dari '+histFeedFiltered.length+')';document.getElementById('hfeed-prev').disabled=histFeedPage<=1;document.getElementById('hfeed-next').disabled=histFeedPage>=totalPages;}
+ 
+ // ===== SECTION: HISTORY: detail kartu / card =====
+-function showHistCardDetail(cardKey){var r=histCardRenderMap[cardKey];if(!r)return;var isMasuk=(r.jenis||'').toUpperCase()==='MASUK';var meta=getItemMeta(r.itemId);var nama=r.nama||meta.nama||'-';var spec=r.spec||meta.spec||'';var rak=r.rak||getRakForItemId(r.itemId)||'-';var rows=[['Jenis Transaksi',isMasuk?'Barang Masuk':'Barang Keluar'],['Nama Barang',nama],['Kode Barang',r.itemId||'-'],['Spesifikasi',spec||'-'],['Qty',(r.qty!=null?r.qty:'-')+' '+(r.unit||'')],['Saldo Sesudah',r.saldoSesudah||'-'],['Rak',rak],['Waktu',r.timestamp||'-'],['Operator',r.admin||'-'],['Keterangan',r.keterangan||'-']];document.getElementById('hist-card-detail-body').innerHTML='<div style="display:flex;flex-direction:column;gap:var(--sp-12)">'+
+-rows.map(function(f){return'<div class="item-field"><div class="item-field-lbl">'+xe(f[0])+'</div><div class="item-field-val">'+(f[0]==='Jenis Transaksi'?'<svg class="ic" aria-hidden="true"><use href="#i-'+(isMasuk?'up':'down')+'"/></svg> ':'')+xe(String(f[1]))+'</div></div>';}).join('')+'</div>';document.getElementById('modal-hist-card-detail').classList.add('show');}
+-function closeHistCardDetail(){document.getElementById('modal-hist-card-detail').classList.remove('show');}
++var _histKoreksiKey=null,_koreksiPending=null,_koreksiPrefix='';function showHistCardDetail(cardKey){var r=histCardRenderMap[cardKey];if(!r)return;_histKoreksiKey=cardKey;var _kb=document.getElementById('hist-koreksi-btn');if(_kb){var _kj=(r.jenis||'').toUpperCase();_kb.style.display=(document.body.classList.contains('viewer-mode')||!r.itemId||(_kj!=='MASUK'&&_kj!=='KELUAR'))?'none':'';}var isMasuk=(r.jenis||'').toUpperCase()==='MASUK';var meta=getItemMeta(r.itemId);var nama=r.nama||meta.nama||'-';var spec=r.spec||meta.spec||'';var rak=r.rak||getRakForItemId(r.itemId)||'-';var rows=[['Jenis Transaksi',isMasuk?'Barang Masuk':((r.jenis||'').toUpperCase()==='PINDAH'?'Pindah Rak':'Barang Keluar')],['Nama Barang',nama],['Kode Barang',r.itemId||'-'],['Spesifikasi',spec||'-'],['Qty',(r.qty!=null?r.qty:'-')+' '+(r.unit||'')],['Saldo Sesudah',r.saldoSesudah||'-'],['Rak',rak],['Waktu',r.timestamp||'-'],['Operator',r.admin||'-'],['Keterangan',r.keterangan||'-']];document.getElementById('hist-card-detail-body').innerHTML='<div style="display:flex;flex-direction:column;gap:var(--sp-12)">'+
++rows.map(function(f){return'<div class="item-field"><div class="item-field-lbl">'+xe(f[0])+'</div><div class="item-field-val">'+(f[0]==='Jenis Transaksi'?'<svg class="ic" aria-hidden="true"><use href="#i-'+(isMasuk?'up':((r.jenis||'').toUpperCase()==='PINDAH'?'swap':'down'))+'"/></svg> ':'')+xe(String(f[1]))+'</div></div>';}).join('')+'</div>';document.getElementById('modal-hist-card-detail').classList.add('show');}
++/* KOREKSI (audit UX #7): ledger append-only -> koreksi = entri LAWAN dengan alasan wajib (bukan edit/hapus), jejak audit tetap utuh. */ function koreksiFromHistCard(){var r=histCardRenderMap[_histKoreksiKey];if(!r||!r.itemId)return;var j=(r.jenis||'').toUpperCase();if(j!=='MASUK'&&j!=='KELUAR')return;_koreksiPending={jenis:j==='MASUK'?'KELUAR':'MASUK',qty:r.qty,rak:r.rak||getRakForItemId(r.itemId)||'',ts:r.timestamp||''};closeHistCardDetail();goToTransaksi(r.itemId);} function _applyPendingKoreksi(){if(!_koreksiPending)return;var k=_koreksiPending;_koreksiPending=null;setJenis(k.jenis);var q=document.getElementById('qty-input');var pq=parseQty(k.qty);if(q&&pq>0)q.value=fmtQty(pq);var rk=document.getElementById('rak-input');if(rk&&k.rak)rk.value=String(k.rak).toUpperCase();_koreksiPrefix='KOREKSI atas transaksi '+k.ts+' — alasan: ';var ket=document.getElementById('ket-input');if(ket)ket.value=_koreksiPrefix;markRakChipSelection();updateSaldoPreview();checkTransactionAnomaly();saveTransaksiDraft();setTimeout(function(){var ke=document.getElementById('ket-input');if(ke){ke.focus();ke.setSelectionRange(ke.value.length,ke.value.length);}},400);} function closeHistCardDetail(){document.getElementById('modal-hist-card-detail').classList.remove('show');}
+ /* pure helpers moved → js/format.js (F4.5) */
+ function getItemMeta(itemId){if(!allRows.length)return{nama:'',spec:''};var found=allRows.find(function(r){return r.id===itemId;});return found?{nama:found.nama||'',spec:found.spec||''}:{nama:'',spec:''};}
+ /* pure helpers moved → js/format.js (F4.5) */
+@@ -4350,7 +4423,7 @@ function cetakInjectPdfRunner(w,fname,pSize){
+ // ===== SECTION: RENDER KARTU ITEM (grid/card view) =====
+ var _cardRenderRows=[];var _cardRenderedCount=0;var CARD_BATCH_SIZE=30;var _cardScrollObserver=null;function renderCardList(rows){var cl=document.getElementById('card-list-body');if(!cl)return;if(!rows.length){cl.innerHTML=(typeof allRows!=='undefined'&&allRows.length===0)?(_dataLoading?'<div class="empty-state"><p>Memuat data dari spreadsheet...</p></div>':'<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm u-mt-12" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>'):'<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm u-mt-12" onclick="resetAllFilters()">Reset Filter</button></div>';return;}
+ _cardRenderRows=rows;_cardRenderedCount=0;cl.innerHTML='<div id="card-list-sentinel"></div>';renderNextCardBatch();}
+-function buildCardHtml(rows){return rows.map(function(r){var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var arsip=_isArsip(r);var rb=(_rakBreakdownMap&&_rakBreakdownMap[r.id])||null;var lokLebih=(rb&&rb.length>1)?rb.length-1:0;var lokTip=(rb&&rb.length>1)?xe(rb.slice().sort(function(a,b){return b.qty-a.qty}).map(function(x){return (x.rak||'-')+': '+x.qty}).join(', ')):'';return'<div class="ilc3'+(arsip?' ilc2-arsip':'')+'" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.62':'')+'">'
++function buildCardHtml(rows){return rows.map(function(r){var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var arsip=_isArsip(r);var rb=(_rakBreakdownMap&&_rakBreakdownMap[r.id])||null;var lokLebih=(rb&&rb.length>1)?rb.length-1:0;var lokTip=(rb&&rb.length>1)?xe(rb.slice().sort(function(a,b){return b.qty-a.qty}).map(function(x){return (x.rak||'-')+': '+x.qty}).join(', ')):'';return'<div class="ilc3'+(arsip?' ilc2-arsip':'')+'" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.62':'')+'">'
+ +'<div class="ilc3-strip '+stripCls+'"></div>'
+ +'<div class="ilc3-main">'
+ +'<div class="ilc3-info">'
+@@ -4379,10 +4452,10 @@ if(_cardScrollObserver){_cardScrollObserver.disconnect();_cardScrollObserver=nul
+ if(_cardRenderedCount<_cardRenderRows.length){sentinel.textContent='';_cardScrollObserver=new IntersectionObserver(function(entries){if(entries[0].isIntersecting)renderNextCardBatch();},{rootMargin:'400px'});_cardScrollObserver.observe(sentinel);}else{sentinel.remove();}}
+ 
+ // ===== SECTION: DETAIL ITEM: history per item, vendor history, ledger check =====
+-var _detailIdx=null;var _detailItemId=null;var _lastFocusTrigger=null;function openItemDetail(idx){stopInlineScanner();stopInlineScannerHist();var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;_detailIdx=idx;_detailItemId=r.id;var trigger=document.activeElement;if(trigger&&trigger!==document.body)_lastFocusTrigger=trigger;var saldo=parseInt(r.qty)||0;var minS=parseInt(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var heroCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';document.getElementById('idd-id').textContent=r.id||'-';document.getElementById('idd-nama').textContent=r.nama||'-';document.getElementById('idd-spec').textContent=r.spec||'';document.getElementById('idd-stok').textContent=saldo;document.getElementById('idd-stok').className='item-detail-stok-big'+(isAlert?' alert':'');document.getElementById('idd-unit').textContent=r.unit||'pcs';document.getElementById('idd-low').style.display=isAlert?'block':'none';document.getElementById('idd-rak').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-rak-hero').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-kategori').textContent=r.kategori||'-';document.getElementById('idd-user').textContent=r.user||'-';document.getElementById('idd-bc').textContent=r.bc||'-';document.getElementById('idd-min-input').value=minStockMap[r.id]||0;var arsip=_isArsip(r);var arsipBadge=document.getElementById('idd-arsip-badge');if(arsipBadge)arsipBadge.classList.toggle('u-hide',!arsip);var trxBtn=document.getElementById('idd-btn-trx');if(trxBtn){trxBtn.disabled=arsip;trxBtn.style.opacity=arsip?'.5':'';trxBtn.title=arsip?'Item diarsipkan -- aktifkan kembali dulu untuk transaksi':'';}
++var _detailIdx=null;var _detailItemId=null;var _lastFocusTrigger=null;function openItemDetail(idx){stopInlineScanner();stopInlineScannerHist();var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;_detailIdx=idx;_detailItemId=r.id;var trigger=document.activeElement;if(trigger&&trigger!==document.body)_lastFocusTrigger=trigger;var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var heroCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';document.getElementById('idd-id').textContent=r.id||'-';document.getElementById('idd-nama').textContent=r.nama||'-';document.getElementById('idd-spec').textContent=r.spec||'';document.getElementById('idd-stok').textContent=saldo;document.getElementById('idd-stok').className='item-detail-stok-big'+(isAlert?' alert':'');document.getElementById('idd-unit').textContent=r.unit||'pcs';document.getElementById('idd-low').style.display=isAlert?'block':'none';document.getElementById('idd-rak').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-rak-hero').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-kategori').textContent=r.kategori||'-';document.getElementById('idd-user').textContent=r.user||'-';document.getElementById('idd-bc').textContent=r.bc||'-';document.getElementById('idd-min-input').value=minStockMap[r.id]||0;var arsip=_isArsip(r);var arsipBadge=document.getElementById('idd-arsip-badge');if(arsipBadge)arsipBadge.classList.toggle('u-hide',!arsip);var trxBtn=document.getElementById('idd-btn-trx');if(trxBtn){trxBtn.disabled=arsip;trxBtn.style.opacity=arsip?'.5':'';trxBtn.title=arsip?'Item diarsipkan -- aktifkan kembali dulu untuk transaksi':'';}
+ var archiveBtn=document.getElementById('idd-btn-archive');if(archiveBtn){archiveBtn.innerHTML=arsip?'<svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Aktifkan Kembali':'<svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Arsipkan Item';archiveBtn.className='btn btn-sm btn-block'+(arsip?'':' btn-danger');}
+ hideStatus('sbar-idd-archive');var hero=document.getElementById('item-detail-hero');hero.className='item-detail-hero'+(heroCls?' '+heroCls:'');document.getElementById('item-detail-overlay').classList.add('show');document.getElementById('item-detail-sheet').classList.add('show');var histList=document.getElementById('idd-hist-list'),histToggle=document.getElementById('idd-hist-toggle');if(histList)histList.style.display='none';if(histToggle){var lbl=histToggle.querySelector('span');if(lbl)lbl.textContent='▸ Riwayat Transaksi';}
+-var vendorList=document.getElementById('idd-vendor-list'),vendorToggle=document.getElementById('idd-vendor-toggle');if(vendorList)vendorList.style.display='none';if(vendorToggle){var vlbl=vendorToggle.querySelector('span');if(vlbl)vlbl.textContent='▸ Vendor History';}
++var vendorList=document.getElementById('idd-vendor-list'),vendorToggle=document.getElementById('idd-vendor-toggle');if(vendorList)vendorList.style.display='none';if(vendorToggle){var vlbl=vendorToggle.querySelector('span');if(vlbl)vlbl.textContent='▸ Riwayat Vendor';}
+ checkLedgerReconciliation(r.id);loadItemHistoryInDetail(r.id,r.unit,r.spec);loadVendorHistory(r.id);var namaEl=document.getElementById('idd-nama');if(namaEl)namaEl.focus();}
+ function toggleDetailHist(){var list=document.getElementById('idd-hist-list');var toggle=document.getElementById('idd-hist-toggle');if(!list||!toggle)return;var isOpen=list.style.display!=='none';list.style.display=isOpen?'none':'block';var lbl=toggle.querySelector('span');if(lbl)lbl.textContent=(isOpen?'▸':'▾')+' Riwayat Transaksi';}
+ function loadItemHistoryInDetail(itemId,unit,fallbackSpec){unit=unit||'';fallbackSpec=fallbackSpec||'';var box=document.getElementById('idd-hist-list');var countLbl=document.getElementById('idd-hist-count');if(!box)return;box.innerHTML=skeletonCardRows(4);if(countLbl)countLbl.textContent='';gasGet({action:'getHistory',id:itemId}).then(function(res){if(_detailIdx===null)return;if(res.status!=='ok'){box.innerHTML='<div class="empty-state u-py24"><p>Gagal memuat riwayat</p></div>';return;}
+@@ -4407,7 +4480,7 @@ var bodyRows=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()===
+ +'</tr></thead>'
+ +'<tbody>'+bodyRows+'</tbody>'
+ +'</table></div>';}).catch(function(){if(_detailIdx===null)return;box.innerHTML='<div class="empty-state u-py24 u-pad-20-0"><p>Tidak bisa memuat riwayat (offline?)</p></div>';});}
+-function toggleVendorHistory(){var list=document.getElementById('idd-vendor-list');var toggle=document.getElementById('idd-vendor-toggle');if(!list||!toggle)return;var isOpen=list.style.display!=='none';list.style.display=isOpen?'none':'block';var lbl=toggle.querySelector('span');if(lbl)lbl.textContent=(isOpen?'▸':'▾')+' Vendor History';}
++function toggleVendorHistory(){var list=document.getElementById('idd-vendor-list');var toggle=document.getElementById('idd-vendor-toggle');if(!list||!toggle)return;var isOpen=list.style.display!=='none';list.style.display=isOpen?'none':'block';var lbl=toggle.querySelector('span');if(lbl)lbl.textContent=(isOpen?'▸':'▾')+' Riwayat Vendor';}
+ function loadVendorHistory(itemId){var box=document.getElementById('idd-vendor-list');var countLbl=document.getElementById('idd-vendor-count');if(!box)return;box.innerHTML=skeletonCardRows(4);if(countLbl)countLbl.textContent='';gasGet({action:'getLedger',id:itemId}).then(function(res){if(_detailIdx===null)return;if(res.status!=='ok'){box.innerHTML='<div class="empty-state u-py24 u-pad-20-0"><p>Gagal memuat riwayat vendor</p></div>';return;}
+ var entries=(res.entries||[]).slice().reverse();if(!entries.length){box.innerHTML='<div class="empty-state u-py24 u-pad-20-0"><p>Belum ada riwayat vendor.</p></div>';if(countLbl)countLbl.textContent='0 transaksi';return;}
+ var vendorSet={},vendorMasukSet={};entries.forEach(function(e){var v=String(e.vendor||'').trim();if(v){vendorSet[v]=true;if((e.jenis||'').toUpperCase()==='MASUK')vendorMasukSet[v]=true;}});var totalVendor=Object.keys(vendorSet).length;if(countLbl)countLbl.textContent=entries.length+' transaksi';if(totalVendor===0){box.innerHTML='<div class="empty-state u-py24 u-pad-20-0"><p>Belum ada riwayat vendor.</p></div>';return;}
+@@ -4465,7 +4538,7 @@ cl.innerHTML='<div style="border:1px solid var(--border);border-radius:var(--r);
  +'</div>'
  +'<div class="cetak-item-stok">'+(r.qty||0)+' <span>'+xe(r.unit||'pcs')+'</span></div>'
  +'</div>';}).join('')
@@ -124,7 +495,7 @@ index 4183a7e..80831ef 100644
  +'</div>';}
  function _cetakSyncRow(idx,target){var row=null;try{row=(target&&target.closest)?target.closest('.cetak-item-row'):null;}catch(e){}var rows=row?[row]:document.querySelectorAll('#cetak-item-list .cetak-item-row[data-idx="'+idx+'"]');var sel=cetakSelectedIds.has(idx);for(var i=0;i<rows.length;i++){var cb=rows[i].querySelector('.cetak-item-cb');if(cb)cb.checked=sel;rows[i].setAttribute('aria-pressed',sel?'true':'false');}}
  function _cetakSyncRows(){var rows=document.querySelectorAll('#cetak-item-list .cetak-item-row[data-idx]');for(var i=0;i<rows.length;i++){var idx=parseInt(rows[i].getAttribute('data-idx'),10);var sel=cetakSelectedIds.has(idx);var cb=rows[i].querySelector('.cetak-item-cb');if(cb)cb.checked=sel;rows[i].setAttribute('aria-pressed',sel?'true':'false');}}
-@@ -4492,7 +4533,9 @@ var c=document.getElementById('qr-scanner-container');if(c)hideScannerContainer(
+@@ -4492,7 +4565,9 @@ var c=document.getElementById('qr-scanner-container');if(c)hideScannerContainer(
  function stopInlineScannerHist(){if(_scanRafHist){cancelAnimationFrame(_scanRafHist);_scanRafHist=null;}
  if(_scanStreamHist){_scanStreamHist.getTracks().forEach(function(t){t.stop();});_scanStreamHist=null;}
  var c=document.getElementById('qr-scanner-hist-container');if(c)c.style.display='none';_acWatchSync();refitAcDropdownIfOpen('hist');}
@@ -135,7 +506,25 @@ index 4183a7e..80831ef 100644
  function startInlineScannerRak(){var video=document.getElementById('qr-video-rak');var label=document.getElementById('qr-label-rak');if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){label.textContent='Kamera tidak didukung browser ini';label.classList.add('detected');return;}if(window.isSecureContext===false){label.textContent='Akses kamera membutuhkan HTTPS. Ketik ID barang di bawah.';label.classList.add('detected','error-message');return;}
  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(function(stream){_scanStreamRak=stream;video.srcObject=stream;video.play();label.textContent='Arahkan kamera ke label QR rak';label.classList.remove('detected');scanFrameRak();}).catch(function(err){var msg='Kamera tidak tersedia. Ketik ID barang di bawah.';if(err.name==='NotAllowedError')msg='Izin kamera ditolak. Ketik ID barang di bawah.';else if(err.name==='NotFoundError')msg='Kamera tidak ditemukan pada perangkat ini.';else if(err.name==='NotReadableError')msg='Kamera sedang digunakan aplikasi lain.';else if(err.name==='SecurityError')msg='Akses kamera dibatasi. Gunakan HTTPS.';else if(err.name==='OverconstrainedError')msg='Kamera tidak memenuhi spesifikasi yang dibutuhkan.';label.textContent=msg;label.classList.add('detected','error-message');});}
  function scanFrameRak(){var video=document.getElementById('qr-video-rak');var canvas=document.getElementById('qr-canvas-rak');var label=document.getElementById('qr-label-rak');if(!video||video.readyState<2){_scanRafRak=requestAnimationFrame(scanFrameRak);return;}
-@@ -5480,6 +5523,7 @@ window.removeManualRakLabel=removeManualRakLabel;
+@@ -4546,7 +4621,7 @@ window.addEventListener('scroll',function(){
+ // ===== SECTION: BOOT SPLASH =====
+ var _bootSplashStart=Date.now();function hideBootSplash(){var el=document.getElementById('boot-splash');if(!el)return;el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},560);}
+ window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(_tabHashNames.indexOf(h)>=0)switchTab(h);});window.addEventListener('DOMContentLoaded',function(){applyTheme();initSidebar();var dataReady;if(!hasValidSession()){showLoginGate();dataReady=Promise.resolve();}else{hideLoginGate();if(VIEWER_MODE)document.body.classList.add('viewer-mode');dataReady=startAppAfterAuth();}
+-var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.closeItemDetail=closeItemDetail;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.doExportExcelSemua=doExportExcelSemua;window.openImportXlModal=openImportXlModal;window.closeImportXlModal=closeImportXlModal;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openPindahSheet=openPindahSheet;window.openPindahFromCekStok=openPindahFromCekStok;window.openPindahFromEdit=openPindahFromEdit;window.closePindahSheet=closePindahSheet;window.updatePindahQtyMax=updatePindahQtyMax;window.submitPindahRak=submitPindahRak;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
++var minWait=new Promise(function(resolve){var elapsed=Date.now()-_bootSplashStart;setTimeout(resolve,Math.max(0,600-elapsed));});/* PERF 2026-10-16: splash tidak lagi menunggu data GAS (dulu Promise.all([dataReady,minWait]) membuat boot tersandera getData+getMasterLists; maxWait 8 dtk dipakai). Shell tampil <=0,6 dtk sejak parse; tabel/dashboard menampilkan status memuat sampai data tiba; tab Scanner tetap berfungsi karena lookup memakai getItem server. _applyHashTab() dipanggil lagi setelah dataReady utk tab yg butuh data. */minWait.then(function(){hideBootSplash();if(hasValidSession())_applyHashTab();});if(dataReady){if(typeof dataReady.then==='function')dataReady.then(function(){if(hasValidSession())_applyHashTab();});if(typeof dataReady.catch==='function')dataReady.catch(function(){});}});window.IC=IC;window.acFocusAndShow=acFocusAndShow;window.acHide=acHide;window.acKey=acKey;window.acPick=acPick;window.acShow=acShow;window.acShowDebounced=acShowDebounced;window.addManualRakLabel=addManualRakLabel;window.adjustQty=adjustQty;window.allRows=allRows;window.applyHistFeedFilter=applyHistFeedFilter;window.applySortOption=applySortOption;window.sortByColumn=sortByColumn;window.backFromSubpage=backFromSubpage;window.checkTransactionAnomaly=checkTransactionAnomaly;window.cetakClearAll=cetakClearAll;window.cetakSelectAll=cetakSelectAll;window.clearHistFeedSearch=clearHistFeedSearch;window.collapseCameraOnType=collapseCameraOnType;window.closeFilterSheet=closeFilterSheet;window.closeHistCardDetail=closeHistCardDetail;window.koreksiFromHistCard=koreksiFromHistCard;window.closeItemDetail=closeItemDetail;window.closeRakLabelSheet=closeRakLabelSheet;window.closeSortSheet=closeSortSheet;window.cetakBanner=cetakBanner;window.cetakNotice=cetakNotice;window.setBeepPref=setBeepPref;window.updateOutboxBadge=updateOutboxBadge;window.cetakShowAllRows=cetakShowAllRows;window.printSingleItem=printSingleItem;window.doCetak=doCetak;window.doDownload=doDownload;window.editFromDetail=editFromDetail;window.exportExcel=exportExcel;window.openExportExcelModal=openExportExcelModal;window.closeExportExcelModal=closeExportExcelModal;window.doExportExcelLengkap=doExportExcelLengkap;window.doExportExcelSemua=doExportExcelSemua;window.openImportXlModal=openImportXlModal;window.closeImportXlModal=closeImportXlModal;window.openExportQRModal=openExportQRModal;window.closeExportQRModal=closeExportQRModal;window.doExportQR=doExportQR;window.exportQRMassal=openExportQRModal;window.exportHistFeedCSV=exportHistFeedCSV;window.filterTableDebounced=filterTableDebounced;window.filteredRows=filteredRows;window.gasPost=gasPost;window.getAdminLabel=getAdminLabel;window.goScanFromHistory=goScanFromHistory;window.goToTransaksi=goToTransaksi;window.goTransaksiFromCekStok=goTransaksiFromCekStok;window.goTransaksiFromDetail=goTransaksiFromDetail;window.hideAdminTools=hideAdminTools;window.hideConfig=hideConfig;window.hideStatus=hideStatus;window.hideUserModal=hideUserModal;window.histFeedNextPage=histFeedNextPage;window.histFeedPrevPage=histFeedPrevPage;window.invNextPage=invNextPage;window.invPrevPage=invPrevPage;window.loadAlert=loadAlert;window.loadAllHistory=loadAllHistory;window.loadIdCollisions=loadIdCollisions;window.resolveCollision=resolveCollision;window.loadDashboard=loadDashboard;window.loadData=loadData;window.loadHistory=loadHistory;window.logoutEditor=logoutEditor;window.logoutViewer=logoutViewer;window.lookupItem=lookupItem;window.markRakChipSelection=markRakChipSelection;window.minStockMap=minStockMap;window.onCustomDateChange=onCustomDateChange;window.onHistFeedSearchInput=onHistFeedSearchInput;window.onRakLabelCheck=onRakLabelCheck;window.openFilterSheet=openFilterSheet;window.openItemDetail=openItemDetail;window.openPindahSheet=openPindahSheet;window.openPindahFromCekStok=openPindahFromCekStok;window.openPindahFromEdit=openPindahFromEdit;window.closePindahSheet=closePindahSheet;window.updatePindahQtyMax=updatePindahQtyMax;window.submitPindahRak=submitPindahRak;window.openRakLabelSheet=openRakLabelSheet;window.openScanTransaksi=openScanTransaksi;window.openSortSheet=openSortSheet;window.printRakLabels=printRakLabels;window.quickLoadData=quickLoadData;window.refreshHistory=refreshHistory;window.registerMasterValueIfNew=registerMasterValueIfNew;window.renderCetakList=renderCetakList;window.renderLowestStockWidget=renderLowestStockWidget;window.renderRakLabelList=renderRakLabelList;window.renderRakList=renderRakList;window.renderTable=renderTable;window.reopenCameraFromCompact=reopenCameraFromCompact;window.resetAllFilters=resetAllFilters;window.resetHistFeedFilter=resetHistFeedFilter;window.resetHistory=resetHistory;window.resetScanner=resetScanner;window.runAdminTool=runAdminTool;window.saveConfig=saveConfig;window.saveMinStock=saveMinStock;window.saveMinStockFromDetail=saveMinStockFromDetail;window.saveTransaksiDraft=saveTransaksiDraft;window.saveUser=saveUser;window.scanNext=scanNext;window.selectRakChip=selectRakChip;window.setCatFilter=setCatFilter;window.setRakFilter=setRakFilter;window.setDashRackFilter=setDashRackFilter;window.setCetakMode=setCetakMode;window.setDashboardSubtab=setDashboardSubtab;window.setHistFeedChip=setHistFeedChip;window.setHistJenis=setHistJenis;window.setHistView=setHistView;window.setJenis=setJenis;window.setOpProdPeriod=setOpProdPeriod;window.setQuickRange=setQuickRange;window.setScanMode=setScanMode;window.showAdminTools=showAdminTools;window.showConfig=showConfig;window.showHistCardDetail=showHistCardDetail;window.showRakDetail=showRakDetail;window.showRakList=showRakList;window.showStatus=showStatus;window.showUserModal=showUserModal;window.stopInlineScanner=stopInlineScanner;window.stopInlineScannerHist=stopInlineScannerHist;window.stopInlineScannerRak=stopInlineScannerRak;window.submitTransaksi=submitTransaksi;window.submitViewerLogin=submitViewerLogin;window.switchTab=switchTab;window.toggleArchiveFromDetail=toggleArchiveFromDetail;window.toggleCetakRow=toggleCetakRow;window.toggleDayGroup=toggleDayGroup;window.toggleDetailHist=toggleDetailHist;window.toggleHistAdvFilter=toggleHistAdvFilter;window.toggleInlineScanner=toggleInlineScanner;window.togglePwVisibility=togglePwVisibility;window.toggleInlineScannerMaster=toggleInlineScannerMaster;window.toggleInlineScannerRak=toggleInlineScannerRak;window.toggleOpProdWidget=toggleOpProdWidget;window.toggleRackExpand=toggleRackExpand;window.toggleRackOverviewWidget=toggleRackOverviewWidget;window.toggleRakLabelAll=toggleRakLabelAll;window.toggleShowArsip=toggleShowArsip;window.toggleVendorHistory=toggleVendorHistory;window.transaksiLagi=transaksiLagi;window.updateAlertBadge=updateAlertBadge;window.updateCetakCount=updateCetakCount;window.updateSaldoPreview=updateSaldoPreview;window.xe=xe;})();(function(){'use strict';function openAddSheet(){stopInlineScanner();stopInlineScannerHist();['add-nama','add-spec','add-qty','add-unit','add-rak','add-vendor','add-po','add-user','add-kategori','add-minstock'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('add-bc').value='';hideStatus('sbar-add');updateAddRakHint();document.getElementById('add-overlay').classList.add('show');document.getElementById('add-sheet').classList.add('show');document.getElementById('add-nama').focus();}
+ 
+ // ===== SECTION: TAMBAH / EDIT ITEM (sheet form) =====
+ function updateAddRakHint(){var qty=parseFloat(document.getElementById('add-qty').value);var rak=document.getElementById('add-rak').value.trim();var needRak=!isNaN(qty)&&qty>0;var hint=document.getElementById('add-rak-hint');var label=document.getElementById('add-rak-label');if(hint)hint.classList.toggle('u-hide',!(needRak&&!rak));if(label)label.textContent=needRak?'Rak / Lokasi Awal *':'Rak / Lokasi Awal';}
+@@ -5468,7 +5543,7 @@ window.removeManualRakLabel=removeManualRakLabel;
+     </div>
+     <div class="field-group">
+       <label class="field-label" for="pindah-qty">Qty Pindah</label>
+-      <input type="number" inputmode="decimal" id="pindah-qty" value="1" min="1" data-err-msg="Qty harus lebih dari 0" oninput="updatePindahQtyMax()">
++      <input type="number" inputmode="decimal" id="pindah-qty" value="1" min="0" step="any" data-err-msg="Qty harus lebih dari 0" oninput="updatePindahQtyMax()">
+     </div>
+     <div class="field-group" style="margin-bottom:0">
+       <label class="field-label" for="pindah-tujuan">Rak Tujuan</label>
+@@ -5480,6 +5555,7 @@ window.removeManualRakLabel=removeManualRakLabel;
          </button>
        </div>
        <div class="field-hint">Tap Scan kalau rak tujuan sudah punya label QR.</div>
@@ -143,6 +532,92 @@ index 4183a7e..80831ef 100644
      </div>
    </div>
    <div class="sheet-footer">
+@@ -5666,14 +5742,14 @@ window.removeManualRakLabel=removeManualRakLabel;
+     <div class="modal-body">
+       <p class="field-hint" style="margin-bottom:14px">Unduh kode QR item (payload <code>id|nama|rak</code>) untuk print mandiri atau import sistem lain.</p>
+       <div class="field-group"><label class="field-label">Cakupan</label>
+-        <select class="sel" id="qr-export-scope">
++        <select class="sel" id="qr-export-scope" aria-label="Cakupan ekspor QR">
+           <option value="all">Semua item</option>
+           <option value="filtered">Hasil filter saat ini</option>
+           <option value="selected">Item terpilih di daftar cetak</option>
+         </select>
+       </div>
+       <div class="field-group"><label class="field-label">Format</label>
+-        <select class="sel" id="qr-export-format">
++        <select class="sel" id="qr-export-format" aria-label="Format ekspor QR">
+           <option value="html">Sheet HTML (print-ready, 1 file)</option>
+           <option value="png">PNG per item (unduh berurutan)</option>
+         </select>
+@@ -5686,5 +5762,36 @@ window.removeManualRakLabel=removeManualRakLabel;
+     </div>
+   </div>
+ </div>
++<script>
++/* BACK PERANGKAT (audit UX 2026-11 #4): sebelumnya aplikasi tidak memakai pushState/popstate sehingga tombol Back Android
++ * (atau gestur Back iOS/Chrome) langsung KELUAR dari aplikasi walau sheet/modal terbuka atau sedang di sub-halaman.
++ * Pola: dua entri riwayat (dasar #__base + aplikasi). Back dari aplikasi mendarat di dasar -> kita putuskan:
++ *   1) ada sheet/modal terbuka  -> tutup yang teratas (memakai handler Escape yang sudah ada)
++ *   2) sub-halaman (alert/cetak/rak/aset) -> sama dengan tombol "Kembali"
++ *   3) tab lain selain Stok -> kembali ke Stok
++ *   4) di Stok tanpa lapisan -> "Tekan Back sekali lagi untuk keluar" (2 dtk), lalu keluar.
++ * Sentinel dipasang pada interaksi pertama: Chrome melewati entri riwayat yang dibuat tanpa interaksi pengguna. */
++(function(){
++  var HOME='master',SUBS=['alert','cetak','rak','aset'];
++  var LAYERS='.modal-overlay.show,#item-detail-sheet.show,#edit-sheet.show,#add-sheet.show,#rak-label-sheet.show,#pindah-sheet.show';
++  var armed=false,exitUntil=0,toastEl=null,toastT=0;
++  function base(){return location.pathname+location.search;}
++  function curTab(){var s=document.querySelector('.page-section.active');return s&&s.id?s.id.replace('section-',''):HOME;}
++  function pushApp(){try{history.pushState({rdiApp:1},'',base()+'#'+curTab());}catch(e){}}
++  function arm(){if(armed)return;armed=true;try{history.replaceState({rdiBase:1},'',base()+'#__base');pushApp();}catch(e){armed=false;}}
++  ['pointerdown','touchstart','keydown'].forEach(function(t){document.addEventListener(t,arm,{once:true,passive:true,capture:true});});
++  function toast(msg){if(!toastEl){toastEl=document.createElement('div');toastEl.id='back-exit-toast';toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');toastEl.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:2000;background:rgba(15,23,42,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;max-width:90vw;text-align:center;pointer-events:none';document.body.appendChild(toastEl);}toastEl.textContent=msg;toastEl.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){toastEl.style.display='none';},2000);}
++  window.addEventListener('popstate',function(e){
++    if(!armed)return;
++    if(!(e.state&&e.state.rdiBase))return;
++    if(document.querySelectorAll(LAYERS).length){pushApp();document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return;}
++    var t=curTab();
++    if(SUBS.indexOf(t)>=0&&typeof backFromSubpage==='function'){pushApp();backFromSubpage();return;}
++    if(t!==HOME&&typeof switchTab==='function'){pushApp();switchTab(HOME);return;}
++    if(Date.now()<exitUntil){armed=false;history.back();return;}
++    exitUntil=Date.now()+2000;pushApp();toast('Tekan Back sekali lagi untuk keluar');
++  });
++})();
++</script>
+ </body>
+ </html>
+diff --git a/js/format.js b/js/format.js
+index abac05f..33296f7 100644
+--- a/js/format.js
++++ b/js/format.js
+@@ -41,3 +41,27 @@ return dp[m][nn];}
+ var bestLev=tokens.reduce(function(best,t){var wBest=words.reduce(function(wb,w){if(Math.abs(w.length-t.length)>4)return wb;return Math.min(wb,lev(t,w));},999);return Math.min(best,wBest);},999);var maxLen=Math.max(n.replace(/\s/g,'').length,1);if(bestLev<=Math.max(2,Math.ceil(maxLen*0.45)))return Math.max(10,Math.round((1-bestLev/maxLen)*50));var si=0,qi=0;while(si<h.length&&qi<n.length){if(h[si]===n[qi])qi++;si++;}
+ if(qi===n.length)return Math.round((n.length/h.length)*30);return 0;}
+ function fuzzyMatch(r,q,cheapOnly){q=String(q||'').replace(/\s+/g,' ').trim();if(!q)return{match:true,score:0};var fields=[{v:r.id||'',w:4},{v:r.nama||'',w:3},{v:r.spec||'',w:2},{v:r.rak||'',w:2},{v:r.vendor||'',w:1.5},{v:r.po||'',w:1},{v:r.kategori||'',w:1.5},{v:r.user||'',w:1}];var best=0;fields.forEach(function(f){var s=fuzzyScore(f.v,q,cheapOnly)*f.w;if(s>best)best=s;});return{match:best>=18,score:best};}
++
++/* ===== Qty & penjaga stok (audit UX 2026-11) =====
++ * parseQty: terima desimal ('2.5' / '2,5' / '.5'), tolak kosong/teks/<=0/Infinity. Dulu submit memakai parseInt
++ *   sehingga 2.5 tersimpan 2 sementara pratinjau menampilkan 2.5. Backend (Code.gs) sudah parseFloat.
++ * stockGuard: cermin aturan Code.gs v5.32 (KELUAR/PINDAH): per-rak bila rincian rak menutup saldo total;
++ *   bila tidak menutup DAN rak itu tidak punya saldo, cek terhadap saldo TOTAL. Server tetap otoritas akhir. */
++function parseQty(raw){var s=String(raw==null?'':raw).trim().replace(',','.');if(!/^(\d+(\.\d+)?|\.\d+)$/.test(s))return NaN;var n=parseFloat(s);return isFinite(n)?Math.round(n*1000)/1000:NaN;}
++function fmtQty(n){n=Math.round((parseFloat(n)||0)*1000)/1000;return String(n);}
++function _stripApos(v){var t=(v===null||v===undefined)?'':String(v);while(t.charAt(0)==="'")t=t.slice(1);return t;}
++function stockGuard(jenis,qty,rak,saldoTotal,breakdown){
++  if(jenis!=='KELUAR'&&jenis!=='PINDAH')return{ok:true};
++  if(!(qty>0))return{ok:true};
++  var key=_stripApos(String(rak||'').trim().toUpperCase()),saldoRak=0,sum=0;
++  (breakdown||[]).forEach(function(rb){var q=parseFloat(rb&&rb.qty)||0;sum+=q;if(_stripApos(rb&&rb.rak)===key)saldoRak=q;});
++  var total=parseFloat(saldoTotal)||0,lengkap=Math.abs(sum-total)<0.001;
++  if(!lengkap&&saldoRak<=0)return qty>total?{ok:false,message:'Stok tidak cukup. Saldo item: '+fmtQty(total)+' (lokasi rak item ini belum terekam)'}:{ok:true};
++  return qty>saldoRak?{ok:false,message:'Stok di rak '+(key||'-')+' tidak cukup. Saldo rak ini: '+fmtQty(saldoRak)}:{ok:true};
++}
++
++/* Anomali qty (audit UX 2026-11 #8): dulu (qty>3*rata-rata)||(qty>maks) dari SEMUA transaksi (masuk+keluar+pindah, bahkan 1 riwayat)
++ * sehingga hampir tiap qty yang sedikit lebih besar memicu peringatan -> pengguna belajar mengabaikannya.
++ * Sekarang: per jenis (PINDAH tidak dihitung), minimal 5 transaksi, dan anomali bila qty > 3x rata-rata DAN > semua riwayat. */
++function anomalyStats(rows,jenis){var q=[];(rows||[]).forEach(function(r){var j=String((r&&r.j)||'').toUpperCase();if(j==='PINDAH')return;if(jenis&&j&&j!==jenis)return;var n=parseFloat(r&&r.q);if(n>0)q.push(n);});if(q.length<5)return null;var sum=0;q.forEach(function(x){sum+=x;});var s=q.slice().sort(function(a,b){return a-b;});var mid=Math.floor(s.length/2);return{n:q.length,avg:sum/q.length,median:s.length%2?s[mid]:(s[mid-1]+s[mid])/2,max:s[s.length-1]};}
++function isQtyAnomaly(qty,st){return !!st&&qty>3*st.avg&&qty>st.max;}
 diff --git a/sw.js b/sw.js
 index 4c5ca9c..dec25ca 100644
 --- a/sw.js
@@ -153,8 +628,191 @@ index 4c5ca9c..dec25ca 100644
  const ASSETS = [
    './',
    './index.html',
+diff --git a/tests/l1/alert_lowstock.js b/tests/l1/alert_lowstock.js
+index 95ef901..34afb2f 100644
+--- a/tests/l1/alert_lowstock.js
++++ b/tests/l1/alert_lowstock.js
+@@ -36,7 +36,7 @@ const loadAlertMatch = src.match(/function\s+loadAlert\s*\(\)\s*\{([\s\S]{0,2500
+ t('F-04 loadAlert body found', !!loadAlertMatch, !!loadAlertMatch);
+ if (loadAlertMatch) {
+   const body = loadAlertMatch[1];
+-  t('F-04 loadAlert filters min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
++  t('F-04 loadAlert filters min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
+   t('F-04 loadAlert uses minStockMap', /minStockMap\[r\.id\]/.test(body), true);
+   t('F-04 loadAlert HABIS badge', /HABIS/.test(body), true);
+   t('F-04 loadAlert RENDAH badge', /RENDAH/.test(body), true);
+@@ -51,7 +51,7 @@ const badgeMatch = src.match(/function\s+updateAlertBadge\s*\(\)\s*\{([\s\S]{0,1
+ t('F-04 updateAlertBadge body found', !!badgeMatch, !!badgeMatch);
+ if (badgeMatch) {
+   const body = badgeMatch[1];
+-  t('F-04 badge counts min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
++  t('F-04 badge counts min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
+   t('F-04 badge caps at 9+', /9\+/.test(body), true);
+   t('F-04 badge toggles .show', /classList\.(add|remove)\('show'\)/.test(body), true);
+   // Review 2026-09: nilai dash-alert kini lewat setDashAlert() supaya kartu bisa
+@@ -69,8 +69,8 @@ const dashMatch = src.match(/function\s+renderDashAlertWidget\s*\(\)\s*\{([\s\S]
+ t('F-04 renderDashAlertWidget body found', !!dashMatch, !!dashMatch);
+ if (dashMatch) {
+   const body = dashMatch[1];
+-  t('F-04 dash widget filters critical', /m\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*m/.test(body), true);
+-  t('F-04 dash widget sorts by qty asc', /sort\(function\(a,b\)\{\s*return\s*parseInt\(a\.qty\|\|0\)-parseInt\(b\.qty\|\|0\)/.test(body), true);
++  t('F-04 dash widget filters critical', /m\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*m/.test(body), true);
++  t('F-04 dash widget sorts by qty asc', /sort\(function\(a,b\)\{\s*return\s*parse(?:Int|Float)\(a\.qty\|\|0\)-parse(?:Int|Float)\(b\.qty\|\|0\)/.test(body), true);
+   t('F-04 dash widget slices top 5', /\.slice\(0,\s*5\)/.test(body), true);
+   t('F-04 dash widget empty aman', /Semua stok aman/.test(body), true);
+   t('F-04 dash widget clickable openItemDetail', /openItemDetail\(/.test(body), true);
+diff --git a/tests/l1/anomaly_stats_exec.js b/tests/l1/anomaly_stats_exec.js
+new file mode 100644
+index 0000000..fd1224d
+--- /dev/null
++++ b/tests/l1/anomaly_stats_exec.js
+@@ -0,0 +1,33 @@
++/* L1: anomalyStats / isQtyAnomaly (js/format.js) + kontrak istilah & reset layar hasil (audit UX 2026-11 #5 #8 #11).
++ * Bug asal: peringatan anomali memakai SEMUA transaksi (masuk+keluar+pindah) dan aturan OR, sehingga aktif hampir selalu. */
++const fs = require('fs'), path = require('path'), vm = require('vm');
++const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '..', '..');
++const ctx = {}; vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'format.js'), 'utf8'), ctx);
++const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
++let pass = 0, fail = 0;
++const ok = (n, c, x) => { if (c) { pass++; console.log('PASS ' + n); } else { fail++; console.log('FAIL ' + n + (x !== undefined ? ' -> ' + JSON.stringify(x) : '')); } };
++const R = (j, qs) => qs.map((q) => ({ q, j }));
++
++ok('kurang dari 5 transaksi -> tidak ada statistik', ctx.anomalyStats(R('KELUAR', [1, 2, 3, 4]), 'KELUAR') === null);
++ok('1 riwayat saja tidak memicu peringatan', ctx.isQtyAnomaly(999, ctx.anomalyStats(R('KELUAR', [2]), 'KELUAR')) === false);
++const st = ctx.anomalyStats(R('KELUAR', [4, 5, 5, 6, 5]), 'KELUAR');
++ok('statistik: n=5 rata-rata 5 maks 6 median 5', st && st.n === 5 && st.avg === 5 && st.max === 6 && st.median === 5, st);
++ok('qty 10 (<=3x rata-rata 15) bukan anomali walau > maks', ctx.isQtyAnomaly(10, st) === false);
++ok('qty 16 (>3x rata-rata & > semua riwayat) anomali', ctx.isQtyAnomaly(16, st) === true);
++ok('qty 15 tepat 3x rata-rata bukan anomali (strict >)', ctx.isQtyAnomaly(15, st) === false);
++const mix = R('MASUK', [100, 120, 90, 110, 100]).concat(R('KELUAR', [1, 2, 1, 2, 1]));
++ok('dihitung per jenis: KELUAR tidak terpengaruh riwayat MASUK besar', ctx.anomalyStats(mix, 'KELUAR').max === 2);
++ok('dihitung per jenis: MASUK tidak terpengaruh KELUAR kecil', ctx.anomalyStats(mix, 'MASUK').avg === 104);
++ok('PINDAH tidak dihitung', ctx.anomalyStats(R('PINDAH', [1, 1, 1, 1, 1, 1]), null) === null);
++ok('tanpa jenis -> gabungan MASUK+KELUAR (tanpa PINDAH)', ctx.anomalyStats(mix.concat(R('PINDAH', [500])), null).n === 10);
++ok('qty nol/negatif/NaN diabaikan', ctx.anomalyStats(R('KELUAR', [0, -1, 'x', 2, 2, 2, 2, 2]), 'KELUAR').n === 5);
++ok('rows null/undefined tidak melempar', ctx.anomalyStats(null, 'KELUAR') === null && ctx.anomalyStats(undefined, null) === null);
++
++// kontrak index.html
++const ev = idx.slice(idx.indexOf('function evaluateAnomalyWarning(){'), idx.indexOf('function hideAnomalyWarning(){'));
++ok('evaluateAnomalyWarning memakai anomalyStats/isQtyAnomaly', ev.indexOf('anomalyStats(_anomalyStats.rows,currentJenis)') >= 0 && ev.indexOf('isQtyAnomaly(qty,st)') >= 0);
++ok('pesan anomali menyebut jumlah & jenis transaksi', /transaksi '\+\(currentJenis\?currentJenis\.toLowerCase\(\):'sebelumnya'\)/.test(idx));
++ok('layar hasil lama direset setelah >60 dtk saat kembali ke tab Transaksi', /_trxResultAt&&Date\.now\(\)-_trxResultAt>60000/.test(idx) && /if\(name==='result'\)_trxResultAt=Date\.now\(\)/.test(idx));
++ok('pesan status-belum-pasti menyebut "Riwayat" (nama tab), bukan "History"', /Cek Riwayat sebelum mencoba lagi/.test(idx) && /Cek Riwayat dulu/.test(idx) && !/Cek History/.test(idx));
++console.log('PASS | anomaly_stats_exec | pass=' + pass + ' fail=' + fail);
++process.exit(fail ? 1 : 0);
+diff --git a/tests/l1/back_navigation_exec.js b/tests/l1/back_navigation_exec.js
+new file mode 100644
+index 0000000..403599d
+--- /dev/null
++++ b/tests/l1/back_navigation_exec.js
+@@ -0,0 +1,23 @@
++/* L1: modul Back perangkat (index.html, blok "BACK PERANGKAT"). Konsistensi: setiap lapisan yang dicegat Back harus
++ * dikenal handler Escape yang sudah ada (karena Back menutup lapisan lewat event Escape), kalau tidak Back "tidak berbuat apa-apa". */
++const fs = require('fs'), path = require('path');
++const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '..', '..');
++const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
++let pass = 0, fail = 0;
++const ok = (n, c, x) => { if (c) { pass++; console.log('PASS ' + n); } else { fail++; console.log('FAIL ' + n + (x !== undefined ? ' -> ' + JSON.stringify(x) : '')); } };
++
++const mod = idx.slice(idx.indexOf('BACK PERANGKAT'));
++ok('modul Back ada & memakai popstate', /addEventListener\('popstate'/.test(mod));
++ok('sentinel dipasang pada interaksi pengguna (bukan saat load)', /\['pointerdown','touchstart','keydown'\]/.test(mod));
++const m = mod.match(/var LAYERS='([^']+)'/); ok('daftar LAYERS ditemukan', !!m);
++const esc = idx.slice(idx.indexOf("if(e.key!=='Escape')return;if(document.getElementById('item-detail-sheet')"));
++const escHead = esc.slice(0, esc.indexOf('function closeTopOverlay'));
++(m ? m[1].split(',') : []).forEach((sel) => {
++  if (sel === '.modal-overlay.show') { ok('.modal-overlay ditangani closeTopOverlay()', /closeTopOverlay\(\)/.test(escHead) && /_overlayCloseMap/.test(esc)); return; }
++  const id = (sel.match(/^#([\w-]+)\.show$/) || [])[1];
++  ok('lapisan #' + id + ' dikenal handler Escape', !!id && escHead.indexOf("getElementById('" + id + "').classList.contains('show')") >= 0, sel);
++});
++ok('semua kasus keluar: toast + jendela 2 detik', /Tekan Back sekali lagi untuk keluar/.test(mod) && /exitUntil=Date\.now\(\)\+2000/.test(mod));
++ok('sub-halaman memakai backFromSubpage() yang sama dengan tombol Kembali', /backFromSubpage\(\)/.test(mod) && /onclick="backFromSubpage\(\)"/.test(idx));
++console.log('PASS | back_navigation_exec | pass=' + pass + ' fail=' + fail);
++process.exit(fail ? 1 : 0);
+diff --git a/tests/l1/koreksi_flow_exec.js b/tests/l1/koreksi_flow_exec.js
+new file mode 100644
+index 0000000..d88970c
+--- /dev/null
++++ b/tests/l1/koreksi_flow_exec.js
+@@ -0,0 +1,27 @@
++/* L1: alur Koreksi transaksi di detail riwayat (audit UX 2026-11 #7) + label jenis PINDAH.
++ * Ledger append-only -> koreksi = entri LAWAN (Masuk<->Keluar), qty/rak sama, alasan wajib. PINDAH tidak bisa dikoreksi di sini. */
++const fs = require('fs'), path = require('path');
++const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '..', '..');
++const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
++let pass = 0, fail = 0;
++const ok = (n, c, x) => { if (c) { pass++; console.log('PASS ' + n); } else { fail++; console.log('FAIL ' + n + (x !== undefined ? ' -> ' + JSON.stringify(x) : '')); } };
++const cut = (a, b) => { const i = idx.indexOf(a); return i < 0 ? '' : idx.slice(i, idx.indexOf(b, i + a.length)); };
++
++const modal = cut('id="modal-hist-card-detail"', 'id="section-dashboard"');
++ok('tombol Koreksi ada di modal detail riwayat & terhubung ke koreksiFromHistCard()', /id="hist-koreksi-btn"[^>]*onclick="koreksiFromHistCard\(\)"/.test(modal));
++ok('koreksiFromHistCard diekspor ke window (handler inline harus global)', /window\.koreksiFromHistCard=koreksiFromHistCard;/.test(idx));
++const k = cut('function koreksiFromHistCard(){', 'function _applyPendingKoreksi(){');
++ok("jenis koreksi = kebalikan (MASUK->KELUAR, KELUAR->MASUK)", /jenis:j==='MASUK'\?'KELUAR':'MASUK'/.test(k));
++ok('hanya MASUK/KELUAR yang bisa dikoreksi', /if\(j!=='MASUK'&&j!=='KELUAR'\)return;/.test(k));
++const d = cut('function showHistCardDetail(cardKey){', 'function closeHistCardDetail(){');
++ok('tombol disembunyikan untuk viewer, tanpa itemId, dan jenis selain MASUK/KELUAR', /viewer-mode/.test(d) && /!r\.itemId/.test(d) && /_kj!=='MASUK'&&_kj!=='KELUAR'/.test(d));
++ok('detail menamai PINDAH sebagai "Pindah Rak" (dulu "Barang Keluar")', /'Pindah Rak':'Barang Keluar'/.test(d) && /'swap':'down'/.test(d));
++const a = cut('function _applyPendingKoreksi(){', 'function closeHistCardDetail(){');
++ok('form diisi: jenis, qty (desimal), rak, keterangan berawalan KOREKSI', /setJenis\(k\.jenis\)/.test(a) && /parseQty\(k\.qty\)/.test(a) && /KOREKSI atas transaksi /.test(a));
++ok('dipanggil setelah item termuat di lookupItem (bukan di goTransaksiFromCekStok)', cut('function lookupItem(', 'function goToTransaksi').indexOf('_applyPendingKoreksi()') > 0 && cut('function goTransaksiFromCekStok(', 'function lookupItem(').indexOf('_applyPendingKoreksi') < 0);
++const s = cut('function submitTransaksi(){', 'return;}', );
++const sub = idx.slice(idx.indexOf('function submitTransaksi(){'), idx.indexOf('function submitTransaksi(){') + 2200);
++ok('submit menolak koreksi tanpa alasan (>=3 huruf)', /_kp&&ket\.indexOf\(_kp\)===0&&ket\.slice\(_kp\.length\)\.trim\(\)\.length<3/.test(sub) && /Isi alasan koreksi/.test(sub));
++ok('state koreksi dibersihkan saat kembali ke langkah awal', /if\(name==='input'\)\{_koreksiPrefix='';_koreksiPending=null;\}/.test(idx));
++console.log('PASS | koreksi_flow_exec | pass=' + pass + ' fail=' + fail);
++process.exit(fail ? 1 : 0);
+diff --git a/tests/l1/qty_stock_guard_exec.js b/tests/l1/qty_stock_guard_exec.js
+new file mode 100644
+index 0000000..e3e4459
+--- /dev/null
++++ b/tests/l1/qty_stock_guard_exec.js
+@@ -0,0 +1,43 @@
++/* L1: parseQty / stockGuard (js/format.js) + kontrak pemakaian di index.html (audit UX 2026-11).
++ * Bug asal: submit memakai parseInt -> 2.5 tersimpan 2 padahal pratinjau 2.5; KELUAR melebihi stok baru ditolak server.
++ * stockGuard harus mencerminkan Code.gs v5.32 (per-rak bila rincian menutup saldo; fallback saldo total bila tidak). */
++const fs = require('fs'), path = require('path'), vm = require('vm');
++const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '..', '..');
++const src = fs.readFileSync(path.join(ROOT, 'js', 'format.js'), 'utf8');
++const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
++let pass = 0, fail = 0;
++const eq = (n, a, b) => { const ok = Object.is(a, b) || (typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b)); if (ok) { pass++; console.log('PASS ' + n); } else { fail++; console.log('FAIL ' + n + ' -> ' + JSON.stringify(a) + ' != ' + JSON.stringify(b)); } };
++const ctx = {}; vm.createContext(ctx); vm.runInContext(src, ctx);
++const P = ctx.parseQty, G = ctx.stockGuard;
++
++eq('parseQty "2.5"', P('2.5'), 2.5); eq('parseQty "2,5" (koma)', P('2,5'), 2.5); eq('parseQty ".5"', P('.5'), 0.5);
++eq('parseQty " 3 "', P(' 3 '), 3); eq('parseQty "0.1"+"0.2" dibulatkan', P('0.30000000000000004'), 0.3);
++['', 'abc', '1e3', '-1', '1.2.3', null, undefined, 'Infinity'].forEach((v) => eq('parseQty tolak ' + JSON.stringify(v), P(v), NaN));
++eq('fmtQty 0.1+0.2', ctx.fmtQty(0.1 + 0.2), '0.3'); eq('fmtQty 5', ctx.fmtQty(5), '5');
++
++const bd = [{ rak: 'A-01', qty: 3 }, { rak: 'B-02', qty: 2 }];
++eq('MASUK tidak pernah diblok', G('MASUK', 999, 'A-01', 5, bd).ok, true);
++eq('KELUAR <= saldo rak (rincian lengkap)', G('KELUAR', 3, 'A-01', 5, bd).ok, true);
++eq('KELUAR > saldo rak walau total cukup (rincian lengkap)', G('KELUAR', 4, 'A-01', 5, bd).ok, false);
++eq('pesan menyebut rak & saldo rak', /rak A-01.*3/.test(G('KELUAR', 4, 'A-01', 5, bd).message), true);
++eq('rak tak dikenal + rincian lengkap -> saldo rak 0 -> blok', G('KELUAR', 1, 'Z-09', 5, bd).ok, false);
++const incomplete = [{ rak: 'A-01', qty: 1 }]; // total 5, rincian hanya 1 -> tidak menutup
++eq('rincian tidak menutup & rak tak punya saldo -> pakai saldo TOTAL (ok)', G('KELUAR', 4, 'Z-09', 5, incomplete).ok, true);
++eq('rincian tidak menutup & rak tak punya saldo -> melebihi TOTAL (blok)', G('KELUAR', 6, 'Z-09', 5, incomplete).ok, false);
++eq('rincian tidak menutup tapi rak punya saldo -> tetap per-rak (blok)', G('KELUAR', 2, 'A-01', 5, incomplete).ok, false);
++eq('PINDAH ikut aturan KELUAR', G('PINDAH', 4, 'A-01', 5, bd).ok, false);
++eq('tanpa rincian sama sekali, saldo total 0 -> blok', G('KELUAR', 1, 'A-01', 0, []).ok, false);
++eq('apostrof di depan rak diabaikan seperti textMarkerStrip_', G('KELUAR', 3, "A-01", 5, [{ rak: "'A-01", qty: 3 }, { rak: 'B-02', qty: 2 }]).ok, true);
++eq('desimal: KELUAR 2.5 dari rak 2.5', G('KELUAR', 2.5, 'A-01', 2.5, [{ rak: 'A-01', qty: 2.5 }]).ok, true);
++eq('qty kosong/NaN tidak memblok (ditangani validasi lain)', G('KELUAR', NaN, 'A-01', 5, bd).ok, true);
++
++// kontrak pemakaian di index.html
++const sub = idx.slice(idx.indexOf('function submitTransaksi('), idx.indexOf('function submitTransaksi(') + 1800);
++eq('submitTransaksi memakai parseQty (bukan parseInt) untuk qty', /parseQty\(document\.getElementById\('qty-input'\)\.value\)/.test(sub) && !/parseInt\(document\.getElementById\('qty-input'\)/.test(sub), true);
++eq('submitTransaksi memanggil stockGuard sebelum kirim', /stockGuard\(currentJenis,qty,rak,/.test(sub), true);
++eq('qty-input step="any" & min tidak memaksa >=1', /id="qty-input" value="1" min="0" step="any"/.test(idx), true);
++eq('pindah-qty step="any"', /id="pindah-qty" value="1" min="0" step="any"/.test(idx), true);
++eq('elemen #stock-guard-msg ada (role=alert)', /id="stock-guard-msg"[^>]*role="alert"/.test(idx), true);
++eq('adjustQty tidak lagi memotong ke bilangan bulat', /function adjustQty\(delta\)\{[^}]*parseQty\(/.test(idx), true);
++console.log('PASS | qty_stock_guard_exec | pass=' + pass + ' fail=' + fail);
++process.exit(fail ? 1 : 0);
 diff --git a/tests/l1/sw_shell_manifest.json b/tests/l1/sw_shell_manifest.json
-index 84bc536..7d575bf 100644
+index 84bc536..62cff46 100644
 --- a/tests/l1/sw_shell_manifest.json
 +++ b/tests/l1/sw_shell_manifest.json
 @@ -1,6 +1,6 @@
@@ -163,7 +821,7 @@ index 84bc536..7d575bf 100644
 +  "cache": "rdi-stok-v108",
    "files": 17,
 -  "hash": "422a1be3f48b23d6a8b6f0e1effcef650520a8343856a9c29c4b623359649353",
-+  "hash": "ae5344dc7a66ea752822755d38384ae8fb1a161a1e40e7338480a9f330efd453",
++  "hash": "a79eb3ccc5523e4fe5f6ab9c6a4ea64414339a52f7b3926f75696dba070b1e97",
    "note": "Regenerasi: node tests/l1/sw_shell_cache_gate.js --print"
  }
 diff --git a/tests/l1/ui_pindah_scan_slot_exec.js b/tests/l1/ui_pindah_scan_slot_exec.js
