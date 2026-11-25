@@ -1014,8 +1014,12 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 #item-detail-hero .item-detail-nama,#item-detail-hero .item-detail-spec{overflow-wrap:anywhere;word-break:normal;padding-right:0}
 #item-detail-hero .item-detail-stok-hero{align-self:flex-start}
 /* FIX UI-12: footer detail item HP 3 baris -> 2 baris (Transaksi penuh; Edit | Pindah | Arsip sebaris). Label panjang dipotong ellipsis oleh aturan #idd-btn-archive. */
-@media (max-width:640px){.item-detail-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr)}.item-detail-actions .btn:not(#idd-btn-trx){padding-left:6px;padding-right:6px}}
-@media (max-width:340px){.item-detail-actions .btn:not(#idd-btn-trx) svg{display:none}}
+@media (max-width:640px){
+  .item-detail-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* FIX UI-20: label (Pindah Rak / Arsipkan Item / Aktifkan Kembali) keluar dari tombol di HP 360px & saat huruf diperbesar -> boleh membungkus 2 baris, tinggi menyesuaikan */
+  .item-detail-actions .btn:not(#idd-btn-trx){min-width:0;padding:6px 4px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15;text-align:center;overflow-wrap:break-word;height:auto}
+}
+@media (max-width:420px){.item-detail-actions .btn:not(#idd-btn-trx) svg{display:none}}
 /* FIX UI-13: daftar item Cetak Kartu terlalu sempit (HP 360x640 hanya 139px = <2 baris; desktop 1366x768 297px). Padding baris 16px (FIX 2026-11-20) bikin baris 78px, ditambah bar Kembali 65px & jarak mode-nav. Font tetap 15px/14px; hanya jarak vertikal dipadatkan. */
 #section-cetak .cetak-item-row{padding:10px 14px}
 #section-cetak .cetak-item-nama{margin-bottom:2px}
@@ -4143,9 +4147,9 @@ w.document.write(buildRakLabelHTML(raks));w.document.close();closeRakLabelSheet(
 /* Revisi posisi item antar rak tanpa mengubah saldo total. Tercatat sbg
    transaksi jenis PINDAH: rak asal turun, rak tujuan naik, Total_Masuk/
    Keluar tidak tersentuh. Jejak pindah tampil di riwayat. */
-var _pindahItem=null;function openPindahSheet(item){var bar=document.getElementById('pindah-sbar');var it=item||currentItem;if(!it){bar.textContent='Scan item dulu di tab Scanner, lalu buka Pindah Rak.';return;}
-if(_isArsip(it)){bar.textContent='Item ini sudah diarsipkan. Aktifkan kembali dulu dari halaman detail item.';return;}
-var rb=it.rakBreakdown||[];if(!rb.length){bar.textContent='Item ini belum punya stok di rak mana pun. Lakukan transaksi MASUK dulu.';return;}
+var _pindahItem=null;/* FIX UI-21: pesan gagal ditulis ke #pindah-sbar di DALAM sheet yang belum dibuka -> klik Pindah Rak terasa 'tidak terjadi apa-apa'. Tampilkan sebagai toast juga. */ function _pindahNotice(bar,msg){bar.textContent=msg;if(!document.getElementById('pindah-sheet').classList.contains('show')&&window.rdiToast)window.rdiToast(msg,4200);} function openPindahSheet(item){var bar=document.getElementById('pindah-sbar');var it=item||currentItem;if(!it){_pindahNotice(bar,'Scan item dulu di tab Scanner, lalu buka Pindah Rak.');return;}
+if(_isArsip(it)){_pindahNotice(bar,'Item ini sudah diarsipkan. Aktifkan kembali dulu dari halaman detail item.');return;}
+var rb=it.rakBreakdown||[];if(!rb.length){_pindahNotice(bar,'Item ini belum punya stok di rak mana pun. Lakukan transaksi MASUK dulu.');return;}
 var rbs=rb.slice().sort(function(a,b){return b.qty-a.qty;});var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rbs.map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(r.qty)+' '+xe(it.unit||'')+'</option>';}).join('');
 document.getElementById('pindah-item').value=(it.id||'')+' · '+(it.nama||'');
 document.getElementById('pindah-tujuan').value='';
@@ -5763,6 +5767,17 @@ window.removeManualRakLabel=removeManualRakLabel;
   </div>
 </div>
 <script>
+/* PENJAGA INTEGRITAS (laporan 3 bug 2026-11): index.html bergantung pada fungsi di js/format.js (parseQty, fmtQty, stockGuard, anomalyStats, isQtyAnomaly).
+ * Jika format.js yang terunggah/ter-cache masih versi lama, tombol +/-, +5/+10, dan Pindah Rak GAGAL DIAM-DIAM (ReferenceError). Sekarang gagal terang-terangan. */
+(function(){
+  var need=['parseQty','fmtQty','stockGuard','anomalyStats','isQtyAnomaly'],miss=need.filter(function(n){return typeof window[n]!=='function';});
+  if(!miss.length)return;
+  try{console.error('[integritas] js/format.js usang, fungsi hilang: '+miss.join(', '));}catch(e){}
+  function show(){var b=document.createElement('div');b.id='format-integrity-banner';b.setAttribute('role','alert');b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:3000;background:#b91c1c;color:#fff;padding:10px 14px;font-size:13px;font-weight:700;line-height:1.35;text-align:center';b.textContent='Aplikasi belum diperbarui sempurna: berkas js/format.js masih versi lama ('+miss.join(', ')+' hilang). Tombol jumlah dan Pindah Rak tidak akan berfungsi. Unggah js/format.js terbaru, lalu tutup dan buka ulang aplikasi.';document.body.appendChild(b);}
+  if(document.body)show();else document.addEventListener('DOMContentLoaded',show);
+})();
+</script>
+<script>
 /* BACK PERANGKAT (audit UX 2026-11 #4): sebelumnya aplikasi tidak memakai pushState/popstate sehingga tombol Back Android
  * (atau gestur Back iOS/Chrome) langsung KELUAR dari aplikasi walau sheet/modal terbuka atau sedang di sub-halaman.
  * Pola: dua entri riwayat (dasar #__base + aplikasi). Back dari aplikasi mendarat di dasar -> kita putuskan:
@@ -5780,7 +5795,7 @@ window.removeManualRakLabel=removeManualRakLabel;
   function pushApp(){try{history.pushState({rdiApp:1},'',base()+'#'+curTab());}catch(e){}}
   function arm(){if(armed)return;armed=true;try{history.replaceState({rdiBase:1},'',base()+'#__base');pushApp();}catch(e){armed=false;}}
   ['pointerdown','touchstart','keydown'].forEach(function(t){document.addEventListener(t,arm,{once:true,passive:true,capture:true});});
-  function toast(msg){if(!toastEl){toastEl=document.createElement('div');toastEl.id='back-exit-toast';toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');toastEl.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:2000;background:rgba(15,23,42,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;max-width:90vw;text-align:center;pointer-events:none';document.body.appendChild(toastEl);}toastEl.textContent=msg;toastEl.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){toastEl.style.display='none';},2000);}
+  function toast(msg,ms){if(!toastEl){toastEl=document.createElement('div');toastEl.id='back-exit-toast';toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');toastEl.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:2000;background:rgba(15,23,42,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;max-width:90vw;text-align:center;pointer-events:none';document.body.appendChild(toastEl);}toastEl.textContent=msg;toastEl.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){toastEl.style.display='none';},ms||2000);}window.rdiToast=toast;
   window.addEventListener('popstate',function(e){
     if(!armed)return;
     if(!(e.state&&e.state.rdiBase))return;
