@@ -1057,7 +1057,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
   #minstock-tbody td:nth-child(3){grid-column:2;grid-row:1;text-align:right;font-weight:700}
   #minstock-tbody td:nth-child(3)::before{content:"Saldo ";font-weight:400;font-size:12px;color:var(--text3)}
   #minstock-tbody td:nth-child(4){grid-column:1;grid-row:3;margin-top:4px}
-  #minstock-tbody td:nth-child(4)::before{content:"Batas minimum";display:block;font-size:12px;color:var(--text3);margin-bottom:2px}
+  #minstock-tbody td:nth-child(4)::before{content:"Stok minimum";display:block;font-size:12px;color:var(--text3);margin-bottom:2px}
   #minstock-tbody td:nth-child(4) .min-stock-input{width:100%;min-height:44px;text-align:left}
   #minstock-tbody td:nth-child(5){grid-column:2;grid-row:3;align-self:end;font-size:12px;color:var(--text3)}
   #alert-tbody td[colspan],#minstock-tbody td[colspan]{grid-column:1/-1;grid-row:auto;font-weight:400}
@@ -1338,7 +1338,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
           <span id="inv-count-n">0</span><span class="inv-count-lbl">barang</span>
         </div>
         <div style="min-width:0">
-          <h2 style="font-size:14px;margin:0">Master Item</h2>
+          <h2 style="font-size:14px;margin:0">Stok Item</h2>
           <p style="margin:2px 0 0;font-size:12px;color:var(--text3)"><span id="last-load">-</span></p>
         </div>
       </div>
@@ -1349,7 +1349,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
       </button>
       <button class="btn btn-sm" id="btn-load" onclick="loadData()">
         <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-        Refresh
+        Muat Ulang
       </button>
       </div>
     </div>
@@ -1624,7 +1624,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
             </button>
           </div>
           <div class="id-input-wrap">
-            <input type="text" id="rak-input" aria-label="Nomor rak" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" data-err-msg="Lokasi RAK wajib diisi" style="text-transform:uppercase"
+            <input type="text" id="rak-input" aria-label="Nomor rak" list="dl-rak" placeholder="Contoh: A-01, B-03, Rak-2" data-err-msg="Lokasi Rak wajib diisi" style="text-transform:uppercase"
               oninput="this.value=this.value.toUpperCase();saveTransaksiDraft();markRakChipSelection();updateSaldoPreview()">
             <button class="btn btn-navy btn-scan-toggle u-btn-44" id="btn-scan-rak" onclick="toggleInlineScannerRak()"
               title="Scan QR label rak" type="button">
@@ -1924,7 +1924,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
           <div class="item-card-id u-mt6-inline" id="hist-preview-id">-</div>
         </div>
         <div style="display:flex;gap:var(--sp-6);flex-shrink:0">
-          <button class="btn btn-sm btn-on-head" onclick="refreshHistory()" id="btn-hist-refresh"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Refresh</button>
+          <button class="btn btn-sm btn-on-head" onclick="refreshHistory()" id="btn-hist-refresh"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Muat Ulang</button>
           <button class="btn btn-sm btn-on-head" onclick="resetHistory()" aria-label="Reset item histori"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
         </div>
       </div>
@@ -2199,7 +2199,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
         <h2><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Alert Stok Minimum</h2>
         <p>Item dengan saldo di bawah atau sama dengan batas minimum</p>
       </div>
-      <button class="btn btn-sm u-mla" onclick="loadAlert()">Refresh</button>
+      <button class="btn btn-sm u-mla" onclick="loadAlert()">Muat Ulang</button>
     </div>
     <div class="panel-body" style="padding:0">
       <div class="table-wrap">
@@ -2210,7 +2210,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
               <th>Nama Material</th>
               <th class="col-w60">RAK</th>
               <th class="c col-w50">Saldo</th>
-              <th class="c col-w60">Min Stock</th>
+              <th class="c col-w60">Stok Min.</th>
               <th class="c col-w80">Status</th>
               <th class="c col-w90">Aksi</th>
             </tr>
@@ -2224,7 +2224,7 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
   </div>
 
   <div class="panel">
-    <div class="panel-head"><div><h2 class="u-flex-c-g7"><svg aria-hidden="true" class="u-flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan Min Stock per Item</h2><p>Set batas minimum stok untuk tiap item</p></div></div>
+    <div class="panel-head"><div><h2 class="u-flex-c-g7"><svg aria-hidden="true" class="u-flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan Stok Minimum per Item</h2><p>Set batas minimum stok untuk tiap item</p></div></div>
     <div class="panel-body" style="padding:0">
       <div class="table-wrap">
         <table class="tbl-stack">
@@ -2233,12 +2233,12 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
               <th class="col-w120">ID Item</th>
               <th>Nama Material</th>
               <th class="c col-w50">Saldo</th>
-              <th class="c col-w100">Min Stock</th>
+              <th class="c col-w100">Stok Minimum</th>
               <th class="c col-w70">Simpan</th>
             </tr>
           </thead>
           <tbody id="minstock-tbody">
-            <tr><td colspan="5"><div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(loadAlert)">Muat Data Sekarang</button></div></td></tr>
+            <tr><td colspan="5"><div class="empty-state"><p>Muat data Stok Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(loadAlert)">Muat Data Sekarang</button></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -2348,10 +2348,10 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filter<span class="ftbadge u-hide" id="filter-badge-cetak">0</span>
         </button>
-        <button class="chip chip-tool u-flex-1" onclick="openSortSheet()"><svg class="ic" aria-hidden="true"><use href="#i-sort"/></svg> Sort</button>
+        <button class="chip chip-tool u-flex-1" onclick="openSortSheet()"><svg class="ic" aria-hidden="true"><use href="#i-sort"/></svg> Urutkan</button>
       </div></div>
       <div id="cetak-item-list" style="overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
-        <div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>
+        <div class="empty-state"><p>Muat data Stok Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>
       </div>
     </div>
   </div>
@@ -2641,8 +2641,8 @@ body.light .topbar-ver{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,
 
     <div class="item-detail-section-lbl">Pengaturan Stok</div>
     <div class="item-detail-min-row">
-      <div class="item-detail-min-lbl"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Batas Min Stok</div>
-      <input type="number" inputmode="numeric" class="item-detail-min-input" id="idd-min-input" aria-label="Batas min stok" min="0" value="0" onchange="saveMinStockFromDetail()">
+      <div class="item-detail-min-lbl"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Stok Minimum</div>
+      <input type="number" inputmode="numeric" class="item-detail-min-input" id="idd-min-input" aria-label="Stok minimum" min="0" value="0" onchange="saveMinStockFromDetail()">
     </div>
     <div class="item-detail-section-lbl">Rekonsiliasi Saldo</div>
     <div id="idd-ledger-status" style="padding:var(--space-half) var(--sp-10);border-radius:var(--r);font-size:12px;color:var(--text3)">Memeriksa...</div>
@@ -3568,7 +3568,7 @@ function _buildTableHtml(rows,startIdx){startIdx=startIdx||0;var tb=document.get
 +'<td><span class="badge badge-bc" style="font-size:12px;padding:var(--sp-2) var(--sp-7)">'+catLabel+'</span></td>'
 +'<td><strong style="font-size:12px">'+xe(r.rak||'-')+'</strong></td>'
 +'<td style="color:var(--text3);font-size:12px;white-space:nowrap" data-tt="Tanggal transaksi masuk terakhir">'+tglKedatangan+'</td>'
-+'<td class="c" '+alertCls+' data-tt="Status stok">'+statusDot+' '+xe(r.qty)+'</td>'
++'<td class="c" '+alertCls+' data-tt="Status stok">'+statusDot+' '+xe(fmtNum(r.qty))+'</td>'
 +'<td style="color:var(--text2)">'+xe(r.unit)+'</td>'
 +'<td class="c"><span class="u-flex-cc-g5"><button class="btn btn-sm" style="padding:var(--sp-3) var(--space-1);font-size:12px" onclick="event.stopPropagation();openEditSheet('+r._idx+')" title="Edit item" aria-label="Edit item"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
 +(r.id&&!_isArsip(r)?'<button class="btn btn-sm btn-green" style="padding:var(--sp-3) var(--space-1);font-size:12px" onclick="event.stopPropagation();goToTransaksi(\''+xeJs(r.id)+'\')" title="Transaksi item ini" aria-label="Transaksi item ini"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></button>':'')+'</span></td>'
@@ -3635,7 +3635,7 @@ var listHtml=top.map(function(item,i){var r=item.r;var saldo=parseFloat(r.qty)||
 +'<div class="ilc2-footer-info">'+(footerInfo||'<span></span>')+'</div>'
 +'<div class="ilc2-stok" style="'+stokColor+'" data-tt="Status stok: '+statusLabel+'">'
 +'<span class="ilc2-status-dot" aria-hidden="true">'+statusDot+'</span>'
-+xe(r.qty||0)
++xe(fmtNum(r.qty||0))
 +'<span class="ilc2-unit">'+xe(r.unit||'pcs')+'</span>'
 +(isAlert&&!isZero?'<span class="ilc2-low">MINIMUM</span>':'')
 +(isZero?'<span class="ilc2-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
@@ -3663,7 +3663,7 @@ function _doFilter(){var q=(document.getElementById('search-box').value||'').tri
 filteredRows=allRows.filter(function(r){if(!_showArsip&&!q&&_isArsip(r))return false;if(catFilter&&(r.kategori||'').trim()!==catFilter)return false;if(_activeRak&&(r.rak||'').trim()!==_activeRak)return false;if(tglDari!==null||tglSampai!==null){var ts=_tglMasukTs(r);if(!ts)return false;if(tglDari!==null&&ts<tglDari)return false;if(tglSampai!==null&&ts>tglSampai)return false;}
 if(!q)return true;var hay=[r.id,r.nama,r.spec,r.rak,r.vendor,r.kategori,r.bc,r.user].map(function(v){return(v||'').toString().toLowerCase();}).join(' | ');return hay.indexOf(q)!==-1;});window.filteredRows=filteredRows;_applySort();renderTable(filteredRows);_updateSearchHint(q,filteredRows.length,allRows.length,filteredRows.filter(_isArsip).length);_updateFilterUI();}
 function _updateSearchHint(q,found,total,arsipN){var el=document.getElementById('search-hint');if(!el)return;if(!q){el.style.display='none';el.innerHTML='';return;}
-el.style.display='flex';if(found===0){el.className='sbar show s-warn';el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Tidak ditemukan untuk "<b>'+xe(q)+'</b>" - coba kata lain atau periksa ejaan';}else{el.className='sbar show s-info';el.innerHTML='<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;flex:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> <b>'+found+'</b> dari '+total+' item untuk "<b>'+xe(q)+'</b>"'+(arsipN>0&&!_showArsip?' <span style="opacity:.85">\u00b7 termasuk '+arsipN+' item diarsipkan</span>':'')+'</b>';}}
+el.style.display='flex';if(found===0){el.className='sbar show s-warn';el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Tidak ditemukan untuk "<b>'+xe(q)+'</b>" - coba kata lain atau periksa ejaan';}else{el.className='sbar show s-info';el.innerHTML='<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;flex:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> <b>'+fmtNum(found)+'</b> dari '+fmtNum(total)+' item untuk "<b>'+xe(q)+'</b>"'+(arsipN>0&&!_showArsip?' <span style="opacity:.85">\u00b7 termasuk '+arsipN+' item diarsipkan</span>':'')+'</b>';}}
 function _clearSearchHint(){var el=document.getElementById('search-hint');if(el){el.style.display='none';el.innerHTML='';}}
 
 // ===== SECTION: MIN STOCK & ALERT BADGE =====
@@ -3684,7 +3684,7 @@ box.innerHTML=critical.map(function(r){var isZero=parseFloat(r.qty||0)<=0;return
 +'<span class="id-chip">'+xe(r.id||'-')+'</span>'
 +'<span style="font-size:12.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+xe(r.nama)+'</span>'
 +'</div>'
-+'<div class="idd-hist-right"><span class="idd-hist-saldo-lbl">Stok</span><span class="idd-hist-saldo-val" style="color:'+(isZero?'var(--red-text,#e74c3c)':'var(--amber)')+'">'+xe(r.qty)+' '+xe(r.unit||'')+'</span></div>'
++'<div class="idd-hist-right"><span class="idd-hist-saldo-lbl">Stok</span><span class="idd-hist-saldo-val" style="color:'+(isZero?'var(--red-text,#e74c3c)':'var(--amber)')+'">'+xe(fmtNum(r.qty))+' '+xe(r.unit||'')+'</span></div>'
 +'</div>';}).join('');}
 function loadDashRecentActivity(){var box=document.getElementById('dash-recent-activity');if(!box)return;gasGet({action:'getAllHistory',limit:5}).then(function(res){if(res.status!=='ok'||!res.rows.length){box.innerHTML='<div class="empty-state u-py24 u-pad-16-0"><p>Belum ada transaksi.</p><p class="u-caption-8">Scan QR lalu simpan stok untuk mulai mengisi riwayat.</p></div>';return;}
 box.innerHTML=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()==='MASUK';var qtyColor=isMasuk?'color:var(--green-text,#2ecc71)':'color:var(--red-text,#e74c3c)';var parts=String(r.timestamp||'').split(' ');return'<div class="idd-hist-row">'
@@ -3693,7 +3693,7 @@ box.innerHTML=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()==
 +'<span style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+xe(r.nama)+'</span>'
 +'<span class="idd-hist-meta" data-tt="'+xe(r.itemId||'')+'">'+xe(r.itemId||'')+'</span>'
 +'</div>'
-+'<div class="idd-hist-right"><span class="idd-hist-saldo-val" style="'+qtyColor+'">'+(isMasuk?'+':'-')+xe(r.qty)+'</span></div>'
++'<div class="idd-hist-right"><span class="idd-hist-saldo-val" style="'+qtyColor+'">'+(isMasuk?'+':'-')+xe(fmtNum(r.qty))+'</span></div>'
 +'</div>';}).join('');}).catch(function(){box.innerHTML='<div class="empty-state u-py24 u-pad-16-0"><p>Tidak bisa memuat aktivitas. Cek koneksi lalu muat ulang halaman.</p></div>';});}
 function renderKategoriWidget(){var catCount={};allRows.forEach(function(r){var c=(r.kategori||'Lainnya').trim()||'Lainnya';catCount[c]=(catCount[c]||0)+1;});var maxCat=Math.max.apply(null,Object.values(catCount).concat([1]));document.getElementById('dash-kategori').innerHTML=Object.keys(catCount).map(function(c){var pct=Math.round(catCount[c]/maxCat*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(c)+'">'+xe(c)+'</div>'
 +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
@@ -3706,7 +3706,7 @@ var maxQty=Math.max.apply(null,sorted.map(function(r){return parseFloat(r.qty)||
 +'<div class="bar-track"><div class="bar-fill '+col+'" style="width:'+pct+'%"></div></div>'
 +'<div class="bar-val">'+q+'</div></div>';}).join('');}
 function renderDashboard(data){if(!data||data.status==='error'){renderDashboardLocal();return;}
-var d=data.data||{};document.getElementById('dash-total').textContent=d.totalItem||allRows.length;document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent=d.totalMasuk||'0';document.getElementById('dash-keluar').textContent=d.totalKeluar||'0';var alertCount=allRows.filter(function(r){var m=parseFloat(minStockMap[r.id]||0);return m>0&&parseFloat(r.qty||0)<=m;}).length;setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Update: '+new Date().toLocaleString('id-ID');var top5=d.top5||[];var maxT=top5.length?top5[0].count:1;document.getElementById('dash-top5').innerHTML=top5.length?top5.map(function(t,i){var pct=Math.round(t.count/maxT*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(t.nama)+' ('+xe(t.id||'')+')">'+xe(t.nama||t.id)+'</div>'
+var d=data.data||{};document.getElementById('dash-total').textContent=fmtNum(d.totalItem||allRows.length);document.getElementById('dash-total-sub').textContent='terdaftar';document.getElementById('dash-masuk').textContent=fmtNum(d.totalMasuk||'0');document.getElementById('dash-keluar').textContent=fmtNum(d.totalKeluar||'0');var alertCount=allRows.filter(function(r){var m=parseFloat(minStockMap[r.id]||0);return m>0&&parseFloat(r.qty||0)<=m;}).length;setDashAlert(alertCount);document.getElementById('dash-last-update').textContent='Update: '+new Date().toLocaleString('id-ID');var top5=d.top5||[];var maxT=top5.length?top5[0].count:1;document.getElementById('dash-top5').innerHTML=top5.length?top5.map(function(t,i){var pct=Math.round(t.count/maxT*100);return'<div class="bar-row"><div class="bar-label" data-tt="'+xe(t.nama)+' ('+xe(t.id||'')+')">'+xe(t.nama||t.id)+'</div>'
 +'<div class="bar-track"><div class="bar-fill navy" style="width:'+pct+'%"></div></div>'
 +'<div class="bar-val">'+t.count+'</div></div>';}).join(''):'<div class="u-caption-8">Belum ada data transaksi</div>';renderKategoriWidget();renderLowestStockWidget();}
 
@@ -3752,24 +3752,24 @@ function toggleRackExpand(i){var detail=document.getElementById('rackov-detail-'
 var g=_dashRakGroupsCache[i];if(!g)return;if(!g.items.length){detail.innerHTML='<div class="u-cap-11">Tidak ada item di rak ini</div>';}else{var itemById={};allRows.forEach(function(r){itemById[r.id]=r;});detail.innerHTML=g.items.map(function(it){var master=itemById[it.id];var nama=master?master.nama:'(item tidak ditemukan)';return'<div style="display:flex;justify-content:space-between;gap:var(--sp-6);font-size:12px;padding:2px 0">'
 +'<span style="color:var(--text3)">'+xe(it.id)+'</span>'
 +'<span style="flex:1;padding:0 6px">'+xe(nama)+'</span>'
-+'<span style="font-weight:700">'+xe(it.qty)+'</span>'
++'<span style="font-weight:700">'+xe(fmtNum(it.qty))+'</span>'
 +'</div>';}).join('');}
 detail.style.display='block';}
 
 // ===== SECTION: LOAD ALERT (notifikasi stok) =====
-function loadAlert(){var tbody=document.getElementById('alert-tbody');var minTbody=document.getElementById('minstock-tbody');if(!allRows.length&&_dataLoading){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><p>Memuat data dari spreadsheet...</p></div></td></tr>';minTbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><p>Memuat data...</p></div></td></tr>';return;}if(!allRows.length){var ctaAlert='<div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(loadAlert)">Muat Data Sekarang</button></div>';tbody.innerHTML='<tr><td colspan="7">'+ctaAlert+'</td></tr>';minTbody.innerHTML='<tr><td colspan="5">'+ctaAlert+'</td></tr>';return;}
+function loadAlert(){var tbody=document.getElementById('alert-tbody');var minTbody=document.getElementById('minstock-tbody');if(!allRows.length&&_dataLoading){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><p>Memuat data dari spreadsheet...</p></div></td></tr>';minTbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><p>Memuat data...</p></div></td></tr>';return;}if(!allRows.length){var ctaAlert='<div class="empty-state"><p>Muat data Stok Item terlebih dahulu</p><button class="btn btn-primary btn-sm u-mt-10" onclick="quickLoadData(loadAlert)">Muat Data Sekarang</button></div>';tbody.innerHTML='<tr><td colspan="7">'+ctaAlert+'</td></tr>';minTbody.innerHTML='<tr><td colspan="5">'+ctaAlert+'</td></tr>';return;}
 var alerts=allRows.filter(function(r){var min=parseFloat(minStockMap[r.id]||0);return min>0&&parseFloat(r.qty||0)<=min;});tbody.innerHTML=alerts.length?alerts.map(function(r){var saldo=parseFloat(r.qty||0);var min=parseFloat(minStockMap[r.id]||0);var kritis=saldo===0;var statusHtml=kritis?'<span class="badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">HABIS</span>':'<span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fcd34d">RENDAH</span>';return'<tr>'
 +'<td><span class="id-chip">'+xe(r.id)+'</span></td>'
 +'<td><strong>'+xe(r.nama)+'</strong></td>'
 +'<td class="u-tc">'+xe(r.rak||'-')+'</td>'
-+'<td style="text-align:center;color:var(--red);font-weight:700">'+saldo+'</td>'
-+'<td style="text-align:center;color:var(--text2)">'+min+'</td>'
++'<td style="text-align:center;color:var(--red);font-weight:700">'+fmtNum(saldo)+'</td>'
++'<td style="text-align:center;color:var(--text2)">'+fmtNum(min)+'</td>'
 +'<td class="u-tc">'+statusHtml+'</td>'
 +'<td class="u-tc"><button class="btn btn-sm btn-primary" onclick="goToTransaksi(\''+xeJs(r.id)+'\')">+ Masuk</button></td>'
 +'</tr>';}).join(''):'<tr><td colspan="7"><div class="empty-state"><p style="color:var(--green)"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Semua stok di atas minimum</p></div></td></tr>';minTbody.innerHTML=allRows.map(function(r){if(!r.id||r.id.trim()==='')return'';return'<tr>'
 +'<td><span class="id-chip" style="font-size:12px">'+xe(r.id)+'</span></td>'
 +'<td style="font-size:12px">'+xe(r.nama)+'</td>'
-+'<td style="text-align:center;font-weight:700">'+xe(r.qty||0)+'</td>'
++'<td style="text-align:center;font-weight:700">'+xe(fmtNum(r.qty||0))+'</td>'
 +'<td class="u-tc"><input class="min-stock-input" aria-label="Min stok '+xe(r.nama)+'" type="number" inputmode="numeric" min="0" value="'+(minStockMap[r.id]||0)+'" onchange="saveMinStock(\''+xeJs(r.id)+'\',this.value)"></td>'
 +'<td class="u-tc"><span style="font-size:12px;color:var(--green)"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Auto</span></td>'
 +'</tr>';}).filter(Boolean).join('');}
@@ -3906,7 +3906,7 @@ function renderSJTabel(){
     else opsi='<option value="">- Pilih aksi -</option>';
     opsi+='<option value="new">+ Tambah item baru (prefill)</option>';
     opsi+='<option value="skip">- Lewati baris ini</option>';
-    tr.innerHTML='<td>'+it.id+'</td><td><code>'+xe(it.kode||'-')+'</code></td><td>'+xe(it.nama||'-')+'<br><span class="dim" style="font-size:11px">'+xe(it.spec||'')+'</span></td><td>'+xe(it.qty||'-')+' <span class="dim">'+xe(it.satuan||'')+'</span></td><td><select class="sel" onchange="sjPilih('+it.id+',this.value)" aria-label="Aksi baris '+(it.id)+'">'+opsi+'</select></td>';
+    tr.innerHTML='<td>'+it.id+'</td><td><code>'+xe(it.kode||'-')+'</code></td><td>'+xe(it.nama||'-')+'<br><span class="dim" style="font-size:11px">'+xe(it.spec||'')+'</span></td><td>'+xe(fmtNum(it.qty||'-'))+' <span class="dim">'+xe(it.satuan||'')+'</span></td><td><select class="sel" onchange="sjPilih('+it.id+',this.value)" aria-label="Aksi baris '+(it.id)+'">'+opsi+'</select></td>';
     tb.appendChild(tr);
   });
 }
@@ -3977,7 +3977,7 @@ function sjFotoChange(){
 }
 function sjRakInput(inp){/* FIX L2 (2026-10-31): oninput inline langsung menyentuh sjState (var internal IIFE) → ReferenceError di setiap ketikan, sjState.rak tidak pernah terisi, tombol Simpan tidak pernah aktif. Dipindah ke fungsi global berclosure (tahan reassign sjState). */sjState.rak=inp.value.trim().toUpperCase();cekSJSimpan();}
 window.openScanSJ=openScanSJ;window.closeScanSJ=closeScanSJ;window.sjKirim=sjKirim;window.sjReset=sjReset;window.sjSimpan=sjSimpan;window.sjFotoChange=sjFotoChange;window.sjPilih=sjPilih;window.cekSJSimpan=cekSJSimpan;window.sjRakInput=sjRakInput;
-function populateCekStok(item){document.getElementById('cek-id').textContent=item.id||'-';document.getElementById('cek-nama').textContent=item.nama||'-';document.getElementById('cek-spec').textContent=item.spec||'-';document.getElementById('cek-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('cek-vendor').textContent=(item.minStock!=null?item.minStock:'-')+' '+(item.unit||'');document.getElementById('cek-user').textContent=item.user||'-';document.getElementById('cek-unit').textContent=item.unit||'-';document.getElementById('cek-unit2').textContent=item.unit||'-';document.getElementById('cek-saldo').textContent=item.saldo!=null?item.saldo:'-';}
+function populateCekStok(item){document.getElementById('cek-id').textContent=item.id||'-';document.getElementById('cek-nama').textContent=item.nama||'-';document.getElementById('cek-spec').textContent=item.spec||'-';document.getElementById('cek-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('cek-vendor').textContent=(item.minStock!=null?item.minStock:'-')+' '+(item.unit||'');document.getElementById('cek-user').textContent=item.user||'-';document.getElementById('cek-unit').textContent=item.unit||'-';document.getElementById('cek-unit2').textContent=item.unit||'-';document.getElementById('cek-saldo').textContent=item.saldo!=null?fmtNum(item.saldo):'-';}
 function goTransaksiFromCekStok(){if(!currentItem)return;populatePreview(currentItem);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');}
 function saveTransaksiDraft(){if(!currentItem)return;try{var qty=document.getElementById('qty-input').value,rak=document.getElementById('rak-input').value,vendor=document.getElementById('vendor-input').value,noref=document.getElementById('noref-input').value,ket=document.getElementById('ket-input').value;var prev=null;try{prev=JSON.parse(localStorage.getItem('rdi_trx_draft')||'null');}catch(e){}
 var sameIntent=prev&&prev.itemId===currentItem.id&&prev.jenis===currentJenis&&String(prev.qty)===String(qty)&&String(prev.rak)===String(rak)&&String(prev.vendor)===String(vendor)&&String(prev.noref)===String(noref)&&String(prev.ket)===String(ket);if(!sameIntent||!currentRequestId)currentRequestId=genRequestId();localStorage.setItem('rdi_trx_draft',JSON.stringify({itemId:currentItem.id,nama:currentItem.nama,jenis:currentJenis,qty:qty,rak:rak,vendor:vendor,noref:noref,ket:ket,requestId:currentRequestId,savedAt:Date.now()}));}catch(e){}}
@@ -3987,7 +3987,7 @@ function checkTransaksiDraft(){/* outbox network-error: beri tahu user ada trans
 var obList=readOutbox();if(obList.length){console.warn('[outbox] '+obList.length+' transaksi pending (network error)',obList);if(navigator.onLine)flushOutbox();}var raw;try{raw=localStorage.getItem('rdi_trx_draft');}catch(e){return;}
 if(!raw)return;var d;try{d=JSON.parse(raw);}catch(e){clearTransaksiDraft();return;}
 if(!d||!d.itemId||(Date.now()-d.savedAt)>2*60*60*1000){clearTransaksiDraft();return;}
-var box=document.createElement('div');box.style.cssText='position:fixed;left:12px;right:12px;bottom:80px;z-index:600;background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--r);padding:var(--sp-12) var(--sp-14);box-shadow:var(--shadow-lg)';box.innerHTML='<div style="font-size:12px;color:var(--text);margin-bottom:8px">Ada transaksi belum selesai: <strong>'+xe(d.nama)+'</strong> ('+xe(d.jenis)+' '+xe(d.qty)+')</div>'
+var box=document.createElement('div');box.style.cssText='position:fixed;left:12px;right:12px;bottom:80px;z-index:600;background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--r);padding:var(--sp-12) var(--sp-14);box-shadow:var(--shadow-lg)';box.innerHTML='<div style="font-size:12px;color:var(--text);margin-bottom:8px">Ada transaksi belum selesai: <strong>'+xe(d.nama)+'</strong> ('+xe(d.jenis)+' '+xe(fmtNum(d.qty))+')</div>'
 +'<div style="display:flex;gap:var(--space-1)">'
 +'<button class="btn btn-primary btn-sm u-flex-1" id="draft-resume-btn">Lanjutkan</button>'
 +'<button class="btn btn-sm u-flex-1" id="draft-discard-btn">Buang</button>'
@@ -4001,25 +4001,25 @@ currentItem=result.item;currentRequestId=null;_buzz(35);_beep('ok');hideStatus('
 populatePreview(result.item);currentJenis=null;setJenis(null);document.getElementById('qty-input').value=1;document.getElementById('ket-input').value='';document.getElementById('vendor-input').value='';document.getElementById('noref-input').value='';updateSaldoPreview();checkTransactionAnomaly();hideStatus('sbar-submit');showScanStep('transaksi');_applyPendingKoreksi();/* FIX BUG#2 (v14.98): dulu auto-focus langsung ke qty-input di sini, sehingga operator diarahkan mengisi QTY sebelum memilih Jenis Transaksi (Masuk/Keluar). Sekarang arahkan perhatian ke toggle Jenis Transaksi dulu; fokus ke Qty baru terjadi otomatis setelah operator memilih jenis (lihat setJenis()). */setTimeout(function(){var jt=document.getElementById('jenis-toggle-label');if(jt)jt.scrollIntoView({behavior:'smooth',block:'start'});},50);}).catch(function(err){btn.disabled=false;btn.innerHTML='Cari';inputEl.disabled=false;if(loadingEl)loadingEl.classList.remove('show');showStatus('sbar-lookup','s-err',IC.err+' '+xe(friendlyErr(err)));});}
 
 // ===== SECTION: TRANSAKSI: preview, rak chip, saldo, submit =====
-function populatePreview(item){document.getElementById('preview-id').textContent=item.id||'-';document.getElementById('preview-nama').textContent=item.nama||'-';document.getElementById('preview-spec').textContent=item.spec||'-';document.getElementById('preview-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('preview-vendor').textContent='Lihat riwayat transaksi';document.getElementById('preview-user').textContent=item.user||'-';document.getElementById('preview-unit').textContent=item.unit||'-';document.getElementById('preview-unit2').textContent=item.unit||'-';document.getElementById('preview-saldo').textContent=item.saldo!=null?item.saldo:'-';var rakInput=document.getElementById('rak-input');var rakDl=document.getElementById('dl-rak-item');if(rakInput&&item.rakBreakdown&&item.rakBreakdown.length){var sorted=item.rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});rakInput.value=sorted[0].rak;if(rakDl)rakDl.innerHTML=sorted.map(function(r){return'<option value="'+xe(r.rak)+'">';}).join('');rakInput.setAttribute('list','dl-rak-item');}else if(rakInput){rakInput.value='';rakInput.setAttribute('list','dl-rak');}
+function populatePreview(item){document.getElementById('preview-id').textContent=item.id||'-';document.getElementById('preview-nama').textContent=item.nama||'-';document.getElementById('preview-spec').textContent=item.spec||'-';document.getElementById('preview-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('preview-vendor').textContent='Lihat riwayat transaksi';document.getElementById('preview-user').textContent=item.user||'-';document.getElementById('preview-unit').textContent=item.unit||'-';document.getElementById('preview-unit2').textContent=item.unit||'-';document.getElementById('preview-saldo').textContent=item.saldo!=null?fmtNum(item.saldo):'-';var rakInput=document.getElementById('rak-input');var rakDl=document.getElementById('dl-rak-item');if(rakInput&&item.rakBreakdown&&item.rakBreakdown.length){var sorted=item.rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});rakInput.value=sorted[0].rak;if(rakDl)rakDl.innerHTML=sorted.map(function(r){return'<option value="'+xe(r.rak)+'">';}).join('');rakInput.setAttribute('list','dl-rak-item');}else if(rakInput){rakInput.value='';rakInput.setAttribute('list','dl-rak');}
 renderRakChips(item.rakBreakdown);updateSaldoPreview();checkTransactionAnomaly();if(!item.rakBreakdown||!item.rakBreakdown.length){var _rc=document.getElementById('rak-chips');if(_rc&&(parseFloat(item.saldo)||0)>0)_rc.innerHTML='<div class="field-hint">Lokasi rak item ini belum terekam di sistem (data lama tidak mencatat rak). Ketik lokasi fisik barang saat ini.</div>';}}
 function renderRakChips(rakBreakdown){var box=document.getElementById('rak-chips');if(!box)return;if(!rakBreakdown||!rakBreakdown.length){box.innerHTML='';return;}
-var sorted=rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});box.innerHTML=sorted.map(function(r){return'<button type="button" class="rak-chip" onclick="selectRakChip(\''+xeJs(r.rak)+'\')">'+xe(r.rak)+' · '+xe(r.qty)+'</button>';}).join('');markRakChipSelection();}
+var sorted=rakBreakdown.slice().sort(function(a,b){return b.qty-a.qty;});box.innerHTML=sorted.map(function(r){return'<button type="button" class="rak-chip" onclick="selectRakChip(\''+xeJs(r.rak)+'\')">'+xe(r.rak)+' · '+xe(fmtNum(r.qty))+'</button>';}).join('');markRakChipSelection();}
 function selectRakChip(rak){var rakInput=document.getElementById('rak-input');if(rakInput){rakInput.value=(rak||'').toUpperCase();saveTransaksiDraft();}
 markRakChipSelection();updateSaldoPreview();}
 function markRakChipSelection(){var val=(document.getElementById('rak-input')||{}).value||'';document.querySelectorAll('#rak-chips .rak-chip').forEach(function(chip){chip.classList.toggle('selected',chip.textContent.split(' · ')[0].toUpperCase()===val.toUpperCase());});}
-function updateSaldoPreview(){var el=document.getElementById('preview-saldo-after');if(!el||!currentItem)return;if(!currentJenis){el.textContent='-';el.className='saldo-after-val';_applyStockGuard(null);return;} var saldo=parseFloat(currentItem.saldo)||0;var qty=parseQty((document.getElementById('qty-input')||{}).value);var qv=qty>0?qty:0;var after=currentJenis==='KELUAR'?(saldo-qv):(saldo+qv);var unit=currentItem.unit||'';el.textContent=fmtQty(after)+' '+unit;el.className='saldo-after-val '+(after<0?'warn':(currentJenis==='KELUAR'?'down':'up'));_applyStockGuard(stockGuard(currentJenis,qty,(document.getElementById('rak-input')||{}).value,currentItem.saldo,currentItem.rakBreakdown));evaluateAnomalyWarning();} /* Cek stok di klien (cermin Code.gs): nonaktifkan Simpan + jelaskan alasannya, tanpa menunggu putaran server. */ function _applyStockGuard(g){var msg=document.getElementById('stock-guard-msg'),btn=document.getElementById('btn-submit');var blocked=!!(g&&!g.ok);if(msg){msg.textContent=blocked?g.message+'. Jika saldo sudah berubah, tekan Ganti lalu cari item ini lagi.':'';msg.classList.toggle('u-hide',!blocked);}if(btn)btn.disabled=!currentJenis||blocked;} /* pure helpers moved → js/format.js (F4.5) */
+function updateSaldoPreview(){var el=document.getElementById('preview-saldo-after');if(!el||!currentItem)return;if(!currentJenis){el.textContent='-';el.className='saldo-after-val';_applyStockGuard(null);return;} var saldo=parseFloat(currentItem.saldo)||0;var qty=parseQty((document.getElementById('qty-input')||{}).value);var qv=qty>0?qty:0;var after=currentJenis==='KELUAR'?(saldo-qv):(saldo+qv);var unit=currentItem.unit||'';el.textContent=fmtNum(after)+' '+unit;el.className='saldo-after-val '+(after<0?'warn':(currentJenis==='KELUAR'?'down':'up'));_applyStockGuard(stockGuard(currentJenis,qty,(document.getElementById('rak-input')||{}).value,currentItem.saldo,currentItem.rakBreakdown));evaluateAnomalyWarning();} /* Cek stok di klien (cermin Code.gs): nonaktifkan Simpan + jelaskan alasannya, tanpa menunggu putaran server. */ function _applyStockGuard(g){var msg=document.getElementById('stock-guard-msg'),btn=document.getElementById('btn-submit');var blocked=!!(g&&!g.ok);if(msg){msg.textContent=blocked?g.message+'. Jika saldo sudah berubah, tekan Ganti lalu cari item ini lagi.':'';msg.classList.toggle('u-hide',!blocked);}if(btn)btn.disabled=!currentJenis||blocked;} /* pure helpers moved → js/format.js (F4.5) */
 function setJenis(jenis){currentJenis=jenis;document.getElementById('btn-masuk').className='jenis-btn'+(jenis==='MASUK'?' active-masuk':'');document.getElementById('btn-keluar').className='jenis-btn'+(jenis==='KELUAR'?' active-keluar':'');var card=document.getElementById('item-preview');if(card)card.className='item-card '+(jenis==='KELUAR'?'jenis-keluar':(jenis==='MASUK'?'jenis-masuk':''));var subBtn=document.getElementById('btn-submit');if(subBtn)subBtn.disabled=!jenis;var helpEl=document.getElementById('submit-help');if(helpEl)helpEl.classList.toggle('u-hide',!!jenis);updateSaldoPreview();checkTransactionAnomaly();/* FIX BUG#2 (v14.98): begitu operator memilih Jenis Transaksi (Masuk/Keluar), baru arahkan fokus+buka keyboard ke Qty supaya alurnya: pilih jenis -> isi qty. */if(jenis){setTimeout(function(){var qtyEl=document.getElementById('qty-input');if(qtyEl){qtyEl.focus();qtyEl.select();}},50);}}
 function adjustQty(delta){var inp=document.getElementById('qty-input');inp.value=fmtQty(Math.max(1,(parseQty(inp.value)||0)+delta));saveTransaksiDraft();updateSaldoPreview();checkTransactionAnomaly();}
 var _anomalyStats={itemId:null,rows:[],loaded:false};function checkTransactionAnomaly(){if(!currentItem||!currentItem.id){hideAnomalyWarning();return;}
 var itemId=currentItem.id;if(_anomalyStats.itemId!==itemId||!_anomalyStats.loaded){hideAnomalyWarning();_anomalyStats={itemId:itemId,rows:[],loaded:false};gasGet({action:'getLedger',id:itemId}).then(function(res){if(!currentItem||currentItem.id!==itemId)return;if(!res||res.status!=='ok'){_anomalyStats.loaded=true;return;}
 _anomalyStats.rows=(res.entries||[]).map(function(e){return{q:e.qty,j:e.jenis};});_anomalyStats.loaded=true;evaluateAnomalyWarning();}).catch(function(){if(_anomalyStats.itemId===itemId)_anomalyStats.loaded=true;});return;}
 evaluateAnomalyWarning();}
-function evaluateAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(!el)return;if(!_anomalyStats.loaded){el.style.display='none';return;} var qty=parseQty(document.getElementById('qty-input').value);if(!(qty>0)){el.style.display='none';return;} var st=anomalyStats(_anomalyStats.rows,currentJenis);if(!isQtyAnomaly(qty,st)){el.style.display='none';return;} el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Qty jauh lebih besar dibanding '+st.n+' transaksi '+(currentJenis?currentJenis.toLowerCase():'sebelumnya')+' item ini. (Rata-rata: '+fmtQty(st.avg)+', Median: '+fmtQty(st.median)+', Terbesar sebelumnya: '+fmtQty(st.max)+')';el.style.display='block';} function hideAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(el)el.style.display='none';}
+function evaluateAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(!el)return;if(!_anomalyStats.loaded){el.style.display='none';return;} var qty=parseQty(document.getElementById('qty-input').value);if(!(qty>0)){el.style.display='none';return;} var st=anomalyStats(_anomalyStats.rows,currentJenis);if(!isQtyAnomaly(qty,st)){el.style.display='none';return;} el.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Qty jauh lebih besar dibanding '+st.n+' transaksi '+(currentJenis?currentJenis.toLowerCase():'sebelumnya')+' item ini. (Rata-rata: '+fmtNum(st.avg)+', Median: '+fmtNum(st.median)+', Terbesar sebelumnya: '+fmtNum(st.max)+')';el.style.display='block';} function hideAnomalyWarning(){var el=document.getElementById('qty-anomaly-warning');if(el)el.style.display='none';}
 function submitTransaksi(){if(!currentItem){showStatus('sbar-submit','s-err',IC.err+' Tidak ada item');return;}
 if(!currentJenis){showStatus('sbar-submit','s-warn',IC.info+' Pilih jenis transaksi (Masuk / Keluar) terlebih dahulu');return;}
 var qty=parseQty(document.getElementById('qty-input').value);if(!(qty>0)){showStatus('sbar-submit','s-warn',IC.info+' Qty harus berupa angka lebih dari 0');flagFieldError('qty-input');return;}
-var ket=document.getElementById('ket-input').value.trim();var _kp=_koreksiPrefix.trim();if(_kp&&ket.indexOf(_kp)===0&&ket.slice(_kp.length).trim().length<3){showStatus('sbar-submit','s-warn',IC.info+' Isi alasan koreksi (min. 3 huruf) di kolom Keterangan');flagFieldError('ket-input');return;}var rak=document.getElementById('rak-input').value.trim().toUpperCase();if(!rak){showStatus('sbar-submit','s-warn',IC.info+' Lokasi RAK wajib diisi');flagFieldError('rak-input');return;} var _g=stockGuard(currentJenis,qty,rak,currentItem.saldo,currentItem.rakBreakdown);if(!_g.ok){showStatus('sbar-submit','s-err',IC.err+' '+xe(_g.message));flagFieldError('qty-input');return;}
+var ket=document.getElementById('ket-input').value.trim();var _kp=_koreksiPrefix.trim();if(_kp&&ket.indexOf(_kp)===0&&ket.slice(_kp.length).trim().length<3){showStatus('sbar-submit','s-warn',IC.info+' Isi alasan koreksi (min. 3 huruf) di kolom Keterangan');flagFieldError('ket-input');return;}var rak=document.getElementById('rak-input').value.trim().toUpperCase();if(!rak){showStatus('sbar-submit','s-warn',IC.info+' Lokasi Rak wajib diisi');flagFieldError('rak-input');return;} var _g=stockGuard(currentJenis,qty,rak,currentItem.saldo,currentItem.rakBreakdown);if(!_g.ok){showStatus('sbar-submit','s-err',IC.err+' '+xe(_g.message));flagFieldError('qty-input');return;}
 var vendor=document.getElementById('vendor-input').value.trim();var noRef=document.getElementById('noref-input').value.trim();var btn=document.getElementById('btn-submit');btn.disabled=true;btn.innerHTML=IC.load+' Menyimpan...';showStatus('sbar-submit','s-info',IC.load+' Menyimpan transaksi...');saveTransaksiDraft();var _itemIdSubmit=currentItem.id;var payload={action:'postTransaksi',itemId:currentItem.id,jenis:currentJenis,qty:qty,rak:rak,vendor:vendor,noReferensi:noRef,keterangan:ket,admin:getAdminLabel(),requestId:currentRequestId};
 /* FIX DBG-03 (2026-10-13): rid diambil DARI payload saat request dibuat, bukan dari
    global `currentRequestId` yang dibaca lagi saat respons datang. Global itu di-null-kan
@@ -4039,7 +4039,7 @@ try{removeOutboxByRequestId(ridLocal);}catch(e){}updateOutboxBadge();clearTransa
 /* catch TERAKHIR hanya untuk error rendering/side-effect. SENGAJA TIDAK pushOutbox:
    pada titik ini server sudah confirmed; meng-queue ulang hanya menciptakan duplikat. */
 .catch(function(err){btn.disabled=false;btn.innerHTML='Simpan Transaksi';console.error('[submitTransaksi] gagal merender hasil:',err);showStatus('sbar-submit','s-warn',IC.info+' Transaksi sudah dikirim ke server, tapi tampilan gagal diperbarui. Silakan cek History atau muat ulang halaman.');});}
-function showResult(result,jenis,qty){var isOk=result.status==='ok';var isPartial=result.status==='partial';_buzz(isOk?55:(isPartial?[35,60,35]:[40,70,40]));var cls=isOk?'ok':(isPartial?'partial':'err');document.getElementById('result-card').className='result-card '+cls;document.getElementById('result-icon').className='result-icon '+cls;document.getElementById('result-title').textContent=isOk?'Transaksi Berhasil':(isPartial?'Transaksi Tercatat, Perlu Verifikasi':'Transaksi Gagal');document.getElementById('result-sub').textContent=isOk?(jenis+' '+(qty||0)+' '+(result.unit||'-')+' · '+(result.namaItem||'-')):(result.message||'Terjadi kesalahan.');if(isOk){document.getElementById('result-before').textContent=(result.saldoSebelum||0)+' '+(result.unit||'-');var afterEl=document.getElementById('result-after');afterEl.textContent=(result.saldoSesudah||0)+' '+(result.unit||'-');afterEl.className=jenis==='MASUK'?'saldo-after-masuk':(jenis==='KELUAR'?'saldo-after-keluar':'');/* v5.31 PINDAH: saldo total tidak berubah, warna netral */document.getElementById('result-saldo-change').style.display='flex';}else{document.getElementById('result-saldo-change').style.display='none';}
+function showResult(result,jenis,qty){var isOk=result.status==='ok';var isPartial=result.status==='partial';_buzz(isOk?55:(isPartial?[35,60,35]:[40,70,40]));var cls=isOk?'ok':(isPartial?'partial':'err');document.getElementById('result-card').className='result-card '+cls;document.getElementById('result-icon').className='result-icon '+cls;document.getElementById('result-title').textContent=isOk?'Transaksi Berhasil':(isPartial?'Transaksi Tercatat, Perlu Verifikasi':'Transaksi Gagal');document.getElementById('result-sub').textContent=isOk?(jenis+' '+fmtNum(qty||0)+' '+(result.unit||'-')+' · '+(result.namaItem||'-')):(result.message||'Terjadi kesalahan.');if(isOk){document.getElementById('result-before').textContent=fmtNum(result.saldoSebelum||0)+' '+(result.unit||'-');var afterEl=document.getElementById('result-after');afterEl.textContent=fmtNum(result.saldoSesudah||0)+' '+(result.unit||'-');afterEl.className=jenis==='MASUK'?'saldo-after-masuk':(jenis==='KELUAR'?'saldo-after-keluar':'');/* v5.31 PINDAH: saldo total tidak berubah, warna netral */document.getElementById('result-saldo-change').style.display='flex';}else{document.getElementById('result-saldo-change').style.display='none';}
 if(isOk&&currentItem)currentItem.saldo=result.saldoSesudah;}
 
 // ===== SECTION: TRANSAKSI: quick search & scan next =====
@@ -4058,7 +4058,7 @@ histCurrentItem=itemResult.item;return gasGet({action:'getHistory',id:id});}).th
 histAllRows=histResult.rows;populateHistPreview(histCurrentItem);histJenisFilter='ALL';setHistView(histView);updateHistSummary();hideStatus('sbar-hist-lookup');showHistStep('result');}).catch(function(err){btn.disabled=false;btn.innerHTML='Cari';inputEl.disabled=false;if(loadingEl)loadingEl.classList.remove('show');showStatus('sbar-hist-lookup','s-err',IC.err+' '+xe(friendlyErr(err)));});}
 function refreshHistory(){if(!histCurrentItem)return;var btn=document.getElementById('btn-hist-refresh');btn.disabled=true;btn.innerHTML=IC.load;Promise.all([gasGet({action:'getItem',id:histCurrentItem.id}),gasGet({action:'getHistory',id:histCurrentItem.id})]).then(function(results){btn.disabled=false;btn.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Refresh';if(results[0].status==='ok'){histCurrentItem=results[0].item;populateHistPreview(histCurrentItem);}
 if(results[1].status==='ok'){histAllRows=results[1].rows;setHistView(histView);updateHistSummary();}}).catch(function(){btn.disabled=false;btn.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Refresh';});}
-function populateHistPreview(item){document.getElementById('hist-preview-id').textContent=item.id||'-';document.getElementById('hist-preview-nama').textContent=item.nama||'-';document.getElementById('hist-preview-spec').textContent=item.spec||'-';document.getElementById('hist-preview-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('hist-preview-unit').textContent=item.unit||'-';document.getElementById('hist-preview-unit2').textContent=item.unit||'-';document.getElementById('hist-preview-saldo').textContent=item.saldo!=null?item.saldo:'-';}
+function populateHistPreview(item){document.getElementById('hist-preview-id').textContent=item.id||'-';document.getElementById('hist-preview-nama').textContent=item.nama||'-';document.getElementById('hist-preview-spec').textContent=item.spec||'-';document.getElementById('hist-preview-rak').textContent=formatRakBreakdown(item.rakBreakdown);document.getElementById('hist-preview-unit').textContent=item.unit||'-';document.getElementById('hist-preview-unit2').textContent=item.unit||'-';document.getElementById('hist-preview-saldo').textContent=item.saldo!=null?fmtNum(item.saldo):'-';}
 function updateHistSummary(){var masuk=0,keluar=0;histAllRows.forEach(function(r){var q=parseFloat(r.qty)||0;var j=(r.jenis||'').toUpperCase();if(j==='MASUK')masuk+=q;else if(j==='KELUAR')keluar+=q;});/* v5.31: PINDAH tidak dihitung masuk/keluar */document.getElementById('hstat-total').textContent=histAllRows.length;document.getElementById('hstat-masuk').textContent=masuk;document.getElementById('hstat-keluar').textContent=keluar;}
 var histView='day';function setHistView(v){histView=v;document.getElementById('hvbtn-list').classList.toggle('active',v==='list');document.getElementById('hvbtn-day').classList.toggle('active',v==='day');document.getElementById('hist-view-list').style.display=v==='list'?'block':'none';document.getElementById('hist-view-day').style.display=v==='day'?'block':'none';renderHistTable();}
 var histJenisFilter='ALL';function setHistJenis(v){histJenisFilter=v;['all','masuk','keluar'].forEach(function(k){document.getElementById('hstab-'+k).classList.toggle('active',v.toUpperCase()===(k==='all'?'ALL':k.toUpperCase()));});renderHistTable();}
@@ -4067,8 +4067,8 @@ var tb=document.getElementById('hist-tbody');if(!rows.length){tb.innerHTML='<tr>
 tb.innerHTML=rows.map(function(r){var jenis=(r.jenis||'').toUpperCase();var isMasuk=jenis==='MASUK';var isPindah=jenis==='PINDAH';var badgeCls=isPindah?'badge badge-pindah':(isMasuk?'badge badge-masuk':'badge badge-keluar');var badgeIc=isPindah?'<svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg>':(isMasuk?'<svg class="ic" aria-hidden="true"><use href="#i-up"/></svg>':'<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg>');var spec=r.spec||(histCurrentItem&&histCurrentItem.spec)||'-';return'<tr>'
 +'<td style="font-size:12px;color:var(--text2)">'+xe(r.timestamp)+'</td>'
 +'<td class="u-tc"><span class="'+badgeCls+'">'+badgeIc+' '+xe(r.jenis)+'</span></td>'
-+'<td style="text-align:right;font-weight:700;'+(isPindah?'color:var(--text3)':(isMasuk?'color:var(--green-text)':'color:var(--red-text)'))+'">'+xe(r.qty)+'</td>'
-+'<td class="u-text-right"><span class="hist-saldo">'+xe(r.saldoSesudah)+'</span></td>'
++'<td style="text-align:right;font-weight:700;'+(isPindah?'color:var(--text3)':(isMasuk?'color:var(--green-text)':'color:var(--red-text)'))+'">'+xe(fmtNum(r.qty))+'</td>'
++'<td class="u-text-right"><span class="hist-saldo">'+xe(fmtNum(r.saldoSesudah))+'</span></td>'
 +'<td style="font-size:12px;color:var(--amber);font-weight:600">'+xe(spec)+'</td>'
 +'<td><span class="hist-ket" data-tt="'+xe(r.keterangan)+'">'+xe(r.keterangan||'-')+'</span></td>'
 +'<td class="u-cap-11">'+xe(r.admin||'-')+'</td>'
@@ -4086,9 +4086,9 @@ var groups={};var today=new Date();var todayKey=today.getFullYear()+'-'+pad2(tod
 +(r.keterangan?'<span class="hdr-ket-note" style="display:inline-flex;align-items:flex-start;gap:var(--space-half)"><svg aria-hidden="true" class="u-flex-none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> '+xe(r.keterangan)+'</span>':'')
 +'</div>'
 +'<div class="hdr-right">'
-+'<span class="hdr-qty" style="'+qtyColor+'">'+badge+' '+xe(r.qty)+'</span>'
++'<span class="hdr-qty" style="'+qtyColor+'">'+badge+' '+xe(fmtNum(r.qty))+'</span>'
 +'<span class="hdr-saldo-lbl">Saldo</span>'
-+'<span class="hdr-saldo">'+xe(r.saldoSesudah||'-')+'</span>'
++'<span class="hdr-saldo">'+xe(fmtNum(r.saldoSesudah||'-'))+'</span>'
 +(r.admin?'<span class="hdr-admin" style="display:inline-flex;align-items:center;gap:var(--space-half)"><svg aria-hidden="true" class="u-flex-none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '+xe(r.admin)+'</span>':'')
 +'</div>'
 +'</div>';}).join('');return'<div class="hist-day-group">'
@@ -4150,7 +4150,7 @@ w.document.write(buildRakLabelHTML(raks));w.document.close();closeRakLabelSheet(
 var _pindahItem=null;/* FIX UI-21: pesan gagal ditulis ke #pindah-sbar di DALAM sheet yang belum dibuka -> klik Pindah Rak terasa 'tidak terjadi apa-apa'. Tampilkan sebagai toast juga. */ function _pindahNotice(bar,msg){bar.textContent=msg;if(!document.getElementById('pindah-sheet').classList.contains('show')&&window.rdiToast)window.rdiToast(msg,4200);} function openPindahSheet(item){var bar=document.getElementById('pindah-sbar');var it=item||currentItem;if(!it){_pindahNotice(bar,'Scan item dulu di tab Scanner, lalu buka Pindah Rak.');return;}
 if(_isArsip(it)){_pindahNotice(bar,'Item ini sudah diarsipkan. Aktifkan kembali dulu dari halaman detail item.');return;}
 var rb=it.rakBreakdown||[];if(!rb.length){_pindahNotice(bar,'Item ini belum punya stok di rak mana pun. Lakukan transaksi MASUK dulu.');return;}
-var rbs=rb.slice().sort(function(a,b){return b.qty-a.qty;});var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rbs.map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(r.qty)+' '+xe(it.unit||'')+'</option>';}).join('');
+var rbs=rb.slice().sort(function(a,b){return b.qty-a.qty;});var asalSel=document.getElementById('pindah-asal');asalSel.innerHTML=rbs.map(function(r){return'<option value="'+xe(r.rak)+'">'+xe(r.rak)+' — sisa '+xe(fmtNum(r.qty))+' '+xe(it.unit||'')+'</option>';}).join('');
 document.getElementById('pindah-item').value=(it.id||'')+' · '+(it.nama||'');
 document.getElementById('pindah-tujuan').value='';
 document.getElementById('pindah-qty').value=(rbs[0].qty>0?rbs[0].qty:1);
@@ -4218,7 +4218,7 @@ if(result.status==='error'){bar.textContent=result.message||'Gagal memindahkan.'
 try{removeOutboxByRequestId(ridLocal);}catch(e){}
 _buzz(result.status==='ok'?55:[35,60,35]);
 bar.textContent=result.status==='ok'
-?('Berhasil: '+qty+' '+xe(_pindahItem.unit||'')+' pindah '+xe(asal)+' → '+xe(tujuan))
+?('Berhasil: '+fmtNum(qty)+' '+xe(_pindahItem.unit||'')+' pindah '+xe(asal)+' → '+xe(tujuan))
 :'Tersimpan, tapi saldo belum sinkron — jalankan Rekalkulasi Stok di menu Admin.';
 try{silentRefreshAfterTransaksi(_pindahItem.id,result&&result.saldoSesudah);}catch(e){}
 setTimeout(function(){closePindahSheet();},900);})
@@ -4230,7 +4230,7 @@ function showRakDetail(rak){var groups=getRakGroups();var items=groups[rak]||[];
 +(r.spec?'<div class="ilc-spec">'+xe(r.spec)+'</div>':'')
 +'<div class="ilc-id-row" style="margin-top:6px">'+idHtml+'</div>'
 +'<div class="ilc-stok-box" style="flex-direction:row;align-items:baseline;gap:var(--sp-6);margin-top:8px">'
-+'<div class="ilc-stok-num'+(isAlert?' alert':'')+'">'+xe(r.qty||0)+'</div>'
++'<div class="ilc-stok-num'+(isAlert?' alert':'')+'">'+xe(fmtNum(r.qty||0))+'</div>'
 +'<div class="ilc-stok-unit">'+xe(r.unit||'pcs')+'</div>'
 +(isAlert?'<div class="ilc-stok-low"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Low</div>':'')
 +'</div>'
@@ -4272,7 +4272,7 @@ var totalPages=histFeedTotalPages();if(histFeedPage>totalPages)histFeedPage=tota
 +(spec?'<div class="hist-card-spec">'+xe(spec)+'</div>':'')
 +'<div class="hist-card-kode">Kode: '+xe(r.itemId||'-')+'</div>'
 +'<div class="hist-card-bottom">'
-+'<span class="hist-card-qty" style="'+qtyColor+'">'+xe(r.qty)+' '+xe(r.unit||'')+'</span>'
++'<span class="hist-card-qty" style="'+qtyColor+'">'+xe(fmtNum(r.qty))+' '+xe(r.unit||'')+'</span>'
 +'<span class="hist-card-meta"><svg class="u-flex-none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '+xe(time)+(r.admin?' &nbsp;·&nbsp; <svg aria-hidden="true" class="u-flex-none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '+xe(r.admin):'')+'</span>'
 +'</div>'
 +'<button class="hist-card-detail-btn" onclick="showHistCardDetail(\''+cardKey+'\')">Lihat Detail ›</button>'
@@ -4427,7 +4427,7 @@ function cetakInjectPdfRunner(w,fname,pSize){
 // ===== SECTION: RENDER KARTU ITEM (grid/card view) =====
 var _cardRenderRows=[];var _cardRenderedCount=0;var CARD_BATCH_SIZE=30;var _cardScrollObserver=null;function renderCardList(rows){var cl=document.getElementById('card-list-body');if(!cl)return;if(!rows.length){cl.innerHTML=(typeof allRows!=='undefined'&&allRows.length===0)?(_dataLoading?'<div class="empty-state"><p>Memuat data dari spreadsheet...</p></div>':'<div class="empty-state"><p>Belum ada item</p><button class="btn btn-primary btn-sm u-mt-12" onclick="openAddSheet()">+ Tambah Item Pertama</button></div>'):'<div class="empty-state"><p>Tidak ada item yang cocok</p><button class="btn btn-sm u-mt-12" onclick="resetAllFilters()">Reset Filter</button></div>';return;}
 _cardRenderRows=rows;_cardRenderedCount=0;cl.innerHTML='<div id="card-list-sentinel"></div>';renderNextCardBatch();}
-function buildCardHtml(rows){return rows.map(function(r){var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var arsip=_isArsip(r);var rb=(_rakBreakdownMap&&_rakBreakdownMap[r.id])||null;var lokLebih=(rb&&rb.length>1)?rb.length-1:0;var lokTip=(rb&&rb.length>1)?xe(rb.slice().sort(function(a,b){return b.qty-a.qty}).map(function(x){return (x.rak||'-')+': '+x.qty}).join(', ')):'';return'<div class="ilc3'+(arsip?' ilc2-arsip':'')+'" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.62':'')+'">'
+function buildCardHtml(rows){return rows.map(function(r){var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isZero=saldo===0;var isBC=(r.bc||'').toUpperCase();var stripCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';var tglKedatangan=_fmtTglSingkat(_tglMasukTs(r));var statusDot=isZero?_stockDotSVG('red'):isAlert?_stockDotSVG('amber'):_stockDotSVG('green');var statusLabel=isZero?'Habis':isAlert?'Minimum':'Aman';var stokColor=isZero?'color:var(--red-text)':isAlert?'color:var(--amber)':'color:var(--green-text)';var arsip=_isArsip(r);var rb=(_rakBreakdownMap&&_rakBreakdownMap[r.id])||null;var lokLebih=(rb&&rb.length>1)?rb.length-1:0;var lokTip=(rb&&rb.length>1)?xe(rb.slice().sort(function(a,b){return b.qty-a.qty}).map(function(x){return (x.rak||'-')+': '+fmtNum(x.qty)}).join(', ')):'';return'<div class="ilc3'+(arsip?' ilc2-arsip':'')+'" onclick="openItemDetail('+r._idx+')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openItemDetail('+r._idx+')}" style="'+(arsip?'opacity:.62':'')+'">'
 +'<div class="ilc3-strip '+stripCls+'"></div>'
 +'<div class="ilc3-main">'
 +'<div class="ilc3-info">'
@@ -4441,7 +4441,7 @@ function buildCardHtml(rows){return rows.map(function(r){var saldo=parseFloat(r.
 +'</div>'
 +'</div>'
 +'<div class="ilc3-stok-box" data-tt="Status stok: '+statusLabel+'">'
-+'<div class="ilc3-stok" style="'+stokColor+'">'+statusDot+xe(r.qty||0)+'</div>'
++'<div class="ilc3-stok" style="'+stokColor+'">'+statusDot+xe(fmtNum(r.qty||0))+'</div>'
 +'<span class="ilc3-unit">'+xe(r.unit||'pcs')+'</span>'
 +(isAlert&&!isZero?'<span class="ilc3-low">MINIMUM</span>':'')
 +(isZero?'<span class="ilc3-low" style="background:var(--red-dim);border-color:var(--red-border)">HABIS</span>':'')
@@ -4456,7 +4456,7 @@ if(_cardScrollObserver){_cardScrollObserver.disconnect();_cardScrollObserver=nul
 if(_cardRenderedCount<_cardRenderRows.length){sentinel.textContent='';_cardScrollObserver=new IntersectionObserver(function(entries){if(entries[0].isIntersecting)renderNextCardBatch();},{rootMargin:'400px'});_cardScrollObserver.observe(sentinel);}else{sentinel.remove();}}
 
 // ===== SECTION: DETAIL ITEM: history per item, vendor history, ledger check =====
-var _detailIdx=null;var _detailItemId=null;var _lastFocusTrigger=null;function openItemDetail(idx){stopInlineScanner();stopInlineScannerHist();var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;_detailIdx=idx;_detailItemId=r.id;var trigger=document.activeElement;if(trigger&&trigger!==document.body)_lastFocusTrigger=trigger;var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var heroCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';document.getElementById('idd-id').textContent=r.id||'-';document.getElementById('idd-nama').textContent=r.nama||'-';document.getElementById('idd-spec').textContent=r.spec||'';document.getElementById('idd-stok').textContent=saldo;document.getElementById('idd-stok').className='item-detail-stok-big'+(isAlert?' alert':'');document.getElementById('idd-unit').textContent=r.unit||'pcs';document.getElementById('idd-low').style.display=isAlert?'block':'none';document.getElementById('idd-rak').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-rak-hero').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-kategori').textContent=r.kategori||'-';document.getElementById('idd-user').textContent=r.user||'-';document.getElementById('idd-bc').textContent=r.bc||'-';document.getElementById('idd-min-input').value=minStockMap[r.id]||0;var arsip=_isArsip(r);var arsipBadge=document.getElementById('idd-arsip-badge');if(arsipBadge)arsipBadge.classList.toggle('u-hide',!arsip);var trxBtn=document.getElementById('idd-btn-trx');if(trxBtn){trxBtn.disabled=arsip;trxBtn.style.opacity=arsip?'.5':'';trxBtn.title=arsip?'Item diarsipkan -- aktifkan kembali dulu untuk transaksi':'';}
+var _detailIdx=null;var _detailItemId=null;var _lastFocusTrigger=null;function openItemDetail(idx){stopInlineScanner();stopInlineScannerHist();var r=allRows.find(function(row){return row._idx===idx;});if(!r)return;_detailIdx=idx;_detailItemId=r.id;var trigger=document.activeElement;if(trigger&&trigger!==document.body)_lastFocusTrigger=trigger;var saldo=parseFloat(r.qty)||0;var minS=parseFloat(minStockMap[r.id]||0);var isAlert=minS>0&&saldo<=minS;var isBC=(r.bc||'').toUpperCase();var heroCls=isBC.includes('NON')?'non-bc':isBC.includes('BC')?'bc':'';document.getElementById('idd-id').textContent=r.id||'-';document.getElementById('idd-nama').textContent=r.nama||'-';document.getElementById('idd-spec').textContent=r.spec||'';document.getElementById('idd-stok').textContent=fmtNum(saldo);document.getElementById('idd-stok').className='item-detail-stok-big'+(isAlert?' alert':'');document.getElementById('idd-unit').textContent=r.unit||'pcs';document.getElementById('idd-low').style.display=isAlert?'block':'none';document.getElementById('idd-rak').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-rak-hero').textContent=rakDisplay(r.rak)||'-';document.getElementById('idd-kategori').textContent=r.kategori||'-';document.getElementById('idd-user').textContent=r.user||'-';document.getElementById('idd-bc').textContent=r.bc||'-';document.getElementById('idd-min-input').value=minStockMap[r.id]||0;var arsip=_isArsip(r);var arsipBadge=document.getElementById('idd-arsip-badge');if(arsipBadge)arsipBadge.classList.toggle('u-hide',!arsip);var trxBtn=document.getElementById('idd-btn-trx');if(trxBtn){trxBtn.disabled=arsip;trxBtn.style.opacity=arsip?'.5':'';trxBtn.title=arsip?'Item diarsipkan -- aktifkan kembali dulu untuk transaksi':'';}
 var archiveBtn=document.getElementById('idd-btn-archive');if(archiveBtn){archiveBtn.innerHTML=arsip?'<svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg> Aktifkan Kembali':'<svg class="ic" aria-hidden="true"><use href="#i-box"/></svg> Arsipkan Item';archiveBtn.className='btn btn-sm btn-block'+(arsip?'':' btn-danger');}
 hideStatus('sbar-idd-archive');var hero=document.getElementById('item-detail-hero');hero.className='item-detail-hero'+(heroCls?' '+heroCls:'');document.getElementById('item-detail-overlay').classList.add('show');document.getElementById('item-detail-sheet').classList.add('show');var histList=document.getElementById('idd-hist-list'),histToggle=document.getElementById('idd-hist-toggle');if(histList)histList.style.display='none';if(histToggle){var lbl=histToggle.querySelector('span');if(lbl)lbl.textContent='▸ Riwayat Transaksi';}
 var vendorList=document.getElementById('idd-vendor-list'),vendorToggle=document.getElementById('idd-vendor-toggle');if(vendorList)vendorList.style.display='none';if(vendorToggle){var vlbl=vendorToggle.querySelector('span');if(vlbl)vlbl.textContent='▸ Riwayat Vendor';}
@@ -4467,8 +4467,8 @@ if(countLbl)countLbl.textContent=res.total+' transaksi';if(!res.rows.length){box
 var bodyRows=res.rows.map(function(r){var isMasuk=(r.jenis||'').toUpperCase()==='MASUK';var qtyColor=isMasuk?'color:var(--green-text,#2ecc71)':'color:var(--red-text,#e74c3c)';var badge='<span class="badge-'+(isMasuk?'masuk':'keluar')+'">'+(isMasuk?'<svg class="ic" aria-hidden="true"><use href="#i-up"/></svg> Masuk':'<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg> Keluar')+'</span>';var parts=String(r.timestamp||'').split(' ');var tglPart=parts[0]||'';var jamPart=parts[1]||'';var spec=r.spec||fallbackSpec||'-';return'<tr>'
 +'<td style="white-space:nowrap">'+xe(tglPart)+'<br><span style="color:var(--text3);font-size:12px">'+xe(jamPart)+'</span></td>'
 +'<td>'+badge+'</td>'
-+'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(r.qty)+'</td>'
-+'<td style="text-align:right;font-family:var(--font-mono);color:var(--amber);font-weight:700">'+xe(r.saldoSesudah)+' '+xe(unit)+'</td>'
++'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(fmtNum(r.qty))+'</td>'
++'<td style="text-align:right;font-family:var(--font-mono);color:var(--amber);font-weight:700">'+xe(fmtNum(r.saldoSesudah))+' '+xe(unit)+'</td>'
 +'<td style="font-size:12px;color:var(--amber);font-weight:600">'+xe(spec)+'</td>'
 +'<td>'+xe(r.admin||'-')+'</td>'
 +'<td><span class="hist-ket" data-tt="'+xe(r.keterangan||'')+'">'+xe(r.keterangan||'-')+'</span></td>'
@@ -4499,7 +4499,7 @@ var summaryHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(
 +'<td>'+xe(e.vendor||'-')+'</td>'
 +'<td>'+xe(e.noReferensi||'-')+'</td>'
 +'<td>'+xe(e.jenis||'-')+'</td>'
-+'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(e.qty)+'</td>'
++'<td style="text-align:right;font-weight:700;'+qtyColor+'">'+(isMasuk?'+':'-')+xe(fmtNum(e.qty))+'</td>'
 +'</tr>';}).join('');box.innerHTML=summaryHtml+'<div class="hist-table-wrap"><table class="hist-table">'
 +'<thead><tr>'
 +'<th class="col-w64">Tanggal</th>'
@@ -4525,7 +4525,7 @@ r.status=arsip?'Aktif':'Arsip';renderTable(filteredRows);updateAlertBadge();show
 // ===== SECTION: CETAK: pilih item untuk dicetak =====
 var cetakSelectedIds=new Set();var _cetakFilteredCount=0;var CETAK_LIST_LIMIT=100;var _cetakShowAll=false,_cetakListSig='';var _cetakKeepSel=false;
 function cetakShowAllRows(){_cetakShowAll=true;renderCetakList();}
-function renderCetakList(){var cl=document.getElementById('cetak-item-list');if(!cl)return;if(!allRows.length){cl.innerHTML='<div class="empty-state"><p>Load data Master Item terlebih dahulu</p><button class="btn btn-primary btn-sm" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>';return;}
+function renderCetakList(){var cl=document.getElementById('cetak-item-list');if(!cl)return;if(!allRows.length){cl.innerHTML='<div class="empty-state"><p>Muat data Stok Item terlebih dahulu</p><button class="btn btn-primary btn-sm" onclick="quickLoadData(renderCetakList)">Muat Data Sekarang</button></div>';return;}
 var q=(document.getElementById('cetak-search').value||'').toLowerCase().trim();var tglDariEl=document.getElementById('flt-tgl-dari'),tglSampaiEl=document.getElementById('flt-tgl-sampai');var tglDari=tglDariEl&&tglDariEl.value?new Date(tglDariEl.value+'T00:00:00').getTime():null;var tglSampai=tglSampaiEl&&tglSampaiEl.value?new Date(tglSampaiEl.value+'T23:59:59').getTime():null;var rows=allRows.filter(function(r){if(!_showArsip&&_isArsip(r))return false;if(_activeCat&&(r.kategori||'').trim()!==_activeCat)return false;if(_activeRak&&(r.rak||'').trim()!==_activeRak)return false;if(tglDari!==null||tglSampai!==null){var ts=_tglMasukTs(r);if(!ts)return false;if(tglDari!==null&&ts<tglDari)return false;if(tglSampai!==null&&ts>tglSampai)return false;}
 if(!q)return true;return(r.id||'').toLowerCase().includes(q)||(r.nama||'').toLowerCase().includes(q)||(r.spec||'').toLowerCase().includes(q)||(r.rak||'').toLowerCase().includes(q);});rows.sort(_sortCompare);_cetakFilteredCount=rows.length;_updateFilterUI();var sig=q+'|'+_activeCat+'|'+_activeRak+'|'+(_showArsip?'1':'0')+'|'+(tglDari===null?'':tglDari)+'|'+(tglSampai===null?'':tglSampai);if(sig!==_cetakListSig){var hadSel=cetakSelectedIds.size>0,keepSel=!!_cetakKeepSel;_cetakKeepSel=false;_cetakListSig=sig;_cetakShowAll=false;if(hadSel&&!keepSel){cetakSelectedIds.clear();updateCetakCount();cetakNotice('Pilihan Cetak direset karena filter berubah.','warn',4000);}}var applyBtn=document.getElementById('btn-apply-filter');if(applyBtn&&document.getElementById('section-cetak').classList.contains('active'))applyBtn.textContent='Tampilkan '+rows.length+' Item';if(!rows.length){cl.innerHTML='<div class="empty-state"><p>Tidak ada item yang cocok</p></div>';return;}
 var shown=_cetakShowAll?rows:rows.slice(0,CETAK_LIST_LIMIT);
@@ -5767,10 +5767,10 @@ window.removeManualRakLabel=removeManualRakLabel;
   </div>
 </div>
 <script>
-/* PENJAGA INTEGRITAS (laporan 3 bug 2026-11): index.html bergantung pada fungsi di js/format.js (parseQty, fmtQty, stockGuard, anomalyStats, isQtyAnomaly).
+/* PENJAGA INTEGRITAS (laporan 3 bug 2026-11): index.html bergantung pada fungsi di js/format.js (parseQty, fmtQty, fmtNum, stockGuard, anomalyStats, isQtyAnomaly).
  * Jika format.js yang terunggah/ter-cache masih versi lama, tombol +/-, +5/+10, dan Pindah Rak GAGAL DIAM-DIAM (ReferenceError). Sekarang gagal terang-terangan. */
 (function(){
-  var need=['parseQty','fmtQty','stockGuard','anomalyStats','isQtyAnomaly'],miss=need.filter(function(n){return typeof window[n]!=='function';});
+  var need=['parseQty','fmtQty','fmtNum','stockGuard','anomalyStats','isQtyAnomaly'],miss=need.filter(function(n){return typeof window[n]!=='function';});
   if(!miss.length)return;
   try{console.error('[integritas] js/format.js usang, fungsi hilang: '+miss.join(', '));}catch(e){}
   function show(){var b=document.createElement('div');b.id='format-integrity-banner';b.setAttribute('role','alert');b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:3000;background:#b91c1c;color:#fff;padding:10px 14px;font-size:13px;font-weight:700;line-height:1.35;text-align:center';b.textContent='Aplikasi belum diperbarui sempurna: berkas js/format.js masih versi lama ('+miss.join(', ')+' hilang). Tombol jumlah dan Pindah Rak tidak akan berfungsi. Unggah js/format.js terbaru, lalu tutup dan buka ulang aplikasi.';document.body.appendChild(b);}

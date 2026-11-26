@@ -43,7 +43,7 @@ if (loadAlertMatch) {
   t('F-04 loadAlert kritis=saldo===0', /kritis\s*=\s*saldo\s*===\s*0/.test(body), true);
   t('F-04 loadAlert Aksi + Masuk', /\+\s*Masuk/.test(body), true);
   t('F-04 loadAlert empty state aman', /Semua stok di atas minimum/.test(body), true);
-  t('F-04 loadAlert empty allRows CTA', /Load data Master Item terlebih dahulu/.test(body), true);
+  t('F-04 loadAlert empty allRows CTA', /Muat data Stok Item terlebih dahulu/.test(body), true);
 }
 
 // --- updateAlertBadge ---

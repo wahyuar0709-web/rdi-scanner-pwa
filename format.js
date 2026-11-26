@@ -56,8 +56,8 @@ function stockGuard(jenis,qty,rak,saldoTotal,breakdown){
   var key=_stripApos(String(rak||'').trim().toUpperCase()),saldoRak=0,sum=0;
   (breakdown||[]).forEach(function(rb){var q=parseFloat(rb&&rb.qty)||0;sum+=q;if(_stripApos(rb&&rb.rak)===key)saldoRak=q;});
   var total=parseFloat(saldoTotal)||0,lengkap=Math.abs(sum-total)<0.001;
-  if(!lengkap&&saldoRak<=0)return qty>total?{ok:false,message:'Stok tidak cukup. Saldo item: '+fmtQty(total)+' (lokasi rak item ini belum terekam)'}:{ok:true};
-  return qty>saldoRak?{ok:false,message:'Stok di rak '+(key||'-')+' tidak cukup. Saldo rak ini: '+fmtQty(saldoRak)}:{ok:true};
+  if(!lengkap&&saldoRak<=0)return qty>total?{ok:false,message:'Stok tidak cukup. Saldo item: '+fmtNum(total)+' (lokasi rak item ini belum terekam)'}:{ok:true};
+  return qty>saldoRak?{ok:false,message:'Stok di rak '+(key||'-')+' tidak cukup. Saldo rak ini: '+fmtNum(saldoRak)}:{ok:true};
 }
 
 /* Anomali qty (audit UX 2026-11 #8): dulu (qty>3*rata-rata)||(qty>maks) dari SEMUA transaksi (masuk+keluar+pindah, bahkan 1 riwayat)
@@ -65,3 +65,8 @@ function stockGuard(jenis,qty,rak,saldoTotal,breakdown){
  * Sekarang: per jenis (PINDAH tidak dihitung), minimal 5 transaksi, dan anomali bila qty > 3x rata-rata DAN > semua riwayat. */
 function anomalyStats(rows,jenis){var q=[];(rows||[]).forEach(function(r){var j=String((r&&r.j)||'').toUpperCase();if(j==='PINDAH')return;if(jenis&&j&&j!==jenis)return;var n=parseFloat(r&&r.q);if(n>0)q.push(n);});if(q.length<5)return null;var sum=0;q.forEach(function(x){sum+=x;});var s=q.slice().sort(function(a,b){return a-b;});var mid=Math.floor(s.length/2);return{n:q.length,avg:sum/q.length,median:s.length%2?s[mid]:(s[mid-1]+s[mid])/2,max:s[s.length-1]};}
 function isQtyAnomaly(qty,st){return !!st&&qty>3*st.avg&&qty>st.max;}
+
+/* fmtNum (audit UX 2026-11 #12): format Indonesia untuk TAMPILAN saja (CLDR/ICU id-ID: ribuan = titik, desimal = koma),
+ * mis. 12500 -> "12.500", 2.5 -> "2,5". Nilai non-angka (teks, '-', '') dikembalikan apa adanya sehingga aman dibungkus di mana saja.
+ * JANGAN dipakai untuk nilai yang dibaca ulang (input value, atribut data, payload): "1.500" akan terbaca 1,5 oleh parseFloat. */
+function fmtNum(v){if(v===null||v===undefined)return '';var s=String(v).trim();if(!/^-?(\d+(\.\d+)?|\.\d+)$/.test(s))return String(v);var x=Math.round(parseFloat(s)*1000)/1000;if(!isFinite(x))return String(v);var neg=x<0;x=Math.abs(x);var p=String(x).split('.');var i=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(neg?'-':'')+(p[1]?i+','+p[1]:i);}
