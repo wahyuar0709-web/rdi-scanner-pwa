@@ -111,7 +111,7 @@ t('P-6: katalog kosong saat memuat menampilkan "Memuat" (tabel + kartu)',
 t('P-6: guard dilepas di sukses & error loadData',
   cnt('_applySort();_dataLoading=false;renderTable(filteredRows);renderCatFilter();') === 1 &&
   cnt("if(result.status==='error'){_dataLoading=false;showStatus('sbar-load','s-err'") === 1 &&
-  cnt('Refresh\';_dataLoading=false;showStatus(\'sbar-load\',\'s-err\'') === 1);
+  cnt('Muat Ulang\';_dataLoading=false;showStatus(\'sbar-load\',\'s-err\'') === 1);
 t('P-6: tab aktif yang butuh data dirender ulang saat data tiba',
   cnt("if(document.getElementById('section-rak')&&document.getElementById('section-rak').classList.contains('active')&&typeof loadRakList==='function')loadRakList();") === 1);
 

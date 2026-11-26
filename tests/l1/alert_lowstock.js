@@ -36,14 +36,14 @@ const loadAlertMatch = src.match(/function\s+loadAlert\s*\(\)\s*\{([\s\S]{0,2500
 t('F-04 loadAlert body found', !!loadAlertMatch, !!loadAlertMatch);
 if (loadAlertMatch) {
   const body = loadAlertMatch[1];
-  t('F-04 loadAlert filters min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
+  t('F-04 loadAlert filters min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
   t('F-04 loadAlert uses minStockMap', /minStockMap\[r\.id\]/.test(body), true);
   t('F-04 loadAlert HABIS badge', /HABIS/.test(body), true);
   t('F-04 loadAlert RENDAH badge', /RENDAH/.test(body), true);
   t('F-04 loadAlert kritis=saldo===0', /kritis\s*=\s*saldo\s*===\s*0/.test(body), true);
   t('F-04 loadAlert Aksi + Masuk', /\+\s*Masuk/.test(body), true);
   t('F-04 loadAlert empty state aman', /Semua stok di atas minimum/.test(body), true);
-  t('F-04 loadAlert empty allRows CTA', /Load data Master Item terlebih dahulu/.test(body), true);
+  t('F-04 loadAlert empty allRows CTA', /Muat data Stok Item terlebih dahulu/.test(body), true);
 }
 
 // --- updateAlertBadge ---
@@ -51,7 +51,7 @@ const badgeMatch = src.match(/function\s+updateAlertBadge\s*\(\)\s*\{([\s\S]{0,1
 t('F-04 updateAlertBadge body found', !!badgeMatch, !!badgeMatch);
 if (badgeMatch) {
   const body = badgeMatch[1];
-  t('F-04 badge counts min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
+  t('F-04 badge counts min>0 && qty<=min', /min\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*min/.test(body), true);
   t('F-04 badge caps at 9+', /9\+/.test(body), true);
   t('F-04 badge toggles .show', /classList\.(add|remove)\('show'\)/.test(body), true);
   // Review 2026-09: nilai dash-alert kini lewat setDashAlert() supaya kartu bisa
@@ -69,8 +69,8 @@ const dashMatch = src.match(/function\s+renderDashAlertWidget\s*\(\)\s*\{([\s\S]
 t('F-04 renderDashAlertWidget body found', !!dashMatch, !!dashMatch);
 if (dashMatch) {
   const body = dashMatch[1];
-  t('F-04 dash widget filters critical', /m\s*>\s*0\s*&&\s*parseInt\(r\.qty\|\|0\)\s*<=\s*m/.test(body), true);
-  t('F-04 dash widget sorts by qty asc', /sort\(function\(a,b\)\{\s*return\s*parseInt\(a\.qty\|\|0\)-parseInt\(b\.qty\|\|0\)/.test(body), true);
+  t('F-04 dash widget filters critical', /m\s*>\s*0\s*&&\s*parse(?:Int|Float)\(r\.qty\|\|0\)\s*<=\s*m/.test(body), true);
+  t('F-04 dash widget sorts by qty asc', /sort\(function\(a,b\)\{\s*return\s*parse(?:Int|Float)\(a\.qty\|\|0\)-parse(?:Int|Float)\(b\.qty\|\|0\)/.test(body), true);
   t('F-04 dash widget slices top 5', /\.slice\(0,\s*5\)/.test(body), true);
   t('F-04 dash widget empty aman', /Semua stok aman/.test(body), true);
   t('F-04 dash widget clickable openItemDetail', /openItemDetail\(/.test(body), true);
