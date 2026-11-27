@@ -31,5 +31,14 @@ const ps = idx.slice(idx.indexOf('function openPindahSheet(item){'), idx.indexOf
 ok('openPindahSheet: semua pesan gagal lewat _pindahNotice (tidak ada bar.textContent+return yang tersembunyi)', !/bar\.textContent='[^']*';return;/.test(ps) && (ps.match(/_pindahNotice\(bar,/g) || []).length === 3, (ps.match(/_pindahNotice\(bar,/g) || []).length);
 ok('_pindahNotice menampilkan toast bila sheet belum terbuka', /function _pindahNotice\(bar,msg\)\{bar\.textContent=msg;if\(!document\.getElementById\('pindah-sheet'\)\.classList\.contains\('show'\)&&window\.rdiToast\)window\.rdiToast\(msg,4200\)/.test(idx));
 ok('window.rdiToast diekspor dari modul Back', /window\.rdiToast=toast;/.test(idx));
+
+// pemulihan mandiri saat cache service worker basi (laporan 2026-11-27: HP tetap memakai format.js lama dari cache SW v108 walau repo sudah benar)
+ok('banner punya tombol "Perbarui sekarang"', /Perbarui sekarang/.test(g));
+ok('tombol membersihkan service worker + Cache Storage lalu memuat ulang (bukan localStorage/IndexedDB, jadi antrean transaksi aman)', /getRegistrations\(\)/.test(g) && /r\.unregister\(\)/.test(g) && /caches\.delete\(/.test(g) && /location\.reload\(\)/.test(g) && !/localStorage|indexedDB/.test(g));
+const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+ok('sw.js: precache mengambil aset segar (cache:reload) agar instalasi SW tidak menyimpan salinan basi', /new Request\(u, \{ cache: 'reload' \}\)/.test(sw) && /addAll\(/.test(sw));
+const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'l1', 'sw_shell_manifest.json'), 'utf8'));
+ok('nama CACHE di sw.js = manifest', sw.indexOf("const CACHE = '" + man.cache + "'") === 0, man.cache);
+ok('CACHE sudah >= v109 (v108 sudah terlanjur terpasang di perangkat dengan format.js lama)', parseInt((man.cache.match(/v(\d+)$/) || [0, 0])[1], 10) >= 109, man.cache);
 console.log('PASS | format_contract_exec | pass=' + pass + ' fail=' + fail);
 process.exit(fail ? 1 : 0);
