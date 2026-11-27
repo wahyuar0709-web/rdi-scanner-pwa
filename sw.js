@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v108'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v109'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -29,7 +29,8 @@ self.addEventListener('install', e => {
   // skipWaiting di dalam waitUntil agar benar-benar menunggu pre-cache selesai
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(ASSETS))
+      // cache:'reload' = lewati cache HTTP browser: pasang SW SELALU mengunduh aset segar (dulu bisa menyimpan salinan basi)
+      .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
