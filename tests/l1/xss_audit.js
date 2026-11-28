@@ -106,7 +106,7 @@ const writes = (html.match(/document\.write\(/g) || []).length;
 t('XSS-7: document.write hanya di window cetak (6 situs)', writes === 6, 'jumlah=' + writes);
 
 /* 6. vendor lokal & tanpa eval */
-['jsQR.min.js', 'qrcode.min.js', 'js/jspdf.min.js'].forEach(f => {
+['js/jsQR.min.js', 'js/qrcode.min.js', 'js/jspdf.min.js'].forEach(f => {
   t('XSS-8: vendor lokal tersedia: ' + f, fs.existsSync(path.join(ROOT, f)));
 });
 t('XSS-9: tidak ada eval() / new Function() di front-end', !/eval\s*\(/.test(html) && !/new Function\s*\(/.test(html));

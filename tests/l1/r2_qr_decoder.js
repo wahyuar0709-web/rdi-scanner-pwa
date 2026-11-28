@@ -4,7 +4,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = process.env.RDI_TEST_ROOT || path.resolve(__dirname, '../..');
-const jsQRCode = fs.readFileSync(path.join(ROOT, 'jsQR.min.js'), 'utf8');
+const jsQRCode = fs.readFileSync(path.join(ROOT, 'js', 'jsQR.min.js'), 'utf8');
 
 // Minimal QR matrix via qrcode algorithm — use a pure-JS QR encoder if available,
 // else render using canvas-free approach: implement a tiny known QR payload test

@@ -57,7 +57,7 @@ t('sw.js nama cache berpola rdi-stok-v<N>', !!cacheName && /^rdi-stok-v\d+$/.tes
 const assetsBlock = sw.slice(sw.indexOf('const ASSETS'), sw.indexOf(']', sw.indexOf('const ASSETS')));
 const assets = [...assetsBlock.matchAll(/'\.\/([^']*)'/g)].map(m => m[1]).filter(a => a.length > 0);
 t('ASSETS sw.js berisi shell + ikon + lib inti',
-  ['./index.html', './scanner.html', './manifest.json', './icon-192.png', './icon-512.png', './jsQR.min.js', './qrcode.min.js'].every(a => assets.includes(a.slice(2))),
+  ['./index.html', './scanner.html', './manifest.json', './icon-192.png', './icon-512.png', './js/jsQR.min.js', './js/qrcode.min.js'].every(a => assets.includes(a.slice(2))),
   'n=' + assets.length);
 const assetsMissing = assets.filter(a => !fs.existsSync(path.join(ROOT, a)));
 t('setiap entri ASSETS ada di disk', assetsMissing.length === 0, assetsMissing.length ? assetsMissing.join(',') : 'n=' + assets.length + ' ok');

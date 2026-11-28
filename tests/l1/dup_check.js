@@ -31,6 +31,8 @@ const MUST_UNIQUE = [
   'buildLabelHTML', 'buildPrintHTML', 'buildRakLabelHTML', 'labelPerPage', 'downloadLabelPDF', 'buildLabelPDFDoc',
   'openAddSheet', 'saveAddItem', 'openEditSheet', 'saveEditItem',
   'loadData', 'renderTable', 'loadAlert', 'loadHistory', 'loadAllHistory', 'renderCetakList',
+  // seret-untuk-tutup sheet: dulu 3 salinan (onStart/onMove/onEnd x3), kini satu fungsi bersama
+  'bindSheetDragToClose', 'onStart', 'onMove', 'onEnd',
 ];
 MUST_UNIQUE.forEach(fn => {
   const n = defs(fn);
@@ -40,9 +42,6 @@ MUST_UNIQUE.forEach(fn => {
 // 2. DUPLIKASI YANG DISENGAJA (baseline — ubah = harus update suite ini)
 const ALLOWED_DUP = {
   'attempt': { n: 2, why: 'inner helper retry di gasGet & gasPost (satu per fungsi)' },
-  'onStart': { n: 3, why: '3 handler drag-to-close: item-detail, aset-detail, aset-unit-detail' },
-  'onMove': { n: 3, why: 'sama dengan onStart' },
-  'onEnd': { n: 3, why: 'sama dengan onStart' },
   'showModal': { n: 2, why: 'inner helper pada 2 modal Aset (scope terpisah)' },
 };
 Object.keys(ALLOWED_DUP).forEach(fn => {

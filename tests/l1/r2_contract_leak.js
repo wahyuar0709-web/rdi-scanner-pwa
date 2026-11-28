@@ -9,7 +9,6 @@ const src = html + '\n' + outbox + '\n' + formatSrc;
 const gs = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const scanner = fs.readFileSync(path.join(ROOT, 'scanner.html'), 'utf8');
-const backup = fs.readFileSync(path.join(ROOT, 'Backup', 'index.html'), 'utf8');
 
 let pass = 0, fail = 0;
 const rows = [];
@@ -198,7 +197,7 @@ t('SW: CACHE name', /const CACHE = 'rdi-stok-v\d+'/.test(sw), 'rdi-stok-v11-or-v
 const assets = sw.match(/const ASSETS = \[([\s\S]*?)\]/);
 const assetList = assets ? assets[1].match(/'[^']+'/g).map(s => s.slice(1, -1)) : [];
 t('SW: ASSETS include index/scanner/manifest/jsQR',
-  assetList.includes('./index.html') && assetList.includes('./scanner.html') && assetList.includes('./manifest.json') && assetList.includes('./jsQR.min.js'),
+  assetList.includes('./index.html') && assetList.includes('./scanner.html') && assetList.includes('./manifest.json') && assetList.includes('./js/jsQR.min.js'),
   assetList.join(','));
 t('SW: skipWaiting on install', sw.includes('skipWaiting'), 'install');
 t('SW: clientsClaim on activate', sw.includes('clients.claim'), 'activate');
@@ -253,7 +252,7 @@ t('NEG: write path not skippable via action list',
 
 // ========== Passbook scanner UI ==========
 t('Scanner UI exists', scanner.includes('id="cam"') && scanner.includes('initCamera'), 'scanner.html');
-t('Scanner jsQR self-host', scanner.includes('./jsQR.min.js'), 'no CDN');
+t('Scanner jsQR self-host', scanner.includes('./js/jsQR.min.js'), 'no CDN');
 t('Scanner track ended handler', scanner.includes("addEventListener('ended'"), 'camera unplug');
 t('Scanner permission denied messaging', scanner.includes('NotAllowedError'), 'Izin kamera ditolak');
 t('Scanner getUserMedia fallback constraints', scanner.includes('facingMode') && scanner.includes('video:true'), '3 constraints ladder');

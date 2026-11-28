@@ -12,7 +12,6 @@ function t(name, ok, ev) {
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 const scanner = fs.readFileSync(path.join(ROOT, 'scanner.html'), 'utf8');
-const backup = fs.readFileSync(path.join(ROOT, 'Backup', 'index.html'), 'utf8');
 
 const appVer = (html.match(/APP_VERSION\s*=\s*'([^']+)'/) || [])[1];
 const title = (html.match(/<title>([^<]+)<\/title>/) || [])[1];
@@ -37,11 +36,6 @@ t('scanner.html title has no app version (by design)', !/\bv\d+\.\d+/.test(scann
 // Historical fix comments must retain their original versions (do not rewrite history)
 const hist = [...html.matchAll(/FIX[^\n(]*\(v[\d.]+\)/g)].map(m => m[0]);
 t('Historical FIX comments retained', hist.length >= 5, 'count=' + hist.length + ' sample=' + hist[0]);
-
-// Backup must stay untouched with old versions
-const bakVer = (backup.match(/APP_VERSION\s*=\s*'([^']+)'/) || [])[1];
-const bakTitle = (backup.match(/<title>([^<]+)<\/title>/) || [])[1];
-t('Backup/ left historical (not modified)', !!bakTitle && bakTitle !== title, 'backup title=' + bakTitle);
 
 // initVersionLabels still syncs runtime title from APP_VERSION (no late mismatch)
 t('initVersionLabels rewrites title from APP_VERSION', /document\.title\s*=\s*document\.title\.replace\(/.test(html) && /initVersionLabels/.test(html), 'runtime sync present');

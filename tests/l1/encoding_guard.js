@@ -13,8 +13,7 @@
 //   4. BOM UTF-8 -> .gitattributes sudah menandai berkas vendor sebagai -text,
 //      jadi BOM pada berkas sumber hanya tanda kesalahan
 //
-// Dikecualikan: Backup/** (snapshot historis), *.min.js (vendor biner), dan
-// berkas hasil (tests/results/**).
+// Dikecualikan: *.min.js (vendor biner) dan berkas hasil (tests/results/**).
 const fs = require('fs');
 const path = require('path');
 
@@ -26,7 +25,7 @@ function t(name, ok, ev) {
   else console.log(ok + ' | ' + name + ' | ' + ev);
 }
 
-const SKIP_DIRS = new Set(['Backup', 'node_modules', 'results', '.git', '.github', '.opencode', 'tools']);
+const SKIP_DIRS = new Set(['node_modules', 'results', '.git', '.github', '.opencode', 'tools']);
 const SKIP_FILE = /\.min\.js$|\.png$|\.ico$|~$|\.bak$/i;
 
 function walk(dir, out) {

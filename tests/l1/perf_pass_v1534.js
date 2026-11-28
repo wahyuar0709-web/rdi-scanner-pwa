@@ -142,7 +142,8 @@ t('SW: precache aset inti tetap ada (guard LOCK-7 tidak dilanggar)',
   sw.indexOf('html2pdf') !== -1);
 
 // --- package.json ---
-t('PKG: version 15.34.0', /"version":\s*"15\.34\.0"/.test(pkg));
+// Dulu mengunci "15.34.0" (rusak tiap rilis). Kesinkronan dengan APP_VERSION kini dijaga tests/l1/repo_layout.js.
+t('PKG: version berformat semver (x.y.z)', /"version":\s*"\d+\.\d+\.\d+"/.test(pkg));
 
 // --- jejak alasan perubahan (komentar PERF) ---
 t('DOC: komentar PERF 2026-10-16 hadir di >= 8 titik perubahan',
