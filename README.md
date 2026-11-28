@@ -18,14 +18,27 @@ Aplikasi berjalan penuh di browser (bisa di-*install* ke HP/desktop seperti app 
 ## Struktur Proyek
 
 ```
-├── index.html      # Aplikasi utama (daftar item, transaksi, riwayat, dashboard, pengaturan)
-├── scanner.html     # Scanner fullscreen terpisah (dibuka dari index via tombol; hasil via postMessage)
-├── manifest.json    # PWA manifest (nama, ikon, tema)
-├── sw.js            # Service worker (offline caching)
-├── jsQR.min.js      # Library decode QR (self-hosted, v1.4.0 — tidak bergantung CDN)
-├── Code.gs          # Backend Google Apps Script (deploy terpisah ke Apps Script)
-├── icon-192.png
-└── icon-512.png
+├── index.html          # Aplikasi utama (UI + logika inline: daftar item, transaksi, riwayat, dashboard, pengaturan)
+├── scanner.html        # Scanner fullscreen terpisah (dibuka dari index via tombol; hasil via postMessage)
+├── sw.js               # Service worker (offline caching) — nama CACHE wajib naik tiap shell berubah
+├── manifest.json       # PWA manifest (nama, ikon, tema)
+├── Code.gs             # Backend Google Apps Script (deploy terpisah ke Apps Script)
+├── appsscript.json     # Manifest project Apps Script
+├── icon-192.png, icon-512.png
+├── js/
+│   ├── format.js       # Helper murni (tanpa DOM): parseQty, fmtQty, fmtNum, stockGuard, anomalyStats, ...
+│   ├── util.js, outbox.js, cetak.js, importexcel.js, exportexcel.js
+│   └── *.min.js        # Vendor, self-hosted tanpa CDN: jsQR (decode QR), qrcode (pembuat QR), jspdf, html2pdf, xlsx, exceljs (jangan diedit/format ulang)
+├── tests/
+│   ├── l1/             # Statis / simulasi (Node, tanpa browser) — dijalankan di CI
+│   ├── l2/, e2e/       # Browser runtime (Chrome)
+│   ├── tools/          # Pembantu tes
+│   └── l1/sw_shell_manifest.json   # Hash shell untuk gate cache service worker
+├── .github/workflows/l1.yml        # CI: menjalankan L1 tiap push/PR ke main
+├── AGENTS.md, TESTING.md, DESIGN.md, PLAN.md, CHANGELOG.md   # Aturan agen, panduan tes, desain, rencana, riwayat perubahan
+├── anti-slop/          # Laporan audit
+├── apps-script/        # Berkas tambahan backend (proxy AI, POC) — ditempel manual ke project Apps Script
+└── poc/                # Halaman uji terpisah (tidak ikut aplikasi produksi)
 ```
 
 Backend (`Code.gs`) ada di repo ini sebagai **sumber kode** — tetap harus di-*paste*/push ke project Apps Script dan di-*deploy* sebagai Web App terpisah (lihat Setup).
@@ -215,6 +228,31 @@ Contoh **gagal**: `budi123` (terlalu pendek), `gudangbudi2026` (hanya 2 jenis),
 
 1. Settings → Pages → Source: branch `main`, folder `/ (root)`
 2. Akses via `https://<username>.github.io/rdi-scanner-pwa/`
+
+## Pengembangan & tes
+
+- Tidak ada build step dan tidak ada dependensi npm. Layani folder secara statis (mis. `python -m http.server`) — service worker butuh `https` atau `localhost`.
+- `npm test` menjalankan **L1** (Node ≥ 18, statis/simulasi, tanpa browser). `npm run test:l2` menjalankan **L2** (butuh Chrome). Arti tiap level dan aturan klaimnya ada di [TESTING.md](TESTING.md) dan `AGENTS.md`.
+- Logika murni (hitung/format/validasi) ditaruh di `js/format.js` dan diuji dengan tes unit yang **mengeksekusi kode aslinya** (`tests/l1/*_exec.js`, via `vm`), bukan sekadar mencocokkan teks.
+- Tes `repo_layout` menjaga tata letak repo (tidak ada berkas nyasar di folder utama, semua `<script src>` dan aset precache ada) serta kesinkronan `APP_VERSION` dengan `package.json`; `version_consistency` menjaga `APP_VERSION` di judul, meta, dan header.
+
+## Rilis (checklist wajib)
+
+1. `npm test` lulus — termasuk `repo_layout` dan `sw_shell_cache_gate`.
+2. Mengubah berkas shell (`index.html`, `scanner.html`, `sw.js`, `manifest.json`, `js/*.js`, vendor, ikon)? **Naikkan nama `CACHE` di `sw.js`** (mis. `rdi-stok-v110` → `v111`), lalu jalankan `node tests/l1/sw_shell_cache_gate.js --print` dan ikut-commit `tests/l1/sw_shell_manifest.json`.
+   Alasannya: aset disajikan *cache-first*. Tanpa kenaikan nama, HP yang sudah memasang aplikasi tetap memakai berkas lama — dulu ini membuat `js/format.js` lama bertahan dan halaman Stok gagal (27 Nov 2026).
+3. Rilis yang bermakna: naikkan `APP_VERSION` di `index.html` dan `version` di `package.json`, lalu catat di [CHANGELOG.md](CHANGELOG.md).
+4. Unggah **dengan struktur folder utuh** (git, atau seret *folder* ke GitHub; jangan mengunggah file satu per satu — file bisa jatuh ke folder utama). `repo_layout` akan gagal bila ada berkas yang salah folder.
+5. Backend (`Code.gs`) berubah? Deploy ulang project Apps Script sebagai versi baru (URL `/exec` tetap).
+6. Setelah deploy: buka aplikasi di HP dan cek versi di menu **Lainnya**. Jika muncul banner merah "js/format.js masih versi lama", ketuk **Perbarui sekarang**.
+
+## Pemecahan masalah umum
+
+| Gejala | Penyebab biasa | Tindakan |
+|---|---|---|
+| Banner merah "berkas js/format.js masih versi lama" | HP masih memakai cache service worker lama (nama `CACHE` belum dinaikkan saat rilis) | Ketuk **Perbarui sekarang** (tidak menghapus antrean transaksi). Untuk rilis berikutnya, ikuti checklist di atas. |
+| Halaman Stok: "Terjadi kesalahan di aplikasi" | Berkas `js/*.js` tidak cocok dengan `index.html` (sebagian terunggah / salah folder) | Pastikan `tests/l1/repo_layout.js` lulus, unggah ulang dengan struktur folder utuh |
+| `sw_shell_cache_gate` gagal | Shell berubah tanpa menaikkan `CACHE` / manifest belum diregenerasi | Naikkan `CACHE`, jalankan `--print`, commit manifest |
 
 ## Keamanan
 

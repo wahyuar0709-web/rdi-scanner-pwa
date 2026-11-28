@@ -220,7 +220,7 @@ function loadJsQR(callback){
   loaderMsg.textContent='Memuat library scanner…';
   var s=document.createElement('script');
   // FIX: self-host agar tetap jalan offline & tanpa CDN dependency
-  s.src='./jsQR.min.js';
+  s.src='./js/jsQR.min.js';
   s.onload=callback;
   s.onerror=function(){
     // FIX: stop kamera jika library gagal dimuat (kamera tidak berguna tanpa decoder)

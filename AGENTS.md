@@ -17,9 +17,8 @@ Primary artifacts:
 - `sw.js` — service worker / cache
 - `manifest.json` — PWA manifest
 - `Code.gs` — GAS backend
-- `jsQR.min.js` — vendored QR library
+- `js/jsQR.min.js`, `js/qrcode.min.js` — vendored QR libraries
 - `icon-192.png`, `icon-512.png` — icons
-- `Backup/` — historical snapshot (not active)
 
 ## B. Protected Files
 
@@ -30,11 +29,10 @@ The following MUST NOT be modified without explicit user approval for that speci
 - `sw.js`
 - `manifest.json`
 - `Code.gs`
-- `jsQR.min.js`
+- `js/jsQR.min.js`
 - `icon-192.png`
 - `icon-512.png`
 - `icon-*.png`
-- `Backup/**`
 
 `README.md` is documentation; do not modify unless the user requests a documentation update.
 

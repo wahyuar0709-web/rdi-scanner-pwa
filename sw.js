@@ -1,4 +1,4 @@
-const CACHE = 'rdi-stok-v109'; // bump cache whenever the app shell changes
+const CACHE = 'rdi-stok-v110'; // bump cache whenever the app shell changes
 const ASSETS = [
   './',
   './index.html',
@@ -6,8 +6,8 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './jsQR.min.js',
-  './qrcode.min.js',
+  './js/jsQR.min.js',
+  './js/qrcode.min.js',
   './js/jspdf.min.js',
   './js/util.js',
   './js/cetak.js',
@@ -49,10 +49,10 @@ self.addEventListener('fetch', e => {
   // Hanya intercept GET (POST/PUT jangan di-cache/di-rewrite)
   if (e.request.method !== 'GET') return;
 
-  // HTML / navigasi â†’ NETWORK-FIRST dgn BATAS WAKTU (PERF 2026-10-16).
+  // HTML / navigasi → NETWORK-FIRST dgn BATAS WAKTU (PERF 2026-10-16).
   // Dulu: navigasi SELALU menunggu jaringan selesai, di WiFi lambat itu
   // menahan boot beberapa detik. Sekarang: kalau jaringan belum selesai
-  // dalam 2,5 dtk TAPI ada versi cache â†’ sajikan cache dulu (boot instan);
+  // dalam 2,5 dtk TAPI ada versi cache → sajikan cache dulu (boot instan);
   // unduhan jaringan tetap jalan di background dan memperbarui cache,
   // jadi buka berikutnya sudah versi terbaru. Offline / jaringan gagal
   // tetap fallback ke cache seperti sebelumnya.
@@ -82,7 +82,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Asset statis lain (manifest, ikon, jsQR dll) â†’ cache-first,
+  // Asset statis lain (manifest, ikon, jsQR dll) → cache-first,
   // lalu network + simpan ke cache (untuk asset yang belum pernah di-precache)
   e.respondWith(
     caches.match(e.request).then(r => {

@@ -38,3 +38,7 @@ tests/l2/*.json
 # Apps Script scanner (Config.js menunjuk spreadsheet 1TQd2aUE... = Monitoring
 # Tool). Tidak dipakai repo ini; hanya appsscript.json yang ikut versi.
 src/
+
+# Python bytecode (hasil menjalankan tests/e2e/*.py)
+__pycache__/
+*.pyc

@@ -40,6 +40,16 @@ node tests/run-l2.js
 | L4 device | checklist D1–D12 in `PLAN.md` §3.4 | physical phone |
 | L5 production | `PLAN.md` §3.5 | operational sign-off |
 
+## Suite penjaga rilis (L1)
+
+| Suite | Menjaga |
+|-------|---------|
+| `sw_shell_cache_gate.js` | Nama `CACHE` di `sw.js` naik tiap shell berubah (hash di `sw_shell_manifest.json`) |
+| `repo_layout.js` | Tidak ada berkas nyasar di folder utama; semua `<script src>` & aset precache ada; `package.json` sinkron dengan `APP_VERSION` |
+| `version_consistency.js` | `APP_VERSION` sama di judul, meta, dan header |
+| `format_contract_exec.js` | Setiap fungsi `js/format.js` yang dipakai `index.html` memang ada; penjaga integritas + pemulihan cache |
+| `handler_reachability.js` | Semua `onclick` inline memanggil fungsi global |
+
 ## Adding an L1 suite
 
 1. Drop a Node script in `tests/l1/`

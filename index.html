@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><!-- PERF 2026-10-16: font dari CDN dimuat non-blocking (dulu render-blocking). -->
-<script src="./jsQR.min.js" defer></script>
-<script src="./qrcode.min.js" defer></script>
+<script src="./js/jsQR.min.js" defer></script>
+<script src="./js/qrcode.min.js" defer></script>
 <script src="./js/util.js"></script>
 <script src="./js/jspdf.min.js" defer></script>
 <script src="./js/cetak.js"></script>
@@ -24,7 +24,7 @@
      SETIAP launch. Terukur: boot DOMContentLoaded 6.9s -> 3.0s (~3.9 detik) begitu
      permintaan CDN diblokir, jadi CDN itu ~57% waktu boot. Untuk app yang justru
      mengklaim offline-first, menarik 861 KB dari jaringan setiap kali dibuka adalah
-     Paradox. Sekarang self-host (sama seperti jsQR.min.js, qrcode.min.js, jspdf.min.js),
+     Paradox. Sekarang self-host (sama seperti js/jsQR.min.js, js/qrcode.min.js, js/jspdf.min.js),
      di-cache service worker, dan bisa dipakai tanpa internet sama sekali. -->
 <!-- EXPORT 2026-10-28: ExcelJS self-host (948 KB, jsDelivr exceljs@4.4.0). SheetJS 0.18.5 versi
      open-source tidak bisa memasang gaya/format pada export, dan hasil export harus meniru file
@@ -4513,10 +4513,51 @@ var summaryHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(
 function checkLedgerReconciliation(itemId){var box=document.getElementById('idd-ledger-status');if(!box)return;box.style.cssText='padding:var(--sp-6) var(--sp-10);border-radius:var(--r);font-size:12px;background:transparent;color:var(--text3)';box.textContent='Memeriksa...';gasGet({action:'getLedger',id:itemId}).then(function(res){if(_detailIdx===null)return;if(res.status!=='ok'){box.textContent='Tidak bisa memeriksa (offline?)';return;}
 if(res.reconciled){box.style.cssText='padding:var(--space-half) var(--sp-10);border-radius:var(--r);font-size:12px;background:transparent;color:var(--text3)';box.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Saldo konsisten';}else{box.style.cssText='padding:var(--sp-10) var(--sp-14);border-radius:var(--r);font-size:var(--fs-13);background:var(--red-dim,#3a1a1a);color:var(--red-text,#ff6b6b);border:1px solid var(--red-border,#e74c3c)';if(typeof res.computedClosing!=='number'||typeof res.cachedClosing!=='number'){box.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Data rekonsiliasi tidak lengkap dari server. Pastikan Apps Script sudah di-deploy ulang ke versi Code.gs terbaru (Deploy → Manage deployments → Edit → New version).';}else{box.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg> Selisih terdeteksi: sistem catat '+res.cachedClosing+', seharusnya '+res.computedClosing+' (diff '+res.diff+'). Coba jalankan recalculateAllSaldo().';}}}).catch(function(){box.textContent='Tidak bisa memeriksa (offline?)';});}
 function closeItemDetail(){document.getElementById('item-detail-overlay').classList.remove('show');document.getElementById('item-detail-sheet').classList.remove('show');_detailIdx=null;_detailItemId=null;if(_lastFocusTrigger){_lastFocusTrigger.focus();_lastFocusTrigger=null;}}
-(function setupItemDetailDragToClose(){var sheet=document.getElementById('item-detail-sheet');if(!sheet)return;var dragHandle=document.getElementById('item-detail-drag-handle');var hero=document.getElementById('item-detail-hero');var startY=0,currentY=0,dragging=false,sheetH=0;function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);currentY=startY;sheetH=sheet.offsetHeight||500;sheet.classList.add('dragging');}
-function onMove(e){if(!dragging)return;currentY=(e.touches?e.touches[0].clientY:e.clientY);var delta=currentY-startY;if(delta<0)delta=0;sheet.style.transform='translateY('+delta+'px)';if(e.cancelable)e.preventDefault();}
-function onEnd(){if(!dragging)return;dragging=false;sheet.classList.remove('dragging');var delta=Math.max(0,currentY-startY);sheet.style.transform='';if(delta>Math.max(110,sheetH*0.22))closeItemDetail();}
-[dragHandle,hero].forEach(function(el){if(!el)return;el.addEventListener('touchstart',onStart,{passive:true});el.addEventListener('touchmove',onMove,{passive:false});el.addEventListener('touchend',onEnd);el.addEventListener('touchcancel',onEnd);el.addEventListener('mousedown',onStart);});window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onEnd);})();function saveMinStockFromDetail(){if(_detailIdx===null)return;var r=allRows.find(function(row){return row._idx===_detailIdx;});if(!r||!r.id)return;var val=parseInt(document.getElementById('idd-min-input').value)||0;if(val<0)val=0;saveMinStock(r.id,val);}
+/* Seret-untuk-tutup bottom sheet. Dulu logika identik ini disalin 3x (detail item, detail aset, detail unit aset);
+ * kini satu fungsi. Perilaku tidak berubah: seret hero/handle ke bawah > max(110px, 22% tinggi sheet) = tutup. */
+function bindSheetDragToClose(sheetId, handleId, heroId, onClose) {
+  var sheet = document.getElementById(sheetId);
+  if (!sheet) return;
+  var dragHandle = document.getElementById(handleId);
+  var hero = document.getElementById(heroId);
+  var startY = 0, currentY = 0, dragging = false, sheetH = 0;
+  function onStart(e) {
+    dragging = true;
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    currentY = startY;
+    sheetH = sheet.offsetHeight || 500;
+    sheet.classList.add('dragging');
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    currentY = (e.touches ? e.touches[0].clientY : e.clientY);
+    var delta = currentY - startY;
+    if (delta < 0) delta = 0;
+    sheet.style.transform = 'translateY(' + delta + 'px)';
+    if (e.cancelable) e.preventDefault();
+  }
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    sheet.classList.remove('dragging');
+    var delta = Math.max(0, currentY - startY);
+    sheet.style.transform = '';
+    if (delta > Math.max(110, sheetH * 0.22)) onClose();
+  }
+  [dragHandle, hero].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    el.addEventListener('mousedown', onStart);
+  });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+}
+/* Diekspor ke window: dipanggil dari bagian Aset yang berada di lingkup (closure) berbeda dari detail item. */
+window.bindSheetDragToClose = bindSheetDragToClose;
+bindSheetDragToClose('item-detail-sheet','item-detail-drag-handle','item-detail-hero',function(){closeItemDetail();});function saveMinStockFromDetail(){if(_detailIdx===null)return;var r=allRows.find(function(row){return row._idx===_detailIdx;});if(!r||!r.id)return;var val=parseInt(document.getElementById('idd-min-input').value)||0;if(val<0)val=0;saveMinStock(r.id,val);}
 function goTransaksiFromDetail(){if(_detailIdx===null)return;var r=allRows.find(function(row){return row._idx===_detailIdx;});if(!r)return;closeItemDetail();switchTab('scanner',true);document.getElementById('scan-id-input').value=r.id||'';setTimeout(lookupItem,200);}
 function editFromDetail(){if(_detailIdx===null)return;var itemId=_detailItemId;closeItemDetail();setTimeout(function(){var r=allRows.find(function(row){return row.id===itemId;});if(!r){showStatus('sbar-load','s-err',IC.err+' Item tidak ditemukan (mungkin baru saja diubah/dihapus) -- coba muat ulang data.');return;}openEditSheet(r._idx,itemId);},350);}
 function toggleArchiveFromDetail(){if(_detailIdx===null)return;var r=allRows.find(function(row){return row._idx===_detailIdx;});if(!r||!r.id)return;var arsip=_isArsip(r);var confirmMsg=arsip?'Aktifkan kembali item "'+r.nama+'"? Item akan muncul lagi di Master List dan bisa ditransaksikan.':'Arsipkan item "'+r.nama+'"? Item disembunyikan dari Master List, tapi masih bisa ditemukan lewat panel cari (ditandai Arsip). Riwayat transaksinya tetap tersimpan (tidak dihapus).';if(!confirm(confirmMsg))return;var btn=document.getElementById('idd-btn-archive');var originalText=btn.textContent;btn.disabled=true;btn.textContent='Memproses…';showStatus('sbar-idd-archive','s-info',IC.load+' Menyimpan…');gasPost({action:'archiveItem',id:r.id,restore:arsip}).then(function(res){btn.disabled=false;if(res.status!=='ok'){btn.textContent=originalText;showStatus('sbar-idd-archive','s-err',IC.err+' '+xe(res.message||'Gagal menyimpan'));return;}
@@ -4803,18 +4844,7 @@ function closeAsetItemDetail(){
   document.getElementById('aset-detail-overlay').classList.remove('show');
   document.getElementById('aset-detail-sheet').classList.remove('show');
 }
-(function setupAsetDetailDragToClose(){
-  var sheet=document.getElementById('aset-detail-sheet');if(!sheet)return;
-  var dragHandle=document.getElementById('aset-detail-drag-handle');
-  var hero=document.getElementById('aset-detail-hero');
-  var startY=0,currentY=0,dragging=false,sheetH=0;
-  function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);currentY=startY;sheetH=sheet.offsetHeight||500;sheet.classList.add('dragging');}
-  function onMove(e){if(!dragging)return;currentY=(e.touches?e.touches[0].clientY:e.clientY);var delta=currentY-startY;if(delta<0)delta=0;sheet.style.transform='translateY('+delta+'px)';if(e.cancelable)e.preventDefault();}
-  function onEnd(){if(!dragging)return;dragging=false;sheet.classList.remove('dragging');var delta=Math.max(0,currentY-startY);sheet.style.transform='';if(delta>Math.max(110,sheetH*0.22))closeAsetItemDetail();}
-  [dragHandle,hero].forEach(function(el){if(!el)return;el.addEventListener('touchstart',onStart,{passive:true});el.addEventListener('touchmove',onMove,{passive:false});el.addEventListener('touchend',onEnd);el.addEventListener('touchcancel',onEnd);el.addEventListener('mousedown',onStart);});
-  window.addEventListener('mousemove',onMove);
-  window.addEventListener('mouseup',onEnd);
-})();
+bindSheetDragToClose('aset-detail-sheet','aset-detail-drag-handle','aset-detail-hero',function(){closeAsetItemDetail();});
 
 /* ============================================================
    BAGIAN E - Daftar Unit (drill-down per Kode_Alat). Toggle visibility
@@ -4996,18 +5026,7 @@ function closeAsetUnitDetailSheet(){
   document.getElementById('aset-unit-detail-overlay').classList.remove('show');
   document.getElementById('aset-unit-detail-sheet').classList.remove('show');
 }
-(function setupAsetUnitDetailDragToClose(){
-  var sheet=document.getElementById('aset-unit-detail-sheet');if(!sheet)return;
-  var dragHandle=document.getElementById('aset-unit-detail-drag-handle');
-  var hero=document.getElementById('aset-unit-detail-hero');
-  var startY=0,currentY=0,dragging=false,sheetH=0;
-  function onStart(e){dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);currentY=startY;sheetH=sheet.offsetHeight||500;sheet.classList.add('dragging');}
-  function onMove(e){if(!dragging)return;currentY=(e.touches?e.touches[0].clientY:e.clientY);var delta=currentY-startY;if(delta<0)delta=0;sheet.style.transform='translateY('+delta+'px)';if(e.cancelable)e.preventDefault();}
-  function onEnd(){if(!dragging)return;dragging=false;sheet.classList.remove('dragging');var delta=Math.max(0,currentY-startY);sheet.style.transform='';if(delta>Math.max(110,sheetH*0.22))closeAsetUnitDetailSheet();}
-  [dragHandle,hero].forEach(function(el){if(!el)return;el.addEventListener('touchstart',onStart,{passive:true});el.addEventListener('touchmove',onMove,{passive:false});el.addEventListener('touchend',onEnd);el.addEventListener('touchcancel',onEnd);el.addEventListener('mousedown',onStart);});
-  window.addEventListener('mousemove',onMove);
-  window.addEventListener('mouseup',onEnd);
-})();
+bindSheetDragToClose('aset-unit-detail-sheet','aset-unit-detail-drag-handle','aset-unit-detail-hero',function(){closeAsetUnitDetailSheet();});
 
 /* --- Modal aksi kontekstual: satu modal dipakai ulang utk semua activity --- */
 
