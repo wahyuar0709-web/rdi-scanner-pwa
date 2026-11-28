@@ -43,30 +43,108 @@ if(qi===n.length)return Math.round((n.length/h.length)*30);return 0;}
 function fuzzyMatch(r,q,cheapOnly){q=String(q||'').replace(/\s+/g,' ').trim();if(!q)return{match:true,score:0};var fields=[{v:r.id||'',w:4},{v:r.nama||'',w:3},{v:r.spec||'',w:2},{v:r.rak||'',w:2},{v:r.vendor||'',w:1.5},{v:r.po||'',w:1},{v:r.kategori||'',w:1.5},{v:r.user||'',w:1}];var best=0;fields.forEach(function(f){var s=fuzzyScore(f.v,q,cheapOnly)*f.w;if(s>best)best=s;});return{match:best>=18,score:best};}
 
 /* ===== Qty & penjaga stok (audit UX 2026-11) =====
- * parseQty: terima desimal ('2.5' / '2,5' / '.5'), tolak kosong/teks/<=0/Infinity. Dulu submit memakai parseInt
- *   sehingga 2.5 tersimpan 2 sementara pratinjau menampilkan 2.5. Backend (Code.gs) sudah parseFloat.
- * stockGuard: cermin aturan Code.gs v5.32 (KELUAR/PINDAH): per-rak bila rincian rak menutup saldo total;
- *   bila tidak menutup DAN rak itu tidak punya saldo, cek terhadap saldo TOTAL. Server tetap otoritas akhir. */
-function parseQty(raw){var s=String(raw==null?'':raw).trim().replace(',','.');if(!/^(\d+(\.\d+)?|\.\d+)$/.test(s))return NaN;var n=parseFloat(s);return isFinite(n)?Math.round(n*1000)/1000:NaN;}
-function fmtQty(n){n=Math.round((parseFloat(n)||0)*1000)/1000;return String(n);}
-function _stripApos(v){var t=(v===null||v===undefined)?'':String(v);while(t.charAt(0)==="'")t=t.slice(1);return t;}
-function stockGuard(jenis,qty,rak,saldoTotal,breakdown){
-  if(jenis!=='KELUAR'&&jenis!=='PINDAH')return{ok:true};
-  if(!(qty>0))return{ok:true};
-  var key=_stripApos(String(rak||'').trim().toUpperCase()),saldoRak=0,sum=0;
-  (breakdown||[]).forEach(function(rb){var q=parseFloat(rb&&rb.qty)||0;sum+=q;if(_stripApos(rb&&rb.rak)===key)saldoRak=q;});
-  var total=parseFloat(saldoTotal)||0,lengkap=Math.abs(sum-total)<0.001;
-  if(!lengkap&&saldoRak<=0)return qty>total?{ok:false,message:'Stok tidak cukup. Saldo item: '+fmtNum(total)+' (lokasi rak item ini belum terekam)'}:{ok:true};
-  return qty>saldoRak?{ok:false,message:'Stok di rak '+(key||'-')+' tidak cukup. Saldo rak ini: '+fmtNum(saldoRak)}:{ok:true};
+ * Fungsi murni (tanpa DOM) — diuji lewat vm di tests/l1/qty_stock_guard_exec.js,
+ * anomaly_stats_exec.js, dan number_format_exec.js.
+ *
+ * parseQty   : terima desimal ('2.5' / '2,5' / '.5'); tolak kosong/teks/<=0/Infinity.
+ *              Dulu submit memakai parseInt sehingga 2.5 tersimpan 2 sementara pratinjau menampilkan 2.5.
+ *              Backend (Code.gs) sudah parseFloat.
+ * stockGuard : cermin aturan Code.gs v5.32 (KELUAR/PINDAH): per-rak bila rincian rak menutup saldo total;
+ *              bila tidak menutup DAN rak itu tidak punya saldo, cek terhadap saldo TOTAL.
+ *              Server tetap otoritas akhir. */
+
+/* '2,5' / '2.5' / '.5' -> angka dibulatkan 3 desimal; selain itu NaN. */
+function parseQty(raw) {
+  var s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  if (!/^(\d+(\.\d+)?|\.\d+)$/.test(s)) return NaN;
+  var n = parseFloat(s);
+  return isFinite(n) ? Math.round(n * 1000) / 1000 : NaN;
 }
 
-/* Anomali qty (audit UX 2026-11 #8): dulu (qty>3*rata-rata)||(qty>maks) dari SEMUA transaksi (masuk+keluar+pindah, bahkan 1 riwayat)
- * sehingga hampir tiap qty yang sedikit lebih besar memicu peringatan -> pengguna belajar mengabaikannya.
- * Sekarang: per jenis (PINDAH tidak dihitung), minimal 5 transaksi, dan anomali bila qty > 3x rata-rata DAN > semua riwayat. */
-function anomalyStats(rows,jenis){var q=[];(rows||[]).forEach(function(r){var j=String((r&&r.j)||'').toUpperCase();if(j==='PINDAH')return;if(jenis&&j&&j!==jenis)return;var n=parseFloat(r&&r.q);if(n>0)q.push(n);});if(q.length<5)return null;var sum=0;q.forEach(function(x){sum+=x;});var s=q.slice().sort(function(a,b){return a-b;});var mid=Math.floor(s.length/2);return{n:q.length,avg:sum/q.length,median:s.length%2?s[mid]:(s[mid-1]+s[mid])/2,max:s[s.length-1]};}
-function isQtyAnomaly(qty,st){return !!st&&qty>3*st.avg&&qty>st.max;}
+/* Nilai MENTAH untuk <input value> (titik desimal, tanpa pemisah ribuan). Untuk tampilan pakai fmtNum. */
+function fmtQty(n) {
+  n = Math.round((parseFloat(n) || 0) * 1000) / 1000;
+  return String(n);
+}
 
-/* fmtNum (audit UX 2026-11 #12): format Indonesia untuk TAMPILAN saja (CLDR/ICU id-ID: ribuan = titik, desimal = koma),
- * mis. 12500 -> "12.500", 2.5 -> "2,5". Nilai non-angka (teks, '-', '') dikembalikan apa adanya sehingga aman dibungkus di mana saja.
- * JANGAN dipakai untuk nilai yang dibaca ulang (input value, atribut data, payload): "1.500" akan terbaca 1,5 oleh parseFloat. */
-function fmtNum(v){if(v===null||v===undefined)return '';var s=String(v).trim();if(!/^-?(\d+(\.\d+)?|\.\d+)$/.test(s))return String(v);var x=Math.round(parseFloat(s)*1000)/1000;if(!isFinite(x))return String(v);var neg=x<0;x=Math.abs(x);var p=String(x).split('.');var i=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(neg?'-':'')+(p[1]?i+','+p[1]:i);}
+/* Buang apostrof di depan (penanda teks Sheets), seperti textMarkerStrip_ di Code.gs. */
+function _stripApos(v) {
+  var t = (v === null || v === undefined) ? '' : String(v);
+  while (t.charAt(0) === "'") t = t.slice(1);
+  return t;
+}
+
+/* -> { ok: true } atau { ok: false, message }. MASUK tidak pernah diblok. */
+function stockGuard(jenis, qty, rak, saldoTotal, breakdown) {
+  if (jenis !== 'KELUAR' && jenis !== 'PINDAH') return { ok: true };
+  if (!(qty > 0)) return { ok: true };
+  var key = _stripApos(String(rak || '').trim().toUpperCase());
+  var saldoRak = 0;
+  var sum = 0;
+  (breakdown || []).forEach(function (rb) {
+    var q = parseFloat(rb && rb.qty) || 0;
+    sum += q;
+    if (_stripApos(rb && rb.rak) === key) saldoRak = q;
+  });
+  var total = parseFloat(saldoTotal) || 0;
+  var lengkap = Math.abs(sum - total) < 0.001; // rincian rak menutup saldo total?
+  if (!lengkap && saldoRak <= 0) {
+    return qty > total
+      ? { ok: false, message: 'Stok tidak cukup. Saldo item: ' + fmtNum(total) + ' (lokasi rak item ini belum terekam)' }
+      : { ok: true };
+  }
+  return qty > saldoRak
+    ? { ok: false, message: 'Stok di rak ' + (key || '-') + ' tidak cukup. Saldo rak ini: ' + fmtNum(saldoRak) }
+    : { ok: true };
+}
+
+/* Anomali qty (audit UX 2026-11 #8): dulu (qty>3*rata-rata)||(qty>maks) dari SEMUA transaksi
+ * (masuk+keluar+pindah, bahkan 1 riwayat) sehingga hampir tiap qty yang sedikit lebih besar memicu
+ * peringatan -> pengguna belajar mengabaikannya.
+ * Sekarang: per jenis (PINDAH tidak dihitung), minimal 5 transaksi, dan anomali bila
+ * qty > 3x rata-rata DAN > semua riwayat. */
+
+/* rows: [{ q: qty, j: jenis }] -> { n, avg, median, max } atau null bila < 5 data yang relevan. */
+function anomalyStats(rows, jenis) {
+  var q = [];
+  (rows || []).forEach(function (r) {
+    var j = String((r && r.j) || '').toUpperCase();
+    if (j === 'PINDAH') return;
+    if (jenis && j && j !== jenis) return;
+    var n = parseFloat(r && r.q);
+    if (n > 0) q.push(n);
+  });
+  if (q.length < 5) return null;
+  var sum = 0;
+  q.forEach(function (x) { sum += x; });
+  var s = q.slice().sort(function (a, b) { return a - b; });
+  var mid = Math.floor(s.length / 2);
+  return {
+    n: q.length,
+    avg: sum / q.length,
+    median: s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2,
+    max: s[s.length - 1]
+  };
+}
+
+function isQtyAnomaly(qty, st) {
+  return !!st && qty > 3 * st.avg && qty > st.max;
+}
+
+/* fmtNum (audit UX 2026-11 #12): format Indonesia untuk TAMPILAN saja (CLDR/ICU id-ID:
+ * ribuan = titik, desimal = koma), mis. 12500 -> "12.500", 2.5 -> "2,5".
+ * Nilai non-angka (teks, '-', '') dikembalikan apa adanya sehingga aman dibungkus di mana saja.
+ * JANGAN dipakai untuk nilai yang dibaca ulang (input value, atribut data, payload):
+ * "1.500" akan terbaca 1,5 oleh parseFloat. */
+function fmtNum(v) {
+  if (v === null || v === undefined) return '';
+  var s = String(v).trim();
+  if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(s)) return String(v);
+  var x = Math.round(parseFloat(s) * 1000) / 1000;
+  if (!isFinite(x)) return String(v);
+  var neg = x < 0;
+  x = Math.abs(x);
+  var p = String(x).split('.');
+  var ribuan = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (neg ? '-' : '') + (p[1] ? ribuan + ',' + p[1] : ribuan);
+}
