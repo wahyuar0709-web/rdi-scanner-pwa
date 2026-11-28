@@ -13,8 +13,8 @@ Perform RDI-specific structural and release-oriented audits. Report findings; do
 
 ## Scope — MUST
 
-- Inspect project structure (root files, `Backup/`, absence or presence of `.opencode/`, tests, docs)
-- Inspect protected application files read-only: `index.html`, `scanner.html`, `sw.js`, `manifest.json`, `Code.gs`, `jsQR.min.js`, icons, `Backup/**`
+- Inspect project structure (root files, absence or presence of `.opencode/`, tests, docs)
+- Inspect protected application files read-only: `index.html`, `scanner.html`, `sw.js`, `manifest.json`, `Code.gs`, `js/jsQR.min.js`, icons
 - Inspect existing test inventory (note: suites may live outside the repo under the OpenCode temp environment; do not assume in-project `tests/`)
 - Inspect OpenCode project configuration (`.opencode/`, `AGENTS.md`) when present
 - Identify security risks (coordinate with `rdi-security` for depth; do not duplicate every SEC probe)
