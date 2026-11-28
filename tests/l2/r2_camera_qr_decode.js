@@ -61,7 +61,7 @@ function rec(name, ok, detail) {
 function recEnv(name, detail) { env++; console.log('ENVIRONMENT-DEPENDENT | ' + name + ' | ' + (detail || '')); }
 
 function qrMatrix(text) {
-  const qrcode = require(path.join(ROOT, 'qrcode.min.js'));
+  const qrcode = require(path.join(ROOT, 'js', 'qrcode.min.js'));
   const qr = qrcode(0, 'M');
   qr.addData(text);
   qr.make();
