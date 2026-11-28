@@ -17,7 +17,7 @@ User: `/audit` (optional focus: structure, security, tests, release, or a path)
    - Note protected files; do not edit them
 
 2. **Inspect protected application files (read-only)**
-   - `index.html`, `scanner.html`, `sw.js`, `manifest.json`, `Code.gs`, `jsQR.min.js`, icons, `Backup/**`
+   - `index.html`, `scanner.html`, `sw.js`, `manifest.json`, `Code.gs`, `js/jsQR.min.js`, icons
    - Record structure/version signals only as evidence, not change requests executed in-session
 
 3. **Inspect test inventory**
