@@ -25,7 +25,7 @@ function save() { fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true }); fs.
 function fileHash(p) { try { return crypto.createHash('md5').update(fs.readFileSync(p)).digest('hex') + ' / ' + fs.statSync(p).size + 'B'; } catch (e) { return 'ERR ' + e.message; } }
 function provenance() {
   const o = {};
-  for (const f of ['index.html', 'js/cetak.js', 'js/util.js', 'js/jspdf.min.js', 'js/html2pdf.bundle.min.js', 'qrcode.min.js']) o[f] = fileHash(path.join(ROOT, f));
+  for (const f of ['index.html', 'js/cetak.js', 'js/util.js', 'js/jspdf.min.js', 'js/html2pdf.bundle.min.js', 'js/qrcode.min.js']) o[f] = fileHash(path.join(ROOT, f));
   return o;
 }
 
